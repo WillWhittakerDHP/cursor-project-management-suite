@@ -1,0 +1,5 @@
+---
+alwaysApply: true
+---
+
+Create clear, typed, and well-documented data transformation functions instead of complex nested transformations or prop-drilling. See: client/src/admin/dataTransformation/bridgeToAdminTransformer.ts

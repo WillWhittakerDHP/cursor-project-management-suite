@@ -1,0 +1,5 @@
+---
+alwaysApply: true
+---
+
+Test files are immutable once they pass, lint, and function correctly. Only modify tests when the feature changes, the test has a bug, or refactoring requires updates. Never modify tests to make failing code pass - fix the code instead.

@@ -1,0 +1,5 @@
+---
+alwaysApply: true
+---
+
+Avoid unnecessary type assertions (as any, as unknown, as unknown as). Use keyof and typeof only when necessary for type constraints, not as workarounds. Prefer type guards (value is Type) over type assertions. See: client/src/admin/dataTransformation/typeAdapters.ts for examples.

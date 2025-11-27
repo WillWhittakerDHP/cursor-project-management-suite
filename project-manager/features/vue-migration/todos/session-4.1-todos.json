@@ -1,0 +1,85 @@
+{
+  "feature": "vue-migration",
+  "phase": 4,
+  "session": "4.1",
+  "todos": [
+    {
+      "id": "session-4.1",
+      "title": "Main Admin Panel Structure",
+      "description": "Create main admin page with tabbed interface structure using Vuexy VTabs component. Set up basic navigation and placeholder tab components.",
+      "status": "pending",
+      "tier": "session",
+      "parentId": "phase-4",
+      "planningDocPath": ".cursor/project-manager/PROJECT_PLAN.md",
+      "planningDocSection": "Phase 4: Vuexy Admin Panel Integration - Session 4.1",
+      "sessionGuidePath": ".cursor/project-manager/features/vue-migration/sessions/session-4.1-guide.md",
+      "createdAt": "2025-01-19T00:00:00Z",
+      "updatedAt": "2025-01-19T00:00:00Z"
+    },
+    {
+      "id": "task-4.1.1",
+      "title": "Create AdminPanel.vue Component",
+      "description": "Create main AdminPanel.vue component with VTabs for Profiles and Types tabs. Use Vuexy VTabs, VTab, VWindow, and VWindowItem components.",
+      "status": "pending",
+      "tier": "task",
+      "parentId": "session-4.1",
+      "planningDocPath": ".cursor/project-manager/features/vue-migration/sessions/session-4.1-guide.md",
+      "planningDocSection": "Task 4.1.1: Create AdminPanel.vue Component",
+      "filePath": "client-vue/src/views/admin/AdminPanel.vue",
+      "createdAt": "2025-01-19T00:00:00Z",
+      "updatedAt": "2025-01-19T00:00:00Z"
+    },
+    {
+      "id": "task-4.1.2",
+      "title": "Create Placeholder ProfilesTab Component",
+      "description": "Create ProfilesTab.vue placeholder component in tabs directory. Add basic component structure with placeholder content.",
+      "status": "pending",
+      "tier": "task",
+      "parentId": "session-4.1",
+      "planningDocPath": ".cursor/project-manager/features/vue-migration/sessions/session-4.1-guide.md",
+      "planningDocSection": "Task 4.1.2: Create Placeholder ProfilesTab Component",
+      "filePath": "client-vue/src/views/admin/tabs/ProfilesTab.vue",
+      "createdAt": "2025-01-19T00:00:00Z",
+      "updatedAt": "2025-01-19T00:00:00Z"
+    },
+    {
+      "id": "task-4.1.3",
+      "title": "Create Placeholder TypesTab Component",
+      "description": "Create TypesTab.vue placeholder component in tabs directory. Add basic component structure with placeholder content.",
+      "status": "pending",
+      "tier": "task",
+      "parentId": "session-4.1",
+      "planningDocPath": ".cursor/project-manager/features/vue-migration/sessions/session-4.1-guide.md",
+      "planningDocSection": "Task 4.1.3: Create Placeholder TypesTab Component",
+      "filePath": "client-vue/src/views/admin/tabs/TypesTab.vue",
+      "createdAt": "2025-01-19T00:00:00Z",
+      "updatedAt": "2025-01-19T00:00:00Z"
+    },
+    {
+      "id": "task-4.1.4",
+      "title": "Update Router Configuration",
+      "description": "Update router to use single /admin route pointing to AdminPanel.vue. Remove separate entity routes. Update home redirect to /admin.",
+      "status": "pending",
+      "tier": "task",
+      "parentId": "session-4.1",
+      "planningDocPath": ".cursor/project-manager/features/vue-migration/sessions/session-4.1-guide.md",
+      "planningDocSection": "Task 4.1.4: Update Router Configuration",
+      "filePath": "client-vue/src/router/index.ts",
+      "createdAt": "2025-01-19T00:00:00Z",
+      "updatedAt": "2025-01-19T00:00:00Z"
+    },
+    {
+      "id": "task-4.1.5",
+      "title": "Verify Tab Navigation",
+      "description": "Test tab navigation works correctly. Verify tabs render, clicking switches content, Vuexy styling applies, no console errors.",
+      "status": "pending",
+      "tier": "task",
+      "parentId": "session-4.1",
+      "planningDocPath": ".cursor/project-manager/features/vue-migration/sessions/session-4.1-guide.md",
+      "planningDocSection": "Task 4.1.5: Verify Tab Navigation",
+      "createdAt": "2025-01-19T00:00:00Z",
+      "updatedAt": "2025-01-19T00:00:00Z"
+    }
+  ]
+}
+

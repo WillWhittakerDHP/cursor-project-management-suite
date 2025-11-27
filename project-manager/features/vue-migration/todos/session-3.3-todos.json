@@ -1,0 +1,73 @@
+{
+  "feature": "vue-migration",
+  "phase": 3,
+  "session": "3.3",
+  "todos": [
+    {
+      "id": "session-3.3",
+      "title": "Routing & Placeholder Pages",
+      "description": "Create minimal routing structure and placeholder pages to demonstrate data flow",
+      "status": "pending",
+      "tier": "session",
+      "parentId": "phase-3",
+      "planningDocPath": ".cursor/project-manager/PROJECT_PLAN.md",
+      "planningDocSection": "Session 3.3: Routing & Placeholder Pages",
+      "createdAt": "2025-01-18T13:30:00Z",
+      "updatedAt": "2025-01-18T13:30:00Z"
+    },
+    {
+      "id": "task-3.3.1",
+      "title": "Set up basic routing structure",
+      "description": "Create basic Vue Router structure",
+      "status": "pending",
+      "tier": "task",
+      "parentId": "session-3.3",
+      "planningDocPath": ".cursor/project-manager/PROJECT_PLAN.md",
+      "planningDocSection": "Session 3.3: Routing & Placeholder Pages",
+      "createdAt": "2025-01-18T13:30:00Z",
+      "updatedAt": "2025-01-18T13:30:00Z"
+    },
+    {
+      "id": "task-3.3.2",
+      "title": "Create placeholder list pages (no UI polish)",
+      "description": "Create minimal list pages to verify data flow",
+      "status": "pending",
+      "tier": "task",
+      "parentId": "session-3.3",
+      "planningDocPath": ".cursor/project-manager/PROJECT_PLAN.md",
+      "planningDocSection": "Session 3.3: Routing & Placeholder Pages",
+      "createdAt": "2025-01-18T13:30:00Z",
+      "updatedAt": "2025-01-18T13:30:00Z"
+    },
+    {
+      "id": "task-3.3.3",
+      "title": "Create placeholder form pages (no UI polish)",
+      "description": "Create minimal form pages to verify data flow",
+      "status": "pending",
+      "tier": "task",
+      "parentId": "session-3.3",
+      "planningDocPath": ".cursor/project-manager/PROJECT_PLAN.md",
+      "planningDocSection": "Session 3.3: Routing & Placeholder Pages",
+      "createdAt": "2025-01-18T13:30:00Z",
+      "updatedAt": "2025-01-18T13:30:00Z"
+    },
+    {
+      "id": "task-3.3.4",
+      "title": "Verify data displays correctly on pages",
+      "description": "Test that data displays correctly on placeholder pages",
+      "status": "pending",
+      "tier": "task",
+      "parentId": "session-3.3",
+      "planningDocPath": ".cursor/project-manager/PROJECT_PLAN.md",
+      "planningDocSection": "Session 3.3: Routing & Placeholder Pages",
+      "createdAt": "2025-01-18T13:30:00Z",
+      "updatedAt": "2025-01-18T13:30:00Z"
+    }
+  ],
+  "metadata": {
+    "version": "1.0",
+    "lastSynced": "2025-01-18T13:30:00Z",
+    "sourcePlan": ".cursor/project-manager/PROJECT_PLAN.md"
+  }
+}
+

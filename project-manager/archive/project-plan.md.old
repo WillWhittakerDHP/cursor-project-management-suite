@@ -1,0 +1,2707 @@
+# DHP Differential Scheduler - Project Plan
+
+**Purpose:** Comprehensive planning document organizing USER_STORY.md requirements into workflow manager structure with 4 tiers: Feature (Tier 1) → Phase (Tier 2) → Session (Tier 3) → Task (Tier 4)
+
+**Structure:** This document uses a 4-tier hierarchy:
+- **Feature** (Tier 1): Major initiatives spanning multiple phases (e.g., "Feature 1: Core Infrastructure")
+- **Phase** (Tier 2): Major milestones within features (e.g., "Phase 1.1: Layout & Navigation")
+- **Session** (Tier 3): Focused work within phases (e.g., "Session 1.1.1: Layout Components")
+- **Task** (Tier 4): Single focused work items (e.g., "Task 1.1.1.1: Create Header component")
+
+**Source:** `USER_STORY.md`  
+**Created:** 2025-01-27  
+**Last Updated:** 2025-01-27 (Restructured with Table of Contents and Master Feature Index)  
+**Status:** Planning Complete - Updated with Current Implementation Status
+
+**Status Legend:**
+- ✅ **Done** - Completed and functional
+- 🚧 **In Progress** - Currently being worked on
+- ⏳ **Not Started** - Planned but not yet begun
+- 📝 **Partial** - Partially complete, needs integration/completion
+- 🔄 **Migrating** - Being migrated to Vue.js (Vue migration in progress)
+
+---
+
+## Table of Contents
+
+### Overview Sections
+- [Executive Summary](#executive-summary)
+- [MVP Scope](#mvp-scope)
+- [Current State](#current-state)
+- [Cross-Feature Dependencies](#cross-feature-dependencies)
+- [Master Feature Index](#master-feature-index)
+
+### Feature Sections
+- [Feature 0: Vue.js Migration](#feature-0-vuejs-migration)
+  - [Phase 0.0: Project Setup](#phase-00-project-setup)
+  - [Phase 0.1: Data Layer Foundation](#phase-01-data-layer-foundation)
+  - [Phase 0.2: State Management](#phase-02-state-management)
+  - [Phase 0.3: Property System Refactor](#phase-03-property-system-refactor)
+  - [Phase 0.4: Admin Wizard](#phase-04-admin-wizard)
+  - [Phase 0.5: Scheduler Wizard](#phase-05-scheduler-wizard)
+  - [Phase 0.6: React Cleanup and Removal](#phase-06-react-cleanup-and-removal)
+- [Feature 1: Core Infrastructure & Layout](#feature-1-core-infrastructure--layout)
+  - [Phase 1.1: Layout & Navigation Structure](#phase-11-layout--navigation-structure)
+  - [Phase 1.2: State Management & Core Utilities](#phase-12-state-management--core-utilities)
+- [Feature 2.0: Jose's Wizard UI Port](#feature-20-joses-wizard-ui-port)
+  - [Phase 2.0.1: Wizard Shell & Navigation](#phase-201-wizard-shell--navigation)
+  - [Phase 2.0.2: Step 1 - Service Selection](#phase-202-step-1---service-selection)
+  - [Phase 2.0.3: Step 2 - Property Details](#phase-203-step-2---property-details)
+  - [Phase 2.0.4: Step 3 - Appointment Availability](#phase-204-step-3---appointment-availability)
+  - [Phase 2.0.5: Step 4 - Contact Information](#phase-205-step-4---contact-information)
+  - [Phase 2.0.6: Step 5 - Confirmation](#phase-206-step-5---confirmation)
+- [Feature 2: Customer Booking Wizard](#feature-2-customer-booking-wizard)
+  - [Phase 2.1: Service Selection Step](#phase-21-service-selection-step)
+  - [Phase 2.2: Property Details Step](#phase-22-property-details-step)
+  - [Phase 2.3: Appointment Availability Step](#phase-23-appointment-availability-step)
+  - [Phase 2.4: Contact Information Step](#phase-24-contact-information-step)
+  - [Phase 2.5: Confirmation Step](#phase-25-confirmation-step)
+- [Feature 3: Admin Configuration Interface](#feature-3-admin-configuration-interface)
+  - [Phase 3.1: Service Settings Management](#phase-31-service-settings-management)
+  - [Phase 3.2: Additional Service Settings Management](#phase-32-additional-service-settings-management)
+  - [Phase 3.3: Availability Options Management](#phase-33-availability-options-management)
+- [Feature 4: API Integration Layer (Infrastructure)](#feature-4-api-integration-layer-infrastructure)
+  - [Phase 4.1: Google Calendar API Integration](#phase-41-google-calendar-api-integration)
+  - [Phase 4.2: Google Maps API Integration](#phase-42-google-maps-api-integration)
+  - [Phase 4.3: MLS API Integration](#phase-43-mls-api-integration)
+- [Feature 5: Future Features Catalog](#feature-5-future-features-catalog)
+
+### Reference Sections
+- [Post-MVP Priority Features](#post-mvp-priority-features)
+- [Acceptance Criteria Mapping](#acceptance-criteria-mapping)
+- [Tier Validation](#tier-validation)
+- [Coverage Verification](#coverage-verification)
+- [Next Steps](#next-steps)
+- [Notes](#notes)
+
+---
+
+## Executive Summary
+
+The DHP Differential Scheduler is a sophisticated scheduling application designed for a home inspection business. The system enables differential scheduling (where inspector and client arrive at different times) alongside standard scheduling, with complex availability calculations, fee calculations, and multi-step booking workflows.
+
+### Project Scope
+
+- **Customer-Facing:** Multi-step booking wizard with 5 main steps
+- **Admin-Facing:** Configuration interface for services, availability options, and settings
+- **API Integration:** Google Calendar, Google Maps, and MLS APIs
+- **Core Infrastructure:** State management, fee calculation, availability engine
+
+### Technology Stack
+
+- **Frontend:** TypeScript, React/Vue.js (migration in progress - Phases 1-2 complete)
+- **Styling:** Vuexy admin template, mobile-first design
+- **APIs:** Google Calendar API, Google Maps API, MLS API
+- **Database:** Services database for configuration, appointment records
+
+### Current Implementation Status
+
+**Important Notes:**
+- **Vue Migration:** Active migration from React to Vue.js is in progress (Phases 1-2 complete). Some work may be implemented in Vue rather than React.
+- **SchemaProp Management Feature:** A temporary admin interface for managing schema props exists (SchemaProp management UI) that supports the coding process. This is a temporary feature that will be stripped when converting properties back to straight (non-config-driven) properties.
+- **Existing Code:** Fee and time calculation utilities exist (`ProfileToFinalTimeUtils`), and appointment class logic exists (commented out in `appointmentTransformer.ts`). These need to be integrated into the booking wizard.
+- **Jose's Wizard:** Complete 5-step wizard UI exists in React/MUI and will be ported to Vue/Vuetify (Feature 2.0). We will ALWAYS adapt Jose's wizard model - we are NOT building our own service selection wizard.
+
+### Timeline Estimate
+
+- **Feature 1 (Core Infrastructure):** 2-3 weeks
+- **Feature 2 (Customer Booking Wizard):** 6-8 weeks
+- **Feature 3 (Admin Interface):** 4-6 weeks
+- **Feature 4 (API Integration):** 3-4 weeks
+- **Feature 5 (Testing & Refinement):** 2-3 weeks
+- **Total Estimated Duration:** 17-24 weeks
+
+---
+
+## MVP Scope
+
+**MVP Definition:** Minimum viable product that enables end-to-end booking flow with core differential scheduling functionality.
+
+### MVP-Critical Features
+
+**Feature 1: Core Infrastructure & Layout** - ✅ MVP-Critical
+- Foundational layout, navigation, state management, and core utilities
+- Fee calculation engine
+- Time calculation utilities
+- **Status**: In progress - utilities exist, layout/navigation to be built
+
+**Feature 2: Customer Booking Wizard** - ✅ MVP-Critical
+- Complete 5-step wizard: Service Selection → Property Details → Appointment Availability → Contact Information → Confirmation
+- Differential scheduling logic
+- Availability calculations
+- Form validation
+- **Status**: Architecture complete, implementation partial - UI porting needed
+
+**Feature 3: API Integration Layer** - 📝 Partial MVP
+- **MVP-Critical APIs:**
+  - Google Calendar API (availability fetching and event creation) - Required for MVP
+  - Google Maps API (address validation and drive time) - Required for MVP
+- **Post-MVP APIs:**
+  - MLS API (property data) - Can defer with manual entry fallback
+- **Status**: Infrastructure exists, needs integration into wizard
+
+**Feature 4: Admin Configuration Interface** - ✅ MVP-Critical (Already Built)
+- Administrative interface for managing services, additional services, availability options
+- **Status**: 🔄 Migrating - Built in React, being converted to Vue (Phase 4 of migration)
+- **Note**: This is the Service/Additional Service/Availability Options configuration interface
+- **Separate from**: SchemaProp Management Feature (temporary, will be stripped)
+
+**Feature 5: Future Features Catalog** - ⏸️ Post-MVP
+- Comprehensive catalog of future enhancements
+- See `.cursor/project-manager/future-features-catalog.md` for details
+
+### MVP Timeline
+
+- **MVP Duration:** 8-12 weeks (reduced from 17-24 weeks)
+- **MVP Success Criteria:**
+  - End-to-end booking flow functional
+  - Differential scheduling working correctly
+  - Availability calculations accurate
+  - Form validation complete
+  - Mobile-responsive design
+  - Manual fallbacks acceptable for MVP (MLS API, some API failures)
+
+### Post-MVP Enhancements
+
+- Full API integration (MLS auto-population, robust error handling)
+- Advanced admin features
+- Performance optimizations
+- Future features from catalog
+
+---
+
+## Current State
+
+### What's Actually Done
+
+**Core Utilities:**
+- ✅ `ProfileToFinalTimeUtils` - Complete time calculation utilities
+- ✅ Time calculation types exist (`timeTypes.ts`, `timeDataUtil.tsx`)
+- 📝 `appointmentTransformer.ts` - Fee calculation logic exists but commented out, needs refactoring
+
+**Admin Interface:**
+- ✅ Admin interface built in React (SchemaProp management UI, entity management pages)
+- ✅ Generic CRUD components functional
+- ✅ Form validation working
+- 🔄 Being converted to Vue.js (Feature 0 Phase 0.4 in progress)
+
+**API Infrastructure:**
+- ✅ API infrastructure exists (`client/src/scheduler/externalAPI/`, `internalAPI/`)
+- ✅ Google Calendar API calls structure (`calendarCalls.ts`)
+- ✅ Property details API structure (`detailsAPI.ts`)
+- ⏳ Needs integration into wizard flow
+
+**Architecture & Planning:**
+- ✅ Architecture decisions documented (`SCHEDULER_ARCHITECTURE_DECISIONS.md`)
+- ✅ Component specifications created (`SCHEDULER_COMPONENT_SPECS.md`)
+- ✅ Phase 1 implementation guide (`SCHEDULER_PHASE_1_IMPLEMENTATION.md`)
+
+**Reference Implementation (SOURCE OF TRUTH):**
+- ✅ Jose's Wizard - Complete 5-step wizard UI exists in React/MUI
+  - **Location:** `/Users/districthomepro/Bonsai/Jose-Scheduler-Reference/src/views/pages/wizard-examples/scheduler/`
+  - **Status:** This is the SOURCE - we ALWAYS adapt Jose's wizard model, NEVER build our own
+  - All 5 steps implemented with complete UI/UX
+  - State management hook (`useAppointment`) complete
+  - ⚠️ Needs porting to Vue/Vuetify (Feature 2.0)
+  - **Critical:** All wizard UI work must start from Jose's components, not from scratch
+
+### What's In Progress
+
+**Vue Migration:**
+- 🚧 Phase 0: Project Setup - ✅ Complete
+- 🚧 Phase 1: Data Layer Foundation - In progress
+- 🚧 Phase 2: State Management - Phase 2.1 complete
+- ⏳ Phase 3: Property System Refactor - Not started
+- ⏳ Phase 4: Admin Wizard - Not started (admin interface conversion - **recommended before Phase 5**)
+- ⏳ Phase 5: Scheduler Wizard - Not started (will port Jose's wizard - recommended after Phase 4)
+
+**Core Infrastructure:**
+- 🚧 State management architecture - Planned, implementation needed
+- 📝 Fee calculation engine - Logic exists, needs integration
+
+### What's Blocked or Waiting
+
+**Waiting on Feature 0 (Vue.js Migration):**
+- Wizard UI porting (Feature 2.0) - Waiting for Feature 0 Phases 0.0-0.2 complete
+- Admin interface conversion - Waiting for Feature 0 Phase 0.4
+
+**Waiting on Infrastructure:**
+- API integration into wizard - Waiting for wizard UI and API client setup
+- Business logic integration - Waiting for wizard UI port
+
+---
+
+## Feature Breakdown
+
+### Feature 0: Vue.js Migration
+**Tier:** Feature (Tier 1)  
+**Duration:** Ongoing (foundational migration)  
+**Status:** 🚧 In Progress - Phases 0.0-0.2 in progress
+
+**Description:**  
+Migrate the application from React to Vue.js, establishing the foundation for all other features. This migration includes project setup, data layer, state management, and component conversions.
+
+**Dependencies:** None (foundational migration)
+
+**Reference:** See `.cursor/project-manager/features/vue-migration/VUE_MIGRATION_USER_STORY.md` for complete migration status and detailed phase information. See `.cursor/project-manager/features/vue-migration/feature-vue-migration-guide.md` for feature-level planning and `.cursor/project-manager/features/vue-migration/phases/phase-[N]-guide.md` for detailed phase guides.
+
+**Migration Status:**
+- Phase 0.0: Project Setup - ✅ Complete
+- Phase 0.1: Data Layer Foundation - 🚧 In Progress
+- Phase 0.2: State Management - 🚧 Phase 2.1 Complete
+- Phase 0.3: Property System Refactor - ⏳ Not Started
+- Phase 0.4: Admin Wizard - ⏳ Not Started (converts Feature 3 - **recommended before Phase 0.5**)
+- Phase 0.5: Scheduler Wizard - ⏳ Not Started (converts Feature 2.0 - recommended after Phase 0.4)
+- Phase 0.6: React Cleanup and Removal - ⏳ Not Started (final cleanup after all phases complete)
+
+**Impact on Other Features:**
+- **Feature 1:** Requires Feature 0 Phases 0.0-0.2 (Vuexy setup, Pinia stores)
+- **Feature 2.0:** Requires Feature 0 Phases 0.0-0.2 (Vue foundation)
+- **Feature 2:** Will be built entirely in Vue.js (depends on Feature 0 Phase 0.5)
+- **Feature 3:** Being converted from React to Vue (Feature 0 Phase 0.4)
+- **Feature 4:** Minimal impact - API layer is framework-agnostic
+
+**Success Criteria:**
+- Vue 3 + Vite + TypeScript project scaffolded
+- Vuexy components integrated
+- Pinia and Vue Query configured
+- All type definitions ported
+- State management stores created
+- Component conversions complete
+
+**Note:** This migration is foundational and affects multiple features. Phases 0.0-0.2 must complete before other features can proceed.
+
+---
+
+#### Phase 0.0: Project Setup
+**Tier:** Phase (Tier 2)  
+**Duration:** 1 week  
+**Status:** ✅ Complete  
+**Dependencies:** None
+
+**Description:**  
+Set up Vue 3 project with Vite, TypeScript, Vuexy components, Pinia, and Vue Query.
+
+**Key Deliverables:**
+- Vue 3 + Vite + TypeScript project scaffolded
+- Vuexy components integrated
+- Pinia and Vue Query configured
+- Development scripts working (port 3002)
+- TypeScript configuration matches React app strictness
+
+---
+
+#### Phase 0.1: Data Layer Foundation
+**Tier:** Phase (Tier 2)  
+**Duration:** 2-3 weeks  
+**Status:** 🚧 In Progress  
+**Dependencies:** Phase 0.0
+
+**Description:**  
+Port all type definitions, constants, configuration files, API clients, and transformers to Vue.
+
+**Key Deliverables:**
+- All type definitions ported to Vue
+- Constants and configuration files migrated
+- API clients ported with composables
+- GlobalTransformer ported and tested
+- AdminTransformer ported and tested
+- SchedulerTransformer ported and tested
+
+---
+
+#### Phase 0.2: State Management
+**Tier:** Phase (Tier 2)  
+**Duration:** 2-3 weeks  
+**Status:** 🚧 Phase 2.1 Complete  
+**Dependencies:** Phase 0.1
+
+**Description:**  
+Set up Pinia stores and Vue Query for state management, matching React Query functionality.
+
+**Key Deliverables:**
+- Vue Query client configured (matching React Query settings)
+- Pinia stores created (globalStore, adminStore, schedulerStore, propertyStore)
+- Composables layer implemented
+- Data fetching and caching working
+
+---
+
+#### Phase 0.3: Property System Refactor
+**Tier:** Phase (Tier 2)  
+**Duration:** 1-2 weeks  
+**Status:** ⏳ Not Started  
+**Dependencies:** Phase 0.2
+
+**Description:**  
+Refactor property system to simplify and use Vue Query for caching.
+
+**Key Deliverables:**
+- Property system simplified (removed singleton pattern)
+- Vue Query used for property configuration caching
+- SchemaProp management UI ported to Vuexy components
+- All property operations working
+
+---
+
+#### Phase 0.4: Admin Wizard
+**Tier:** Phase (Tier 2)  
+**Duration:** 3-4 weeks  
+**Status:** ⏳ Not Started  
+**Dependencies:** Phase 0.2
+
+**Description:**  
+Convert Feature 3 (Admin Configuration Interface) from React to Vue. **Strategic Priority:** This conversion should happen BEFORE Phase 0.5 (Jose's wizard port) because:
+- ✅ Backend API work is complete and tested
+- ✅ React UI is fully functional - provides clear reference implementation
+- ✅ Establishes Vue/Vuexy patterns before porting customer-facing wizard
+- ✅ Improves UI clarity with Vuexy components (better than Ant Design)
+- ✅ Leverages existing backend investment immediately
+
+**Key Deliverables:**
+- Admin layout with Vuexy navigation (improved clarity over Ant Design)
+- Entity management pages ported (BlockType, BlockProfile, PartType, PartProfile)
+- Generic CRUD components ported to Vuexy components
+- Form validation with Vee-Validate (better than Ant Design validation)
+- Relationship selectors working
+- **UI Improvements:** Better visual hierarchy, clearer workflows, improved mobile responsiveness
+
+**Note:** This phase converts Feature 3 from React to Vue AND improves UI clarity with Vuexy components. The backend is already complete, so this is primarily a frontend conversion with UI improvements.
+
+---
+
+#### Phase 0.5: Scheduler Wizard
+**Tier:** Phase (Tier 2)  
+**Duration:** 4-6 weeks  
+**Status:** ⏳ Not Started  
+**Dependencies:** Phase 0.2, Phase 0.4 (recommended - establishes Vue/Vuexy patterns first)
+
+**Description:**  
+Port Feature 2.0 (Jose's Wizard UI Port) from React/MUI to Vue/Vuetify. **Recommended Sequence:** Complete Phase 0.4 (Admin Wizard) first to establish Vue/Vuexy patterns and improve UI clarity before porting customer-facing wizard.
+
+**Key Deliverables:**
+- Wizard structure with Vuexy stepper
+- All 5 wizard steps ported (Service Selection, Property Details, Appointment Availability, Contact Information, Confirmation)
+- All scheduler logic ported and tested
+- Leverages Vue/Vuexy patterns established in Phase 0.4
+
+**Note:** This phase converts Feature 2.0 from React to Vue. Completing Phase 0.4 first provides valuable Vue/Vuexy experience and patterns that make this conversion smoother.
+
+---
+
+#### Phase 0.6: React Cleanup and Removal
+**Tier:** Phase (Tier 2)  
+**Duration:** 1-2 weeks  
+**Status:** ⏳ Not Started  
+**Dependencies:** Phase 0.5 (all Vue migration phases complete), Vue migration verified in production
+
+**Description:**  
+Remove React-related code, commands, and references after Vue migration is complete and verified in production. This is the final cleanup phase that removes all React dependencies and updates documentation.
+
+**When to Remove React:**
+
+**Prerequisites:**
+- ✅ All features ported to Vue
+- ✅ All tests passing in Vue app
+- ✅ Production deployment successful
+- ✅ No dependencies on React codebase
+- ✅ Migration verified stable for at least 2-4 weeks
+
+**Steps to Remove React:**
+
+1. **Remove React from Slash Commands**
+   - `.cursor/commands/atomic/lint.ts` - Already updated to handle legacy 'react' target gracefully
+   - `.cursor/commands/atomic/test.ts` - Already updated to handle legacy 'react' target gracefully
+   - `.cursor/commands/composite/verify.ts` - Remove React option from verify command
+   - `.cursor/commands/README.md` - Already updated
+   - `.cursor/commands/USAGE.md` - Already updated
+   - **Status:** Commands already updated to gracefully handle legacy 'react' target with error message.
+
+2. **Remove React from Documentation**
+   - `VUE_MIGRATION_SESSION_GUIDE.md` - Remove React comparison sections (keep historical logs)
+   - `VUE_MIGRATION_HANDOFF.md` - Remove React references from active sections
+   - `.cursor/commands/README.md` - Already updated
+   - `.cursor/commands/USAGE.md` - Already updated
+   - **Note:** Historical session logs should be preserved but not actively maintained.
+
+3. **Remove React Codebase**
+   - **Files to Remove:**
+     - `client/` directory (entire React codebase)
+     - React-related npm scripts from root `package.json`
+   - **Files to Update:**
+     - Root `package.json` - Remove React scripts (`client:dev`, `client:build`, etc.)
+     - Root `README.md` - Remove React references
+     - CI/CD configuration files
+     - Deployment documentation
+
+4. **Update Workspace Rules**
+   - `.cursor/rules/deprecation.mdc` - Remove or update deprecation rule
+   - Remove React-related workspace rules
+   - **New Rule Content:**
+     ```markdown
+     ---
+     alwaysApply: true
+     ---
+     
+     This project uses Vue.js 3 exclusively. React codebase has been removed after migration completion.
+     
+     - All development should target Vue.js
+     - Use Vue composables, Pinia stores, and Vue Query
+     - Reference migration logs for historical context only
+     ```
+
+**Current Status:**
+
+**Commands Status:**
+- ✅ `/lint` - Updated to remove React target (graceful error for legacy usage)
+- ✅ `/test` - Updated to remove React target (graceful error for legacy usage)
+- ✅ Documentation updated to reflect React removal
+
+**Next Steps:**
+1. Complete Vue migration (Phases 1-5)
+2. Verify production stability
+3. Remove React codebase (`client/` directory)
+4. Update workspace rules
+5. Final documentation cleanup
+
+**Migration Timeline:**
+- **Phases 1-5:** Migration active - React references useful for comparison
+- **Phase 6:** React cleanup - Remove React codebase and references
+- **Post-Phase 6:** Vue-only development - No React references
+
+**Notes:**
+- **Historical Logs:** Keep migration logs and session logs for reference
+- **Backup:** Consider archiving React codebase before deletion (git tag or separate branch)
+- **Rollback:** Ensure Vue app is fully functional before removing React codebase
+- **Timing:** Only remove React after Vue migration is 100% complete and verified
+
+**Key Deliverables:**
+- React support removed from slash commands (`/lint`, `/test`, `/verify`)
+- Documentation updated to remove React references
+- React codebase and dependencies removed
+- Build configuration and CI/CD updated for Vue-only
+- Workspace rules updated to focus on Vue-only development
+
+**Note:** This phase should only begin after all Vue migration phases (0.0-0.5) are complete and verified in production. See `.cursor/project-manager/features/vue-migration/phases/phase-6-guide.md` for detailed cleanup tasks.
+
+---
+
+### Feature 1: Core Infrastructure & Layout
+**Tier:** Feature (Tier 1)  
+**Duration:** 2-3 weeks  
+**Status:** 🚧 In Progress - Utilities exist, layout/navigation to be built
+
+**Description:**  
+Build the foundational layout, navigation, state management, and core utilities that all other features depend on.
+
+**Dependencies:** None (foundational)
+
+**Migration Impact:**
+- **Decision:** Build layout/navigation in Vue.js as part of Feature 0
+- **Dependencies:** Feature 0 Phases 0.0-0.2 (Vuexy setup, Pinia stores)
+- **Existing React Code:** None - will be built fresh in Vue
+- **Note:** Core utilities (`ProfileToFinalTimeUtils`) are framework-agnostic and can be used in Vue
+
+**Current State:**
+- ✅ `ProfileToFinalTimeUtils` - Complete time calculation utilities
+- ✅ Time calculation types (`timeTypes.ts`, `timeDataUtil.tsx`) - Complete
+- 📝 `appointmentTransformer.ts` - Fee calculation logic exists but commented out, needs refactoring
+- ⏳ Layout components - Not started (will be built in Vue)
+- ⏳ Navigation system - Not started (will be built in Vue)
+- ⏳ State management - Architecture planned, implementation needed (will use Pinia stores)
+
+**Success Criteria:**
+- Layout components (header, nav, footer, content section) functional
+- Navigation system with step tracking
+- Core state management structure (Pinia stores)
+- Fee calculation engine integrated
+- Mobile-first responsive design
+
+**Risk Assessment:**
+- **Technical Risks:**
+  - Vuexy component library learning curve
+  - Pinia store architecture design decisions
+  - Fee calculation integration complexity
+- **Timeline Risks:**
+  - Dependency on Vue migration foundation
+  - Refactoring commented-out appointment transformer code
+- **Mitigation:**
+  - Reference Vuexy documentation and examples
+  - Design Pinia store structure before implementation
+  - Extract and test fee calculation logic independently
+
+**Testing Strategy:**
+- **Unit Tests:** 
+  - Fee calculation logic (90%+ coverage)
+  - Time calculation utilities
+  - State management functions
+- **Integration Tests:**
+  - Layout component rendering
+  - Navigation state transitions
+  - State persistence (if implemented)
+- **E2E Tests:**
+  - Basic navigation flow
+  - Mobile responsiveness
+
+**Success Metrics:**
+- All utilities functional and tested
+- Layout renders correctly on all screen sizes
+- Navigation works smoothly
+- State management handles all appointment data
+- Performance: Layout loads in <1s
+
+**Fallback Plans:**
+- If Vuexy components unavailable: Use base Vuetify components
+- If Pinia setup delayed: Use Vue 3 Composition API with provide/inject
+- If fee calculation integration fails: Use simplified calculation temporarily
+
+---
+
+#### Phase 1.1: Layout & Navigation Structure
+**Tier:** Phase (Tier 2)  
+**Duration:** 1 week  
+**Status:** ⏳ Not Started  
+**Dependencies:** None
+
+**Description:**  
+Create the general page structure with header, navigation bar, content section, and footer. Implement navigation between wizard steps.
+
+**Note:** Architecture planned but implementation incomplete. May be implemented in Vue.js as part of migration.
+
+**Sessions:**
+- Session 1.1.1: Layout Components
+- Session 1.1.2: Navigation System
+- Session 1.1.3: Progress Tracking
+
+---
+
+##### Session 1.1.1: Layout Components
+**Tier:** Session (Tier 3)  
+**Duration:** 2-3 days
+
+**Description:**  
+Build header, footer, and content section components with responsive design.
+
+**Tasks:**
+- Task 1.1.1.1: Create Header component (business name, logo, welcome message)
+- Task 1.1.1.2: Create Footer component (Previous/Next buttons, Progress Info area)
+- Task 1.1.1.3: Create Content Section wrapper component
+- Task 1.1.1.4: Implement mobile-first responsive styling
+- Task 1.1.1.5: Add accessibility features
+
+**Dependencies:** None  
+**Success Criteria:** Layout renders correctly on all screen sizes
+
+---
+
+##### Session 1.1.2: Navigation System
+**Tier:** Session (Tier 3)  
+**Duration:** 2-3 days
+
+**Description:**  
+Implement side navigation with step titles and descriptions. Handle navigation state and step selection.
+
+**Tasks:**
+- Task 1.1.2.1: Create Navigation component with step tiles
+- Task 1.1.2.2: Implement step selection logic
+- Task 1.1.2.3: Add step descriptions under each title
+- Task 1.1.2.4: Handle active/selected states
+- Task 1.1.2.5: Connect navigation to content section
+
+**Dependencies:** Session 1.1.1  
+**Success Criteria:** Navigation allows switching between steps, visual states work correctly
+
+---
+
+##### Session 1.1.3: Progress Tracking
+**Tier:** Session (Tier 3)  
+**Duration:** 1-2 days
+
+**Description:**  
+Implement progress bar/sentence that updates based on user selections throughout the wizard.
+
+**Tasks:**
+- Task 1.1.3.1: Create Progress Info component
+- Task 1.1.3.2: Implement progress sentence generation logic
+- Task 1.1.3.3: Connect progress to wizard state
+- Task 1.1.3.4: Handle conditional progress text
+
+**Dependencies:** Session 1.1.2  
+**Success Criteria:** Progress updates dynamically as user progresses through wizard
+
+---
+
+#### Phase 1.2: State Management & Core Utilities
+**Tier:** Phase (Tier 2)  
+**Duration:** 1 week  
+**Status:** 📝 Partial - Utilities exist, need integration  
+**Dependencies:** Phase 1.1
+
+**Description:**  
+Set up state management architecture and core utility functions (fee calculator, time calculations).
+
+**Existing Code:**
+- ✅ `ProfileToFinalTimeUtils` class exists with `calculateTime`, `calculateTimeOverage`, `getBoolean` methods
+- ✅ Appointment class logic exists in `appointmentTransformer.ts` (commented out, contains fee calculation)
+- ⏳ Need to integrate these utilities into booking wizard context
+- ⏳ Need to uncomment/refactor appointment transformer for use in wizard
+
+**Sessions:**
+- Session 1.2.1: State Management Architecture
+- Session 1.2.2: Fee Calculation Engine
+- Session 1.2.3: Time Calculation Utilities
+
+---
+
+##### Session 1.2.1: State Management Architecture
+**Tier:** Session (Tier 3)  
+**Duration:** 2-3 days  
+**Status:** 🚧 In Progress
+
+**Description:**  
+Design and implement state management system for appointment booking flow.
+
+**Existing Work:**
+- ✅ Architecture decisions documented (`SCHEDULER_ARCHITECTURE_DECISIONS.md`)
+- ✅ Component specs created (`SCHEDULER_COMPONENT_SPECS.md`)
+- ✅ AppointmentContext interface designed
+- ⏳ Implementation incomplete (some code commented out in `appointmentContext.tsx`)
+- 🔄 May be implemented in Vue.js (Pinia stores) as part of migration
+
+**Tasks:**
+- Task 1.2.1.1: Design appointment state structure
+- Task 1.2.1.2: Create state management context/store
+- Task 1.2.1.3: Implement state update functions
+- Task 1.2.1.4: Add state persistence (if needed)
+- Task 1.2.1.5: Create state validation utilities
+
+**Dependencies:** None  
+**Success Criteria:** State management handles all appointment data, updates correctly
+
+---
+
+##### Session 1.2.2: Fee Calculation Engine
+**Tier:** Session (Tier 3)  
+**Duration:** 2-3 days  
+**Status:** 📝 Partial - Core logic exists, needs integration
+
+**Description:**  
+Implement fee calculation algorithm: add bases, multiply rates, multiply by sqft, add bases, round to nearest :15.
+
+**Existing Code:**
+- ✅ `ProfileToFinalTimeUtils.calculateTime()` - Time calculation with overage
+- ✅ `ProfileToFinalTimeUtils.calculateTimeOverage()` - Overage calculation
+- ✅ `Appointment.calculateFee()` - Fee calculation logic (in commented `appointmentTransformer.ts`)
+- ✅ `Appointment.calculateTotalFee()` - Total fee aggregation
+- ⏳ Need to extract and refactor for use in booking wizard
+- ⏳ Need to implement rounding to nearest :15
+- ⏳ Need to integrate with appointment state management
+
+**Tasks:**
+- Task 1.2.2.1: Create fee calculation function
+- Task 1.2.2.2: Implement base fee aggregation
+- Task 1.2.2.3: Implement rate multiplication logic
+- Task 1.2.2.4: Add square footage calculation
+- Task 1.2.2.5: Implement rounding to nearest :15
+- Task 1.2.2.6: Add unit tests for fee calculation
+
+**Dependencies:** Session 1.2.1  
+**Success Criteria:** Fee calculation matches specification, handles all service combinations
+
+---
+
+##### Session 1.2.3: Time Calculation Utilities
+**Tier:** Session (Tier 3)  
+**Duration:** 1-2 days  
+**Status:** ✅ Done
+
+**Description:**  
+Create utilities for time block calculations, duration handling, and time slot management.
+
+**Existing Code:**
+- ✅ `ProfileToFinalTimeUtils` class fully implemented
+- ✅ `calculateTime()` - Calculates total time with overage
+- ✅ `calculateTimeOverage()` - Calculates time overage based on sqft
+- ✅ `getBoolean()` - Determines onSite/clientPresent from part profiles
+- ✅ Types exist in `timeTypes.ts`, `timeDataUtil.tsx`
+- ⏳ May need Vue.js versions as part of migration
+
+**Tasks:**
+- Task 1.2.3.1: Create TimeSlot type and utilities
+- Task 1.2.3.2: Create Duration type and utilities
+- Task 1.2.3.3: Implement time block calculations
+- Task 1.2.3.4: Add time formatting utilities
+- Task 1.2.3.5: Create time validation functions
+
+**Dependencies:** Session 1.2.1  
+**Success Criteria:** Time calculations work correctly, types are well-defined
+
+---
+
+### Feature 2.0: Jose's Wizard UI Port
+**Tier:** Feature (Tier 1)  
+**Duration:** 2-3 weeks  
+**Status:** ⏳ Not Started - Waiting on Feature 0 Phases 0.0-0.2
+
+**Description:**  
+Port Jose's complete 5-step wizard UI from React/MUI to Vue/Vuetify. This is the SOURCE OF TRUTH for all wizard UI - we will ALWAYS adapt Jose's wizard model, never build our own. This provides a working UI shell that can be enhanced with real business logic and data integration in Feature 2.
+
+**Dependencies:** 
+- Feature 0 Phases 0.0-0.2 complete (Vuexy setup, Pinia stores configured)
+- Feature 1 (Core Infrastructure) - for shared utilities
+
+**Migration Impact:**
+- **Source:** React + Material-UI components
+- **Target:** Vue.js + Vuetify components (Vuexy template)
+- **Strategy:** Port UI structure and state management patterns, replace MUI with Vuetify equivalents
+- **Note:** This provides UI shell only; business logic integration happens in Feature 2
+
+**Current State:**
+- ✅ Jose's wizard complete in React/MUI
+- ✅ All 5 steps implemented with full UI/UX
+- ✅ State management hook (`useAppointment`) complete
+- ⏳ Vue/Vuetify port not started
+- ⏳ Waiting on Vue migration foundation
+
+**Success Criteria:**
+- All 5 wizard steps render correctly in Vue/Vuetify
+- Navigation between steps works
+- State management structure in place (Pinia stores)
+- Visual design matches Jose's original
+- Mobile-responsive layout
+- Ready for business logic integration
+
+**Risk Assessment:**
+- **Technical Risks:** 
+  - MUI → Vuetify component mapping complexity
+  - React hooks → Vue Composition API conversion
+  - Date picker component replacement (react-datepicker → Vue alternative)
+- **Timeline Risks:**
+  - Dependency on Feature 0 Phases 0.0-0.2 completion
+  - Component library learning curve
+- **Mitigation:**
+  - Reference Vuexy component library documentation
+  - Create component mapping guide before starting
+  - Test each step port independently
+
+**Testing Strategy:**
+- **Unit Tests:** Component rendering, prop handling
+- **Integration Tests:** Step navigation, state updates
+- **Visual Tests:** Compare with Jose's original UI
+
+**Success Metrics:**
+- All 5 steps ported and rendering
+- Zero console errors
+- Navigation functional
+- State management working
+
+---
+
+#### Phase 2.0.1: Wizard Shell & Navigation
+**Tier:** Phase (Tier 2)  
+**Duration:** 3-4 days  
+**Status:** ⏳ Not Started  
+**Dependencies:** Feature 0 Phases 0.0-0.2
+
+**Description:**  
+Port wizard shell structure and vertical stepper navigation from Jose's `index.js`.
+
+**Sessions:**
+- Session 2.0.1.1: Wizard Shell Component
+- Session 2.0.1.2: Stepper Navigation Component
+- Session 2.0.1.3: State Management Setup
+
+---
+
+#### Phase 2.0.2: Step 1 - Service Selection
+**Tier:** Phase (Tier 2)  
+**Duration:** 3-4 days  
+**Status:** ⏳ Not Started  
+**Dependencies:** Phase 2.0.1
+
+**Description:**  
+Port Jose's `StepServiceSelection.js` from React/MUI to Vue/Vuetify. This is the SOURCE - we are adapting Jose's complete service selection UI, NOT building our own. Includes: User type selection, service type selection, additional services.
+
+**Sessions:**
+- Session 2.0.2.1: User Type Cards
+- Session 2.0.2.2: Service Type Selection
+- Session 2.0.2.3: Additional Services Selection
+
+---
+
+#### Phase 2.0.3: Step 2 - Property Details
+**Tier:** Phase (Tier 2)  
+**Duration:** 3-4 days  
+**Status:** ⏳ Not Started  
+**Dependencies:** Phase 2.0.2
+
+**Description:**  
+Port `StepPropertyDetails.js` - Property type selection, address input form, property details form.
+
+**Sessions:**
+- Session 2.0.3.1: Property Type Selection
+- Session 2.0.3.2: Address Input Form
+- Session 2.0.3.3: Property Details Form
+
+---
+
+#### Phase 2.0.4: Step 3 - Appointment Availability
+**Tier:** Phase (Tier 2)  
+**Duration:** 4-5 days  
+**Status:** ⏳ Not Started  
+**Dependencies:** Phase 2.0.3
+
+**Description:**  
+Port `StepAppointmentAvailability.js` - Calendar component, time basis selector, time slot grid, time bars, availability options.
+
+**Sessions:**
+- Session 2.0.4.1: Calendar Component (replace react-datepicker)
+- Session 2.0.4.2: Time Basis Selector
+- Session 2.0.4.3: Time Slot Grid
+- Session 2.0.4.4: Time On-Site Graph
+- Session 2.0.4.5: Availability Options
+
+---
+
+#### Phase 2.0.5: Step 4 - Contact Information
+**Tier:** Phase (Tier 2)  
+**Duration:** 2-3 days  
+**Status:** ⏳ Not Started  
+**Dependencies:** Phase 2.0.4
+
+**Description:**  
+Port `StepPersonalInformation.js` - Contact cards for required and optional participants.
+
+**Sessions:**
+- Session 2.0.5.1: Contact Card Components
+- Session 2.0.5.2: Add/Remove Participant Functionality
+
+---
+
+#### Phase 2.0.6: Step 5 - Confirmation
+**Tier:** Phase (Tier 2)  
+**Duration:** 2-3 days  
+**Status:** ⏳ Not Started  
+**Dependencies:** Phase 2.0.5
+
+**Description:**  
+Port `StepPriceDetails.js` - Confirmation page with service details and invoice card.
+
+**Sessions:**
+- Session 2.0.6.1: Confirmation Layout
+- Session 2.0.6.2: Invoice Card Component
+
+---
+
+### Feature 2: Customer Booking Wizard
+**Tier:** Feature (Tier 1)  
+**Duration:** 6-8 weeks  
+**Status:** 🚧 In Progress - Architecture complete, waiting on Feature 2.0 UI port
+
+**Description:**  
+Integrate business logic and real data into Jose's ported wizard UI (Feature 2.0). We are NOT building our own wizard - we are adapting Jose's complete wizard model. Multi-step wizard allowing customers to select services, provide property details, choose appointment times, enter contact information, and confirm booking.
+
+**Dependencies:** 
+- Feature 1 (Core Infrastructure)
+- Feature 2.0 (Jose's Wizard UI Port) - Must complete UI port first
+- Feature 3 (API Integration Layer) - For Google Calendar, Maps, MLS APIs
+
+**Migration Impact:**
+- **Decision:** Will be built entirely in Vue.js (Feature 0 Phase 0.5)
+- **Strategy:** Integrate business logic into ported UI from Feature 2.0
+- **Dependencies:** Feature 0 Phases 0.0-0.2, Feature 2.0 completion
+- **Note:** UI structure comes from Feature 2.0, this feature adds real data and calculations
+
+**Current State:**
+- ✅ Architecture decisions documented (`SCHEDULER_ARCHITECTURE_DECISIONS.md`)
+- ✅ Component specifications created (`SCHEDULER_COMPONENT_SPECS.md`)
+- ✅ Phase 1 implementation guide (`SCHEDULER_PHASE_1_IMPLEMENTATION.md`)
+- ✅ ListMaker component exists (`client/src/scheduler/components/listMaker.tsx`) - contains critical filtering logic that should be extracted to composable
+- ⏳ Waiting on Feature 2.0 (UI port) to begin business logic integration
+- ⏳ Need to integrate real service data from API
+- ⏳ Need to integrate availability calculation engine
+- ⏳ Need to integrate fee calculation engine
+
+**Success Criteria:**
+- All 5 wizard steps functional with real data
+- Differential scheduling logic working correctly
+- Availability calculations accurate and integrated
+- Form validation complete
+- API integrations working (Google Calendar, Maps)
+- Mobile-responsive design
+- End-to-end booking flow functional
+
+**Risk Assessment:**
+- **Technical Risks:**
+  - Complex availability calculation engine integration
+  - Differential scheduling logic complexity
+  - API integration failures
+  - Real-time availability updates
+- **Timeline Risks:**
+  - Dependency on Feature 2.0 completion
+  - Dependency on API integration (Feature 3)
+  - Complex business logic implementation
+- **Mitigation:**
+  - Build availability engine incrementally
+  - Use mock data initially, integrate APIs gradually
+  - Test each step independently before integration
+  - Implement fallback mechanisms for API failures
+
+**Testing Strategy:**
+- **Unit Tests:**
+  - Availability calculation logic
+  - Fee calculation integration
+  - Form validation functions
+  - State management updates
+- **Integration Tests:**
+  - Complete wizard flow
+  - API integration (with mocks)
+  - State transitions between steps
+  - Differential scheduling toggle
+- **E2E Tests:**
+  - Happy path booking flow
+  - Error scenarios (API failures, validation errors)
+  - Mobile device testing
+  - Differential vs standard scheduling
+
+**Success Metrics:**
+- All 5 steps functional with real data
+- Availability calculations accurate (within 15-minute tolerance)
+- Form validation prevents invalid submissions
+- API response times <2s
+- Mobile experience smooth (no horizontal scrolling)
+- Booking completion rate >80% in testing
+
+**Fallback Plans:**
+- Google Calendar API fails → Manual availability entry mode
+- Google Maps API fails → Manual address entry (no autocomplete)
+- MLS API fails → Manual property details entry
+- Availability calculation fails → Show all time slots, let user select
+- Fee calculation fails → Show "Contact for pricing" message
+
+---
+
+#### Phase 2.1: Service Selection Step
+**Tier:** Phase (Tier 2)  
+**Duration:** 1.5 weeks  
+**Status:** ⏳ Not Started - Waiting on Feature 2.0  
+**Dependencies:** Feature 1, Feature 2.0 (Step 1 UI port)
+
+**Description:**  
+Integrate business logic into Jose's ported Service Selection UI (from Feature 2.0 Phase 2.0.2). We are adapting Jose's StepServiceSelection.js - NOT building our own. User selects user type, service type, additional services, and optionally requests quote only.
+
+**Current State:**
+- ✅ Detailed implementation guide (`SCHEDULER_PHASE_1_IMPLEMENTATION.md`)
+- ✅ Architecture decisions documented
+- ✅ ListMaker filtering logic available - should be extracted to `useSchedulerFilter` composable (UI will use Jose's patterns)
+- ✅ UI ported in Feature 2.0 Phase 2.0.2
+- ⏳ Need to integrate real service data from API
+- ⏳ Need to connect to state management
+- ⏳ Need to implement fee calculation updates
+
+**Sessions:**
+- Session 2.1.1: User Type Selection
+- Session 2.1.2: Service Type Selection
+- Session 2.1.3: Additional Services Selection
+- Session 2.1.4: Quote Option & Integration
+
+---
+
+##### Session 2.1.1: User Type Selection
+**Tier:** Session (Tier 3)  
+**Duration:** 2 days
+
+**Description:**  
+Integrate business logic into ported user type selection UI. Connect to real service data and state management.
+
+**Tasks:**
+- Task 2.1.1.1: Implement user type selection logic with real data
+- Task 2.1.1.2: Connect selection to state management
+- Task 2.1.1.3: Implement filtering logic for service types
+
+**Dependencies:** Feature 1, Feature 2.0 Phase 2.0.2  
+**Success Criteria:** Users can select user type, service types filter correctly, state updates properly
+
+---
+
+##### Session 2.1.2: Service Type Selection
+**Tier:** Session (Tier 3)  
+**Duration:** 2-3 days
+
+**Description:**  
+Build service type selection with radial buttons, filtered by selected user type.
+
+**Tasks:**
+- Task 2.1.2.1: Create ServiceTypeRadio component
+- Task 2.1.2.2: Create ServiceTypeList component
+- Task 2.1.2.3: Implement user type filtering logic
+- Task 2.1.2.4: Add service descriptions
+- Task 2.1.2.5: Handle selection state
+- Task 2.1.2.6: Enable Next button on selection
+
+**Dependencies:** Session 2.1.1  
+**Success Criteria:** Service types filter correctly, selection enables next step
+
+---
+
+##### Session 2.1.3: Additional Services Selection
+**Tier:** Session (Tier 3)  
+**Duration:** 2 days
+
+**Description:**  
+Build additional services selection with multi-select cards.
+
+**Tasks:**
+- Task 2.1.3.1: Create AdditionalServiceCard component
+- Task 2.1.3.2: Create AdditionalServiceGrid component
+- Task 2.1.3.3: Implement multi-select logic
+- Task 2.1.3.4: Filter by selected service type
+- Task 2.1.3.5: Add visual selection states
+- Task 2.1.3.6: Update progress sentence
+
+**Dependencies:** Session 2.1.2  
+**Success Criteria:** Multiple additional services can be selected, progress updates
+
+---
+
+##### Session 2.1.4: Quote Option & Integration
+**Tier:** Session (Tier 3)  
+**Duration:** 1-2 days
+
+**Description:**  
+Add "I only want a quote" option and integrate Service Selection step with wizard flow.
+
+**Tasks:**
+- Task 2.1.4.1: Create QuoteOnlyCheckbox component
+- Task 2.1.4.2: Integrate quote option into state
+- Task 2.1.4.3: Update Next button text based on quote option
+- Task 2.1.4.4: Connect to Property Details step
+- Task 2.1.4.5: Update progress sentence with quote option
+
+**Dependencies:** Session 2.1.3  
+**Success Criteria:** Quote option works, navigation to next step functional
+
+---
+
+#### Phase 2.2: Property Details Step
+**Tier:** Phase (Tier 2)  
+**Duration:** 2 weeks  
+**Status:** ⏳ Not Started - Waiting on Feature 2.0  
+**Dependencies:** Phase 2.1, Feature 2.0 (Step 2 UI port), Feature 4 (API Integration Layer)
+
+**Description:**  
+Integrate business logic into ported Property Details UI. User selects property type, enters address (with Google Maps autocomplete - MVP-critical), and provides property details (with MLS auto-population - can defer with manual entry fallback).
+
+**API Integration Notes:**
+- **Session 2.2.2:** Google Maps API integration (address autocomplete) - MVP-critical
+- **Session 2.2.4:** MLS API integration (property data) - Can defer with manual entry fallback
+- **Infrastructure:** API clients provided by Feature 4, integrated here
+
+**Current State:**
+- ✅ UI ported in Feature 2.0 Phase 2.0.3
+- ⏳ Need to integrate Google Maps API (address autocomplete)
+- ⏳ Need to integrate MLS API (property data - post-MVP acceptable)
+- ⏳ Need to connect to state management
+
+**Sessions:**
+- Session 2.2.1: Property Type Selection
+- Session 2.2.2: Address Input & Google Maps Integration
+- Session 2.2.3: Property Details Form
+- Session 2.2.4: MLS Integration & Fee Display
+
+---
+
+##### Session 2.2.1: Property Type Selection
+**Tier:** Session (Tier 3)  
+**Duration:** 1-2 days
+
+**Description:**  
+Build property type selection interface with cards for different property types.
+
+**Tasks:**
+- Task 2.2.1.1: Create PropertyTypeCard component
+- Task 2.2.1.2: Create PropertyTypeGrid component
+- Task 2.2.1.3: Implement selection logic
+- Task 2.2.1.4: Handle Condo/Co-op special case (unit number)
+- Task 2.2.1.5: Add visual selection states
+
+**Dependencies:** Phase 2.1  
+**Success Criteria:** Property type selection works, special cases handled
+
+---
+
+##### Session 2.2.2: Address Input & Google Maps Integration
+**Tier:** Session (Tier 3)  
+**Duration:** 3-4 days
+
+**Description:**  
+Build address input form with Google Maps API autocomplete integration.
+
+**Tasks:**
+- Task 2.2.2.1: Create AddressInput component
+- Task 2.2.2.2: Integrate Google Maps Places API
+- Task 2.2.2.3: Implement autocomplete dropdown
+- Task 2.2.2.4: Handle address parsing (Number, Street, Apt, City, State, Zip)
+- Task 2.2.2.5: Add manual address entry fallback
+- Task 2.2.2.6: Validate address format
+
+**Dependencies:** Session 2.2.1, Feature 3 (Google Maps API)  
+**Success Criteria:** Address autocomplete works, manual entry supported
+
+---
+
+##### Session 2.2.3: Property Details Form
+**Tier:** Session (Tier 3)  
+**Duration:** 2-3 days
+
+**Description:**  
+Build property details form with conditional fields based on property type.
+
+**Tasks:**
+- Task 2.2.3.1: Create PropertyDetailsForm component
+- Task 2.2.3.2: Add SqFt input (numeric or dropdown)
+- Task 2.2.3.3: Add Bedrooms input (numeric or dropdown)
+- Task 2.2.3.4: Add Foundation Type field (conditional on property type)
+- Task 2.2.3.5: Add Unit Number field (Condo/Co-op only)
+- Task 2.2.3.6: Implement form validation
+
+**Dependencies:** Session 2.2.1  
+**Success Criteria:** Form fields render correctly, validation works
+
+---
+
+##### Session 2.2.4: MLS Integration & Fee Display
+**Tier:** Session (Tier 3)  
+**Duration:** 2-3 days
+
+**Description:**  
+Integrate MLS API to auto-populate property details and display calculated fee.
+
+**Tasks:**
+- Task 2.2.4.1: Integrate MLS API call on address selection
+- Task 2.2.4.2: Auto-populate property details from MLS data
+- Task 2.2.4.3: Handle MLS API failures gracefully
+- Task 2.2.4.4: Calculate and display fee in progress bar
+- Task 2.2.4.5: Update progress sentence with fee
+- Task 2.2.4.6: Enable Next button when all required fields filled
+
+**Dependencies:** Session 2.2.2, Session 2.2.3, Feature 3 (MLS API)  
+**Success Criteria:** MLS auto-population works, fee displays correctly
+
+---
+
+#### Phase 2.3: Appointment Availability Step
+**Tier:** Phase (Tier 2)  
+**Duration:** 2.5 weeks  
+**Status:** ⏳ Not Started - Waiting on Feature 2.0  
+**Dependencies:** Phase 2.2, Feature 2.0 (Step 3 UI port), Feature 4 (API Integration Layer)
+
+**Description:**  
+Integrate business logic into ported Appointment Availability UI. Most complex step: calendar selection, time slot selection, differential scheduling logic, availability options, and time calculations.
+
+**API Integration Notes:**
+- **Session 2.3.1:** Google Calendar API integration (availability fetching) - MVP-critical
+- **Infrastructure:** API clients provided by Feature 4, integrated here
+
+**Current State:**
+- ✅ UI ported in Feature 2.0 Phase 2.0.4
+- ⏳ Need to integrate Google Calendar API (availability fetching)
+- ⏳ Need to integrate availability calculation engine
+- ⏳ Need to implement differential scheduling logic
+
+**Sessions:**
+- Session 2.3.1: Calendar Component
+- Session 2.3.2: Availability Calculation Engine
+- Session 2.3.3: Time Slot Selection (Standard)
+- Session 2.3.4: Differential Scheduling Logic
+- Session 2.3.5: Availability Options
+- Session 2.3.6: Time On-Site Graph
+
+---
+
+##### Session 2.3.1: Calendar Component
+**Tier:** Session (Tier 3)  
+**Duration:** 2-3 days
+
+**Description:**  
+Build calendar component showing available dates based on Google Calendar busy times.
+
+**Tasks:**
+- Task 2.3.1.1: Create Calendar component
+- Task 2.3.1.2: Implement month navigation (next/previous)
+- Task 2.3.1.3: Display dates with active/inactive states
+- Task 2.3.1.4: Highlight current date
+- Task 2.3.1.5: Handle date selection
+- Task 2.3.1.6: Integrate with Google Calendar availability
+
+**Dependencies:** Phase 2.2, Feature 3 (Google Calendar API)  
+**Success Criteria:** Calendar displays correctly, dates reflect availability
+
+---
+
+##### Session 2.3.2: Availability Calculation Engine
+**Tier:** Session (Tier 3)  
+**Duration:** 3-4 days
+
+**Description:**  
+Build core availability calculation engine that determines available time slots based on service duration, Google Calendar busy times, drive times, and availability options.
+
+**Tasks:**
+- Task 2.3.2.1: Design availability calculation algorithm
+- Task 2.3.2.2: Integrate Google Calendar busy times
+- Task 2.3.2.3: Calculate drive times (from home, between appointments)
+- Task 2.3.2.4: Calculate service duration blocks
+- Task 2.3.2.5: Apply availability options filters
+- Task 2.3.2.6: Generate available time slots (15-minute increments)
+- Task 2.3.2.7: Handle date range logic (1st-21st vs 22nd-end of month)
+
+**Dependencies:** Session 2.3.1, Feature 3 (Google Calendar, Google Maps APIs)  
+**Success Criteria:** Availability calculations accurate, handles all edge cases
+
+---
+
+##### Session 2.3.3: Time Slot Selection (Standard)
+**Tier:** Session (Tier 3)  
+**Duration:** 2-3 days
+
+**Description:**  
+Build time slot selection interface for standard (non-differential) scheduling.
+
+**Tasks:**
+- Task 2.3.3.1: Create TimeSlotButton component
+- Task 2.3.3.2: Create TimeSlotGrid component (4 columns)
+- Task 2.3.3.3: Display times in 15-minute increments
+- Task 2.3.3.4: Show active/inactive states based on availability
+- Task 2.3.3.5: Handle time selection
+- Task 2.3.3.6: Enable Next button on selection
+
+**Dependencies:** Session 2.3.2  
+**Success Criteria:** Time slots display correctly, selection works
+
+---
+
+##### Session 2.3.4: Differential Scheduling Logic
+**Tier:** Session (Tier 3)  
+**Duration:** 3-4 days
+
+**Description:**  
+Implement differential scheduling: time basis selector (Client/Inspector), dual time displays, and complex availability calculations.
+
+**Tasks:**
+- Task 2.3.4.1: Create TimeBasisSelector component
+- Task 2.3.4.2: Implement Client/Inspector toggle logic
+- Task 2.3.4.3: Calculate inspector arrival time
+- Task 2.3.4.4: Calculate client presentation time
+- Task 2.3.4.5: Update time slot labels based on basis selector
+- Task 2.3.4.6: Handle differential availability calculations
+- Task 2.3.4.7: Maintain selection state when toggling basis
+
+**Dependencies:** Session 2.3.3  
+**Success Criteria:** Differential scheduling works correctly, time basis toggle functional
+
+---
+
+##### Session 2.3.5: Availability Options
+**Tier:** Session (Tier 3)  
+**Duration:** 3-4 days
+
+**Description:**  
+Build availability options interface with checkboxes that affect availability calculations and can override differential scheduling.
+
+**Tasks:**
+- Task 2.3.5.1: Create AvailabilityOptionCard component
+- Task 2.3.5.2: Create AvailabilityOptionsList component
+- Task 2.3.5.3: Implement checkbox selection
+- Task 2.3.5.4: Handle options that trigger recalculation
+- Task 2.3.5.5: Handle options that don't trigger recalculation
+- Task 2.3.5.6: Implement Differential Override option
+- Task 2.3.5.7: Handle option selection before/after time selection
+- Task 2.3.5.8: Display "Earliest Report Completion Time" for off-site report writing
+- Task 2.3.5.9: Add (i) information tags
+
+**Dependencies:** Session 2.3.4  
+**Success Criteria:** Availability options affect calculations correctly, override works
+
+---
+
+##### Session 2.3.6: Time On-Site Graph
+**Tier:** Session (Tier 3)  
+**Duration:** 2 days
+
+**Description:**  
+Build visual time graph showing inspector and client time blocks.
+
+**Tasks:**
+- Task 2.3.6.1: Create TimeOnSiteGraph component
+- Task 2.3.6.2: Display inspector bar (full width, inspector color)
+- Task 2.3.6.3: Display client bar (half width, client color, right-justified)
+- Task 2.3.6.4: Update bars based on time selection
+- Task 2.3.6.5: Handle standard scheduling display (single bar)
+- Task 2.3.6.6: Handle differential override display
+- Task 2.3.6.7: Update bars when availability options change
+
+**Dependencies:** Session 2.3.5  
+**Success Criteria:** Time graph displays correctly, updates dynamically
+
+---
+
+#### Phase 2.4: Contact Information Step
+**Tier:** Phase (Tier 2)  
+**Duration:** 1 week  
+**Status:** 📝 Partial - UI exists, needs validation  
+**Dependencies:** Phase 2.3
+
+**Description:**  
+Collect contact information for all required and optional participants.
+
+**Existing Work:**
+- ✅ **Jose's StepPersonalInformation** - Complete UI implementation exists
+  - ✅ Required contact forms (Client, Agent)
+  - ✅ Optional contact forms (Another Client, Transaction Manager, Seller)
+  - ✅ Add/Remove functionality for optional contacts
+  - ✅ Form fields (First Name, Last Name, Email)
+  - ⚠️ Uses MUI components - needs Vuetify conversion
+  - ⚠️ No validation logic - needs email validation and duplicate detection
+  - ⚠️ Bug in handlers (all use firstName) - needs fix
+
+**Sessions:**
+- Session 2.4.1: Contact Card Components
+- Session 2.4.2: Form Validation & Duplicate Detection
+- Session 2.4.3: Optional Fields & Participant Management
+
+---
+
+##### Session 2.4.1: Contact Card Components
+**Tier:** Session (Tier 3)  
+**Duration:** 2 days
+
+**Description:**  
+Build contact information card components for required and optional participants.
+
+**Tasks:**
+- Task 2.4.1.1: Create ContactCard component
+- Task 2.4.1.2: Add required fields (firstName, lastName, email)
+- Task 2.4.1.3: Create RequiredContactCard variant
+- Task 2.4.1.4: Create OptionalContactCard variant (with remove button)
+- Task 2.4.1.5: Create ContactInformationList component
+- Task 2.4.1.6: Add "Add Participant" button functionality
+
+**Dependencies:** Phase 2.3  
+**Success Criteria:** Contact cards render correctly, add/remove works
+
+---
+
+##### Session 2.4.2: Form Validation & Duplicate Detection
+**Tier:** Session (Tier 3)  
+**Duration:** 2 days
+
+**Description:**  
+Implement form validation and detect duplicate participants.
+
+**Tasks:**
+- Task 2.4.2.1: Implement email validation
+- Task 2.4.2.2: Create validation error messages
+- Task 2.4.2.3: Implement duplicate detection (case-insensitive)
+- Task 2.4.2.4: Show duplicate participant warning
+- Task 2.4.2.5: Reset duplicate fields on detection
+- Task 2.4.2.6: Enable Next button when all required fields valid
+
+**Dependencies:** Session 2.4.1  
+**Success Criteria:** Validation works, duplicates detected and handled
+
+---
+
+##### Session 2.4.3: Optional Fields & Participant Management
+**Tier:** Session (Tier 3)  
+**Duration:** 1-2 days
+
+**Description:**  
+Add optional information fields and manage participant list.
+
+**Tasks:**
+- Task 2.4.3.1: Add "Add Optional Fields" button to contact cards
+- Task 2.4.3.2: Implement optional fields expansion
+- Task 2.4.3.3: Handle participant list state
+- Task 2.4.3.4: Filter participants by service type settings
+- Task 2.4.3.5: Connect to Confirmation step
+
+**Dependencies:** Session 2.4.2  
+**Success Criteria:** Optional fields work, participant management functional
+
+---
+
+#### Phase 2.5: Confirmation Step
+**Tier:** Phase (Tier 2)  
+**Duration:** 1 week  
+**Status:** ⏳ Not Started - Waiting on Feature 2.0  
+**Dependencies:** Phase 2.4, Feature 2.0 (Step 5 UI port), Feature 4 (API Integration Layer)
+
+**Description:**  
+Integrate business logic into ported Confirmation UI. Display appointment summary, invoice, and handle submission to Google Calendar API.
+
+**API Integration Notes:**
+- **Session 2.5.2:** Google Calendar API integration (event creation) - MVP-critical
+- **Infrastructure:** API clients provided by Feature 4, integrated here
+
+**Current State:**
+- ✅ UI ported in Feature 2.0 Phase 2.0.6
+- ⏳ Need to integrate Google Calendar API (event creation)
+- ⏳ Need to display dynamic data from appointment state
+- ⏳ Need to implement submission logic
+
+**Sessions:**
+- Session 2.5.1: Confirmation Display
+- Session 2.5.2: Submission & API Integration
+- Session 2.5.3: Success Modal & Navigation
+
+---
+
+##### Session 2.5.1: Confirmation Display
+**Tier:** Session (Tier 3)  
+**Duration:** 2 days
+
+**Description:**  
+Build confirmation page showing appointment details and invoice.
+
+**Tasks:**
+- Task 2.5.1.1: Create ConfirmationPage component
+- Task 2.5.1.2: Create ServiceDetailsSection component
+- Task 2.5.1.3: Create InvoiceCard component
+- Task 2.5.1.4: Display all appointment information (key/value pairs)
+- Task 2.5.1.5: Display total fee prominently
+- Task 2.5.1.6: Display price details breakdown
+- Task 2.5.1.7: Update footer (Previous active, Next → "Schedule my {Service Type}!")
+
+**Dependencies:** Phase 2.4  
+**Success Criteria:** Confirmation page displays all information correctly
+
+---
+
+##### Session 2.5.2: Submission & API Integration
+**Tier:** Session (Tier 3)  
+**Duration:** 2-3 days
+
+**Description:**  
+Handle form submission and integrate with Google Calendar API and email notifications (MVP-critical).
+
+**Tasks:**
+- Task 2.5.2.1: Create submission handler
+- Task 2.5.2.2: Validate all data before submission
+- Task 2.5.2.3: Integrate Google Calendar event creation
+- Task 2.5.2.4: Send email notification (booking confirmation) - MVP-critical
+- Task 2.5.2.5: Integrate Spectora API (if applicable)
+- Task 2.5.2.6: Handle API errors gracefully
+- Task 2.5.2.7: Disable Previous button on submission
+- Task 2.5.2.8: Hide navigation bar on submission
+
+**Dependencies:** Session 2.5.1, Feature 4 (Google Calendar API)  
+**Success Criteria:** Submission works, APIs called correctly, email sent, errors handled
+
+---
+
+##### Session 2.5.3: Success Modal & Navigation
+**Tier:** Session (Tier 3)  
+**Duration:** 1 day
+
+**Description:**  
+Display success modal and handle post-submission navigation.
+
+**Tasks:**
+- Task 2.5.3.1: Create SuccessModal component
+- Task 2.5.3.2: Display success message
+- Task 2.5.3.3: Add OK button to close modal
+- Task 2.5.3.4: Handle modal close action
+- Task 2.5.3.5: Reset wizard state (optional)
+
+**Dependencies:** Session 2.5.2  
+**Success Criteria:** Success modal displays, closes correctly
+
+---
+
+### Feature 3: Admin Configuration Interface
+**Tier:** Feature (Tier 1)  
+**Duration:** 4-6 weeks  
+**Status:** 🔄 Migrating - React version complete, Vue conversion in progress (Phase 4 of migration)
+
+**Description:**  
+Administrative interface for managing services, additional services, availability options, and durations. Allows admins to configure all aspects of the scheduling system.
+
+**Dependencies:** Feature 1 (Core Infrastructure)
+
+**Migration Impact:**
+- **Status:** Built in React, being converted to Vue (Feature 0 Phase 0.4)
+- **Strategic Priority:** Should be converted BEFORE Jose's wizard port (Phase 0.5) because backend is complete
+- **What's Being Converted:**
+  - Admin layout with navigation (improved Vuexy UI)
+  - Entity management pages (BlockType, BlockProfile, PartType, PartProfile)
+  - Generic CRUD components (Vuexy components for better clarity)
+  - Form validation (Vee-Validate - better than Ant Design)
+  - Relationship selectors
+- **UI Improvements:** Vuexy components provide better visual hierarchy and clarity than Ant Design
+- **Reference:** Feature 0 Phase 0.4 (Admin Wizard)
+- **Note:** This is the Service/Additional Service/Availability Options configuration interface
+- **Separate from:** SchemaProp Management Feature (temporary, will be stripped)
+
+**Current State:**
+- ✅ Admin interface built in React (SchemaProp management UI, entity management pages)
+- ✅ Generic CRUD components functional
+- ✅ Form validation working
+- ✅ All admin configuration interfaces functional in React
+- 🔄 Being converted to Vue.js (Feature 0 Phase 0.4 in progress)
+- ⏳ Vue conversion not started yet (Feature 0 Phase 0.4)
+
+**Success Criteria:**
+- All admin configuration interfaces functional in Vue
+- CRUD operations work correctly
+- Data persists to Services Database
+- Validation and error handling complete
+- Vuexy components integrated
+- Mobile-responsive design
+
+**Risk Assessment:**
+- **Technical Risks:**
+  - React → Vue component conversion complexity
+  - State management pattern differences
+  - Form validation library differences (Ant Design → Vee-Validate)
+- **Timeline Risks:**
+  - Dependency on Feature 0 Phase 0.4
+  - Learning curve for Vuexy components
+- **Mitigation:**
+  - Convert components incrementally
+  - Test each converted component independently
+  - Maintain React version until Vue version complete
+
+**Testing Strategy:**
+- **Unit Tests:** Component functionality, form validation
+- **Integration Tests:** CRUD operations, data persistence
+- **E2E Tests:** Complete admin workflows
+
+**Success Metrics:**
+- All admin interfaces functional
+- CRUD operations work correctly
+- Form validation prevents invalid data
+- Performance matches React version
+
+**Post-MVP Enhancement:**
+- **Appointment History (Admin View)** - View past appointments and notes (moved from Future Features catalog)
+- **Business Value:** High - Essential for business operations
+- **Complexity:** Low - Database queries and display
+- **Implementation:** Add to Phase 3.1 or create new Phase 3.4
+
+---
+
+#### Phase 3.1: Service Settings Management
+**Tier:** Phase (Tier 2)  
+**Duration:** 1.5 weeks  
+**Dependencies:** Feature 1
+
+**Description:**  
+Admin interface for creating and editing service types with all their settings.
+
+**Sessions:**
+- Session 3.1.1: Service CRUD Interface
+- Session 3.1.2: Service Configuration Forms
+- Session 3.1.3: Durations Configuration (for Services)
+
+---
+
+##### Session 3.1.1: Service CRUD Interface
+**Tier:** Session (Tier 3)  
+**Duration:** 2-3 days
+
+**Description:**  
+Build interface for adding new services and editing existing services.
+
+**Tasks:**
+- Task 3.1.1.1: Create AdminInterface landing page
+- Task 3.1.1.2: Add "Add/Edit" prompt
+- Task 3.1.1.3: Create Service selection option
+- Task 3.1.1.4: Create "Add new service type" flow
+- Task 3.1.1.5: Create "Edit existing service type" flow (with dropdown)
+- Task 3.1.1.6: Implement service selection dropdown
+
+**Dependencies:** Feature 1  
+**Success Criteria:** Admin can navigate to service management
+
+---
+
+##### Session 3.1.2: Service Configuration Forms
+**Tier:** Session (Tier 3)  
+**Duration:** 3-4 days
+
+**Description:**  
+Build forms for configuring all service settings.
+
+**Tasks:**
+- Task 3.1.2.1: Create ServiceTitleInput component
+- Task 3.1.2.2: Create ActivitySettingSelector (Active/Inactive/Test)
+- Task 3.1.2.3: Create UserTypeSelector (Buyer/Owner/Agent multi-select)
+- Task 3.1.2.4: Create DescriptionInputs (per user type)
+- Task 3.1.2.5: Create SchedulingTypeSelector (Standard/Differential)
+- Task 3.1.2.6: Create AdditionalServicesSelector
+- Task 3.1.2.7: Create AvailabilityOptionsSelector
+- Task 3.1.2.8: Create CalendarEventSettingsForm (per user type)
+- Task 3.1.2.9: Implement "Edit a Setting" functionality
+- Task 3.1.2.10: Implement "Save Settings" functionality
+
+**Dependencies:** Session 3.1.1  
+**Success Criteria:** All service settings can be configured and saved
+
+---
+
+##### Session 3.1.3: Durations Configuration (for Services)
+**Tier:** Session (Tier 3)  
+**Duration:** 2-3 days
+
+**Description:**  
+Build interface for configuring service durations (buffers, onsite events, offsite events).
+
+**Tasks:**
+- Task 3.1.3.1: Create BufferConfigurationForm (Before, Early Arrival, After)
+- Task 3.1.3.2: Create OnsiteEventsConfigurationForm (Data Collection, Report Writing, Client Presentation)
+- Task 3.1.3.3: Create OffsiteEventsConfigurationForm (Report Writing, Virtual Presentations)
+- Task 3.1.3.4: Add rateTime, baseTime, rateFee, baseFee inputs for each event
+- Task 3.1.3.5: Implement 15-minute increment validation
+- Task 3.1.3.6: Add "Edit a Duration" functionality
+- Task 3.1.3.7: Implement "Save Durations" functionality
+
+**Dependencies:** Session 3.1.2  
+**Success Criteria:** Durations can be configured and saved
+
+---
+
+#### Phase 3.2: Additional Service Settings Management
+**Tier:** Phase (Tier 2)  
+**Duration:** 1 week  
+**Dependencies:** Phase 3.1
+
+**Description:**  
+Admin interface for managing additional services.
+
+**Sessions:**
+- Session 3.2.1: Additional Service CRUD Interface
+- Session 3.2.2: Additional Service Configuration Forms
+- Session 3.2.3: Durations Configuration (for Additional Services)
+
+---
+
+##### Session 3.2.1: Additional Service CRUD Interface
+**Tier:** Session (Tier 3)  
+**Duration:** 1-2 days
+
+**Description:**  
+Build interface for adding and editing additional services.
+
+**Tasks:**
+- Task 3.2.1.1: Add "Additional Services" option to admin interface
+- Task 3.2.1.2: Create "Add new additional service type" flow
+- Task 3.2.1.3: Create "Edit existing additional service type" flow
+- Task 3.2.1.4: Implement additional service selection dropdown
+
+**Dependencies:** Phase 3.1  
+**Success Criteria:** Admin can navigate to additional service management
+
+---
+
+##### Session 3.2.2: Additional Service Configuration Forms
+**Tier:** Session (Tier 3)  
+**Duration:** 2-3 days
+
+**Description:**  
+Build forms for configuring additional service settings.
+
+**Tasks:**
+- Task 3.2.2.1: Create AdditionalServiceTitleInput component
+- Task 3.2.2.2: Create ActivitySettingSelector
+- Task 3.2.2.3: Create UserTypeSelector
+- Task 3.2.2.4: Create ServiceTypesSelector (which services this additional service applies to)
+- Task 3.2.2.5: Create DescriptionInputs (per user type)
+- Task 3.2.2.6: Implement "Edit a Setting" functionality
+- Task 3.2.2.7: Implement "Save Settings" functionality
+
+**Dependencies:** Session 3.2.1  
+**Success Criteria:** Additional service settings can be configured
+
+---
+
+##### Session 3.2.3: Durations Configuration (for Additional Services)
+**Tier:** Session (Tier 3)  
+**Duration:** 2 days
+
+**Description:**  
+Build interface for configuring additional service durations (reuse patterns from Phase 3.1.3).
+
+**Tasks:**
+- Task 3.2.3.1: Reuse BufferConfigurationForm
+- Task 3.2.3.2: Reuse OnsiteEventsConfigurationForm
+- Task 3.2.3.3: Reuse OffsiteEventsConfigurationForm
+- Task 3.2.3.4: Integrate with additional service save flow
+
+**Dependencies:** Session 3.2.2  
+**Success Criteria:** Additional service durations can be configured
+
+---
+
+#### Phase 3.3: Availability Options Management
+**Tier:** Phase (Tier 2)  
+**Duration:** 1 week  
+**Dependencies:** Phase 3.2
+
+**Description:**  
+Admin interface for managing availability options.
+
+**Sessions:**
+- Session 3.3.1: Availability Option CRUD Interface
+- Session 3.3.2: Availability Option Configuration Forms
+- Session 3.3.3: Durations Configuration (for Availability Options)
+
+---
+
+##### Session 3.3.1: Availability Option CRUD Interface
+**Tier:** Session (Tier 3)  
+**Duration:** 1-2 days
+
+**Description:**  
+Build interface for adding and editing availability options.
+
+**Tasks:**
+- Task 3.3.1.1: Add "Availability Options" option to admin interface
+- Task 3.3.1.2: Create "Add new Availability Option type" flow
+- Task 3.3.1.3: Create "Edit existing Availability Option type" flow
+- Task 3.3.1.4: Implement availability option selection dropdown
+
+**Dependencies:** Phase 3.2  
+**Success Criteria:** Admin can navigate to availability option management
+
+---
+
+##### Session 3.3.2: Availability Option Configuration Forms
+**Tier:** Session (Tier 3)  
+**Duration:** 2-3 days
+
+**Description:**  
+Build forms for configuring availability option settings, including Differential Override.
+
+**Tasks:**
+- Task 3.3.2.1: Create AvailabilityOptionTitleInput component
+- Task 3.3.2.2: Create ActivitySettingSelector
+- Task 3.3.2.3: Create UserTypeSelector
+- Task 3.3.2.4: Create ServiceTypesSelector
+- Task 3.3.2.5: Create DifferentialOverrideSelector (conditional on service type)
+- Task 3.3.2.6: Create DescriptionInputs (per user type)
+- Task 3.3.2.7: Implement "Edit a Setting" functionality
+- Task 3.3.2.8: Implement "Save Settings" functionality
+
+**Dependencies:** Session 3.3.1  
+**Success Criteria:** Availability option settings can be configured
+
+---
+
+##### Session 3.3.3: Durations Configuration (for Availability Options)
+**Tier:** Session (Tier 3)  
+**Duration:** 2 days
+
+**Description:**  
+Build interface for configuring availability option durations (reuse patterns).
+
+**Tasks:**
+- Task 3.3.3.1: Reuse BufferConfigurationForm
+- Task 3.3.3.2: Reuse OnsiteEventsConfigurationForm
+- Task 3.3.3.3: Reuse OffsiteEventsConfigurationForm
+- Task 3.3.3.4: Integrate with availability option save flow
+
+**Dependencies:** Session 3.3.2  
+**Success Criteria:** Availability option durations can be configured
+
+---
+
+### Feature 4: API Integration Layer (Infrastructure)
+**Tier:** Feature (Tier 1)  
+**Duration:** 3-4 weeks  
+**Status:** 📝 Partial - Some API infrastructure exists
+
+**Description:**  
+Shared API client setup, error handling patterns, and fallback strategies for Google Calendar, Google Maps, and MLS APIs. **Note:** This provides infrastructure; actual integration into wizard happens incrementally in Feature 2 phases.
+
+**Dependencies:** Feature 1 (Core Infrastructure)
+
+**Migration Impact:**
+- **Impact:** Minimal - API layer is framework-agnostic
+- **Decision:** API clients can be built in either framework, composables/utilities in Vue
+- **Dependencies:** None (can proceed in parallel with other features)
+
+**Current State:**
+- ✅ API infrastructure exists (`client/src/scheduler/externalAPI/`)
+  - `calendarCalls.ts` - Google Calendar API calls structure
+  - `detailsAPI.ts` - Property details API structure
+  - `api_interpreter.ts` - API message handling
+- ✅ Internal API structure (`client/src/scheduler/internalAPI/`)
+  - `appointmentAPI.ts` - Appointment API
+  - `availabilitiesApi.ts` - Availability API
+- ⏳ Need to verify integration completeness
+- ⏳ Need to implement error handling per user story requirements
+- ⏳ Need Vue composables for API calls
+
+**Success Criteria:**
+- API client infrastructure complete
+- Error handling patterns established
+- Fallback strategies documented and implemented
+- Vue composables created for API calls
+- Ready for integration into Feature 2 phases
+
+**Risk Assessment:**
+- **Technical Risks:**
+  - API authentication complexity
+  - Rate limiting handling
+  - Network error scenarios
+- **Timeline Risks:**
+  - API provider documentation clarity
+  - Testing API integrations
+- **Mitigation:**
+  - Create API client wrappers with retry logic
+  - Implement comprehensive error handling
+  - Test with mock responses first
+
+**Testing Strategy:**
+- **Unit Tests:** API client functions, error handling
+- **Integration Tests:** API calls with mock servers
+- **E2E Tests:** Full API integration in wizard context
+
+**Success Metrics:**
+- API response times <2s
+- Error handling covers all failure scenarios
+- Fallback mechanisms work correctly
+
+**Fallback Plans:**
+- Google Calendar API fails → Manual availability entry mode
+- Google Maps API fails → Manual address entry (no autocomplete)
+- MLS API fails → Manual property details entry
+- All documented in Feature 2 phases where integration occurs
+
+---
+
+#### Phase 4.1: Google Calendar API Integration
+**Tier:** Phase (Tier 2)  
+**Duration:** 1.5 weeks  
+**Dependencies:** Feature 1
+
+**Description:**  
+Integrate Google Calendar API for fetching availability and creating events.
+
+**Sessions:**
+- Session 4.1.1: Calendar Availability Fetching
+- Session 4.1.2: Event Creation & Invitations
+- Session 4.1.3: Error Handling & Fallbacks
+
+---
+
+##### Session 4.1.1: Calendar Availability Fetching
+**Tier:** Session (Tier 3)  
+**Duration:** 3-4 days
+
+**Description:**  
+Implement Google Calendar API integration to fetch busy times and unavailable slots.
+
+**Tasks:**
+- Task 4.1.1.1: Set up Google Calendar API client
+- Task 4.1.1.2: Implement calendar URL configuration
+- Task 4.1.1.3: Implement date range logic (1st-21st vs 22nd-end of month)
+- Task 4.1.1.4: Fetch busy times from multiple calendars
+- Task 4.1.1.5: Extract unavailable time slots
+- Task 4.1.1.6: Extract event addresses for drive time calculations
+- Task 4.1.1.7: Extract home address from events
+- Task 4.1.1.8: Handle on-demand month fetching
+
+**Dependencies:** Feature 1  
+**Success Criteria:** Calendar availability fetched correctly, date ranges handled
+
+---
+
+##### Session 4.1.2: Event Creation & Invitations
+**Tier:** Session (Tier 3)  
+**Duration:** 3-4 days
+
+**Description:**  
+Implement Google Calendar event creation with participant invitations.
+
+**Tasks:**
+- Task 4.1.2.1: Create event creation function
+- Task 4.1.2.2: Map appointment data to calendar event format
+- Task 4.1.2.3: Add participant emails
+- Task 4.1.2.4: Set event titles based on service type
+- Task 4.1.2.5: Configure event permissions
+- Task 4.1.2.6: Send calendar invitations
+- Task 4.1.2.7: Handle multiple user types (Buyer, Agent, Owner, Inspector)
+
+**Dependencies:** Session 4.1.1  
+**Success Criteria:** Events created correctly, invitations sent
+
+---
+
+##### Session 4.1.3: Error Handling & Fallbacks
+**Tier:** Session (Tier 3)  
+**Duration:** 1-2 days
+
+**Description:**  
+Implement error handling for Google Calendar API failures.
+
+**Tasks:**
+- Task 4.1.3.1: Handle API authentication errors
+- Task 4.1.3.2: Handle rate limiting
+- Task 4.1.3.3: Handle network errors
+- Task 4.1.3.4: Implement fallback messaging (direct user to text)
+- Task 4.1.3.5: Log errors for debugging
+- Task 4.1.3.6: Display user-friendly error messages
+
+**Dependencies:** Session 4.1.2  
+**Success Criteria:** Errors handled gracefully, users informed
+
+---
+
+#### Phase 4.2: Google Maps API Integration
+**Tier:** Phase (Tier 2)  
+**Duration:** 1 week  
+**Dependencies:** Feature 1
+
+**Description:**  
+Integrate Google Maps API for address validation and drive time calculations.
+
+**Sessions:**
+- Session 4.2.1: Address Validation & Autocomplete
+- Session 4.2.2: Drive Time Calculations
+- Session 4.2.3: Error Handling & Fallbacks
+
+---
+
+##### Session 4.2.1: Address Validation & Autocomplete
+**Tier:** Session (Tier 3)  
+**Duration:** 2 days
+
+**Description:**  
+Implement Google Maps Places API for address autocomplete and validation.
+
+**Tasks:**
+- Task 4.2.1.1: Set up Google Maps Places API client
+- Task 4.2.1.2: Implement address autocomplete
+- Task 4.2.1.3: Parse address components (Number, Street, Apt, City, State, Zip)
+- Task 4.2.1.4: Validate address format
+- Task 4.2.1.5: Handle autocomplete selection
+- Task 4.2.1.6: Support manual address entry
+
+**Dependencies:** Feature 1  
+**Success Criteria:** Address autocomplete works, validation functional
+
+---
+
+##### Session 4.2.2: Drive Time Calculations
+**Tier:** Session (Tier 3)  
+**Duration:** 3-4 days
+
+**Description:**  
+Implement drive time calculations using Google Maps Distance Matrix API.
+
+**Tasks:**
+- Task 4.2.2.1: Set up Google Maps Distance Matrix API client
+- Task 4.2.2.2: Calculate drive time FROM appointment address to busy event locations
+- Task 4.2.2.3: Calculate drive time TO appointment address FROM home
+- Task 4.2.2.4: Calculate drive time TO appointment address FROM previous appointment
+- Task 4.2.2.5: Calculate drive time TO next appointment FROM appointment address
+- Task 4.2.2.6: Calculate total drive time for day
+- Task 4.2.2.7: Integrate drive times into availability calculations
+
+**Dependencies:** Session 4.2.1  
+**Success Criteria:** Drive times calculated correctly, integrated into availability
+
+---
+
+##### Session 4.2.3: Error Handling & Fallbacks
+**Tier:** Session (Tier 3)  
+**Duration:** 1 day
+
+**Description:**  
+Implement error handling and fallback to base drive time.
+
+**Tasks:**
+- Task 4.2.3.1: Handle API errors gracefully
+- Task 4.2.3.2: Implement base drive time fallback
+- Task 4.2.3.3: Log errors for debugging
+- Task 4.2.3.4: Display user-friendly error messages
+
+**Dependencies:** Session 4.2.2  
+**Success Criteria:** Errors handled, fallback works
+
+---
+
+#### Phase 4.3: MLS API Integration
+**Tier:** Phase (Tier 2)  
+**Duration:** 1 week  
+**Dependencies:** Phase 4.2
+
+**Description:**  
+Integrate MLS API to retrieve property data and auto-populate property details form.
+
+**Sessions:**
+- Session 4.3.1: MLS API Client Setup
+- Session 4.3.2: Property Data Retrieval & Mapping
+- Session 4.3.3: Error Handling & Fallbacks
+
+---
+
+##### Session 4.3.1: MLS API Client Setup
+**Tier:** Session (Tier 3)  
+**Duration:** 1-2 days
+
+**Description:**  
+Set up MLS API client and authentication.
+
+**Tasks:**
+- Task 4.3.1.1: Research MLS API provider and documentation
+- Task 4.3.1.2: Set up API client
+- Task 4.3.1.3: Implement authentication
+- Task 4.3.1.4: Create API request/response types
+- Task 4.3.1.5: Test API connection
+
+**Dependencies:** Phase 4.2  
+**Success Criteria:** MLS API client functional, authentication working
+
+---
+
+##### Session 4.3.2: Property Data Retrieval & Mapping
+**Tier:** Session (Tier 3)  
+**Duration:** 2-3 days
+
+**Description:**  
+Implement property data retrieval and map to application data model.
+
+**Tasks:**
+- Task 4.3.2.1: Create property lookup function (by address)
+- Task 4.3.2.2: Map MLS dwelling type to application property type
+- Task 4.3.2.3: Extract total square footage (above + below grade)
+- Task 4.3.2.4: Extract foundation type
+- Task 4.3.2.5: Extract ADU information (presence and number)
+- Task 4.3.2.6: Auto-populate property details form
+- Task 4.3.2.7: Handle partial data scenarios
+
+**Dependencies:** Session 4.3.1  
+**Success Criteria:** Property data retrieved and mapped correctly
+
+---
+
+##### Session 4.3.3: Error Handling & Fallbacks
+**Tier:** Session (Tier 3)  
+**Duration:** 1 day
+
+**Description:**  
+Implement error handling and prompt user for manual input on failure.
+
+**Tasks:**
+- Task 4.3.3.1: Handle API errors gracefully
+- Task 4.3.3.2: Handle property not found scenarios
+- Task 4.3.3.3: Prompt user to input required information manually
+- Task 4.3.3.4: Log errors for debugging
+- Task 4.3.3.5: Display user-friendly error messages
+
+**Dependencies:** Session 4.3.2  
+**Success Criteria:** Errors handled, user prompted for manual input
+
+---
+
+### Feature 5: Future Features Catalog
+**Tier:** Feature (Tier 1)  
+**Duration:** TBD  
+**Status:** ⏸️ Post-MVP - Catalog for evaluation
+
+**Description:**  
+Comprehensive catalog of future features identified in USER_STORY.md and common commercial scheduler features. See detailed catalog in `.cursor/project-manager/future-features-catalog.md` for complete feature list organized by category.
+
+**Dependencies:** Features 1-4 (Core functionality must be complete first)
+
+**Reference:** See `.cursor/project-manager/future-features-catalog.md` for:
+- Complete feature categories
+- Feature evaluation framework
+- Recommended next steps
+- Detailed feature descriptions
+
+---
+
+## Post-MVP Priority Features
+
+Features from the catalog that are recommended for early post-MVP implementation:
+
+### High Priority (Post-MVP Phase 1)
+
+**Email Notifications** - ✅ Moved to Feature 2 Phase 2.5
+- Booking confirmations
+- Appointment reminders
+- Cancellation notifications
+- **Business Value:** High - Reduces no-shows, improves communication
+- **Complexity:** Medium - Requires email service integration
+- **Dependencies:** Feature 2 completion
+
+**Appointment History (Admin View)** - ✅ Moved to Feature 3
+- View past appointments
+- Appointment notes
+- **Business Value:** High - Essential for business operations
+- **Complexity:** Low - Database queries and display
+- **Dependencies:** Feature 3 completion
+
+### Medium Priority (Post-MVP Phase 2)
+
+**Rescheduling** - Allow clients/admins to reschedule
+- **Business Value:** High - Reduces cancellations
+- **Complexity:** Medium - Requires availability recalculation
+- **Dependencies:** Feature 2 completion
+
+**Appointment Reminders** - Automated SMS/email reminders
+- **Business Value:** High - Reduces no-shows
+- **Complexity:** Medium - Requires notification service
+- **Dependencies:** Email notifications (Phase 1)
+
+**Client Portal** - Clients view/manage appointments
+- **Business Value:** Medium - Self-service convenience
+- **Complexity:** High - Requires authentication, portal UI
+- **Dependencies:** Feature 2 completion
+
+### Lower Priority (Post-MVP Phase 3+)
+
+- Multiday inspections
+- Report Review Second Calendar Date
+- Time-first scheduling
+- Advanced analytics and reporting
+- Payment processing
+- Other features from catalog (evaluate as needed)
+
+**Note:** See `.cursor/project-manager/future-features-catalog.md` for complete prioritized list and evaluation framework.
+
+---
+
+## Master Feature Index
+
+**Quick Reference:** Status and location of all features, phases, and sessions
+
+### Feature Status Overview
+
+| Feature | Status | Duration | MVP Critical | Location |
+|---------|--------|----------|--------------|----------|
+| **Feature 0: Vue.js Migration** | 🚧 In Progress | Ongoing | ✅ Yes | [Section](#feature-0-vuejs-migration) |
+| **Feature 1: Core Infrastructure & Layout** | 🚧 In Progress | 2-3 weeks | ✅ Yes | [Section](#feature-1-core-infrastructure--layout) |
+| **Feature 2.0: Jose's Wizard UI Port** | ⏳ Not Started | 2-3 weeks | ✅ Yes | [Section](#feature-20-joses-wizard-ui-port) |
+| **Feature 2: Customer Booking Wizard** | 🚧 In Progress | 6-8 weeks | ✅ Yes | [Section](#feature-2-customer-booking-wizard) |
+| **Feature 3: Admin Configuration Interface** | 🔄 Migrating | 4-6 weeks | ✅ Yes | [Section](#feature-3-admin-configuration-interface) |
+| **Feature 4: API Integration Layer** | 📝 Partial | 3-4 weeks | 📝 Partial | [Section](#feature-4-api-integration-layer-infrastructure) |
+| **Feature 5: Future Features Catalog** | ⏸️ Post-MVP | TBD | ❌ No | [Section](#feature-5-future-features-catalog) |
+
+### Phase Status by Feature
+
+#### Feature 0: Vue.js Migration
+- **Phase 0.0: Project Setup** - ✅ Complete | [Details](#phase-00-project-setup)
+- **Phase 0.1: Data Layer Foundation** - 🚧 In Progress | [Details](#phase-01-data-layer-foundation)
+- **Phase 0.2: State Management** - 🚧 Phase 2.1 Complete | [Details](#phase-02-state-management)
+- **Phase 0.3: Property System Refactor** - ⏳ Not Started | [Details](#phase-03-property-system-refactor)
+- **Phase 0.4: Admin Wizard** - ⏳ Not Started | [Details](#phase-04-admin-wizard)
+- **Phase 0.5: Scheduler Wizard** - ⏳ Not Started | [Details](#phase-05-scheduler-wizard)
+- **Phase 0.6: React Cleanup and Removal** - ⏳ Not Started | [Details](#phase-06-react-cleanup-and-removal)
+
+#### Feature 1: Core Infrastructure & Layout
+- **Phase 1.1: Layout & Navigation Structure** - ⏳ Not Started | [Details](#phase-11-layout--navigation-structure)
+- **Phase 1.2: State Management & Core Utilities** - 📝 Partial | [Details](#phase-12-state-management--core-utilities)
+  - Session 1.2.1: State Management Architecture - 🚧 In Progress
+  - Session 1.2.2: Fee Calculation Engine - 📝 Partial
+  - Session 1.2.3: Time Calculation Utilities - ✅ Done
+
+#### Feature 2.0: Jose's Wizard UI Port
+- **Phase 2.0.1: Wizard Shell & Navigation** - ⏳ Not Started | [Details](#phase-201-wizard-shell--navigation)
+- **Phase 2.0.2: Step 1 - Service Selection** - ⏳ Not Started | [Details](#phase-202-step-1---service-selection)
+- **Phase 2.0.3: Step 2 - Property Details** - ⏳ Not Started | [Details](#phase-203-step-2---property-details)
+- **Phase 2.0.4: Step 3 - Appointment Availability** - ⏳ Not Started | [Details](#phase-204-step-3---appointment-availability)
+- **Phase 2.0.5: Step 4 - Contact Information** - ⏳ Not Started | [Details](#phase-205-step-4---contact-information)
+- **Phase 2.0.6: Step 5 - Confirmation** - ⏳ Not Started | [Details](#phase-206-step-5---confirmation)
+
+#### Feature 2: Customer Booking Wizard
+- **Phase 2.1: Service Selection Step** - ⏳ Not Started | [Details](#phase-21-service-selection-step)
+- **Phase 2.2: Property Details Step** - ⏳ Not Started | [Details](#phase-22-property-details-step)
+- **Phase 2.3: Appointment Availability Step** - ⏳ Not Started | [Details](#phase-23-appointment-availability-step)
+- **Phase 2.4: Contact Information Step** - 📝 Partial | [Details](#phase-24-contact-information-step)
+- **Phase 2.5: Confirmation Step** - ⏳ Not Started | [Details](#phase-25-confirmation-step)
+
+#### Feature 3: Admin Configuration Interface
+- **Phase 3.1: Service Settings Management** - ⏳ Not Started | [Details](#phase-31-service-settings-management)
+- **Phase 3.2: Additional Service Settings Management** - ⏳ Not Started | [Details](#phase-32-additional-service-settings-management)
+- **Phase 3.3: Availability Options Management** - ⏳ Not Started | [Details](#phase-33-availability-options-management)
+
+#### Feature 4: API Integration Layer
+- **Phase 4.1: Google Calendar API Integration** - ⏳ Not Started | [Details](#phase-41-google-calendar-api-integration)
+- **Phase 4.2: Google Maps API Integration** - ⏳ Not Started | [Details](#phase-42-google-maps-api-integration)
+- **Phase 4.3: MLS API Integration** - ⏳ Not Started | [Details](#phase-43-mls-api-integration)
+
+### Critical Path (MVP)
+
+**Sequential Dependencies:**
+1. **Feature 0** (Vue.js Migration) → Foundation (Phases 0.0-0.2 required for other features)
+2. **Feature 1** (Core Infrastructure) → Depends on Feature 0 Phases 0.0-0.2
+3. **Feature 2.0** (Jose's Wizard UI Port) → Depends on Feature 0 Phases 0.0-0.2 and Feature 1
+4. **Feature 4** (API Integration) → Can develop in parallel (depends on Feature 1)
+5. **Feature 2** (Customer Booking Wizard) → Depends on Feature 2.0 and Feature 4
+
+**Parallel Work:**
+- Feature 0 Phase 0.1 and 0.2 can run parallel (Data Layer and State Management)
+- Feature 4 (API Integration) can run parallel with Feature 2.0 (UI Port) once Feature 0 Phases 0.0-0.2 complete
+- Feature 3 (Admin Interface) conversion is Feature 0 Phase 0.4 (runs after Feature 0 Phase 0.2)
+- Feature 4 API phases can run parallel (Phase 4.1, 4.2 independent; 4.3 depends on 4.2)
+
+### Key Dependencies Map
+
+```
+Feature 0 (Vue.js Migration)
+  ├─> No dependencies (foundational migration)
+  │   ├─> Phase 0.0: Project Setup ✅
+  │   ├─> Phase 0.1: Data Layer Foundation 🚧
+  │   ├─> Phase 0.2: State Management 🚧
+  │   ├─> Phase 0.3: Property System Refactor ⏳
+  │   ├─> Phase 0.4: Admin Wizard ⏳ (Feature 3 conversion)
+  │   ├─> Phase 0.5: Scheduler Wizard ⏳ (Feature 2.0 conversion)
+  │   └─> Phase 0.6: React Cleanup ⏳ (final cleanup)
+  │
+Feature 1 (Core Infrastructure)
+  └─> Depends on: Feature 0 Phases 0.0-0.2
+  │
+Feature 2.0 (Jose's Wizard UI Port)
+  ├─> Depends on: Feature 0 Phases 0.0-0.2
+  └─> Depends on: Feature 1
+  │
+Feature 2 (Customer Booking Wizard)
+  ├─> Depends on: Feature 1
+  ├─> Depends on: Feature 2.0 (UI port must complete first)
+  └─> Depends on: Feature 4 (API Integration Layer)
+  │
+Feature 3 (Admin Configuration Interface)
+  ├─> Depends on: Feature 1
+  └─> Depends on: Feature 0 Phase 0.4 (Vue conversion)
+  │
+Feature 4 (API Integration Layer)
+  └─> Depends on: Feature 1
+```
+
+---
+
+## Cross-Feature Dependencies
+
+### Visual Dependency Diagram
+
+```mermaid
+graph TD
+    F1[Feature 1: Core Infrastructure] --> F20[Feature 2.0: Jose's Wizard UI Port]
+    F1 --> F4[Feature 4: API Integration Layer]
+    F1 --> F3[Feature 3: Admin Configuration Interface]
+    
+    F20 --> F2[Feature 2: Customer Booking Wizard]
+    F4 --> F2
+    
+    F2 --> F5[Feature 5: Future Features]
+    F3 --> F5
+    
+    style F1 fill:#90EE90
+    style F20 fill:#FFE4B5
+    style F2 fill:#87CEEB
+    style F4 fill:#DDA0DD
+    style F3 fill:#F0E68C
+    style F5 fill:#D3D3D3
+```
+
+**Legend:**
+- 🟢 Green: Foundational (no dependencies)
+- 🟡 Yellow: UI Port (depends on foundation)
+- 🔵 Blue: Core MVP Feature
+- 🟣 Purple: Infrastructure Layer
+- 🟨 Yellow: Admin Feature
+- ⚪ Gray: Post-MVP
+
+### Dependency Map
+
+```
+Feature 1: Core Infrastructure
+  └─> No dependencies (foundational)
+
+Feature 2.0: Jose's Wizard UI Port
+  ├─> Depends on: Feature 1 (Core Infrastructure)
+  └─> Depends on: Feature 0 Phases 0.0-0.2 (Vuexy setup, Pinia stores)
+
+Feature 2: Customer Booking Wizard
+  ├─> Depends on: Feature 1 (Core Infrastructure)
+  ├─> Depends on: Feature 2.0 (Jose's Wizard UI Port) - Must complete UI port first
+  └─> Depends on: Feature 4 (API Integration Layer) - For Google Calendar, Maps, MLS APIs
+
+Feature 3: Admin Configuration Interface
+  └─> Depends on: Feature 1 (Core Infrastructure)
+  └─> Depends on: Feature 0 Phase 0.4 (being converted from React)
+
+Feature 4: API Integration Layer (Infrastructure)
+  └─> Depends on: Feature 1 (Core Infrastructure)
+  └─> Note: Provides infrastructure; actual integration happens in Feature 2 phases
+
+Feature 5: Future Features Catalog
+  └─> Depends on: Features 1-4 (Core functionality)
+```
+
+### Critical Path (MVP)
+
+**MVP Critical Path:**
+1. **Feature 0** (Vue.js Migration) - Foundation (Phases 0.0-0.2 must complete first)
+2. **Feature 1** (Core Infrastructure) - Depends on Feature 0 Phases 0.0-0.2
+3. **Feature 2.0** (Jose's Wizard UI Port) - Depends on Feature 0 Phases 0.0-0.2 and Feature 1
+4. **Feature 4** (API Integration Layer) - Can be developed in parallel (depends on Feature 1)
+5. **Feature 2** (Customer Booking Wizard) - Depends on Feature 2.0 and Feature 4
+   - Phase 2.2 depends on Feature 4 (Google Maps API - MVP-critical)
+   - Phase 2.3 depends on Feature 4 (Google Calendar API - MVP-critical)
+   - Phase 2.5 depends on Feature 4 (Google Calendar API event creation - MVP-critical)
+
+**Parallel Work Opportunities:**
+- Feature 4 (API Integration) can be developed in parallel with Feature 2.0 (UI Port)
+- Feature 3 (Admin Interface) conversion is Feature 0 Phase 0.4 (runs after Feature 0 Phase 0.2)
+- Feature 4 API phases can be developed in parallel (Phase 4.1, 4.2 independent; 4.3 depends on 4.2)
+
+### Phase Dependencies Within Features
+
+#### Feature 2.0 Dependencies
+- Phase 2.0.1 → Phase 2.0.2 → Phase 2.0.3 → Phase 2.0.4 → Phase 2.0.5 → Phase 2.0.6 (sequential)
+- All phases depend on Feature 0 Phases 0.0-0.2
+
+#### Feature 2 Dependencies
+- Phase 2.1 → Phase 2.2 → Phase 2.3 → Phase 2.4 → Phase 2.5 (sequential)
+- Phase 2.1 depends on Feature 2.0 Phase 2.0.2 (Step 1 UI port)
+- Phase 2.2 depends on Feature 2.0 Phase 2.0.3 (Step 2 UI port) and Feature 4 (Google Maps API)
+- Phase 2.3 depends on Feature 2.0 Phase 2.0.4 (Step 3 UI port) and Feature 4 (Google Calendar API)
+- Phase 2.4 depends on Feature 2.0 Phase 2.0.5 (Step 4 UI port)
+- Phase 2.5 depends on Feature 2.0 Phase 2.0.6 (Step 5 UI port) and Feature 4 (Google Calendar API event creation)
+
+#### Feature 4 Dependencies
+- Phase 4.1, 4.2 can be developed in parallel (independent APIs)
+- Phase 4.3 depends on Phase 4.2 (MLS uses address from Maps)
+
+#### Feature 3 Dependencies
+- Phase 3.1 → Phase 3.2 → Phase 3.3 (sequential, but can overlap)
+- All phases depend on Feature 1 and Feature 0 Phase 0.4
+
+---
+
+## Acceptance Criteria Mapping
+
+### From USER_STORY.md
+
+1. **Mobile-first design** → Feature 1, Phase 1.1, Session 1.1.1
+2. **Google and MLS APIs** → Feature 3, Phases 4.1, 4.2, 4.3
+3. **Database for service information** → Feature 4, all phases
+4. **TypeScript and React** → All features (technology stack)
+5. **Calendar availability in state** → Feature 1, Phase 1.2, Session 1.2.1
+6. **Layout/styling library** → Feature 1, Phase 1.1
+
+---
+
+## Tier Validation
+
+### Feature Level (Tier 1) Validation
+
+All identified features meet Tier 1 criteria:
+- ✅ Major initiatives spanning multiple phases
+- ✅ Require architectural decisions
+- ✅ Need new git branches
+- ✅ Duration: Weeks to months
+- ✅ External research required (APIs, patterns)
+- ✅ Multiple phases planned
+- ✅ Significant impact on codebase
+
+### Phase Level (Tier 2) Validation
+
+All identified phases meet Tier 2 criteria:
+- ✅ Major milestones within features
+- ✅ Multiple sessions planned
+- ✅ Duration: Weeks
+- ✅ Significant scope
+- ✅ Dependencies on other phases documented
+
+### Session Level (Tier 3) Validation
+
+All identified sessions meet Tier 3 criteria:
+- ✅ Focused work within phases
+- ✅ Multiple tasks planned
+- ✅ Duration: Hours to days
+- ✅ Specific component/feature
+- ✅ Clear objectives
+
+### Task Level (Tier 4) Validation
+
+All identified tasks meet Tier 4 criteria:
+- ✅ Single focused work item
+- ✅ Duration: Minutes to hours
+- ✅ Specific implementation
+- ✅ Clear deliverable
+
+---
+
+## Coverage Verification
+
+### USER_STORY.md Sections Covered
+
+- ✅ General Page → Feature 1, Phase 1.1
+- ✅ Service Selection → Feature 2, Phase 2.1
+- ✅ Property Details → Feature 2, Phase 2.2
+- ✅ Appointment Availability → Feature 2, Phase 2.3
+- ✅ Contact Information → Feature 2, Phase 2.4
+- ✅ Confirmation → Feature 2, Phase 2.5
+- ✅ Administrator Interface → Feature 4, Phases 3.1, 3.2, 3.3
+- ✅ Service Settings → Feature 4, Phase 3.1
+- ✅ Additional Service Settings → Feature 4, Phase 3.2
+- ✅ Availability Options → Feature 4, Phase 3.3
+- ✅ Durations → Feature 4, Sessions 3.1.3, 3.2.3, 3.3.3
+- ✅ Google Calendar API → Feature 3, Phase 4.1
+- ✅ Google Maps API → Feature 3, Phase 4.2
+- ✅ MLS API → Feature 3, Phase 4.3
+- ✅ Calculator Logic → Feature 1, Phase 1.2, Session 1.2.2
+- ✅ Future Features → Feature 5 (cataloged)
+- ✅ Acceptance Criteria → Mapped to features/phases
+- ✅ State/Database/Types → Feature 1, Phase 1.2
+
+**All sections from USER_STORY.md are covered.**
+
+---
+
+## Next Steps
+
+1. **Review and validate** this planning document
+2. **Prioritize features** based on business needs
+3. **Create feature branches** for each feature
+4. **Begin Feature 1** (Core Infrastructure) as foundation
+5. **Plan Feature 3** (API Integration) in parallel to unblock Feature 2
+6. **Start Feature 2** (Customer Booking Wizard) once Feature 1 and necessary parts of Feature 3 are complete
+7. **Develop Feature 4** (Admin Interface) in parallel with Feature 2
+
+---
+
+## Notes
+
+- This planning document is a living document and should be updated as implementation progresses
+- Dependencies may shift as implementation reveals new requirements
+- Future features (Feature 5) should be prioritized and planned separately when ready
+- API integrations may require additional research and vendor selection
+- Testing strategy should be defined for each feature/phase
+- Documentation should be maintained throughout implementation
+
+### Important Implementation Notes
+
+1. **Vue Migration Impact (Feature 0):**
+   - Active Vue.js migration is in progress (Feature 0 Phases 0.0-0.2)
+   - Some features may be implemented in Vue.js rather than React
+   - Check Feature 0 status before starting new work
+   - See: `.cursor/project-manager/features/vue-migration/` for detailed migration status
+
+2. **Existing Code to Leverage:**
+   - `ProfileToFinalTimeUtils` - Time calculation utilities (✅ Complete)
+   - `appointmentTransformer.ts` - Fee calculation logic (commented out, needs refactoring)
+   - `ListMaker` component - Contains critical filtering logic that should be extracted to a composable
+     - **Recommendation:** Extract filtering/selection logic → `useSchedulerFilter` composable
+     - **UI:** Use Jose's wizard UI patterns instead of ListMaker's Ant Design UI
+     - **Status:** Needs refactoring - filtering logic is business-critical and should be reusable
+   - API infrastructure exists in `externalAPI/` and `internalAPI/` directories
+   - SchemaProp management system exists (temporary, will be stripped)
+
+3. **SchemaProp Management Feature:**
+   - Temporary admin interface for managing schema props (SchemaProp management UI)
+   - This is a temporary feature supporting the coding process
+   - Will be stripped when converting properties back to straight (non-config-driven)
+   - NOT the same as Service/Additional Service/Availability Options configuration
+
+4. **Jose's Wizard Model (Source of Truth - ALWAYS Adapt This):**
+   - **Location:** `/Users/districthomepro/Bonsai/Jose-Scheduler-Reference/src/views/pages/wizard-examples/scheduler/`
+   - **Status:** ✅ Complete UI implementation with all 5 steps
+   - **What's Ready to Port:**
+     - ✅ Complete wizard shell with vertical stepper navigation (`index.js`)
+     - ✅ Step 1: Service Selection (`StepServiceSelection.js`) - User type, service type, additional services
+     - ✅ Step 2: Property Details (`StepPropertyDetails.js`) - Property type, address, details
+     - ✅ Step 3: Appointment Availability (`StepAppointmentAvailability.js`) - Calendar, time slots, differential UI
+     - ✅ Step 4: Personal Information (`StepPersonalInformation.js`) - Contact forms
+     - ✅ Step 5: Price Details (`StepPriceDetails.js`) - Confirmation/summary
+     - ✅ State management hook (`useAppointment.js`) - Complete appointment state management
+     - ✅ Constants (`Appointment.js`) - Service types, requester types, part types
+   - **What Needs Conversion:**
+     - ⚠️ Material-UI (MUI) → Vuetify components (when Vuexy support ready)
+     - ⚠️ React → Vue.js (Composition API)
+     - ⚠️ React hooks → Pinia stores/composables
+     - ⚠️ Hardcoded data → Real API integration
+     - ⚠️ Simplified logic → Full business logic (availability calculations, fee calculations)
+     - ⚠️ react-datepicker → Vue date picker component
+   - **Porting Strategy (CRITICAL - We Adapt, Never Build From Scratch):**
+     - ✅ ALWAYS start from Jose's components - they are the source of truth
+     - ✅ Port Jose's components to Vue/Vuetify (Feature 2.0)
+     - ✅ Replace MUI components with Vuetify equivalents (one-to-one mapping)
+     - ✅ Integrate with real data sources and business logic (Feature 2)
+     - ✅ Enhance with full differential scheduling calculations
+     - ✅ Add API integrations (Google Calendar, Maps, MLS)
+     - ❌ NEVER build our own service selection wizard or wizard components
+     - ❌ NEVER start from scratch - always adapt Jose's model
+
+---
+
+**Document Status:** Complete - Updated with Implementation Status  
+**Last Updated:** 2025-01-27 (Restructured with Table of Contents and Master Feature Index)  
+**Next Review:** After Feature 1 completion or significant progress
+
+---
+
+## Document Structure Notes
+
+This document follows a 4-tier architecture pattern:
+- **Features** (Tier 1) - Major initiatives spanning multiple phases
+- **Phases** (Tier 2) - Major milestones within features
+- **Sessions** (Tier 3) - Focused work within phases
+- **Tasks** (Tier 4) - Single focused work items
+
+**Navigation:**
+- Use the [Table of Contents](#table-of-contents) at the top for quick navigation
+- Use the [Master Feature Index](#master-feature-index) for status overview and quick links
+- Each feature section contains complete details including phases, sessions, and tasks
+
+**Future Structure:**
+- This document may be split into separate feature guides in `.cursor/project-manager/features/dhp-differential-scheduler/` when ready
+- Current structure keeps all planning in one document for easy reference
+
+---
+
+## Feature Handoff Summaries
+
+Quick reference for transitioning between features or handing off to team members.
+
+### Feature 1 Handoff: Core Infrastructure & Layout
+**Current Status:** 🚧 In Progress  
+**Next Phase to Start:** Phase 1.1 (Layout & Navigation Structure)  
+**Key Decisions Made:**
+- Build layout/navigation in Vue.js as part of migration
+- Use Pinia stores for state management
+- Core utilities (`ProfileToFinalTimeUtils`) are framework-agnostic
+**Blockers/Dependencies:**
+- Waiting on Feature 0 Phases 0.0-0.2 (Vuexy setup, Pinia stores)
+**Ready to Handoff:** ⏳ No - Waiting on Feature 0 foundation
+
+### Feature 2.0 Handoff: Jose's Wizard UI Port
+**Current Status:** ⏳ Not Started  
+**Next Phase to Start:** Phase 2.0.1 (Wizard Shell & Navigation)  
+**Key Decisions Made:**
+- Port UI structure first, integrate business logic later (Feature 2)
+- Replace MUI with Vuetify equivalents
+- Convert React hooks to Pinia stores/composables
+**Blockers/Dependencies:**
+- Must complete Feature 1 first
+- Must complete Feature 0 Phases 0.0-0.2
+**Ready to Handoff:** ⏳ No - Waiting on dependencies
+
+### Feature 2 Handoff: Customer Booking Wizard
+**Current Status:** 🚧 In Progress (Architecture complete)  
+**Next Phase to Start:** Phase 2.1 (Service Selection Step)  
+**Key Decisions Made:**
+- Integrate business logic into ported UI from Feature 2.0
+- Use real API data (not hardcoded)
+- Implement full differential scheduling calculations
+**Blockers/Dependencies:**
+- Must complete Feature 2.0 (UI port) first
+- Need Feature 4 (API Integration) for Google Calendar, Maps, MLS
+**Ready to Handoff:** ⏳ No - Waiting on Feature 2.0 completion
+
+### Feature 3 Handoff: Admin Configuration Interface
+**Current Status:** 🔄 Migrating (React version complete)  
+**Next Phase to Start:** Phase 3.1 (Service Settings Management)  
+**Key Decisions Made:**
+- Convert from React to Vue (Feature 0 Phase 0.4)
+- Maintain React version until Vue version complete
+- Convert components incrementally
+**Blockers/Dependencies:**
+- Waiting on Feature 0 Phase 0.4 (Vue conversion)
+- Depends on Feature 1 (Core Infrastructure)
+**Ready to Handoff:** ⏳ No - Waiting on Feature 0 Phase 0.4
+
+### Feature 4 Handoff: API Integration Layer
+**Current Status:** 📝 Partial (Infrastructure exists)  
+**Next Phase to Start:** Phase 4.1 (Google Calendar API Integration) or Phase 4.2 (Google Maps API Integration) - can run parallel  
+**Key Decisions Made:**
+- API layer is framework-agnostic
+- Can proceed in parallel with other features
+- MVP-critical: Google Calendar and Maps APIs
+- Post-MVP: MLS API (can defer with manual entry fallback)
+**Blockers/Dependencies:**
+- Depends on Feature 1 (Core Infrastructure)
+- Phase 4.3 (MLS API) depends on Phase 4.2 (Maps API)
+**Ready to Handoff:** ✅ Yes - Can start Phase 4.1 or 4.2 once Feature 1 complete
+
+---
+
+## Feature Logs
+
+Progress tracking for each feature. Update as work progresses.
+
+### Feature 1 Log: Core Infrastructure & Layout
+**Started:** TBD  
+**Last Updated:** 2025-01-27  
+**Current Phase:** Phase 1.2 (State Management & Core Utilities)  
+**Progress:**
+- ✅ Time calculation utilities complete (`ProfileToFinalTimeUtils`)
+- 🚧 State management architecture in progress
+- 📝 Fee calculation engine needs integration
+- ⏳ Layout components not started
+**Next Steps:**
+1. Complete Feature 0 Phases 0.0-0.2
+2. Start Phase 1.1 (Layout & Navigation Structure)
+3. Integrate fee calculation engine
+
+### Feature 2.0 Log: Jose's Wizard UI Port
+**Started:** TBD  
+**Last Updated:** 2025-01-27  
+**Current Phase:** Not started  
+**Progress:**
+- ✅ Reference implementation complete (Jose's wizard)
+- ⏳ Vue/Vuetify port not started
+**Next Steps:**
+1. Wait for Feature 1 completion
+2. Wait for Feature 0 Phases 0.0-0.2 completion
+3. Start Phase 2.0.1 (Wizard Shell & Navigation)
+
+### Feature 2 Log: Customer Booking Wizard
+**Started:** TBD  
+**Last Updated:** 2025-01-27  
+**Current Phase:** Architecture complete, waiting on Feature 2.0  
+**Progress:**
+- ✅ Architecture decisions documented
+- ✅ Component specifications created
+- ✅ Phase 1 implementation guide created
+- ⏳ Waiting on Feature 2.0 (UI port)
+**Next Steps:**
+1. Wait for Feature 2.0 completion
+2. Start Phase 2.1 (Service Selection Step)
+3. Integrate real service data from API
+
+### Feature 3 Log: Admin Configuration Interface
+**Started:** TBD  
+**Last Updated:** 2025-01-27  
+**Current Phase:** Vue conversion not started  
+**Progress:**
+- ✅ React version complete and functional
+- ✅ Generic CRUD components working
+- ✅ Form validation working
+- 🔄 Vue conversion in progress (Feature 0 Phase 0.4)
+**Next Steps:**
+1. Wait for Feature 0 Phase 0.4 (Vue conversion)
+2. Start Phase 3.1 (Service Settings Management)
+3. Convert components incrementally
+
+### Feature 4 Log: API Integration Layer
+**Started:** TBD  
+**Last Updated:** 2025-01-27  
+**Current Phase:** Infrastructure exists, integration needed  
+**Progress:**
+- ✅ API infrastructure exists (`externalAPI/`, `internalAPI/`)
+- ✅ Google Calendar API calls structure exists
+- ✅ Property details API structure exists
+- ⏳ Need to verify integration completeness
+- ⏳ Need Vue composables for API calls
+**Next Steps:**
+1. Verify Feature 1 completion
+2. Start Phase 4.1 (Google Calendar API) or Phase 4.2 (Google Maps API)
+3. Create Vue composables for API calls
+

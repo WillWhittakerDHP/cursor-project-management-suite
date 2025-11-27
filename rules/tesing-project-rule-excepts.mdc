@@ -1,0 +1,5 @@
+---
+alwaysApply: true
+---
+
+Test files may use fallbacks and type assertions for test setup. Migration scripts may use more permissive patterns. When fixing legacy code, prefer gradual improvement over strict adherence.

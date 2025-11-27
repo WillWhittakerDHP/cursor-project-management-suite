@@ -1,0 +1,97 @@
+{
+  "feature": "vue-migration",
+  "phase": 3,
+  "session": "3.1",
+  "todos": [
+    {
+      "id": "session-3.1",
+      "title": "API Integration Verification",
+      "description": "Verify all API endpoints are working correctly with CRUD operations for both entities and relationships",
+      "status": "in_progress",
+      "tier": "session",
+      "parentId": "phase-3",
+      "planningDocPath": ".cursor/project-manager/PROJECT_PLAN.md",
+      "planningDocSection": "Session 3.1: API Integration Verification",
+      "createdAt": "2025-01-18T13:30:00Z",
+      "updatedAt": "2025-01-18T13:30:00Z"
+    },
+    {
+      "id": "task-3.1.1",
+      "title": "Verify BlockType CRUD operations",
+      "description": "Test all CRUD operations for BlockType entity",
+      "status": "pending",
+      "tier": "task",
+      "parentId": "session-3.1",
+      "planningDocPath": ".cursor/project-manager/PROJECT_PLAN.md",
+      "planningDocSection": "Session 3.1: API Integration Verification",
+      "createdAt": "2025-01-18T13:30:00Z",
+      "updatedAt": "2025-01-18T13:30:00Z"
+    },
+    {
+      "id": "task-3.1.2",
+      "title": "Verify BlockProfile CRUD operations",
+      "description": "Test all CRUD operations for BlockProfile entity",
+      "status": "pending",
+      "tier": "task",
+      "parentId": "session-3.1",
+      "planningDocPath": ".cursor/project-manager/PROJECT_PLAN.md",
+      "planningDocSection": "Session 3.1: API Integration Verification",
+      "createdAt": "2025-01-18T13:30:00Z",
+      "updatedAt": "2025-01-18T13:30:00Z"
+    },
+    {
+      "id": "task-3.1.3",
+      "title": "Verify PartType CRUD operations",
+      "description": "Test all CRUD operations for PartType entity",
+      "status": "pending",
+      "tier": "task",
+      "parentId": "session-3.1",
+      "planningDocPath": ".cursor/project-manager/PROJECT_PLAN.md",
+      "planningDocSection": "Session 3.1: API Integration Verification",
+      "createdAt": "2025-01-18T13:30:00Z",
+      "updatedAt": "2025-01-18T13:30:00Z"
+    },
+    {
+      "id": "task-3.1.4",
+      "title": "Verify PartProfile CRUD operations",
+      "description": "Test all CRUD operations for PartProfile entity",
+      "status": "pending",
+      "tier": "task",
+      "parentId": "session-3.1",
+      "planningDocPath": ".cursor/project-manager/PROJECT_PLAN.md",
+      "planningDocSection": "Session 3.1: API Integration Verification",
+      "createdAt": "2025-01-18T13:30:00Z",
+      "updatedAt": "2025-01-18T13:30:00Z"
+    },
+    {
+      "id": "task-3.1.5",
+      "title": "Verify relationship CRUD operations",
+      "description": "Test all CRUD operations for validBlocks, validParts, activeBlocks, activeParts relationships",
+      "status": "pending",
+      "tier": "task",
+      "parentId": "session-3.1",
+      "planningDocPath": ".cursor/project-manager/PROJECT_PLAN.md",
+      "planningDocSection": "Session 3.1: API Integration Verification",
+      "createdAt": "2025-01-18T13:30:00Z",
+      "updatedAt": "2025-01-18T13:30:00Z"
+    },
+    {
+      "id": "task-3.1.6",
+      "title": "Verify error handling and edge cases",
+      "description": "Test error handling and edge cases for all API endpoints",
+      "status": "pending",
+      "tier": "task",
+      "parentId": "session-3.1",
+      "planningDocPath": ".cursor/project-manager/PROJECT_PLAN.md",
+      "planningDocSection": "Session 3.1: API Integration Verification",
+      "createdAt": "2025-01-18T13:30:00Z",
+      "updatedAt": "2025-01-18T13:30:00Z"
+    }
+  ],
+  "metadata": {
+    "version": "1.0",
+    "lastSynced": "2025-01-18T13:30:00Z",
+    "sourcePlan": ".cursor/project-manager/PROJECT_PLAN.md"
+  }
+}
+
