@@ -15,12 +15,15 @@
 import { featureLoad } from '../atomic/feature-load';
 import { featureCheckpoint } from '../atomic/feature-checkpoint';
 import { createBranch } from '../../../git/atomic/create-branch';
-import { runCommand } from '../../../utils/utils';
+import { runCommand, readProjectFile, writeProjectFile, PROJECT_ROOT } from '../../../utils/utils';
 import { auditFeatureStart } from '../../../audit/composite/audit-feature-start';
 import { WorkflowCommandContext } from '../../../utils/command-context';
 import { extractFilePaths, gatherFileStatuses } from '../../../../utils/context-gatherer';
 import { formatFileStatusList } from '../../../../utils/context-templates';
-import { readProjectFile } from '../../../utils/utils';
+import { parseFeaturePlan } from '../../../utils/planning-doc-parser';
+import { generateFeatureGuideFromPlan, generateFeatureHandoffFromPlan, generateFeatureLogFromPlan } from '../../../utils/planning-doc-generator';
+import { access } from 'fs/promises';
+import { join } from 'path';
 
 export async function featureStart(featureName: string): Promise<string> {
   const output: string[] = [];
@@ -62,6 +65,105 @@ export async function featureStart(featureName: string): Promise<string> {
   } catch (error) {
     output.push(`**ERROR:** Failed to create git branch\n`);
     output.push(`**Error:** ${error instanceof Error ? error.message : String(error)}\n`);
+  }
+  
+  output.push('\n---\n\n');
+  
+  // Step 1.5: Generate workflow docs from feature-plan.md if it exists
+  output.push('## Step 1.5: Generating Workflow Documents\n\n');
+  try {
+    const context = new WorkflowCommandContext(featureName);
+    // Feature plan is in project-manager/features/{featureName}/feature-plan.md
+    const featurePlanPath = `.cursor/project-manager/features/${featureName}/feature-plan.md`;
+    const featurePlanFullPath = join(PROJECT_ROOT, featurePlanPath);
+    
+    // Check if feature-plan.md exists
+    let featurePlanExists = false;
+    try {
+      await access(featurePlanFullPath);
+      featurePlanExists = true;
+    } catch {
+      featurePlanExists = false;
+    }
+    
+    if (featurePlanExists) {
+      output.push(`**Found:** feature-plan.md\n`);
+      
+      // Read feature-plan.md
+      const featurePlanContent = await readProjectFile(featurePlanPath);
+      
+      // Parse feature plan
+      const parsedPlan = parseFeaturePlan(featurePlanContent, featureName);
+      output.push(`**Parsed:** Feature plan for "${parsedPlan.name}"\n`);
+      
+      // Check if workflow docs already exist
+      const guidePath = context.paths.getFeatureGuidePath();
+      const handoffPath = context.paths.getFeatureHandoffPath();
+      const logPath = context.paths.getFeatureLogPath();
+      
+      let guideExists = false;
+      let handoffExists = false;
+      let logExists = false;
+      
+      try {
+        await access(join(PROJECT_ROOT, guidePath));
+        guideExists = true;
+      } catch {}
+      
+      try {
+        await access(join(PROJECT_ROOT, handoffPath));
+        handoffExists = true;
+      } catch {}
+      
+      try {
+        await access(join(PROJECT_ROOT, logPath));
+        logExists = true;
+      } catch {}
+      
+      if (guideExists || handoffExists || logExists) {
+        output.push(`**Note:** Some workflow documents already exist. Skipping generation.\n`);
+        output.push(`**Existing:** ${guideExists ? 'guide' : ''} ${handoffExists ? 'handoff' : ''} ${logExists ? 'log' : ''}\n`);
+      } else {
+        // Load templates
+        const guideTemplate = await context.templates.loadTemplate('feature', 'guide');
+        const handoffTemplate = await context.templates.loadTemplate('feature', 'handoff');
+        const logTemplate = await context.templates.loadTemplate('feature', 'log');
+        
+        // Generate docs from plan
+        const guideContent = generateFeatureGuideFromPlan(parsedPlan, guideTemplate);
+        const handoffContent = generateFeatureHandoffFromPlan(parsedPlan, handoffTemplate);
+        const logContent = generateFeatureLogFromPlan(parsedPlan, logTemplate);
+        
+        // Write generated docs
+        await writeProjectFile(guidePath, guideContent);
+        await writeProjectFile(handoffPath, handoffContent);
+        await writeProjectFile(logPath, logContent);
+        
+        output.push(`**Generated:** feature-guide.md, feature-handoff.md, feature-log.md\n`);
+        output.push(`**Source:** feature-plan.md\n`);
+      }
+    } else {
+      output.push(`**Not found:** feature-plan.md\n`);
+      
+      // Check if workflow docs exist
+      const guidePath = context.paths.getFeatureGuidePath();
+      let guideExists = false;
+      try {
+        await access(join(PROJECT_ROOT, guidePath));
+        guideExists = true;
+      } catch {}
+      
+      if (!guideExists) {
+        output.push(`**Note:** No feature-plan.md found and workflow docs don't exist.\n`);
+        output.push(`**Suggestion:** Create feature-plan.md or use /plan-feature to create feature structure.\n`);
+      } else {
+        output.push(`**Note:** Workflow docs already exist. Using existing docs.\n`);
+      }
+    }
+  } catch (error) {
+    output.push(`**WARNING:** Failed to generate workflow documents from feature-plan.md\n`);
+    output.push(`**Error:** ${error instanceof Error ? error.message : String(error)}\n`);
+    output.push(`**Note:** Feature start continues - docs can be created manually later\n`);
   }
   
   output.push('\n---\n\n');

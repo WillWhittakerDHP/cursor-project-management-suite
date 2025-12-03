@@ -76,6 +76,8 @@ export * from './utils/utils';
 export * from './utils/tier-discriminator';
 export * from './utils/scope-and-summarize';
 export * from './utils/scope-and-change';
+export * from './utils/planning-doc-parser';
+export * from './utils/planning-doc-generator';
 
 // Workflow Manager Commands (Unified workflow utilities)
 export * from './workflow/workflow-read-guide';

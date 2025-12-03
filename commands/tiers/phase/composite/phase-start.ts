@@ -8,7 +8,7 @@
  * Also triggers session planning (creates session plan files during phase start)
  */
 
-import { readProjectFile, PROJECT_ROOT, getCurrentBranch, runCommand, isBranchBasedOn, branchExists, enforcePlanMode } from '../../../utils/utils';
+import { readProjectFile, PROJECT_ROOT, getCurrentBranch, runCommand, isBranchBasedOn, branchExists, enforcePlanMode, writeProjectFile } from '../../../utils/utils';
 import { readHandoff } from '../../../utils/read-handoff';
 import { join } from 'path';
 import { access } from 'fs/promises';
@@ -19,6 +19,8 @@ import { extractFilesFromPhaseGuide, gatherFileStatuses, extractFilePaths } from
 import { formatFileStatusList } from '../../../utils/context-templates';
 import { createBranch } from '../../../git/atomic/create-branch';
 import { validatePhase, formatPhaseValidation } from './validate-phase';
+import { parsePhasePlan } from '../../../utils/planning-doc-parser';
+import { generatePhaseGuideFromPlan, generatePhaseHandoffFromPlan } from '../../../utils/planning-doc-generator';
 
 export async function phaseStart(phase: string): Promise<string> {
   // MODE ENFORCEMENT - Must be first, before any other operations
@@ -186,6 +188,99 @@ export async function phaseStart(phase: string): Promise<string> {
     output.push('**⚠️ Cannot start phase. Please resolve branch issues first.**\n');
     return output.join('\n');
   }
+  output.push('\n---\n');
+  
+  // Step 1.5: Generate workflow docs from phase plan in feature-plan.md if it exists
+  output.push('## Step 1.5: Generating Phase Workflow Documents\n');
+  try {
+    const featurePlanPath = `.cursor/project-manager/features/${context.feature.name}/feature-plan.md`;
+    const featurePlanFullPath = join(PROJECT_ROOT, featurePlanPath);
+    
+    // Check if feature-plan.md exists
+    let featurePlanExists = false;
+    try {
+      await access(featurePlanFullPath);
+      featurePlanExists = true;
+    } catch {
+      featurePlanExists = false;
+    }
+    
+    if (featurePlanExists) {
+      output.push(`**Found:** feature-plan.md\n`);
+      
+      // Read feature-plan.md
+      const featurePlanContent = await readProjectFile(featurePlanPath);
+      
+      // Parse phase plan
+      const parsedPhase = parsePhasePlan(featurePlanContent, phase);
+      
+      if (parsedPhase) {
+        output.push(`**Parsed:** Phase ${phase} plan - "${parsedPhase.name}"\n`);
+        
+        // Check if phase workflow docs already exist
+        const guidePath = context.paths.getPhaseGuidePath(phase);
+        const handoffPath = context.paths.getPhaseHandoffPath(phase);
+        
+        let guideExists = false;
+        let handoffExists = false;
+        
+        try {
+          await access(join(PROJECT_ROOT, guidePath));
+          guideExists = true;
+        } catch {}
+        
+        try {
+          await access(join(PROJECT_ROOT, handoffPath));
+          handoffExists = true;
+        } catch {}
+        
+        if (guideExists || handoffExists) {
+          output.push(`**Note:** Some phase workflow documents already exist. Skipping generation.\n`);
+          output.push(`**Existing:** ${guideExists ? 'guide' : ''} ${handoffExists ? 'handoff' : ''}\n`);
+        } else {
+          // Load templates
+          const guideTemplate = await context.templates.loadTemplate('phase', 'guide');
+          const handoffTemplate = await context.templates.loadTemplate('phase', 'handoff');
+          
+          // Generate docs from plan
+          const guideContent = generatePhaseGuideFromPlan(parsedPhase, guideTemplate);
+          const handoffContent = generatePhaseHandoffFromPlan(parsedPhase, handoffTemplate);
+          
+          // Write generated docs
+          await writeProjectFile(guidePath, guideContent);
+          await writeProjectFile(handoffPath, handoffContent);
+          
+          output.push(`**Generated:** phase-${phase}-guide.md, phase-${phase}-handoff.md\n`);
+          output.push(`**Source:** feature-plan.md\n`);
+        }
+      } else {
+        output.push(`**Warning:** Phase ${phase} plan not found in feature-plan.md\n`);
+        output.push(`**Note:** Falling back to template-based creation if docs don't exist\n`);
+      }
+    } else {
+      output.push(`**Not found:** feature-plan.md\n`);
+      
+      // Check if phase workflow docs exist
+      const guidePath = context.paths.getPhaseGuidePath(phase);
+      let guideExists = false;
+      try {
+        await access(join(PROJECT_ROOT, guidePath));
+        guideExists = true;
+      } catch {}
+      
+      if (!guideExists) {
+        output.push(`**Note:** No feature-plan.md found and phase workflow docs don't exist.\n`);
+        output.push(`**Suggestion:** Create phase plan in feature-plan.md or use templates.\n`);
+      } else {
+        output.push(`**Note:** Phase workflow docs already exist. Using existing docs.\n`);
+      }
+    }
+  } catch (error) {
+    output.push(`**WARNING:** Failed to generate phase workflow documents from feature-plan.md\n`);
+    output.push(`**Error:** ${error instanceof Error ? error.message : String(error)}\n`);
+    output.push(`**Note:** Phase start continues - docs can be created manually later\n`);
+  }
+  
   output.push('\n---\n');
   
   // Try to load phase guide with explicit error handling
