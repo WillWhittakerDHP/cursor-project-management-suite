@@ -28,7 +28,13 @@ import { join } from 'path';
 export async function featureStart(featureName: string): Promise<string> {
   const output: string[] = [];
   
+  // Normalize feature name: convert spaces to hyphens and lowercase
+  const normalizedFeatureName = featureName.toLowerCase().replace(/\s+/g, '-');
+  
   output.push(`# Starting Feature: ${featureName}\n`);
+  if (normalizedFeatureName !== featureName) {
+    output.push(`**Normalized:** ${normalizedFeatureName}\n`);
+  }
   output.push(`**Date:** ${new Date().toISOString().split('T')[0]}\n\n`);
   
   output.push('---\n\n');
@@ -53,8 +59,8 @@ export async function featureStart(featureName: string): Promise<string> {
       output.push('**Pulled:** latest develop\n');
     }
     
-    // Create feature branch
-    const branchName = `feature/${featureName}`;
+    // Create feature branch (use normalized name)
+    const branchName = `feature/${normalizedFeatureName}`;
     const branchResult = await createBranch(branchName);
     if (branchResult.success) {
       output.push(`**Branch Created:** ${branchName}\n`);
@@ -72,28 +78,37 @@ export async function featureStart(featureName: string): Promise<string> {
   // Step 1.5: Generate workflow docs from feature-plan.md if it exists
   output.push('## Step 1.5: Generating Workflow Documents\n\n');
   try {
-    const context = new WorkflowCommandContext(featureName);
-    // Feature plan is in project-manager/features/{featureName}/feature-plan.md
-    const featurePlanPath = `.cursor/project-manager/features/${featureName}/feature-plan.md`;
-    const featurePlanFullPath = join(PROJECT_ROOT, featurePlanPath);
+    const context = new WorkflowCommandContext(normalizedFeatureName);
+    // Feature plan is in project-manager/features/{featureName}/feature-plan.md (without .cursor prefix)
+    // Try both locations: project-manager/ and .cursor/project-manager/
+    let featurePlanPath = `project-manager/features/${normalizedFeatureName}/feature-plan.md`;
+    let featurePlanFullPath = join(PROJECT_ROOT, featurePlanPath);
     
-    // Check if feature-plan.md exists
+    // Check if it exists in project-manager first
     let featurePlanExists = false;
     try {
       await access(featurePlanFullPath);
       featurePlanExists = true;
     } catch {
-      featurePlanExists = false;
+      // Try .cursor/project-manager location
+      featurePlanPath = `.cursor/project-manager/features/${normalizedFeatureName}/feature-plan.md`;
+      featurePlanFullPath = join(PROJECT_ROOT, featurePlanPath);
+      try {
+        await access(featurePlanFullPath);
+        featurePlanExists = true;
+      } catch {
+        featurePlanExists = false;
+      }
     }
     
     if (featurePlanExists) {
-      output.push(`**Found:** feature-plan.md\n`);
+      output.push(`**Found:** ${featurePlanPath}\n`);
       
       // Read feature-plan.md
       const featurePlanContent = await readProjectFile(featurePlanPath);
       
       // Parse feature plan
-      const parsedPlan = parseFeaturePlan(featurePlanContent, featureName);
+      const parsedPlan = parseFeaturePlan(featurePlanContent, normalizedFeatureName);
       output.push(`**Parsed:** Feature plan for "${parsedPlan.name}"\n`);
       
       // Check if workflow docs already exist
@@ -171,7 +186,7 @@ export async function featureStart(featureName: string): Promise<string> {
   // Step 2: Load feature context
   output.push('## Step 2: Loading Feature Context\n\n');
   try {
-    const loadOutput = await featureLoad(featureName);
+    const loadOutput = await featureLoad(normalizedFeatureName);
     output.push(loadOutput);
   } catch (error) {
     output.push(`**ERROR:** Failed to load feature context\n`);
@@ -180,7 +195,7 @@ export async function featureStart(featureName: string): Promise<string> {
   
   // Auto-gather context (non-blocking)
   try {
-    const context = new WorkflowCommandContext(featureName);
+    const context = new WorkflowCommandContext(normalizedFeatureName);
     const featureGuideContent = await context.readFeatureGuide();
     const filePaths = extractFilePaths(featureGuideContent);
     
@@ -214,7 +229,7 @@ export async function featureStart(featureName: string): Promise<string> {
   // Step 3: Create initial checkpoint
   output.push('## Step 3: Creating Initial Checkpoint\n\n');
   try {
-    const checkpointOutput = await featureCheckpoint(featureName);
+    const checkpointOutput = await featureCheckpoint(normalizedFeatureName);
     output.push(checkpointOutput);
   } catch (error) {
     output.push(`**WARNING:** Failed to create checkpoint\n`);
@@ -227,7 +242,7 @@ export async function featureStart(featureName: string): Promise<string> {
   output.push('## Baseline Audit\n\n');
   try {
     const auditResult = await auditFeatureStart({
-      featureName
+      featureName: normalizedFeatureName
     });
     
     if (auditResult.success) {

@@ -193,20 +193,29 @@ export async function phaseStart(phase: string): Promise<string> {
   // Step 1.5: Generate workflow docs from phase plan in feature-plan.md if it exists
   output.push('## Step 1.5: Generating Phase Workflow Documents\n');
   try {
-    const featurePlanPath = `.cursor/project-manager/features/${context.feature.name}/feature-plan.md`;
-    const featurePlanFullPath = join(PROJECT_ROOT, featurePlanPath);
+    // Try both locations: project-manager/ and .cursor/project-manager/
+    let featurePlanPath = `project-manager/features/${context.feature.name}/feature-plan.md`;
+    let featurePlanFullPath = join(PROJECT_ROOT, featurePlanPath);
     
-    // Check if feature-plan.md exists
+    // Check if feature-plan.md exists in project-manager first
     let featurePlanExists = false;
     try {
       await access(featurePlanFullPath);
       featurePlanExists = true;
     } catch {
-      featurePlanExists = false;
+      // Try .cursor/project-manager location
+      featurePlanPath = `.cursor/project-manager/features/${context.feature.name}/feature-plan.md`;
+      featurePlanFullPath = join(PROJECT_ROOT, featurePlanPath);
+      try {
+        await access(featurePlanFullPath);
+        featurePlanExists = true;
+      } catch {
+        featurePlanExists = false;
+      }
     }
     
     if (featurePlanExists) {
-      output.push(`**Found:** feature-plan.md\n`);
+      output.push(`**Found:** ${featurePlanPath}\n`);
       
       // Read feature-plan.md
       const featurePlanContent = await readProjectFile(featurePlanPath);
