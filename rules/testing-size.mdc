@@ -1,0 +1,5 @@
+---
+alwaysApply: true
+---
+
+Use fine-grained unit tests for pure functions, utilities, and business logic. Use integration tests for context coordination, component integration, and user workflows. See: client/src/booking/__tests__/utils/feeCalculation.test.ts (unit) and client/src/admin/tests/integration/contextIntegration.test.tsx (integration).

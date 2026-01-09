@@ -1,0 +1,5 @@
+---
+alwaysApply: true
+---
+
+Every test file must begin with a descriptive header comment explaining what it covers, how it works, what it validates, and dependencies. See: client/src/admin/tests/activePartsStateCalculator.test.ts for example format.

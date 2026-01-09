@@ -1,0 +1,18 @@
+{
+  "name": "cursor-slash-commands",
+  "version": "1.0.0",
+  "description": "Slash commands for Vue migration workflow",
+  "type": "module",
+  "main": "index.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "cursor",
+    "slash-commands",
+    "vue-migration"
+  ],
+  "author": "",
+  "license": "ISC"
+}
+

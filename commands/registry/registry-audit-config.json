@@ -1,0 +1,12 @@
+{
+  "allowUnexportedCommandFiles": [
+    ".cursor/commands/git/composite/.gitkeep"
+  ],
+  "ignoreDirsContains": [
+    "/node_modules/",
+    "/dist/",
+    "/.git/"
+  ]
+}
+
+

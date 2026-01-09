@@ -1,0 +1,5 @@
+---
+alwaysApply: true
+---
+
+Tests run in watch mode during development using npm run start:dev:testing. Use standard start:dev for development without test watching.

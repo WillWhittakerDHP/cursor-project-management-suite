@@ -1,0 +1,32 @@
+{
+  "scope": {
+    "ignoreContains": [
+      "/node_modules/",
+      "/dist/"
+    ]
+  },
+  "priorities": {
+    "p0MinScore": 18,
+    "p1MinScore": 10
+  },
+  "weights": {
+    "blastRadiusPerFile": 2,
+    "fileWeight": 1,
+    "lineWeight": 0,
+    "textWeight": 0,
+    "baseByKind": {
+      "plan_execute_mismatch": 16,
+      "path_duality": 14,
+      "hardcoded_workflow_path": 8
+    }
+  },
+  "paths": {
+    "allowHardcodedIn": [
+      ".cursor/commands/utils/path-resolver.ts",
+      ".cursor/commands/utils/document-manager.ts",
+      ".cursor/commands/utils/path-resolver.ts"
+    ]
+  }
+}
+
+
