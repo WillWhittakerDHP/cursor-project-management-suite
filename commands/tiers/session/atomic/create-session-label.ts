@@ -20,9 +20,18 @@ export function createSessionLabel(
 ): SessionLabel {
   const [phase, subPhase] = phaseSubPhase.split('.');
   
+  // LEARNING: Explicit validation instead of fallback to empty string
+  // WHY: Prevents silent failures - require valid phase/subPhase or throw error
+  if (!phase || phase.trim() === '') {
+    throw new Error(`Invalid phaseSubPhase format: "${phaseSubPhase}". Expected format: "X.Y" where X and Y are non-empty.`);
+  }
+  if (!subPhase || subPhase.trim() === '') {
+    throw new Error(`Invalid phaseSubPhase format: "${phaseSubPhase}". Expected format: "X.Y" where X and Y are non-empty.`);
+  }
+  
   return {
-    phase: phase || '',
-    subPhase: subPhase || '',
+    phase: phase.trim(),
+    subPhase: subPhase.trim(),
     description,
     date: getCurrentDate(),
     status: 'In Progress',

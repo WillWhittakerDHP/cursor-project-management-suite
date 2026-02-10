@@ -29,6 +29,7 @@ export async function testWorkflow(
   target: string = 'vue',
   includeCoverage: boolean = false
 ): Promise<TestWorkflowResult> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const results: any = {};
   
   // Step 1: Validate test files (optional - can skip if no specific file)

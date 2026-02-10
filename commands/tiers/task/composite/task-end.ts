@@ -102,7 +102,7 @@ export async function taskEnd(params: TaskEndParams): Promise<{
           ...topFindings,
           '',
           'To proceed anyway (not recommended), re-run `/task-end` with:',
-          '`vueArchitectureOverride: { reason: \"...\", followUpTaskId: \"X.Y.Z\" }`',
+          '`vueArchitectureOverride: { reason: "...", followUpTaskId: "X.Y.Z" }`',
           '',
           'Reference:',
           '- `.project-manager/patterns/vue-architecture-contract.md`',

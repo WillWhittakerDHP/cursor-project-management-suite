@@ -9,7 +9,7 @@
  * Moved from `.cursor/commands/utils/check-reuse.ts` as part of planning abstraction.
  */
 
-import { readdir, readFile } from 'fs/promises';
+import { readdir } from 'fs/promises';
 import { join } from 'path';
 
 const PROJECT_ROOT = process.cwd();

@@ -126,8 +126,8 @@ export async function taskCheckpoint(
       
       if (parsed.failed) {
         // Extract files from output
-        const testFilePattern = /([\w\/\-\.]+\.(?:test|spec)\.(?:ts|tsx|js|jsx))(?::\d+:\d+)?/g;
-        const appFilePattern = /([\w\/\-\.]+\.(?:ts|tsx|js|jsx|vue))(?::\d+:\d+)?/g;
+        const testFilePattern = /([\w/\-.]+\.(?:test|spec)\.(?:ts|tsx|js|jsx))(?::\d+:\d+)?/g;
+        const appFilePattern = /([\w/\-.]+\.(?:ts|tsx|js|jsx|vue))(?::\d+:\d+)?/g;
         const testMatches = Array.from(initialTest.output.matchAll(testFilePattern));
         const appMatches = Array.from(initialTest.output.matchAll(appFilePattern));
         const testFiles = Array.from(new Set(testMatches.map(m => m[1])));

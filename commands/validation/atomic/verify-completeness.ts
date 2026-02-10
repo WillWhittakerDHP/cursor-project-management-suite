@@ -109,9 +109,7 @@ export async function verifyCompleteness(params: VerifyCompletenessParams): Prom
           }
         }
       }
-    } catch (error) {
-      // Error checking sections, but don't fail completeness
-    }
+    } catch {}
     
     // Check todo exists
     const allTodos = await getAllTodos(feature);

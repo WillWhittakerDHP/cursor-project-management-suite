@@ -107,6 +107,7 @@ export interface PhaseEndParams {
   runTests?: boolean; // Set by user prompt before command execution. Default: true if not specified, but should be explicitly set via prompt.
   testTarget?: string; // Test target: vue/server/all (default: vue)
   mode?: CommandExecutionMode; // Plan vs execute (plan mode performs no side effects)
+  skipGit?: boolean; // Skip git operations (for testing)
   // Feature name is auto-detected from git branch or config file - no parameter needed
 }
 
@@ -126,16 +127,17 @@ export async function phaseEnd(params: PhaseEndParams): Promise<{
           '',
         'Would execute:',
         '- markPhaseComplete (phase guide/log/handoff updates)',
-        '- run code quality audit (npm run audit:all - duplication, hardcoding, typecheck, etc.)',
+        '- run code quality audit (npm run audit:all - includes duplication, hardcoding, typecheck, security)',
         '- optional: validate test goals + run tests',
-          '- phase comment cleanup',
-          '- README workflow cleanup',
-          '- merge all session branches into phase branch',
-          '- commit/push phase branch',
-          '- merge phase branch into feature branch',
-          '- commit/push feature branch',
-          '- optional: delete merged branches',
-          '- optional: create new branch (if requested)',
+        '- backup commit before comment cleanup',
+        '- phase comment cleanup',
+        '- README workflow cleanup',
+        '- merge all session branches into phase branch',
+        '- commit/push phase branch',
+        '- merge phase branch into feature branch',
+        '- commit/push feature branch',
+        '- optional: delete merged branches',
+        '- optional: create new branch (if requested)',
         ].join('\n'),
     };
     return { success: true, steps };
@@ -436,6 +438,44 @@ export async function phaseEnd(params: PhaseEndParams): Promise<{
     };
   }
   
+  // Step 2.6.5: Backup commit before audits (non-blocking)
+  // Create a backup commit of current state before running audits
+  // This allows easy rollback if audit fixes cause issues
+  if (!params.skipGit) {
+    try {
+      const context = await WorkflowCommandContext.getCurrent();
+      const currentBranch = await getCurrentBranch();
+      
+      // Check if there are uncommitted changes
+      const statusResult = await runCommand('git status --porcelain');
+      if (statusResult.success && statusResult.output.trim()) {
+        const backupCommitMessage = `Phase ${params.phase} pre-audit backup: ${params.completedSessions.length} session(s) completed`;
+        const backupCommitResult = await gitCommit(backupCommitMessage);
+        
+        steps.backupCommit = {
+          success: backupCommitResult.success,
+          output: backupCommitResult.success
+            ? `Backup commit created: ${backupCommitMessage}`
+            : `No changes to commit for backup (already committed)`,
+        };
+      } else {
+        steps.backupCommit = {
+          success: true,
+          output: 'No uncommitted changes - backup commit skipped',
+        };
+      }
+    } catch (error) {
+      steps.backupCommit = {
+        success: false,
+        output: `Backup commit failed (non-critical): ${error instanceof Error ? error.message : String(error)}\n` +
+          `Continuing with audits...`,
+      };
+      // Don't fail phase-end if backup commit fails
+    }
+  } else {
+    steps.backupCommit = { success: true, output: 'Skipped (skipGit=true)' };
+  }
+  
   // Step 2.7: Clean up session notes from comments (only in phase-modified files)
   try {
     const context = await WorkflowCommandContext.getCurrent();
@@ -463,25 +503,6 @@ export async function phaseEnd(params: PhaseEndParams): Promise<{
       output: `Comment cleanup failed (non-critical): ${error instanceof Error ? error.message : String(error)}\n` +
         `You can run /phase-comment-cleanup manually.`,
     };
-  }
-  
-  // Step 3: Security audit (optional, non-blocking)
-  try {
-    const { securityAudit } = await import('../../../security/composite/security-audit');
-    const securityResult = await securityAudit({ path: 'server/src' });
-    steps.securityAudit = {
-      success: true,
-      output: securityResult.includes('❌') 
-        ? `Security audit completed with issues found. Review output:\n\n${securityResult}`
-        : 'Security audit passed',
-    };
-  } catch (error) {
-    steps.securityAudit = {
-      success: false,
-      output: `Security audit failed (non-critical): ${error instanceof Error ? error.message : String(error)}\n` +
-        `You can run /security-audit manually.`,
-    };
-    // Don't fail phase-end if security audit fails
   }
   
   // Create new branch if requested
@@ -733,55 +754,7 @@ export async function phaseEnd(params: PhaseEndParams): Promise<{
     // Don't fail entire phase-end if cleanup fails
   }
   
-  // Step 9: Run audit (non-blocking)
-  try {
-    const { auditPhase } = await import('../../../audit/composite/audit-phase');
-    const { readFile } = await import('fs/promises');
-    const testResults = params.runTests && steps.runTests ? { success: steps.runTests.success } : undefined;
-    const context = await WorkflowCommandContext.getCurrent();
-    
-    // Detect modified files from session logs and git history
-    const modifiedFiles = await detectPhaseModifiedFiles(
-      params.phase,
-      params.completedSessions,
-      context
-    );
-    
-    const auditResult = await auditPhase({
-      phase: params.phase,
-      featureName: context.feature.name,
-      modifiedFiles: modifiedFiles.length > 0 ? modifiedFiles : undefined,
-      testResults,
-    });
-    
-    // Open audit report file in editor
-    if (auditResult.fullReportPath) {
-      try {
-        await readFile(auditResult.fullReportPath, 'utf-8');
-        // File read will cause it to open in editor
-      } catch {
-        // If file doesn't exist yet, that's okay
-      }
-    }
-    
-    steps.audit = {
-      success: auditResult.success,
-      output: auditResult.output,
-    };
-    // Don't fail phase-end if audit fails, but log it clearly
-    if (!auditResult.success) {
-      steps.audit.output += '\n⚠️ Audit completed with issues. Review audit report.';
-    }
-  } catch (error) {
-    steps.audit = {
-      success: false,
-      output: `Audit failed (non-critical): ${error instanceof Error ? error.message : String(error)}\n` +
-        `You can run /audit-phase ${params.phase} manually.`,
-    };
-    // Don't fail phase-end if audit fails
-  }
-  
-  // Step: GitHub PR Validation Prompt (informational)
+  // Step 5: GitHub PR Validation Prompt (informational)
   steps.githubValidation = {
     success: true,
     output: `\n🔍 **Phase ${params.phase} Complete - GitHub Validation Required**\n\n` +

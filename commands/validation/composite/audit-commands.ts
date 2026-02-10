@@ -14,6 +14,7 @@ import { auditExports } from '../atomic/audit-exports';
 import { auditSignatures } from '../atomic/audit-signatures';
 import { auditDocumentation } from '../atomic/audit-documentation';
 import { auditRegistry } from '../atomic/audit-registry';
+import { auditFallback } from '../atomic/audit-fallback';
 import { generateAuditReport, formatAuditReport } from '../atomic/audit-report';
 import { AuditResult } from '../atomic/audit-types';
 import { writeProjectFile } from '../../utils/utils';
@@ -83,6 +84,15 @@ export async function auditCommands(): Promise<string> {
     const registryResult = await auditRegistry();
     results.push(registryResult);
     output.push(`✅ Completed: ${registryResult.status} (${registryResult.issues.length} issues)\n\n`);
+  } catch (error) {
+    output.push(`❌ Failed: ${error instanceof Error ? error.message : String(error)}\n\n`);
+  }
+
+  try {
+    output.push('## Running Fallback Check...\n');
+    const fallbackResult = await auditFallback();
+    results.push(fallbackResult);
+    output.push(`✅ Completed: ${fallbackResult.status} (${fallbackResult.issues.length} issues)\n\n`);
   } catch (error) {
     output.push(`❌ Failed: ${error instanceof Error ? error.message : String(error)}\n\n`);
   }

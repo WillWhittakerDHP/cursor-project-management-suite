@@ -86,8 +86,10 @@ If user says "yes", execute `/session-end` automatically. If "no", address conce
 Use `/session-end` to complete the full end-of-session checklist:
 
 ```
-/session-end 1.3.1 "Base API Client Setup" 1.3.2
+/session-end 1.4.10
 ```
+
+**Note:** Only the session ID is required. Description and next session are optional and will be automatically derived from session log/guide if not provided.
 
 This will:
 1. Verify the app starts

@@ -115,9 +115,7 @@ export async function taskChange(params: TaskChangeRequestParams, featureName: s
         }
       }
     }
-  } catch (error) {
-    // Non-blocking - don't fail change request if context gathering fails
-  }
+  } catch {}
   
   // Generate action plan
   const actionPlan = generateActionPlan(changeRequest, scope, params.taskId);

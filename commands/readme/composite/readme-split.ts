@@ -11,7 +11,6 @@ import { readFile, writeFile } from 'fs/promises';
 import { join, dirname } from 'path';
 import { PROJECT_ROOT } from '../../utils/utils';
 import { ReadmeSplitParams } from '../types';
-import { MarkdownUtils } from '../../utils/markdown-utils';
 
 /**
  * Split large README

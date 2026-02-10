@@ -263,7 +263,7 @@ export async function auditDependencies(): Promise<AuditResult> {
       
       try {
         await access(resolvedPath);
-      } catch (error) {
+      } catch {} {
         issues.push({
           severity: 'error',
           message: `Export references non-existent file: ${exportPath}`,
@@ -357,7 +357,7 @@ export async function auditDependencies(): Promise<AuditResult> {
           
           try {
             await access(resolvedImport);
-          } catch (error) {
+          } catch {} {
             // Try without .ts extension
             try {
               await access(resolvedImport.replace('.ts', ''));

@@ -25,7 +25,7 @@ import { AuditResult, AuditFinding } from '../types';
 
 const PROJECT_ROOT = process.cwd();
 
-type FileScanResult = {
+type _FileScanResult = {
   file: string;
   findings: AuditFinding[];
 };
@@ -137,7 +137,7 @@ function scanComposableNaming(file: string, content: string): AuditFinding[] {
   return findings;
 }
 
-export async function auditVueArchitecture(params: AuditParams): Promise<AuditResult> {
+export async function auditVueArchitecture(_params: AuditParams): Promise<AuditResult> {
   const findings: AuditFinding[] = [];
   const recommendations: string[] = [];
 

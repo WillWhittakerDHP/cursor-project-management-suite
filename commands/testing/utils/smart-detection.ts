@@ -80,7 +80,7 @@ async function checkFileModifications(
         // Directory may not exist, skip
       }
     }
-  } catch (error) {
+  } catch {} {
     // If detection fails, return no detection
     return { detected: false, files: [] };
   }

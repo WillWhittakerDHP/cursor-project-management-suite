@@ -88,7 +88,7 @@ export async function markPhaseComplete(params: MarkPhaseCompleteParams): Promis
     let logContent = '';
     try {
       logContent = await readProjectFile(phaseLogPath);
-    } catch (error) {
+    } catch {} {
       // Create new log file with header
       const templatePath = join(PROJECT_ROOT, '.cursor/commands/tiers/phase/templates/phase-log.md');
       try {

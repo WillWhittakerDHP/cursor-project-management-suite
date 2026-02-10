@@ -43,7 +43,7 @@ export async function auditPlanning(params: AuditParams): Promise<AuditResult> {
       try {
         planningContent = await context.readFeatureGuide();
         planningPath = context.paths.getFeatureGuidePath();
-      } catch (error) {
+      } catch {} {
         findings.push({
           type: 'error',
           message: 'Feature guide not found',
@@ -56,7 +56,7 @@ export async function auditPlanning(params: AuditParams): Promise<AuditResult> {
       try {
         planningContent = await context.readPhaseGuide(params.identifier);
         planningPath = context.paths.getPhaseGuidePath(params.identifier);
-      } catch (error) {
+      } catch {} {
         findings.push({
           type: 'error',
           message: `Phase ${params.identifier} guide not found`,
@@ -69,7 +69,7 @@ export async function auditPlanning(params: AuditParams): Promise<AuditResult> {
       try {
         planningContent = await context.readSessionGuide(params.identifier);
         planningPath = context.paths.getSessionGuidePath(params.identifier);
-      } catch (error) {
+      } catch {} {
         findings.push({
           type: 'error',
           message: `Session ${params.identifier} guide not found`,

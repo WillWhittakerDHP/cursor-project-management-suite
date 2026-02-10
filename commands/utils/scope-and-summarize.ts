@@ -80,7 +80,7 @@ async function readConversationContext(params: ScopeAndSummarizeParams): Promise
     try {
       const filePath = join(PROJECT_ROOT, params.contextFile);
       return await readFile(filePath, 'utf-8');
-    } catch (error) {
+    } catch {} {
       throw new Error(`Failed to read context file: ${params.contextFile}`);
     }
   }

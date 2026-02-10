@@ -85,119 +85,24 @@ export async function planSession(
       DATE: new Date().toISOString().split('T')[0]
     });
   } catch (error) {
-    // Fallback to basic template if file not found - log explicitly
+    // LEARNING: Fail explicitly instead of using fallback template
+    // WHY: Fallback templates hide configuration errors and can lead to incomplete session guides
     const templatePath = context.paths.getTemplatePath('session', 'guide');
-    console.warn(
-      `WARNING: Session guide template not found, using fallback template\n` +
+    throw new Error(
+      `ERROR: Session guide template not found\n` +
       `Attempted: ${templatePath}\n` +
       `Expected: Session guide template file\n` +
       `Suggestion: Create template at ${templatePath}\n` +
       `Tier: Session (Tier 2 - Medium-Level)\n` +
-      `Error: ${error instanceof Error ? error.message : String(error)}\n`
+      `Error: ${error instanceof Error ? error.message : String(error)}\n` +
+      `Action Required: Create the session guide template file before proceeding.`
     );
-    // Note: This fallback includes minimal structure. The full template should be used.
-    sessionGuideTemplate = `# Session ${sessionId} Guide: ${description}
-
-**Purpose:** Session-level guide with task breakdown and learning goals
-
-**Tier:** Session (Tier 2 - Medium-Level)
-
----
-
-## Quick Start
-
-### Session Overview
-
-**Session ID:** ${sessionId}
-**Session Name:** ${description}
-**Description:** [Brief description of session objectives]
-
-**Duration:** [Estimated hours/days]
-**Status:** Not Started
-
-### Learning Goals
-
-- [Learning goal 1]
-- [Learning goal 2]
-- [Learning goal 3]
-
-### Tasks
-
-#### Task ${sessionId}.1: [Task Name]
-**Goal:** [Task goal]
-**Files:** 
-- [Files to work with]
-**Approach:** [Approach to take]
-**Checkpoint:** [What needs to be verified]
-
-#### Task ${sessionId}.2: [Task Name]
-**Goal:** [Task goal]
-**Files:** 
-- [Files to work with]
-**Approach:** [Approach to take]
-**Checkpoint:** [What needs to be verified]
-
----
-
-## Session Workflow
-
-[See \`.cursor/commands/tiers/session/templates/session-guide.md\` for complete workflow instructions]
-
----
-
-## Session Structure
-
-**Note:** See \`.cursor/commands/tiers/session/templates/session-guide.md\` for complete Session Structure section.
-
-### Session Labeling Format
-
-Each session should start with:
-\`\`\`
-## Session: ${sessionId} - [Brief Description]
-**Date:** [Date]
-**Duration:** [Estimated/Actual]
-**Status:** [In Progress / Completed / Blocked]
-**Agent:** [Current/New]
-\`\`\`
-
----
-
-## Learning Checkpoints
-
-**Note:** See \`.cursor/commands/tiers/session/templates/session-guide.md\` for complete Learning Checkpoints section.
-
-Learning checkpoints ensure understanding before moving forward. They're integrated into the unified checkpoint system.
-
----
-
-## Task Template
-
-**Note:** See \`.cursor/commands/tiers/session/templates/session-guide.md\` for complete Task Template section.
-
-### Task Planning Template
-
-When planning a new task, use this structure:
-
-\`\`\`markdown
-#### Task ${sessionId}.N: [Task Name]
-**Goal:** [Clear, specific objective]
-**Files:** [Files to work with]
-**Approach:** [How to accomplish]
-**Checkpoint:** [What needs to be verified]
-\`\`\`
-
----
-
-## Reference
-
-**See \`.cursor/commands/tiers/session/templates/session-guide.md\` for complete reference section.**
-
----
-
-## Notes
-
-[Session-specific notes, patterns, architectural decisions]
-`;
+  }
+  
+  // LEARNING: Explicit failure prevents incomplete session guides
+  // WHY: Fallback templates hide configuration errors
+  if (!sessionGuideTemplate) {
+    throw new Error(`Session guide template is empty after loading from ${context.paths.getTemplatePath('session', 'guide')}`);
   }
   
   output.push('## Session Guide Template\n');

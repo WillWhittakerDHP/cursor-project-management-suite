@@ -7,7 +7,7 @@
  */
 
 import { generateHandoff, HandoffTier, GenerateHandoffParams } from '../../handoff/atomic/generate-handoff';
-import { executeBatchOperation, BatchOperationResult } from '../atomic/batch-operation';
+import { executeBatchOperation } from '../atomic/batch-operation';
 
 export interface BatchGenerateHandoffsParams {
   tier: HandoffTier;

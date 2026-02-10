@@ -63,9 +63,7 @@ export async function auditComments(params: AuditParams): Promise<AuditResult> {
           filesDetectedViaFallback = true;
         }
       }
-    } catch (error) {
-      // If detection fails, continue with empty array
-    }
+    } catch {}
   }
   
   // If still no files, return warning with improved message
@@ -271,8 +269,7 @@ export async function auditComments(params: AuditParams): Promise<AuditResult> {
     // Boost score to 75 if we detected files but found issues
     score = Math.max(75, score);
   } else if (filesDetectedViaFallback && score >= 75) {
-    // If score is already good, maintain it
-    score = score;
+    // If score is already good, maintain it (no change needed)
   }
   
   // Generate recommendations

@@ -14,6 +14,7 @@ function checkPort(port: number): Promise<boolean> {
   return new Promise((resolve) => {
     const server = createServer();
     
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     server.once('error', (err: any) => {
       if (err.code === 'EADDRINUSE') {
         // Port is in use, which means something is listening
@@ -93,6 +94,7 @@ export async function verifyApp(): Promise<{ success: boolean; output: string }>
             output: 'Port 3002 is not responding. App may not have started correctly.',
           });
         }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (error: any) {
         // Kill the process
         try {

@@ -54,9 +54,7 @@ export async function auditPatterns(): Promise<AuditResult> {
       let atomicFiles: string[] = [];
       try {
         atomicFiles = await readdir(atomicPath);
-      } catch (error) {
-        // Atomic directory might not exist for all tiers
-      }
+      } catch {}
 
       // Check for expected commands
       const allFiles = [...compositeFiles, ...atomicFiles];
@@ -153,9 +151,7 @@ export async function auditPatterns(): Promise<AuditResult> {
           file: compositePath,
         });
       }
-    } catch (error) {
-      // Directory might not exist
-    }
+    } catch {}
   }
 
   const status = issues.some(i => i.severity === 'critical' || i.severity === 'error')

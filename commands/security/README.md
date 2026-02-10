@@ -104,9 +104,10 @@ const securityResult = await securityAudit({ path: 'server/src' });
 
 ### Tier Closeout
 
-Security audit runs automatically (non-blocking) in:
-- `session-end.ts` - Step 7 (before git commit)
-- `phase-end.ts` - Step 3 (before git commit)
+Security audit runs automatically as part of `audit:all`:
+- Included in code quality audit (runs `npm run audit:all` which includes `audit:security`)
+- Results are included in audit fixes commit
+- Security audit JSON is read by `auditCodeQuality` and included in audit results
 
 Security checks are non-blocking - they report issues but don't prevent workflow completion.
 

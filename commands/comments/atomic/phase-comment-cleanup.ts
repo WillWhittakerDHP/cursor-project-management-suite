@@ -10,7 +10,7 @@
 import { readFile, writeFile, readdir } from 'fs/promises';
 import { join, extname, relative } from 'path';
 import { existsSync } from 'fs';
-import { applyCompression } from '../utils/comment-compression';
+import { applyCompression, isCommentValuable, isRegularCommentValuable, detectCommentType } from '../utils/comment-compression';
 
 export interface CommentCleanupParams {
   dryRun?: boolean; // If true, preview changes without modifying files
@@ -183,7 +183,7 @@ async function collectFiles(
     }
     
     return files;
-  } catch (error) {
+  } catch {} {
     // Skip directories we can't read
     return files;
   }
@@ -278,8 +278,37 @@ async function processFile(
           multiLineContent = '';
           continue;
         }
-        // Block doesn't contain session note, keep it
-        newLines.push(...multiLineContent.split('\n'));
+        // Block doesn't contain session note
+        // Check if it contains typed comments that should be evaluated
+        const hasTypedComment = /(WHY|PATTERN|LEARNING|RESOURCE|COMPARISON):/i.test(multiLineContent);
+        if (hasTypedComment) {
+          // Evaluate each typed comment in the block
+          const blockLines = multiLineContent.split('\n');
+          const filteredLines: string[] = [];
+          for (const blockLine of blockLines) {
+            const type = detectCommentType(blockLine);
+            if (type && !isCommentValuable(blockLine, type)) {
+              // Skip non-valuable typed comment line
+              modified = true;
+              commentsRemoved++;
+            } else {
+              filteredLines.push(blockLine);
+            }
+          }
+          // Only keep the block if it has remaining content
+          if (filteredLines.length > 0) {
+            newLines.push(...filteredLines);
+          } else {
+            // Entire block was removed
+            const blockLineCount = blockLines.length;
+            for (let j = 0; j < blockLineCount; j++) {
+              linesRemoved.push(multiLineStart + j);
+            }
+          }
+        } else {
+          // No typed comments, keep as-is
+          newLines.push(...multiLineContent.split('\n'));
+        }
         multiLineStart = -1;
         multiLineContent = '';
         continue;
@@ -342,7 +371,86 @@ async function processFile(
     newLines.push(line);
   }
   
-  // Step 2: Compress comment clusters if enabled
+  // Step 2: Evaluate and remove non-valuable individual typed comments
+  const typedCommentPatterns = [
+    /\/\/\s*(WHY|PATTERN|LEARNING|RESOURCE|COMPARISON):\s*.+/gi,
+    /\*\s*(WHY|PATTERN|LEARNING|RESOURCE|COMPARISON):\s*.+/gi,
+  ];
+  
+  for (let i = 0; i < newLines.length; i++) {
+    const line = newLines[i];
+    
+    for (const pattern of typedCommentPatterns) {
+      pattern.lastIndex = 0;
+      const match = pattern.exec(line);
+      if (match) {
+        const type = detectCommentType(line);
+        if (type && !isCommentValuable(line, type)) {
+          // Remove non-valuable typed comment
+          newLines.splice(i, 1);
+          modified = true;
+          commentsRemoved++;
+          linesRemoved.push(i + 1);
+          i--; // Adjust index after removal
+          break;
+        }
+      }
+    }
+  }
+  
+  // Step 2.5: Evaluate and remove non-valuable regular comments (non-typed)
+  // Only evaluate standalone regular comments, not those in clusters (clusters handled by compression)
+  const regularCommentPatterns = [
+    /^\s*\/\/[^/*]/, // Single-line regular comment (not // or /*)
+    /^\s*\/\*[^*]/, // Multi-line comment start (not /**)
+    /^\s*\*[^*/]/, // JSDoc line (not */ or /**)
+  ];
+  
+  // Track if we're in a multi-line comment to avoid evaluating individual lines
+  let _inMultiLineComment = false;
+  for (let i = 0; i < newLines.length; i++) {
+    const line = newLines[i];
+    const trimmed = line.trim();
+    
+    // Track multi-line comment state
+    if (trimmed.startsWith('/*') && !trimmed.includes('*/')) {
+      _inMultiLineComment = true;
+      continue;
+    }
+    if (_inMultiLineComment && trimmed.includes('*/')) {
+      _inMultiLineComment = false;
+      continue;
+    }
+    if (_inMultiLineComment) {
+      continue; // Skip lines inside multi-line comments (handled by compression)
+    }
+    
+    // Check if this is a standalone regular comment
+    const isRegularComment = regularCommentPatterns.some(pattern => pattern.test(line));
+    const hasTypedComment = detectCommentType(line) !== null;
+    
+    if (isRegularComment && !hasTypedComment) {
+      // Check if it's part of a cluster (next or previous line is also a comment)
+      const prevLine = i > 0 ? newLines[i - 1].trim() : '';
+      const nextLine = i < newLines.length - 1 ? newLines[i + 1].trim() : '';
+      const prevIsComment = prevLine.startsWith('//') || prevLine.startsWith('/*') || prevLine.startsWith('*');
+      const nextIsComment = nextLine.startsWith('//') || nextLine.startsWith('/*') || nextLine.startsWith('*');
+      
+      // Only evaluate standalone comments (not part of clusters - clusters handled by compression)
+      if (!prevIsComment && !nextIsComment) {
+        if (!isRegularCommentValuable(line)) {
+          // Remove non-valuable standalone regular comment
+          newLines.splice(i, 1);
+          modified = true;
+          commentsRemoved++;
+          linesRemoved.push(i + 1);
+          i--; // Adjust index after removal
+        }
+      }
+    }
+  }
+  
+  // Step 3: Compress comment clusters if enabled
   let commentsCompressed = 0;
   let finalLines = newLines;
   if (compress) {

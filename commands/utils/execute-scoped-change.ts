@@ -39,6 +39,7 @@ export interface ExecuteScopedChangeParams {
 export interface ExecuteScopedChangeResult {
   success: boolean;
   scopeDocumentPath?: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   changeResult?: any;
   output: string;
 }
@@ -75,7 +76,7 @@ async function findScopeDocument(
     }
     
     return scopeFiles[0].path;
-  } catch (error) {
+  } catch {} {
     return null;
   }
 }

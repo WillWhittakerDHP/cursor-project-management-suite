@@ -66,9 +66,7 @@ export async function taskStart(
   
   try {
     taskTodo = await findTodoById(feature, taskTodoId);
-  } catch (error) {
-    // Todo not found, will fall back to guide parsing
-  }
+  } catch {}
   
   if (taskTodo) {
     // Display task info from todo
@@ -100,9 +98,7 @@ export async function taskStart(
         }
         output.push('\n---\n');
       }
-    } catch (error) {
-      // Citations lookup failed, continue
-    }
+    } catch {}
   } else {
     output.push('## Task Details\n');
     output.push(`**WARNING: Task todo not found: ${taskTodoId}**\n`);
@@ -116,7 +112,7 @@ export async function taskStart(
     output.push('## Task Handoff Context\n');
     output.push(handoffContent);
     output.push('\n---\n');
-  } catch (error) {
+  } catch {} {
     // Handoff not found - log explicitly but continue
     output.push('## Task Handoff Context\n');
     output.push(`**Note:** Handoff context not available. Use \`/read-handoff session ${sessionId}\` to check session context\n`);
@@ -139,9 +135,7 @@ export async function taskStart(
         output.push(taskSectionContent);
         output.push('\n---\n');
       }
-    } catch (error) {
-      // Guide parsing failed, continue
-    }
+    } catch {}
   } else if (taskTodo.description) {
     taskSectionContent = taskTodo.description;
   }
@@ -173,7 +167,7 @@ export async function taskStart(
         }
       }
     }
-  } catch (error) {
+  } catch {} {
     // Non-blocking - don't fail task start if context gathering fails
     // Silently continue - context gathering is optional enhancement
   }

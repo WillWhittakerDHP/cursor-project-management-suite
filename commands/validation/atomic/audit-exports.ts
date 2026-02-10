@@ -138,7 +138,7 @@ export async function auditExports(): Promise<AuditResult> {
           });
         }
       }
-    } catch (error) {
+    } catch {} {
       // Module file might not exist (already caught in dependency check)
       continue;
     }
@@ -170,9 +170,7 @@ export async function auditExports(): Promise<AuditResult> {
         });
       }
       
-    } catch (error) {
-      // Skip files we can't read
-    }
+    } catch {}
   }
 
   const status = issues.some(i => i.severity === 'critical' || i.severity === 'error')

@@ -118,7 +118,7 @@ export class FeatureContext {
       return entries
         .filter(entry => entry.isDirectory())
         .map(entry => entry.name);
-    } catch (error) {
+    } catch {} {
       // Features directory doesn't exist or can't be read
       return [];
     }

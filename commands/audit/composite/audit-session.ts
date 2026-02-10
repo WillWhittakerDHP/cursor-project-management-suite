@@ -23,6 +23,7 @@ export interface AuditSessionParams {
   sessionId: string; // Format: X.Y (e.g., "1.3")
   featureName?: string;
   modifiedFiles?: string[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   testResults?: any;
 }
 

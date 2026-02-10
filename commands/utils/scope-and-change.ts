@@ -48,6 +48,7 @@ export interface ScopeAndChangeResult {
   success: boolean;
   autoExecuted: boolean;
   tierAnalysis: ScopeAndSummarizeResult['tierAnalysis'];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   changeResult?: any;
   output: string;
   documentPath?: string; // Path to scope document if created
@@ -84,7 +85,7 @@ async function extractCurrentContext(featureName: string): Promise<{
     const phase = phaseMatch ? phaseMatch[1] : undefined;
     
     return { sessionId, taskId, phase };
-  } catch (error) {
+  } catch {} {
     // Silently return empty if can't extract
     return {};
   }
@@ -242,6 +243,7 @@ export async function scopeAndChange(
     // Auto-execute appropriate change command
     try {
       const description = summaryResult.summary || params.description || '';
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let changeResult: any;
       
       if (summaryResult.tierAnalysis.tier === 'task' && taskId) {

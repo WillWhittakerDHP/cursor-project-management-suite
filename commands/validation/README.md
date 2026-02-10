@@ -21,9 +21,19 @@ See [QUICK_REFERENCE.md](./QUICK_REFERENCE.md) for a one-page lookup table.
 - `validateWorkflowProgrammatic(params)` - Validate workflow (programmatic API)
 - `verifyCompleteness(params)` - Verify required docs/entries exist
 
+#### Audit Operations
+- `auditPatterns()` - Check pattern consistency across tiers
+- `auditDependencies()` - Check dependency usage
+- `auditExports()` - Check export usage
+- `auditSignatures()` - Check signature consistency
+- `auditDocumentation()` - Check documentation completeness
+- `auditRegistry()` - Check registry drift
+- `auditFallback()` - Scan session-tier commands for defaults, silent fallbacks, and legacy/backwards compatibility patterns
+
 ### Composite Commands
 
 - `validateComplete(tier, identifier?, featureName?)` - Complete validation workflow (validate + verify)
+- `auditCommands()` - Complete commands workflow audit (runs all audit checks)
 
 ## Usage Examples
 
@@ -73,6 +83,15 @@ Commands can be invoked via slash commands (if configured in your environment):
 - All required documents exist
 - All required sections present
 - Todos exist for tier
+
+### Command Audit Checks
+- **Pattern Consistency** - Commands follow expected patterns across tiers
+- **Dependencies** - Dependency usage is correct
+- **Exports** - Export usage is consistent
+- **Signatures** - Function signatures are consistent
+- **Documentation** - Documentation is complete
+- **Registry** - Registry doesn't drift from actual commands
+- **Fallback** - Session-tier commands don't use defaults, silent fallbacks, or legacy/backwards compatibility patterns
 
 ## Validation Tiers
 

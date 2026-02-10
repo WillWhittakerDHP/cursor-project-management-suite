@@ -78,8 +78,8 @@ function extractFilesFromOutput(output: string): {
   testFiles: string[];
   appFiles: string[];
 } {
-  const testFilePattern = /([\w\/\-\.]+\.(?:test|spec)\.(?:ts|tsx|js|jsx))(?::\d+:\d+)?/g;
-  const appFilePattern = /([\w\/\-\.]+\.(?:ts|tsx|js|jsx|vue))(?::\d+:\d+)?/g;
+  const testFilePattern = /([\w/\-.]+\.(?:test|spec)\.(?:ts|tsx|js|jsx))(?::\d+:\d+)?/g;
+  const appFilePattern = /([\w/\-.]+\.(?:ts|tsx|js|jsx|vue))(?::\d+:\d+)?/g;
   
   const testMatches = Array.from(output.matchAll(testFilePattern));
   const appMatches = Array.from(output.matchAll(appFilePattern));

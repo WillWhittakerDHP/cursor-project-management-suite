@@ -51,14 +51,15 @@ export async function planTier(
     case 'feature':
       featureName = identifier;
       break;
-    case 'phase':
+    case 'phase': {
       featureName = feature || 'vue-migration';
       phase = parseInt(identifier, 10);
       if (isNaN(phase)) {
         return `Error: Invalid phase number: ${identifier}`;
       }
       break;
-    case 'session':
+    }
+    case 'session': {
       featureName = feature || 'vue-migration';
       sessionId = identifier;
       // Validate session ID format (X.Y)
@@ -66,7 +67,8 @@ export async function planTier(
         return `Error: Invalid session ID format. Expected X.Y (e.g., 2.1), got: ${identifier}`;
       }
       break;
-    case 'task':
+    }
+    case 'task': {
       featureName = feature || 'vue-migration';
       taskId = identifier;
       // Validate task ID format (X.Y.Z)
@@ -77,6 +79,7 @@ export async function planTier(
       const parts = identifier.split('.');
       sessionId = `${parts[0]}.${parts[1]}`;
       break;
+    }
   }
   
   // Call plan-complete with tier-specific context

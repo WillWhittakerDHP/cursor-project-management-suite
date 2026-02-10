@@ -29,7 +29,7 @@ async function ensureHandoffFileExists(handoffPath: string, sessionId: string, c
     // Try to read the file - if it exists, we're done
     await readProjectFile(handoffPath);
     return;
-  } catch (error) {
+  } catch {} {
     // File doesn't exist - create it from template
     const templatePath = context.paths.getTemplatePath('session', 'handoff');
     const templateContent = await readFile(join(PROJECT_ROOT, templatePath), 'utf-8');

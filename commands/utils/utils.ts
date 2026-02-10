@@ -143,6 +143,7 @@ export async function runCommand(command: string, cwd?: string): Promise<{ succe
       stdio: 'pipe'
     });
     return { success: true, output: output.trim() };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     return { 
       success: false, 

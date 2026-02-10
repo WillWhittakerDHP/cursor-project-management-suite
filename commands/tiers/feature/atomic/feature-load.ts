@@ -128,9 +128,7 @@ export async function featureLoad(featureName: string): Promise<string> {
       output.push(transitionSection);
       output.push('\n---\n');
     }
-  } catch (error) {
-    // Handoff file not found is not critical
-  }
+  } catch {}
   
   return output.join('\n');
 }

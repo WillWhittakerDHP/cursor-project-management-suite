@@ -52,7 +52,7 @@ export async function updateCurrentFeature(): Promise<UpdateCurrentFeatureResult
         currentBranch,
         message: `Removed .current-feature config (on ${currentBranch} branch). Config will auto-detect from git branch when starting next feature.`,
       };
-    } catch (error) {
+    } catch {} {
       // File might not exist, that's okay
       return {
         success: true,

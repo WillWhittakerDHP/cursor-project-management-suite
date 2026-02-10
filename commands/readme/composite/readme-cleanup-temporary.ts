@@ -12,7 +12,6 @@ import { consolidateFindings } from '../atomic/readme-consolidate-findings';
 import { unlink } from 'fs/promises';
 import { join } from 'path';
 import { PROJECT_ROOT } from '../../utils/utils';
-import { ReadmeAuditResult } from '../types';
 
 export interface CleanupTemporaryOptions {
   /** Auto-consolidate findings into permanent docs */

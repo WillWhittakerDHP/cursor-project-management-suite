@@ -27,7 +27,7 @@ export async function analyzeTestError(
   const stackTrace = testOutput;
   
   // Extract file paths from stack trace
-  const filePathPattern = /([\w\/\-\.]+\.(?:test|spec|ts|tsx|js|jsx))(?::\d+:\d+)?/g;
+  const filePathPattern = /([\w/\-.]+\.(?:test|spec|ts|tsx|js|jsx))(?::\d+:\d+)?/g;
   const fileMatches = Array.from(testOutput.matchAll(filePathPattern));
   const affectedFiles = Array.from(new Set(fileMatches.map(m => m[1])));
   

@@ -11,7 +11,6 @@ import { readFile, writeFile, unlink } from 'fs/promises';
 import { join } from 'path';
 import { PROJECT_ROOT } from '../../utils/utils';
 import { ReadmeConsolidateParams } from '../types';
-import { MarkdownUtils } from '../../utils/markdown-utils';
 
 /**
  * Consolidate multiple READMEs

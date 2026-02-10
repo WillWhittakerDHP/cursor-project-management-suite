@@ -62,6 +62,7 @@ export async function testDevWorkflow(
     conversationTurn = `test-dev-${Date.now()}`,
   } = options;
   
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const results: any = {};
   const context = new WorkflowCommandContext('vue-migration');
   
@@ -103,8 +104,8 @@ export async function testDevWorkflow(
     
     if (parsed.failed) {
       // Extract files from output
-      const testFilePattern = /([\w\/\-\.]+\.(?:test|spec)\.(?:ts|tsx|js|jsx))(?::\d+:\d+)?/g;
-      const appFilePattern = /([\w\/\-\.]+\.(?:ts|tsx|js|jsx|vue))(?::\d+:\d+)?/g;
+      const testFilePattern = /([\w/\-.]+\.(?:test|spec)\.(?:ts|tsx|js|jsx))(?::\d+:\d+)?/g;
+      const appFilePattern = /([\w/\-.]+\.(?:ts|tsx|js|jsx|vue))(?::\d+:\d+)?/g;
       const testMatches = Array.from(initialTest.output.matchAll(testFilePattern));
       const appMatches = Array.from(initialTest.output.matchAll(appFilePattern));
       const testFiles = Array.from(new Set(testMatches.map(m => m[1])));

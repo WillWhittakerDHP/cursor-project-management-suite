@@ -152,30 +152,34 @@ export function determineTier(description: string): TierAnalysis {
   // Generate suggested command
   let suggestedCommand = '';
   switch (tier) {
-    case 'feature':
+    case 'feature': {
       // Extract feature name from description
       const featureNameMatch = descLower.match(/(?:build|create|implement|migrate|refactor)\s+([a-z-]+(?:\s+[a-z-]+)*)/i);
       const featureName = featureNameMatch ? featureNameMatch[1].replace(/\s+/g, '-') : 'new-feature';
       suggestedCommand = `/plan-feature ${featureName} "${description}"`;
       break;
-    case 'phase':
+    }
+    case 'phase': {
       // Extract phase number if present
       const phaseMatch = descLower.match(/phase\s+(\d+)/i);
       const phaseNum = phaseMatch ? phaseMatch[1] : 'N';
       suggestedCommand = `/plan-phase ${phaseNum} "${description}"`;
       break;
-    case 'session':
+    }
+    case 'session': {
       // Extract session ID if present
       const sessionMatch = descLower.match(/session\s+([\d.]+)/i);
       const sessionId = sessionMatch ? sessionMatch[1] : 'X.Y';
       suggestedCommand = `/plan-session ${sessionId} "${description}"`;
       break;
-    case 'task':
+    }
+    case 'task': {
       // Extract task ID if present
       const taskMatch = descLower.match(/task\s+([\d.]+)/i);
       const taskId = taskMatch ? taskMatch[1] : 'X.Y.Z';
       suggestedCommand = `/plan-task ${taskId} "${description}"`;
       break;
+    }
   }
   
   // Estimate duration

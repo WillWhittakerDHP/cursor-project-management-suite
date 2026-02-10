@@ -8,6 +8,8 @@
 | `/validate-completeness` | `verifyCompleteness` | `tier, identifier?, featureName?` | Verify required docs/entries exist |
 | `/validate-complete` | `validateComplete` | `tier, identifier?, featureName?` | Complete validation workflow |
 | `/validate-security` | `validateSecurity` | `path?, strict?` | Validate codebase for security vulnerabilities |
+| `/audit-commands` | `auditCommands` | None | Complete commands workflow audit (all checks) |
+| `/audit-fallback` | `auditFallback` | None | Scan session-tier commands for defaults/fallbacks/legacy |
 
 ## Parameter Types
 
@@ -128,6 +130,15 @@ await validateSecurity({ strict: true });
 - ✅ No XSS vulnerabilities
 - ✅ No unsafe eval or require patterns
 - ✅ No hardcoded secrets
+
+### Command Audits
+- ✅ Pattern consistency across tiers
+- ✅ Dependency usage correct
+- ✅ Export usage consistent
+- ✅ Signature consistency
+- ✅ Documentation complete
+- ✅ Registry doesn't drift
+- ✅ Session-tier commands don't use defaults/fallbacks/legacy patterns
 
 **Note:** For comprehensive security validation beyond ESLint, use the security commands:
 - `/security-audit` - Complete security audit (dependencies, secrets, config, CSRF, auth, IDOR)

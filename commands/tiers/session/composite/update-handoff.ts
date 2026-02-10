@@ -11,16 +11,22 @@ import { addTaskSection, TaskSection } from '../../task/atomic/add-task-section'
 import { updateNextAction } from '../../../utils/update-next-action';
 import { updateTimestamp } from '../../../utils/update-timestamp';
 
+// LEARNING: Centralized default feature name constant
+// WHY: Avoids hardcoded fallback strings scattered across codebase
+const DEFAULT_FEATURE_NAME = 'vue-migration';
+
 export interface UpdateHandoffParams {
   completedTasks?: string[]; // Format: X.Y.Z (e.g., ["1.3.1", "1.3.2"])
   newTask?: TaskSection; // Optional: Add new task section to handoff
   nextAction?: string;
   sessionId: string; // Session ID (format: X.Y)
-  featureName?: string; // Feature name (defaults to 'vue-migration')
+  featureName?: string; // Feature name (defaults to DEFAULT_FEATURE_NAME)
 }
 
 export async function updateHandoff(params: UpdateHandoffParams): Promise<void> {
-  const featureName = params.featureName || 'vue-migration';
+  // LEARNING: Explicit default constant instead of hardcoded string
+  // WHY: Avoids hardcoded fallbacks - use centralized constant
+  const featureName = params.featureName || DEFAULT_FEATURE_NAME;
   
   // Mark completed tasks
   if (params.completedTasks) {

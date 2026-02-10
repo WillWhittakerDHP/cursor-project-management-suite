@@ -9,11 +9,8 @@
 import { WorkflowCommandContext } from '../../utils/command-context';
 import { WorkflowId } from '../../utils/id-utils';
 import { getAllTodos } from '../../utils/todo-io';
-import { aggregateDetails } from '../../utils/todo-scoping';
 import { getStatus, StatusTier } from '../../status/atomic/get-status';
 import { DocumentTier } from '../../utils/document-manager';
-import { updateHandoff } from '../../tiers/session/composite/update-handoff';
-import { updateHandoffMinimal } from '../../utils/update-handoff-minimal';
 
 export type HandoffTier = DocumentTier | 'task';
 

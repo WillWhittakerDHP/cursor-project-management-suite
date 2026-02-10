@@ -9,7 +9,6 @@ import {
   validatePlanning,
   canProceedWithPlanning,
   getBlockingIssues,
-  getAllSuggestions,
   getTierValidationRules,
 } from '../../utils/planning-validation';
 import { PlanningOutput, PlanningTier, DecisionGate } from '../../utils/planning-types';

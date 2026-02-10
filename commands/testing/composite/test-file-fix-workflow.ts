@@ -40,7 +40,7 @@ async function applyTestFileFix(
       fixApplied = 'Syntax errors require manual inspection. Please review the error message and fix syntax issues.';
       break;
       
-    case 'import':
+    case 'import': {
       // Try to fix common import issues
       const importError = errorAnalysis.errorMessage.match(/Cannot find module ['"]([^'"]+)['"]/);
       if (importError) {

@@ -31,7 +31,7 @@ export interface AuditResult {
   score?: number; // 0-100
   findings: AuditFinding[];
   recommendations: string[];
-  summary?: string; // Brief summary of audit results
+  summary: string; // REQUIRED: Brief summary of audit results - must always be provided
 }
 
 export type AuditTier = 'session' | 'phase' | 'feature' | 'task';
@@ -51,6 +51,7 @@ export interface AuditParams {
   identifier: string;
   featureName?: string;
   modifiedFiles?: string[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   testResults?: any; // Test results from test-end-workflow
 }
 

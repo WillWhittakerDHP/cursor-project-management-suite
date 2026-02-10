@@ -12,16 +12,22 @@ import { readFile } from 'fs/promises';
 import { WorkflowId } from '../../../utils/id-utils';
 import { WorkflowCommandContext } from '../../../utils/command-context';
 
+// LEARNING: Centralized default feature name constant
+// WHY: Avoids hardcoded fallback strings scattered across codebase
+const DEFAULT_FEATURE_NAME = 'vue-migration';
+
 export interface MarkSessionCompleteParams {
   sessionId: string;
   tasksCompleted?: string[]; // List of completed task IDs
   accomplishments?: string[]; // Key accomplishments
-  featureName?: string; // Optional feature name (defaults to 'vue-migration')
+  featureName?: string; // Optional feature name (defaults to DEFAULT_FEATURE_NAME)
 }
 
 export async function markSessionComplete(params: MarkSessionCompleteParams): Promise<string> {
   const output: string[] = [];
-  const featureName = params.featureName || 'vue-migration';
+  // LEARNING: Explicit default constant instead of hardcoded string
+  // WHY: Avoids hardcoded fallbacks - use centralized constant
+  const featureName = params.featureName || DEFAULT_FEATURE_NAME;
   const context = new WorkflowCommandContext(featureName);
   
   // Parse session ID to get phase number
@@ -59,7 +65,7 @@ export async function markSessionComplete(params: MarkSessionCompleteParams): Pr
     let logContent = '';
     try {
       logContent = await readProjectFile(phaseLogPath);
-    } catch (error) {
+    } catch {} {
       // Create new log file with header
       const templatePath = join(PROJECT_ROOT, '.cursor/commands/tiers/phase/templates/phase-log.md');
       try {

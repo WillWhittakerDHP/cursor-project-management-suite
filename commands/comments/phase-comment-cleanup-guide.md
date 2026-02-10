@@ -4,7 +4,7 @@
 
 ## Overview
 
-The phase comment cleanup command removes session-specific notes (e.g., "Session 1.3.2: ...") from code comments while preserving valuable architectural comments (WHY, PATTERN, LEARNING, etc.) that support AI understanding.
+The phase comment cleanup command removes session-specific notes (e.g., "Session 1.3.2: ...") from code comments and evaluates both typed comments (WHY/PATTERN/LEARNING/RESOURCE) and regular comments for valuable "non-obvious" insights. Obvious or redundant comments are removed, while valuable comments are compressed to 2-3 concise lines.
 
 ## When to Use
 
@@ -29,23 +29,70 @@ WHY: Ensures data integrity
  */
 ```
 
-## What Gets Preserved
+## What Gets Preserved vs Removed
 
-The cleanup preserves all valuable architectural comments:
+The cleanup evaluates both typed comments (WHY/PATTERN/LEARNING/RESOURCE) and regular comments for valuable "non-obvious" insights:
 
-- `// WHY: ...` - Decision rationale
-- `// PATTERN: ...` - Architectural patterns
-- `// LEARNING: ...` - Learning notes (may be compressed if verbose)
-- `// ARCHITECTURE: ...` - Architecture notes
-- `// COMPARISON: ...` - Framework comparisons
-- `// RESOURCE: ...` - Learning resources
+### Preserved (Valuable Comments)
+
+Comments containing non-obvious insights are preserved and compressed:
+
+- **Specific technical transformations** (RFC3339 conversion, format parsing)
+- **Problem prevention explanations** (prevents bugs, avoids errors)
+- **Architectural decisions** (why composable pattern, why this approach)
+- **Technical concepts** (reactivity, dependency tracking, lifecycle)
+- **Causal explanations** (because X, since Y, due to Z)
 
 **Examples:**
 ```typescript
 /**
- * WHY: Enables reactive UI updates when selections change
- * PATTERN: Use ref for single values, ref([]) for arrays
+ * WHY: Converts RFC3339 business hours to HH:mm for validation
+ * PATTERN: Composable at top for access throughout
  */
+```
+
+### Removed (Obvious Comments)
+
+Comments that are obvious or redundant with code are removed:
+
+**Typed Comments (WHY/PATTERN/LEARNING/etc.):**
+- **Generic actions** (gets, fetches, loads, saves)
+- **Vague references** (this function, it, the code)
+- **Generic connectors** without substance (for, to, when, if)
+- **Obvious requirements** (always include, must use)
+- **Redundant explanations** that are clear from code
+
+**Regular Comments (non-typed):**
+- **Obvious actions** (gets, fetches, loads, saves, sets, initializes)
+- **Vague references** (this function, it, the code, the variable)
+- **Generic verbs** (calculates, computes, processes, handles, manages)
+- **Redundant labels** (function that does X, variable that stores Y)
+- **Meta-comments** without substance (note, notice, remember)
+
+**Examples (removed):**
+```typescript
+// LEARNING: Fetches current settings from business-settings API
+// WHY: Populates form with current configuration
+// PATTERN: API call with error handling
+// ↑ All removed - obvious from code
+
+// Gets the user data from the API
+// ↑ Removed - obvious from code
+
+// This function calculates the total
+// ↑ Removed - vague and obvious
+```
+
+**Examples (preserved - regular comments):**
+```typescript
+// Workaround for race condition in async initialization
+// ↑ Preserved - explains non-obvious problem
+
+// Performance optimization: avoids O(n²) lookup
+// ↑ Preserved - explains performance consideration
+
+// Legacy format support - deprecated but still needed for backward compatibility
+// ↑ Preserved - explains compatibility concern
 ```
 
 ## Integration with Phase End Workflow
@@ -64,19 +111,34 @@ The cleanup is **non-blocking** - if it fails, the phase-end workflow continues.
 
 ## Examples
 
-### Before Cleanup
+### Before Cleanup (Valuable Comments)
 ```typescript
-// LEARNING: Reactive state for wizard selections
-// WHY: Enables reactive UI updates when selections change
-// PATTERN: Use ref for single values, ref([]) for arrays
-const selectedUserType = ref<BookingBlockInstance | null>(null)
+// LEARNING: Get time conversion functions from useLocalTime composable
+// WHY: Need to convert RFC3339 business hours to HH:mm for validation
+// PATTERN: Use composable at top of composable function for access throughout
+const { convertToLocalTime } = useLocalTime();
 ```
 
-### After Cleanup
+### After Cleanup (Compressed)
 ```typescript
-// WHY: Enables reactive UI updates when selections change
-// PATTERN: Use ref for single values, ref([]) for arrays
-const selectedUserType = ref<BookingBlockInstance | null>(null)
+/**
+ * WHY: Converts RFC3339 business hours to HH:mm for validation
+ * PATTERN: Composable at top for access throughout
+ */
+const { convertToLocalTime } = useLocalTime();
+```
+
+### Before Cleanup (Obvious Comments)
+```typescript
+// LEARNING: Fetches current settings from business-settings API
+// WHY: Populates form with current configuration
+// PATTERN: API call with error handling
+const settings = await fetchSettings();
+```
+
+### After Cleanup (Removed)
+```typescript
+const settings = await fetchSettings();
 ```
 
 ### Before Cleanup (Multi-line)
@@ -150,7 +212,8 @@ The cleanup processes these file types:
 1. **Run at phase end:** Let the automatic cleanup handle it during `/phase-end`
 2. **Review changes:** Check `git diff` after cleanup to verify changes
 3. **Use dry-run first:** Preview changes before applying manually
-4. **Preserve WHY/PATTERN:** These comments are kept to support AI understanding
+4. **Trust the evaluation:** The cleanup preserves non-obvious insights and removes obvious/redundant comments
+5. **Compression:** Valuable comment clusters are compressed to 2-3 concise lines (max 75 chars per line)
 
 ## Related Commands
 

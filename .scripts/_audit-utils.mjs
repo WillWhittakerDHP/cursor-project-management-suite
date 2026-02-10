@@ -46,7 +46,7 @@ export function slugify(input, maxLen = 120) {
 export function stablePoolKey(issue) {
   const msg = String(issue.message || '')
     .replaceAll(/'[^']*'/g, "''")
-    .replaceAll(/\"[^\"]*\"/g, '""')
+    .replaceAll(/"[^"]*"/g, '""')
     .replaceAll(/\b\d+\b/g, '0')
     .replaceAll(/\/Users\/[^ ]+/g, '/Users/...')
     .replaceAll(/project-manager\/features\/[^/]+/g, 'project-manager/features/<feature>')

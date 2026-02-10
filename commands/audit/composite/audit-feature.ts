@@ -22,6 +22,7 @@ import { importExternalAudits } from '../external/import-external-audits';
 export interface AuditFeatureParams {
   featureName: string;
   modifiedFiles?: string[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   testResults?: any;
 }
 

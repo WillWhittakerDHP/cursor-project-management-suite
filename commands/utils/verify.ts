@@ -25,6 +25,7 @@ export async function verify(target: string = 'all', includeTests: boolean = fal
     test?: { success: boolean; output: string };
   };
 }> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const results: any = {};
   
   // Run linting
@@ -44,7 +45,7 @@ export async function verify(target: string = 'all', includeTests: boolean = fal
     try {
       const testResult = await testRun(target);
       results.test = testResult;
-    } catch (error) {
+    } catch {} {
       // Fallback to old test command if new structure not available
       const testResult = await test(target);
       results.test = testResult;

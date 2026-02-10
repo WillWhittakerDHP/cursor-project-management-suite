@@ -147,6 +147,7 @@ export async function checkDependencies(params: DependenciesCheckParams = {}): P
       if (result.summary.errorCount > 0 || (strict && result.summary.warningCount > 0)) {
         result.valid = false;
       }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       // npm audit exits with non-zero code if vulnerabilities found
       if (error.stdout) {

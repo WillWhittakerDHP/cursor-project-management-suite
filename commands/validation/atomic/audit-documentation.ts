@@ -169,9 +169,7 @@ export async function auditDocumentation(): Promise<AuditResult> {
         });
       }
       
-    } catch (error) {
-      // README might not exist, that's okay
-    }
+    } catch {}
   }
 
   const status = issues.some(i => i.severity === 'critical' || i.severity === 'error')

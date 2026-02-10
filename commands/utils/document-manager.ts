@@ -115,7 +115,7 @@ export class DocumentManager {
     let existingContent = '';
     try {
       existingContent = await this.readFile(path);
-    } catch (error) {
+    } catch {} {
       // File doesn't exist - start with empty content
       existingContent = '';
     }

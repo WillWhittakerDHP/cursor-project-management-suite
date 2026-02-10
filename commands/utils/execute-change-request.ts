@@ -35,6 +35,7 @@ export interface ExecuteChangeRequestParams {
 
 export interface ExecuteChangeRequestResult {
   success: boolean;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   changeResult: any;
   output: string;
 }
@@ -48,6 +49,7 @@ export async function executeChangeRequest(
   const { description, tierAnalysis, sessionId, taskId, phase, featureName = 'vue-migration' } = params;
   
   try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let changeResult: any;
     
     if (tierAnalysis.tier === 'task' && taskId) {

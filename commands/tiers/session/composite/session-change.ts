@@ -61,12 +61,55 @@ export async function changeRequest(params: ChangeRequestParams, featureName: st
   // Mode warning (soft check - doesn't stop execution)
   console.warn('⚠️ MODE REMINDER: /session-change should be used in Ask Mode for planning. Implementation requires Agent Mode after approval.');
   
-  // Restart server in background (non-blocking)
-  spawn('npm', ['run', 'server:refresh'], {
+  // LEARNING: Proper stdio handling for background processes
+  // WHY: Capturing and logging all output ensures we can debug failures
+  // PATTERN: Capture stdout/stderr, log output, handle errors and exit codes
+  const serverRefreshProcess = spawn('npm', ['run', 'server:refresh'], {
     cwd: process.cwd(),
-    stdio: 'ignore',
+    stdio: ['ignore', 'pipe', 'pipe'], // stdin ignored (no user input), stdout/stderr captured
     detached: true,
-  }).unref();
+  });
+  
+  // LEARNING: Capture stdout and log it
+  // WHY: Server refresh output may contain important information or errors
+  if (serverRefreshProcess.stdout) {
+    serverRefreshProcess.stdout.on('data', (data: Buffer) => {
+      const output = data.toString().trim();
+      if (output) {
+        console.log(`[server:refresh stdout] ${output}`);
+      }
+    });
+  }
+  
+  // LEARNING: Capture stderr and log it as errors
+  // WHY: stderr contains error messages that need to be visible
+  if (serverRefreshProcess.stderr) {
+    serverRefreshProcess.stderr.on('data', (data: Buffer) => {
+      const output = data.toString().trim();
+      if (output) {
+        console.error(`[server:refresh stderr] ${output}`);
+      }
+    });
+  }
+  
+  // LEARNING: Handle spawn errors (process failed to start)
+  // WHY: Explicit error handling prevents silent failures
+  serverRefreshProcess.on('error', (error) => {
+    console.error(`[server:refresh] Failed to start process: ${error.message}`);
+    console.error(`[server:refresh] Error details:`, error);
+  });
+  
+  // LEARNING: Handle process exit to log exit codes
+  // WHY: Non-zero exit codes indicate failures that should be logged
+  serverRefreshProcess.on('exit', (code, signal) => {
+    if (code !== null && code !== 0) {
+      console.error(`[server:refresh] Process exited with code ${code}`);
+    } else if (signal) {
+      console.warn(`[server:refresh] Process terminated by signal: ${signal}`);
+    }
+  });
+  
+  serverRefreshProcess.unref();
   
   const context = new WorkflowCommandContext(featureName);
   

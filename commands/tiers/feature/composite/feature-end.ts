@@ -39,6 +39,8 @@
  * **This will:**
  * - Generate feature summary
  * - [Run tests] (if selected in previous prompt)
+ * - Clean up excessive comments
+ * - Run code quality audit
  * - Merge feature/[name] → develop
  * - Delete feature branch
  * - Finalize documentation
@@ -109,8 +111,10 @@ export async function featureEnd(params: FeatureEndParams): Promise<{
           '- featureSummarize',
           '- featureClose (finalize docs)',
           '- optional: validate test goals + run tests/coverage',
-          '- feature comment cleanup',
+          '- feature comment cleanup (phase notes)',
           '- README workflow cleanup',
+          '- comprehensive comment cleanup (all obvious comments via npm script)',
+          '- run code quality audit',
           '- commit/push',
           '- merge feature branch into develop + delete feature branch',
           '- update current feature pointer',
@@ -361,6 +365,25 @@ export async function featureEnd(params: FeatureEndParams): Promise<{
       output: `README cleanup failed (non-critical): ${error instanceof Error ? error.message : String(error)}`,
     };
     // Don't fail entire feature-end if cleanup fails
+  }
+  
+  // Step 8.5: Run comprehensive comment cleanup (non-blocking)
+  try {
+    const cleanupResult = await runCommand('npm run comments:cleanup');
+    steps.comprehensiveCommentCleanup = {
+      success: cleanupResult.success,
+      output: cleanupResult.success 
+        ? `Comprehensive comment cleanup complete:\n${cleanupResult.output}`
+        : `Comment cleanup failed: ${cleanupResult.error || cleanupResult.output}\n` +
+          `You can run 'npm run comments:cleanup' manually.`,
+    };
+  } catch (error) {
+    steps.comprehensiveCommentCleanup = {
+      success: false,
+      output: `Comment cleanup failed (non-critical): ${error instanceof Error ? error.message : String(error)}\n` +
+        `You can run 'npm run comments:cleanup' manually.`,
+    };
+    // Don't fail feature-end if comment cleanup fails
   }
   
   // Step 9: Run audit (non-blocking)

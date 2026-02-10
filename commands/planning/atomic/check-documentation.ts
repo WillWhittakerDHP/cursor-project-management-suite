@@ -15,13 +15,12 @@ import { readFile, readdir } from 'fs/promises';
 import { join } from 'path';
 import { MarkdownUtils } from '../../utils/markdown-utils';
 import { WorkflowCommandContext } from '../../utils/command-context';
-import { WorkflowCommandContext } from '../../utils/command-context';
 
 const PROJECT_ROOT = process.cwd();
 
 type DocCheckType = 'component' | 'transformer' | 'pattern' | 'migration';
 
-interface DocCheckResult {
+interface _DocCheckResult {
   type: DocCheckType;
   sections: string[];
 }

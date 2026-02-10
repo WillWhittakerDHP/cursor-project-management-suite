@@ -7,7 +7,6 @@
  */
 
 import { reviewFile } from '../atomic/review-file';
-import { addComment, AddCommentParams } from '../atomic/add-comment';
 
 export interface ReviewAndAddParams {
   filePath: string;

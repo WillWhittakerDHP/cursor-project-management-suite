@@ -54,7 +54,7 @@ export async function auditDocs(params: AuditParams): Promise<AuditResult> {
         guidePath = context.paths.getSessionGuidePath(params.identifier);
         guideExists = true;
       }
-    } catch (error) {
+    } catch {} {
       findings.push({
         type: 'error',
         message: `Guide document not found for ${params.tier} ${params.identifier}`,
@@ -109,7 +109,7 @@ export async function auditDocs(params: AuditParams): Promise<AuditResult> {
         logPath = context.paths.getSessionLogPath(params.identifier);
         logExists = true;
       }
-    } catch (error) {
+    } catch {} {
       findings.push({
         type: 'warning',
         message: `Log document not found for ${params.tier} ${params.identifier}`,
@@ -167,7 +167,7 @@ export async function auditDocs(params: AuditParams): Promise<AuditResult> {
         handoffPath = context.paths.getSessionHandoffPath(params.identifier);
         handoffExists = true;
       }
-    } catch (error) {
+    } catch {} {
       findings.push({
         type: 'warning',
         message: `Handover document not found for ${params.tier} ${params.identifier}`,

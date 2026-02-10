@@ -215,7 +215,7 @@ function hasCommentNearby(lines: string[], index: number): boolean {
  * Note: This is a simplified implementation. A full implementation would
  * scan the codebase for similar function signatures or patterns.
  */
-function findSimilarPattern(lines: string[], index: number, currentFilePath: string): string | null {
+function findSimilarPattern(lines: string[], index: number, _currentFilePath: string): string | null {
   // Extract function/pattern name from current line
   const currentLine = lines[index].trim();
   

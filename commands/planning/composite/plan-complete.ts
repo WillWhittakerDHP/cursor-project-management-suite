@@ -14,7 +14,6 @@ import { generateAlternativesCommand } from '../atomic/generate-alternatives';
 import { createDecisionGateCommand, enforceDecisionGateCommand } from '../atomic/enforce-decision-gate';
 import { validatePlanningCommand } from '../atomic/validate-planning';
 import { PlanningInput, PlanningTier, AlternativeType, CriticalCheckType } from '../../utils/planning-types';
-import { CompletePlanningResult } from '../../utils/planning-types';
 
 /**
  * Complete planning workflow

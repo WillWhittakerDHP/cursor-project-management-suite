@@ -241,12 +241,16 @@ export async function phaseStart(phase: string, options?: CommandExecutionOption
         try {
           await access(join(PROJECT_ROOT, guidePath));
           guideExists = true;
-        } catch {}
+        } catch {
+          // intentionally empty - file doesn't exist
+        }
         
         try {
           await access(join(PROJECT_ROOT, handoffPath));
           handoffExists = true;
-        } catch {}
+        } catch {
+          // intentionally empty - file doesn't exist
+        }
         
         if (guideExists || handoffExists) {
           output.push(`**Note:** Some phase workflow documents already exist. Skipping generation.\n`);
@@ -280,7 +284,9 @@ export async function phaseStart(phase: string, options?: CommandExecutionOption
       try {
         await access(join(PROJECT_ROOT, guidePath));
         guideExists = true;
-      } catch {}
+      } catch {
+        // intentionally empty - file doesn't exist
+      }
       
       if (!guideExists) {
         output.push(`**Note:** No feature-plan.md found and phase workflow docs don't exist.\n`);
@@ -359,7 +365,7 @@ export async function phaseStart(phase: string, options?: CommandExecutionOption
         output.push('\n---\n');
       }
     }
-  } catch (error) {
+  } catch {} {
     // Non-blocking - don't fail phase start if context gathering fails
     // Silently continue - context gathering is optional enhancement
   }

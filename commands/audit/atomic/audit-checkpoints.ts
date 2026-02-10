@@ -8,7 +8,6 @@
 
 import { AuditResult, AuditFinding, AuditParams } from '../types';
 import { WorkflowCommandContext } from '../../utils/command-context';
-import { MarkdownUtils } from '../../utils/markdown-utils';
 
 /**
  * Audit checkpoints for a tier
@@ -30,7 +29,7 @@ export async function auditCheckpoints(params: AuditParams): Promise<AuditResult
       try {
         logContent = await context.readFeatureLog();
         logPath = context.paths.getFeatureLogPath();
-      } catch (error) {
+      } catch {
         findings.push({
           type: 'error',
           message: 'Feature log not found',
@@ -43,7 +42,7 @@ export async function auditCheckpoints(params: AuditParams): Promise<AuditResult
       try {
         logContent = await context.readPhaseLog(params.identifier);
         logPath = context.paths.getPhaseLogPath(params.identifier);
-      } catch (error) {
+      } catch {} {
         findings.push({
           type: 'error',
           message: `Phase ${params.identifier} log not found`,
@@ -56,7 +55,7 @@ export async function auditCheckpoints(params: AuditParams): Promise<AuditResult
       try {
         logContent = await context.readSessionLog(params.identifier);
         logPath = context.paths.getSessionLogPath(params.identifier);
-      } catch (error) {
+      } catch {} {
         findings.push({
           type: 'error',
           message: `Session ${params.identifier} log not found`,
@@ -73,7 +72,7 @@ export async function auditCheckpoints(params: AuditParams): Promise<AuditResult
         try {
           logContent = await context.readSessionLog(sessionId);
           logPath = context.paths.getSessionLogPath(sessionId);
-        } catch (error) {
+        } catch {} {
           findings.push({
             type: 'error',
             message: `Session ${sessionId} log not found`,

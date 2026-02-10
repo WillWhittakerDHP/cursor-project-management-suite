@@ -7,7 +7,7 @@
  */
 
 import { WorkflowCommandContext } from '../../utils/command-context';
-import { executeBatchOperation, BatchOperationResult } from '../atomic/batch-operation';
+import { executeBatchOperation } from '../atomic/batch-operation';
 
 export type BatchTier = 'feature' | 'phase' | 'session';
 

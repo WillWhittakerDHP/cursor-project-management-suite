@@ -145,6 +145,7 @@ export async function validateSecurity(params: ValidateSecurityParams = {}): Pro
             }
           }
         }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (error: any) {
         // ESLint may exit with non-zero code if issues found
         if (error.stdout) {

@@ -45,7 +45,7 @@ function createPullRequest(title, body = '', draft = false) {
     // Push current branch
     try {
       execSync(`git push -u origin ${currentBranch}`, { encoding: 'utf8', stdio: 'inherit' });
-    } catch (pushError) {
+    } catch {} {
       // Branch might already be pushed
       log('   (Branch already pushed or push failed)', 'yellow');
     }

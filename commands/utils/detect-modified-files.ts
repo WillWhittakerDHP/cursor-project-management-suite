@@ -49,7 +49,7 @@ async function extractFilesFromSessionLog(sessionLogPath: string): Promise<strin
     }
 
     return files;
-  } catch (error) {
+  } catch {} {
     // If we can't read the file, return empty array
     return [];
   }
@@ -106,7 +106,7 @@ function detectFilesFromGitHistory(phase: string, featureName: string): string[]
       );
 
     return files;
-  } catch (error) {
+  } catch {} {
     // If git command fails, return empty array
     return [];
   }
@@ -171,7 +171,7 @@ export async function detectPhaseModifiedFiles(
       for (const file of sessionFiles) {
         files.add(file);
       }
-    } catch (error) {
+    } catch {} {
       // Continue to next session if this one fails
       continue;
     }
@@ -270,7 +270,7 @@ export async function detectFeatureModifiedFiles(
       );
 
     return handleFileRenames(files);
-  } catch (error) {
+  } catch {} {
     // If git command fails, return empty array
     return [];
   }

@@ -130,17 +130,23 @@ export async function featureStart(featureName: string, options?: CommandExecuti
       try {
         await access(join(PROJECT_ROOT, guidePath));
         guideExists = true;
-      } catch {}
+      } catch {
+        // intentionally empty - file doesn't exist
+      }
       
       try {
         await access(join(PROJECT_ROOT, handoffPath));
         handoffExists = true;
-      } catch {}
+      } catch {
+        // intentionally empty - file doesn't exist
+      }
       
       try {
         await access(join(PROJECT_ROOT, logPath));
         logExists = true;
-      } catch {}
+      } catch {
+        // intentionally empty - file doesn't exist
+      }
       
       if (guideExists || handoffExists || logExists) {
         output.push(`**Note:** Some workflow documents already exist. Skipping generation.\n`);
@@ -173,7 +179,9 @@ export async function featureStart(featureName: string, options?: CommandExecuti
       try {
         await access(join(PROJECT_ROOT, guidePath));
         guideExists = true;
-      } catch {}
+      } catch {
+        // intentionally empty - file doesn't exist
+      }
       
       if (!guideExists) {
         output.push(`**Note:** No feature-plan.md found and workflow docs don't exist.\n`);

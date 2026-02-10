@@ -83,7 +83,7 @@ async function extractCurrentContext(featureName: string): Promise<{
     const phase = phaseMatch ? phaseMatch[1] : undefined;
     
     return { sessionId, taskId, phase };
-  } catch (error) {
+  } catch {} {
     // Silently return empty if can't extract
     return {};
   }

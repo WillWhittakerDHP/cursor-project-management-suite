@@ -8,7 +8,6 @@
 import { PlanningTemplateType, TemplateApplicationResult, PlanningOutput } from '../../utils/planning-types';
 import { WorkflowCommandContext } from '../../utils/command-context';
 import { readFile } from 'fs/promises';
-import { join } from 'path';
 
 /**
  * Apply a planning template
@@ -31,7 +30,7 @@ export async function applyTemplate(
     let templateContent: string;
     try {
       templateContent = await readFile(templatePath, 'utf-8');
-    } catch (error) {
+    } catch {
       // Fallback to default template structure
       templateContent = generateDefaultTemplate(templateType);
     }
@@ -95,7 +94,7 @@ function renderTemplate(
 /**
  * Render architecture template
  */
-function renderArchitectureTemplate(template: string, planningOutput: PlanningOutput): string {
+function renderArchitectureTemplate(template: string, _planningOutput: PlanningOutput): string {
   // Add architecture-specific sections if not present
   if (!template.includes('## Alternatives')) {
     template += '\n\n## Alternatives\n\n[To be filled during alternatives generation]\n';
@@ -109,7 +108,7 @@ function renderArchitectureTemplate(template: string, planningOutput: PlanningOu
 /**
  * Render technology template
  */
-function renderTechnologyTemplate(template: string, planningOutput: PlanningOutput): string {
+function renderTechnologyTemplate(template: string, _planningOutput: PlanningOutput): string {
   // Add technology-specific sections if not present
   if (!template.includes('## Technology Comparison')) {
     template += '\n\n## Technology Comparison\n\n[To be filled during alternatives generation]\n';
@@ -123,7 +122,7 @@ function renderTechnologyTemplate(template: string, planningOutput: PlanningOutp
 /**
  * Render pattern template
  */
-function renderPatternTemplate(template: string, planningOutput: PlanningOutput): string {
+function renderPatternTemplate(template: string, _planningOutput: PlanningOutput): string {
   // Add pattern-specific sections if not present
   if (!template.includes('## Pattern Comparison')) {
     template += '\n\n## Pattern Comparison\n\n[To be filled during alternatives generation]\n';
@@ -137,7 +136,7 @@ function renderPatternTemplate(template: string, planningOutput: PlanningOutput)
 /**
  * Render risk template
  */
-function renderRiskTemplate(template: string, planningOutput: PlanningOutput): string {
+function renderRiskTemplate(template: string, _planningOutput: PlanningOutput): string {
   // Add risk-specific sections if not present
   if (!template.includes('## Risk Analysis')) {
     template += '\n\n## Risk Analysis\n\n[To be filled]\n';

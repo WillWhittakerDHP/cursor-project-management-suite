@@ -195,28 +195,37 @@ All tasks complete. Ready to run end-of-session workflow?
 **If user says "yes":**
 - Run `/session-end` command automatically
 - Complete all end-of-session steps (verify app, lint, build, update docs)
-- **After all checks pass and docs are updated, prompt for commit/push:**
+- **Workflow order:**
+  1. Verify app starts
+  2. Run lint/typecheck
+  3. **Commit feature work** (before audits)
+  4. Run code quality audit
+  5. Update docs (session log, handoff, guide)
+  6. **Commit audit fixes** (if any, separately from feature work)
+  7. **After all commits are done, prompt for push:**
   ```
-  ## Ready to Commit and Push?
+  ## Ready to Push?
   
   All session-end checks completed successfully:
   - ✅ App starts
   - ✅ Linting passed
-  - ✅ Build successful
+  - ✅ Feature work committed
+  - ✅ Audit fixes committed (if any)
   - ✅ Session log updated
   - ✅ Handoff document updated
   - ✅ Session guide updated
   
-  **Ready to commit and push all changes?**
+  **Ready to push all commits to remote?**
   
   This will:
-  - Commit all changes with session summary message
+  - Push feature work commit
+  - Push audit fixes commit (if any)
   - Push to remote repository
   
-  **Proceed with commit and push?** (yes/no)
+  **Proceed with push?** (yes/no)
   ```
-- **If user says "yes" to commit/push:** Execute git commit and push, then end session
-- **If user says "no" to commit/push:** End session without committing (user can commit manually later)
+- **If user says "yes" to push:** Execute git push, then end session
+- **If user says "no" to push:** End session without pushing (user can push manually later)
 
 **If user says "no" to session-end:**
 - Address any requested changes

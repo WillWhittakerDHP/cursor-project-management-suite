@@ -7,7 +7,6 @@
  */
 
 import { AuditResult, AuditFinding, AuditParams } from '../types';
-import { WorkflowCommandContext } from '../../utils/command-context';
 import { getAllTodos } from '../../utils/todo-io';
 import { getStatus, StatusTier } from '../../status/atomic/get-status';
 import { WorkflowId } from '../../utils/id-utils';

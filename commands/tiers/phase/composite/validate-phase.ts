@@ -27,7 +27,7 @@ export async function validatePhase(phase: string): Promise<ValidatePhaseResult>
     let phaseGuideContent: string;
     try {
       phaseGuideContent = await readProjectFile(phaseGuidePath);
-    } catch (error) {
+    } catch {} {
       return {
         canStart: false,
         reason: 'Phase guide not found',

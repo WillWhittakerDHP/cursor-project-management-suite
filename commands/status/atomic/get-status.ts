@@ -133,7 +133,7 @@ export async function getStatus(params: GetStatusParams): Promise<StatusInfo | n
       progress,
       children
     };
-  } catch (error) {
+  } catch {} {
     return null;
   }
 }

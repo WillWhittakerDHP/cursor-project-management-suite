@@ -24,6 +24,7 @@ export interface AuditPhaseParams {
   phase: string; // Format: N (e.g., "1")
   featureName?: string;
   modifiedFiles?: string[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   testResults?: any;
 }
 

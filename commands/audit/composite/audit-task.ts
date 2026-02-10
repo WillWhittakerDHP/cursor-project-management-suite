@@ -21,6 +21,7 @@ export interface AuditTaskParams {
   taskId: string; // Format: X.Y.Z (e.g., "1.3.1")
   featureName?: string;
   modifiedFiles?: string[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   testResults?: any;
 }
 

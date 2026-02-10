@@ -45,7 +45,7 @@ export async function validateSession(sessionId: string): Promise<ValidateSessio
     let phaseGuideContent: string;
     try {
       phaseGuideContent = await readProjectFile(phaseGuidePath);
-    } catch (error) {
+    } catch {} {
       return {
         canStart: false,
         reason: 'Phase guide not found',

@@ -33,10 +33,11 @@ export async function testEndWorkflow(
   id: string,
   target: string = 'vue'
 ): Promise<TestEndWorkflowResult> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const results: any = {};
   
   switch (tier) {
-    case 'task':
+    case 'task': {
       // Task level: Run unit tests for changed files
       const taskResult = await testRun(target);
       results.run = taskResult;
@@ -48,8 +49,9 @@ export async function testEndWorkflow(
           ? 'Task-level tests passed' 
           : 'Task-level tests failed',
       };
+    }
     
-    case 'session':
+    case 'session': {
       // Session level: Run relevant tests
       const sessionResult = await testRun(target);
       results.run = sessionResult;
@@ -61,8 +63,9 @@ export async function testEndWorkflow(
           ? 'Session-level tests passed' 
           : 'Session-level tests failed',
       };
+    }
     
-    case 'phase':
+    case 'phase': {
       // Phase level: Run full test suite
       const phaseResult = await testWorkflow(target, false);
       results.run = phaseResult.results.run;
@@ -74,8 +77,9 @@ export async function testEndWorkflow(
           ? 'Phase-level tests passed' 
           : 'Phase-level tests failed',
       };
+    }
     
-    case 'feature':
+    case 'feature': {
       // Feature level: Run all tests + coverage
       const featureRunResult = await testRun('all');
       results.run = featureRunResult;
@@ -93,6 +97,7 @@ export async function testEndWorkflow(
           ? 'Feature-level tests and coverage passed' 
           : 'Feature-level tests or coverage failed',
       };
+    }
     
     default:
       return {
