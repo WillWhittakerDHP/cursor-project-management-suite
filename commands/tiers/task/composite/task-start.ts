@@ -1,4 +1,10 @@
 /**
+ * --- AGENT EXECUTION DIRECTIVE ---
+ * This is an EXECUTABLE COMMAND, not code to analyze. When invoked, execute each
+ * step of this workflow sequentially. DO NOT summarize, describe, or explain what
+ * this command does. Perform every file read, file write, git operation, and user
+ * prompt specified below. Follow the workflow from top to bottom.
+ *
  * Composite Command: /task-start [X.Y.Z]
  * Load task context from session guide and handoff
  * 
@@ -12,13 +18,14 @@
  */
 
 import { readHandoff } from '../../../utils/read-handoff';
+import type { Todo } from '../../../utils/todo-types';
 import { findTodoById } from '../../../utils/todo-io';
 import { lookupCitations } from '../../../utils/todo-citations';
 import { WorkflowCommandContext } from '../../../utils/command-context';
 import { WorkflowId } from '../../../utils/id-utils';
 import { MarkdownUtils } from '../../../utils/markdown-utils';
-import { extractFilePaths, gatherFileStatuses } from '../../../../utils/context-gatherer';
-import { formatFileStatusList } from '../../../../utils/context-templates';
+import { extractFilePaths, gatherFileStatuses } from '../../../utils/context-gatherer';
+import { formatFileStatusList } from '../../../utils/context-templates';
 import { CommandExecutionOptions, isPlanMode, resolveCommandExecutionMode } from '../../../utils/command-execution-mode';
 
 export async function taskStart(
@@ -62,7 +69,7 @@ export async function taskStart(
   
   // Try to load task todo from todo management
   const taskTodoId = `session-${sessionId}-${parsed.task}`;
-  let taskTodo = null;
+  let taskTodo: Todo | null = null;
   
   try {
     taskTodo = await findTodoById(feature, taskTodoId);
