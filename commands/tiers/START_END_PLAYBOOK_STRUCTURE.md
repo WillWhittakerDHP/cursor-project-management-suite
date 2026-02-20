@@ -93,9 +93,9 @@ Use `result.outcome.nextAction` for the next step; do not infer from `result.ste
 - **Session:** Description from session log title, then session guide (Session Name / Description), then phase guide session list. Next session from phase guide session list (next in order after current). Implemented in session-end (deriveSessionDescription, deriveNextSession); session-start derives description the same way when omitted.
 - **Phase:** Title/description from phase guide (Phase Name, Description). Next phase from feature guide phase list if needed. phase-start does not take a title parameter.
 - **Feature:** Resolve the identifier to a feature name, then call `featureStart(resolvedFeatureName, options)`. No user-supplied title.
-  - **Numeric identifier (e.g. `3`):** Resolve to feature name by (1) listing directories under `.project-manager/features` and taking the **Nth** directory (1-based: `3` = third directory), or (2) matching by feature number/order in PROJECT_PLAN or `.project-manager/PROJECT_PLAN.md` if present. If only one feature exists, use it.
+  - **Numeric identifier (e.g. `3`):** Always resolve using the feature whose `#` column in `.project-manager/PROJECT_PLAN.md` matches the number. `3` = Feature #3. Do not use directory listing or index; PROJECT_PLAN is the only source for numeric resolution.
   - **Non-numeric identifier:** Use it as the feature name (after trimming).
-  - **Identifier omitted:** If `.project-manager/.current-feature` exists, use its contents as the feature name; otherwise resolve from context (e.g. handoff/plan).
+  - **Identifier omitted:** If `.project-manager/.current-feature` exists, use its contents as the feature name; otherwise treat as error (do not infer from directories).
 - **Task:** Title/description from session guide task list or handoff; next task from session guide order. task-start does not take a description parameter; task context is loaded from session guide/handoff.
 
 **Rule for context step:** Derive [title/description/next] from [doc paths]; do not ask the user.

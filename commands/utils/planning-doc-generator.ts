@@ -26,16 +26,15 @@ export function generateFeatureGuideFromPlan(
   // Replace basic placeholders
   content = content.replace(/\[Name\]/g, parsedPlan.name);
   content = content.replace(/\[Brief description of feature objectives\]/g, parsedPlan.overview);
-  content = content.replace(/\[Date\]/g, parsedPlan.metadata.created);
   content = content.replace(/\[Estimated weeks\/months\]/g, '[To be determined]');
+
+  // Replace date placeholders (distinct so Completed is not filled at feature start)
+  content = content.replace(/\[StartDate\]/g, parsedPlan.metadata.created);
+  content = content.replace(/\[CompletedDate\]/g, '—');
   
   // Replace status
   content = content.replace(/\[Not Started \/ Research \/ Planning \/ In Progress \/ Complete\]/g, parsedPlan.metadata.status);
   content = content.replace(/\[Status\]/g, parsedPlan.metadata.status);
-  
-  // Replace Feature Overview section
-  const overviewSection = `**Feature Name:** ${parsedPlan.name}\n**Description:** ${parsedPlan.overview}\n**Status:** ${parsedPlan.metadata.status}\n\n**Duration:** [To be determined]\n**Started:** ${parsedPlan.metadata.created}\n**Completed:** [Date] (if complete)`;
-  content = content.replace(/\[Brief description of feature objectives\]/g, parsedPlan.overview);
   
   // Replace Feature Objectives section
   const objectivesList = parsedPlan.objectives.length > 0
@@ -69,7 +68,11 @@ export function generateFeatureGuideFromPlan(
     content = content.replace(/`feature\/\[name\]`/g, `\`${parsedPlan.metadata.branch}\``);
     content = content.replace(/feature\/\[name\]/g, parsedPlan.metadata.branch.replace('feature/', ''));
   }
-  
+
+  // Replace entire Research Phase section — research not started at feature start; see feature-plan.md for architecture
+  const researchSectionNote = `## Research Phase\n\nResearch phase not yet started — see feature-plan.md for architectural decisions.\n\n---`;
+  content = content.replace(/## Research Phase[\s\S]*?^---$/m, researchSectionNote);
+
   return content;
 }
 
@@ -99,11 +102,8 @@ export function generateFeatureHandoffFromPlan(
   content = content.replace(/\[Minimal notes about feature completion - 2-3 sentences max\]/g, parsedPlan.overview);
   content = content.replace(/\[Brief bullet point about context needed\]/g, parsedPlan.dependencies[0] || '[Brief bullet point about context needed]');
   
-  // Replace feature summary
-  const phasesCompleted = parsedPlan.phases.length > 0
-    ? parsedPlan.phases.map(p => p.number).join(', ')
-    : '[List phase numbers]';
-  content = content.replace(/\[List phase numbers\]/g, phasesCompleted);
+  // Replace feature summary — initial handoff: no phases completed yet
+  content = content.replace(/\[List phase numbers\]/g, 'None yet');
   
   // Replace branch
   if (parsedPlan.metadata.branch) {
@@ -129,7 +129,8 @@ export function generateFeatureLogFromPlan(
   
   // Replace basic placeholders
   content = content.replace(/\[Name\]/g, parsedPlan.name);
-  content = content.replace(/\[Date\]/g, parsedPlan.metadata.created);
+  content = content.replace(/\[StartDate\]/g, parsedPlan.metadata.created);
+  content = content.replace(/\[CompletedDate\]/g, '—');
   
   // Add initial log entry
   const initialEntry = `## Feature Start - ${parsedPlan.metadata.created}\n\n**Feature:** ${parsedPlan.name}\n**Status:** ${parsedPlan.metadata.status}\n**Description:** ${parsedPlan.overview}\n\n**Objectives:**\n${parsedPlan.objectives.map(obj => `- ${obj}`).join('\n')}\n\n**Phases Planned:** ${parsedPlan.phases.length}\n\n---\n\n`;

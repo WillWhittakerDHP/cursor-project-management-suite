@@ -10,8 +10,8 @@
 
 **Feature:** [Name]
 **Status:** [Not Started / Research / Planning / In Progress / Complete]
-**Started:** [Date]
-**Completed:** [Date] (if complete)
+**Started:** [StartDate]
+**Completed:** [CompletedDate]
 
 ---
 
@@ -29,7 +29,7 @@
 - [Decision 2]
 
 **Research Documentation:**
-- Research Questions: `.cursor/workflow-manager/features/[name]/research-questions.md`
+- Research Questions: `.project-manager/features/[name]/research-questions.md`
 
 ---
 
@@ -105,7 +105,7 @@
 **Impact:** [How this affects phases/sessions]
 
 **Documentation:**
-- Feature Change Doc: `.cursor/workflow-manager/features/[name]/feature-[name]-change.md`
+- Feature Change Doc: `.project-manager/features/[name]/feature-[name]-change.md`
 
 ---
 
@@ -143,7 +143,7 @@
 
 ## Related Documents
 
-- Feature Guide: `.cursor/workflow-manager/features/[name]/feature-[name]-guide.md`
-- Feature Handoff: `.cursor/workflow-manager/features/[name]/feature-[name]-handoff.md`
-- Phase Logs: `.cursor/workflow-manager/features/[name]/phases/phase-[N]-log.md`
+- Feature Guide: `.project-manager/features/[name]/feature-[name]-guide.md`
+- Feature Handoff: `.project-manager/features/[name]/feature-[name]-handoff.md`
+- Phase Logs: `.project-manager/features/[name]/phases/phase-[N]-log.md`
 

@@ -13,8 +13,8 @@
 **Status:** [Not Started / Research / Planning / In Progress / Complete]
 
 **Duration:** [Estimated weeks/months]
-**Started:** [Date]
-**Completed:** [Date] (if complete)
+**Started:** [StartDate]
+**Completed:** [CompletedDate]
 
 ---
 
@@ -43,7 +43,7 @@
 - [Risk 2] - [Mitigation]
 
 **Research Documentation:**
-- Research Questions: `.cursor/workflow-manager/features/[name]/research-questions.md`
+- Research Questions: `.project-manager/features/[name]/research-questions.md`
 - External Research: [Links to research sources]
 
 ---
@@ -192,8 +192,8 @@ After completing all phases in a feature:
 
 ## Related Documents
 
-- Feature Log: `.cursor/workflow-manager/features/[name]/feature-[name]-log.md`
-- Feature Handoff: `.cursor/workflow-manager/features/[name]/feature-[name]-handoff.md`
-- Phase Guides: `.cursor/workflow-manager/features/[name]/phases/phase-[N]-guide.md`
-- Research Questions: `.cursor/workflow-manager/features/[name]/research-questions.md`
+- Feature Log: `.project-manager/features/[name]/feature-[name]-log.md`
+- Feature Handoff: `.project-manager/features/[name]/feature-[name]-handoff.md`
+- Phase Guides: `.project-manager/features/[name]/phases/phase-[N]-guide.md`
+- Research Questions: `.project-manager/features/[name]/research-questions.md`
 
