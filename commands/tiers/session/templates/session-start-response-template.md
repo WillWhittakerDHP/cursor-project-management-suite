@@ -51,10 +51,10 @@ When responding to a `/session-start` command, follow this concise, focused stru
 ### Files to Work With
 
 **Source (React):**
-- `client/src/[path]` - [Brief description]
+- `frontend-root/src/[path]` - [Brief description]
 
 **Target (Vue):**
-- `client-vue/src/[path]` - [Brief description]
+- `frontend-root/src/[path]` - [Brief description]
 
 ### Pattern Inventory (Required)
 
@@ -133,7 +133,7 @@ Should I proceed with implementing these changes, or do you want to review the p
 ### Current State
 
 **What's already done:**
-- ✅ Vue Query plugin configured (`client-vue/src/plugins/vue-query.ts`)
+- ✅ Vue Query plugin configured (`frontend-root/src/plugins/vue-query.ts`)
 - ✅ Basic QueryClient with retry logic and stale time
 - ✅ `fetchToPropertyTransformer` exists in Vue
 - ✅ `globalTransformer` exists in Vue
@@ -154,13 +154,13 @@ Should I proceed with implementing these changes, or do you want to review the p
 ### Files to Work With
 
 **Source (React):**
-- `client/src/global/contexts/queryProvider.tsx` - React QueryProvider with prefetching
-- `client/src/global/components/loadingIndicator.tsx` - React loading component
+- `frontend-root/src/global/contexts/queryProvider.tsx` - React QueryProvider with prefetching
+- `frontend-root/src/global/components/loadingIndicator.tsx` - React loading component
 
 **Target (Vue):**
-- `client-vue/src/plugins/vue-query.ts` - Extend QueryClient
-- `client-vue/src/components/LoadingIndicator.vue` - Create new loading component
-- `client-vue/src/App.vue` - Add prefetching logic
+- `frontend-root/src/plugins/vue-query.ts` - Extend QueryClient
+- `frontend-root/src/components/LoadingIndicator.vue` - Create new loading component
+- `frontend-root/src/App.vue` - Add prefetching logic
 
 ### Implementation Plan
 
@@ -226,8 +226,8 @@ Should I proceed with implementing these changes, or do you want to review the p
 **Goal:** Create Pinia store for global data...
 
 **Files:**
-- Source: `client/src/global/contexts/globalContext.tsx`
-- Target: `client-vue/src/stores/globalStore.ts`
+- Source: `frontend-root/src/global/contexts/globalContext.tsx`
+- Target: `frontend-root/src/stores/globalStore.ts`
 
 **Approach:**
 - Use Pinia `defineStore` with setup syntax
@@ -255,6 +255,6 @@ import { defineStore } from 'pinia'
 ## Related Documents
 
 - Session Guide Template: `.cursor/commands/tiers/session/templates/session-guide.md`
-- Session Start Command: `.cursor/commands/composite/session-start.ts`
+- Session Start Command: `.cursor/commands/tiers/session/composite/session.ts` (exports `sessionStart`). Invoke `sessionStart(sessionId, description?, options)`.
 - Workflow Rules: `.cursor/rules/USER_CODING_RULES.md` (Rule 19)
 

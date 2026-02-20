@@ -1,8 +1,11 @@
 /**
  * Composite Planning Command: /planning-plan-with-checks
- * Plan with documentation checks, reuse checks, and validation
- * 
- * Combines: parse → docs check → reuse check → validate
+ * Plan with scoping, documentation checks, reuse checks, and validation
+ *
+ * Combines: (optional) auto-context + downstream dedup → tier overlap check → parse → docs check → reuse check → validate → (optional) scope document
+ *
+ * Tier overlap check: search codebase for existing code that does what the tier start/end
+ * commands do, so we can decide overwrite / add to / deprecate. Specs: getTierOverlapSearchSpec in utils/check-tier-overlap.ts.
  */
 
 import { parsePlainLanguage } from '../atomic/parse-plain-language';
@@ -10,10 +13,49 @@ import { checkDocumentation } from '../atomic/check-documentation';
 import { checkReuse } from '../atomic/check-reuse';
 import { validatePlanningCommand } from '../atomic/validate-planning';
 import { PlanningInput, PlanningTier } from '../../utils/planning-types';
+import { getTierOverlapSearchSpec, type TierName } from '../../utils/check-tier-overlap';
+import { WorkflowCommandContext } from '../../utils/command-context';
+import { MarkdownUtils } from '../../utils/markdown-utils';
+import { checkDownstreamPlans } from '../../utils/check-downstream-plans';
+import { createScopeDocument } from '../../utils/create-scope-document';
+import { resolveFeatureName } from '../../utils/feature-context';
+
+export type DocCheckType = 'component' | 'transformer' | 'pattern' | 'migration';
+
+export interface PlanWithChecksOptions {
+  createScopeDocument?: boolean;
+  featureName?: string;
+}
 
 /**
- * Plan with comprehensive checks
- * 
+ * Extract current session/task/phase from handoff when not provided
+ */
+async function extractCurrentContextFromHandoff(featureName: string): Promise<{
+  sessionId?: string;
+  taskId?: string;
+  phase?: string;
+}> {
+  try {
+    const context = new WorkflowCommandContext(featureName);
+    const handoffContent = await context.readFeatureHandoff();
+    const currentStatus = MarkdownUtils.extractSection(handoffContent, 'Current Status');
+    const nextAction = MarkdownUtils.extractSection(handoffContent, 'Next Action');
+    const combined = (currentStatus || '') + '\n' + (nextAction || '');
+    const sessionMatch = combined.match(/session\s+([\d.]+)/i) || combined.match(/(\d+\.\d+)/);
+    const sessionId = sessionMatch ? sessionMatch[1] : undefined;
+    const taskMatch = combined.match(/task\s+([\d.]+)/i) || combined.match(/(\d+\.\d+\.\d+)/);
+    const taskId = taskMatch ? taskMatch[1] : undefined;
+    const phaseMatch = combined.match(/phase\s+(\d+)/i);
+    const phase = phaseMatch ? phaseMatch[1] : undefined;
+    return { sessionId, taskId, phase };
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * Plan with comprehensive checks (including optional scoping)
+ *
  * @param description Natural language description
  * @param tier Planning tier
  * @param feature Feature name context
@@ -21,6 +63,7 @@ import { PlanningInput, PlanningTier } from '../../utils/planning-types';
  * @param sessionId Session ID context (optional)
  * @param taskId Task ID context (optional)
  * @param docCheckType Type of documentation check
+ * @param options createScopeDocument: persist plan as .md; featureName: for context extraction
  * @returns Comprehensive planning output with checks
  */
 export async function planWithChecks(
@@ -30,19 +73,67 @@ export async function planWithChecks(
   phase?: number,
   sessionId?: string,
   taskId?: string,
-  docCheckType: 'component' | 'transformer' | 'pattern' | 'migration' = 'migration'
+  docCheckType: DocCheckType = 'migration',
+  options?: PlanWithChecksOptions
 ): Promise<string> {
   const output: string[] = [];
-  
+  const resolvedFeature = await resolveFeatureName(feature ?? options?.featureName);
+
+  // Step 0a: Auto-extract context from handoff when session/task/phase not provided
+  let resolvedSessionId = sessionId;
+  let resolvedTaskId = taskId;
+  let resolvedPhase = phase;
+  if (!resolvedSessionId && !resolvedTaskId && resolvedPhase === undefined) {
+    const extracted = await extractCurrentContextFromHandoff(resolvedFeature);
+    resolvedSessionId = resolvedSessionId ?? extracted.sessionId;
+    resolvedTaskId = resolvedTaskId ?? extracted.taskId;
+    resolvedPhase = resolvedPhase ?? (extracted.phase !== undefined ? Number(extracted.phase) : undefined);
+  }
+
+  // Step 0b: Downstream plan dedup — bail early if change already planned
+  const downstreamCheck = await checkDownstreamPlans(
+    {
+      description,
+      currentSessionId: resolvedSessionId,
+      currentPhase: resolvedPhase?.toString(),
+      featureName: resolvedFeature,
+    },
+    resolvedFeature
+  );
+  if (downstreamCheck.hasMatches) {
+    return downstreamCheck.output;
+  }
+
   output.push('# Planning with Checks\n');
   output.push(`**Tier:** ${tier}\n`);
   output.push(`**Description:** ${description}\n`);
   output.push('\n---\n');
-  
+
+  // Step 0: Tier overlap check — search for existing code that does what tier start/end commands do
+  const tierName = tier as TierName;
+  const startSpec = getTierOverlapSearchSpec(tierName, 'start');
+  const endSpec = getTierOverlapSearchSpec(tierName, 'end');
+  output.push('## Step 0: Check Existing Code (Tier Overlap)\n');
+  output.push('Search the codebase for current code that looks like it does what the tier start/end commands would do. ');
+  output.push('Then decide: **overwrite** / **add to** / **deprecate** so the tier workflow stays the single source of truth.\n');
+  output.push('(Search specs: `getTierOverlapSearchSpec` in `.cursor/commands/utils/check-tier-overlap.ts`.)\n\n');
+  if (startSpec) {
+    output.push(`### ${startSpec.commandName}\n`);
+    output.push(`**Does:** ${startSpec.whatItDoes}\n`);
+    output.push(`**Search for:** ${startSpec.searchQueries.join(', ')}\n\n`);
+  }
+  if (endSpec) {
+    output.push(`### ${endSpec.commandName}\n`);
+    output.push(`**Does:** ${endSpec.whatItDoes}\n`);
+    output.push(`**Search for:** ${endSpec.searchQueries.join(', ')}\n\n`);
+  }
+  output.push('**After searching:** Present findings (files/locations) and decision (overwrite / add to / deprecate) with one-line rationale.\n');
+  output.push('\n---\n');
+
   // Step 1: Parse plain language
   output.push('## Step 1: Parse Planning Input\n');
   try {
-    const parseResult = await parsePlainLanguage(description, tier, feature, phase, sessionId, taskId);
+    const parseResult = await parsePlainLanguage(description, tier, feature, resolvedPhase, resolvedSessionId, resolvedTaskId);
     output.push(parseResult);
     output.push('\n---\n');
   } catch (error) {
@@ -84,11 +175,11 @@ export async function planWithChecks(
       description,
       tier,
       feature,
-      phase,
-      sessionId,
-      taskId,
+      phase: resolvedPhase,
+      sessionId: resolvedSessionId,
+      taskId: resolvedTaskId,
     };
-    const { parseNaturalLanguage } = await import('../../../project-manager/utils/planning-parser');
+    const { parseNaturalLanguage } = await import('../../utils/planning-parser');
     const parseResult = parseNaturalLanguage(input);
     
     if (parseResult.success && parseResult.output) {
@@ -125,7 +216,23 @@ export async function planWithChecks(
   output.push('\n---\n');
   output.push('## Summary\n');
   output.push('Planning with checks completed. Review the results above before proceeding.\n');
-  
+
+  // Optional: persist plan as scope document
+  if (options?.createScopeDocument) {
+    try {
+      const documentResult = await createScopeDocument({
+        analysisOutput: output.join('\n'),
+        sessionId: resolvedSessionId,
+        taskId: resolvedTaskId,
+        phase: resolvedPhase?.toString(),
+        featureName: resolvedFeature,
+      });
+      output.push(`\n---\n## Scope Document\n**Path:** \`${documentResult.documentPath}\`\n`);
+    } catch (error) {
+      output.push(`\n---\n## Scope Document\n**Warning:** Failed to create scope document: ${error instanceof Error ? error.message : String(error)}\n`);
+    }
+  }
+
   return output.join('\n');
 }
 

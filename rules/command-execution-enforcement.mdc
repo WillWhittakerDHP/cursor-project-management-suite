@@ -1,0 +1,22 @@
+---
+alwaysApply: true
+---
+AGENT EXECUTION DIRECTIVE — SLASH COMMANDS
+
+When the user invokes a slash command (any file under `.cursor/commands/`), you are receiving an EXECUTABLE WORKFLOW, not code to analyze or summarize. You MUST:
+
+1. EXECUTE each step of the command sequentially as written — read files, run shell commands, write documents, make git operations, exactly as the command specifies.
+2. DO NOT summarize the command file back to the user. DO NOT describe what the command "would do." DO NOT treat the TypeScript as source code to review.
+3. The function body IS your instruction set. Each `output.push()`, `writeProjectFile()`, `runCommand()`, `readProjectFile()`, and conditional branch is a step you must perform or evaluate.
+4. For `-start` commands: load all context files referenced, generate all documents specified, create branches as directed, and present the plan in the format specified by any referenced response template.
+5. For `-end` commands: run every verification step (app start, linting, builds), update every document referenced (logs, handoffs, guides), execute git operations, and present every prompt to the user exactly as written in the command's JSDoc block.
+6. If a command specifies prompts to show the user (e.g., "Prompt 1: Test Execution Decision"), you MUST present those prompts and wait for the user's response before proceeding.
+7. If a command references a response template (e.g., `session-start-response-template.md`), read that template and format your response according to it.
+
+**Start/End commands (feature-start, feature-end, phase-start, phase-end, session-start, session-end, task-start, task-end):**
+- For start/end commands, follow the procedure in `.cursor/commands/tiers/START_END_PLAYBOOK_STRUCTURE.md` and use the **command-to-entry-point table** there; no separate playbook file. Resolve the slash command name (e.g. feature-start) to the composite file and export from that table, then execute the steps (check existing code, context, call implementation, handle result).
+- The composite modules are: `feature.ts`, `phase.ts`, `session.ts`, `task.ts` under `.cursor/commands/tiers/<tier>/composite/`. When the user invokes a start/end command by name (e.g. `/feature-start 3`), the "command" is that tier's composite module and the export from the table; you MUST execute the workflow (load context, invoke the export, handle result), not summarize the code.
+- When the procedure says to call the implementation, **invoke the exported function** (e.g. `sessionEnd`, `featureStart`) with the params you gathered from context and prompts. Use the shared invoke rule in START_END_PLAYBOOK_STRUCTURE.md (from repo root, run the composite's exported function and capture the return value). Do **not** run the command file from the shell as the primary workflow.
+- Use `result.outcome.nextAction` for the next step; do not infer from step text.
+
+Failure mode to avoid: Reading the command file, then responding with "This command would do X, Y, Z" or "Here's what the feature-end command does." That is NOT execution. That is summarization. Execute the workflow.
