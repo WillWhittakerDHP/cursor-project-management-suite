@@ -90,7 +90,7 @@ export async function auditExports(): Promise<AuditResult> {
     try {
       const content = await readFile(usageFile, 'utf-8');
       usageContent.push(content);
-    } catch (error) {
+    } catch (_error) {
       // File might not exist, continue
     }
   }
@@ -124,7 +124,7 @@ export async function auditExports(): Promise<AuditResult> {
                 break;
               }
             }
-          } catch (error) {
+          } catch (_error) {
             // Skip files we can't read
           }
         }
@@ -138,8 +138,8 @@ export async function auditExports(): Promise<AuditResult> {
           });
         }
       }
-    } catch {} {
-      // Module file might not exist (already caught in dependency check)
+    } catch (err) {
+      console.warn('Audit exports: module file not found or unreadable', fullPath, err);
       continue;
     }
   }
@@ -170,7 +170,9 @@ export async function auditExports(): Promise<AuditResult> {
         });
       }
       
-    } catch {}
+    } catch (err) {
+      console.warn('Audit exports: failed to check file for dead code patterns', file, err);
+    }
   }
 
   const status = issues.some(i => i.severity === 'critical' || i.severity === 'error')

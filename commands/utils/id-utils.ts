@@ -1,8 +1,7 @@
 /**
  * ID Format Utilities
  * 
- * Standardizes ID parsing, validation, and format conversion for workflow manager.
- * Handles conversion between display format (X.Y.Z) and filename format (X-Y-Z).
+ * Hierarchy: Feature (X) → Phase (X.Y) → Session (X.Y.Z) → Task (X.Y.Z.A)
  * 
  * LEARNING: Centralized ID handling ensures consistency across the codebase
  * WHY: ID format conversion scattered across files leads to bugs and inconsistencies
@@ -10,20 +9,25 @@
  */
 
 /**
- * Parsed task ID structure
+ * Parsed task ID structure (X.Y.Z.A)
  */
 export interface ParsedTaskId {
+  feature: string;
   phase: string;
   session: string;
   task: string;
+  phaseId: string;
+  sessionId: string;
 }
 
 /**
- * Parsed session ID structure
+ * Parsed session ID structure (X.Y.Z)
  */
 export interface ParsedSessionId {
+  feature: string;
   phase: string;
   session: string;
+  phaseId: string;
 }
 
 /**
@@ -34,61 +38,54 @@ export interface ParsedSessionId {
  */
 export class WorkflowId {
   /**
-   * Parse task ID (e.g., "1.3.1")
-   * Format: Phase.Session.Task
-   * @param id Task ID string
-   * @returns Parsed task ID or null if invalid format
+   * Parse task ID (e.g., "4.1.3.2")
+   * Format: Feature.Phase.Session.Task (X.Y.Z.A)
    */
   static parseTaskId(id: string): ParsedTaskId | null {
     const parts = id.split('.');
-    if (parts.length !== 3) return null;
-    
-    // Validate all parts are non-empty
+    if (parts.length !== 4) return null;
     if (parts.some(part => part.trim() === '')) return null;
     
     return {
-      phase: parts[0],
-      session: parts[1],
-      task: parts[2]
+      feature: parts[0],
+      phase: parts[1],
+      session: parts[2],
+      task: parts[3],
+      phaseId: `${parts[0]}.${parts[1]}`,
+      sessionId: `${parts[0]}.${parts[1]}.${parts[2]}`,
     };
   }
 
   /**
-   * Parse session ID (e.g., "1.3")
-   * Format: Phase.Session
-   * @param id Session ID string
-   * @returns Parsed session ID or null if invalid format
+   * Parse session ID (e.g., "4.1.3")
+   * Format: Feature.Phase.Session (X.Y.Z)
    */
   static parseSessionId(id: string): ParsedSessionId | null {
     const parts = id.split('.');
-    if (parts.length !== 2) return null;
-    
-    // Validate all parts are non-empty
+    if (parts.length !== 3) return null;
     if (parts.some(part => part.trim() === '')) return null;
     
     return {
-      phase: parts[0],
-      session: parts[1]
+      feature: parts[0],
+      phase: parts[1],
+      session: parts[2],
+      phaseId: `${parts[0]}.${parts[1]}`,
     };
   }
 
   /**
-   * Parse phase ID (e.g., "1")
-   * Format: Phase
-   * @param id Phase ID string
-   * @returns Phase identifier or null if invalid format
+   * Parse phase ID (e.g., "4.1")
+   * Format: Feature.Phase (X.Y)
    */
   static parsePhaseId(id: string): string | null {
     const trimmed = id.trim();
-    if (trimmed === '' || trimmed.includes('.')) return null;
-    return trimmed;
+    if (/^\d+\.\d+$/.test(trimmed)) return trimmed;
+    return null;
   }
 
   /**
    * Convert ID to filename format
-   * Converts dots to dashes (e.g., "1.3.1" -> "1-3-1")
-   * @param id ID in display format (X.Y.Z)
-   * @returns ID in filename format (X-Y-Z)
+   * Converts dots to dashes (e.g., "4.1.3" -> "4-1-3")
    */
   static toFilename(id: string): string {
     return id.replace(/\./g, '-');
@@ -96,27 +93,21 @@ export class WorkflowId {
 
   /**
    * Convert filename format to display format
-   * Converts dashes to dots (e.g., "1-3-1" -> "1.3.1")
-   * @param filename ID in filename format (X-Y-Z)
-   * @returns ID in display format (X.Y.Z)
+   * Converts dashes to dots (e.g., "4-1-3" -> "4.1.3")
    */
   static fromFilename(filename: string): string {
     return filename.replace(/-/g, '.');
   }
 
   /**
-   * Validate task ID format
-   * @param id Task ID string
-   * @returns true if valid task ID format (X.Y.Z)
+   * Validate task ID format (X.Y.Z.A)
    */
   static isValidTaskId(id: string): boolean {
     return this.parseTaskId(id) !== null;
   }
 
   /**
-   * Validate session ID format
-   * @param id Session ID string
-   * @returns true if valid session ID format (X.Y)
+   * Validate session ID format (X.Y.Z)
    */
   static isValidSessionId(id: string): boolean {
     return this.parseSessionId(id) !== null;
@@ -124,45 +115,36 @@ export class WorkflowId {
 
   /**
    * Generate task ID from components
-   * @param phase Phase identifier
-   * @param session Session identifier
-   * @param task Task identifier
-   * @returns Task ID in format X.Y.Z
+   * @returns Task ID in format X.Y.Z.A
    */
-  static generateTaskId(phase: string, session: string, task: string): string {
-    return `${phase}.${session}.${task}`;
+  static generateTaskId(feature: string, phase: string, session: string, task: string): string {
+    return `${feature}.${phase}.${session}.${task}`;
   }
 
   /**
    * Generate session ID from components
-   * @param phase Phase identifier
-   * @param session Session identifier
-   * @returns Session ID in format X.Y
+   * @returns Session ID in format X.Y.Z
    */
-  static generateSessionId(phase: string, session: string): string {
-    return `${phase}.${session}`;
+  static generateSessionId(feature: string, phase: string, session: string): string {
+    return `${feature}.${phase}.${session}`;
   }
 
   /**
-   * Extract session ID from task ID
-   * @param taskId Task ID in format X.Y.Z
-   * @returns Session ID in format X.Y
+   * Extract session ID from task ID (X.Y.Z.A → X.Y.Z)
    */
   static extractSessionId(taskId: string): string | null {
     const parsed = this.parseTaskId(taskId);
     if (!parsed) return null;
-    return this.generateSessionId(parsed.phase, parsed.session);
+    return parsed.sessionId;
   }
 
   /**
-   * Extract phase ID from session ID or task ID
-   * @param id Session ID (X.Y) or task ID (X.Y.Z)
-   * @returns Phase identifier
+   * Extract phase ID from session ID (X.Y.Z → X.Y) or task ID (X.Y.Z.A → X.Y)
    */
   static extractPhaseId(id: string): string | null {
     const parts = id.split('.');
-    if (parts.length < 1) return null;
-    return parts[0] || null;
+    if (parts.length < 2) return null;
+    return `${parts[0]}.${parts[1]}`;
   }
 }
 

@@ -7,7 +7,7 @@
  */
 
 import { execSync } from 'child_process';
-import { existsSync, readFileSync } from 'fs';
+import { existsSync } from 'fs';
 import { join } from 'path';
 
 export interface DependenciesCheckParams {
@@ -119,7 +119,7 @@ export async function checkDependencies(params: DependenciesCheckParams = {}): P
         result.summary.totalPackages = Object.keys(vulnerabilities).length;
         
         for (const [packageName, vulnData] of Object.entries(vulnerabilities)) {
-          const vuln = vulnData as any;
+          const vuln = vulnData as { severity?: string; version?: string; url?: string; id?: string; path?: string };
           const severity = vuln.severity || 'unknown';
           const version = vuln.version || 'unknown';
           const advisory = vuln.url || vuln.id || 'N/A';
@@ -147,19 +147,20 @@ export async function checkDependencies(params: DependenciesCheckParams = {}): P
       if (result.summary.errorCount > 0 || (strict && result.summary.warningCount > 0)) {
         result.valid = false;
       }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
+     
+    } catch (error: unknown) {
+      const err = error as { stdout?: string; message?: string };
       // npm audit exits with non-zero code if vulnerabilities found
-      if (error.stdout) {
+      if (err.stdout) {
         try {
-          const auditData = JSON.parse(error.stdout);
+          const auditData = JSON.parse(err.stdout);
           
           if (auditData.vulnerabilities) {
             const vulnerabilities = auditData.vulnerabilities;
             result.summary.totalPackages = Object.keys(vulnerabilities).length;
             
             for (const [packageName, vulnData] of Object.entries(vulnerabilities)) {
-              const vuln = vulnData as any;
+              const vuln = vulnData as { severity?: string; version?: string; url?: string; id?: string; path?: string };
               const severity = vuln.severity || 'unknown';
               const version = vuln.version || 'unknown';
               const advisory = vuln.url || vuln.id || 'N/A';
@@ -185,14 +186,14 @@ export async function checkDependencies(params: DependenciesCheckParams = {}): P
           if (result.summary.errorCount > 0 || (strict && result.summary.warningCount > 0)) {
             result.valid = false;
           }
-        } catch (parseError) {
+        } catch (_parseError) {
           output.push('⚠️ **Could not parse npm audit output**\n');
-          output.push(`Error: ${error.message}\n\n`);
+          output.push(`Error: ${err.message ?? String(error)}\n\n`);
           return output.join('\n');
         }
       } else {
         output.push('⚠️ **npm audit execution failed**\n');
-        output.push(`Error: ${error.message}\n\n`);
+        output.push(`Error: ${err.message ?? String(error)}\n\n`);
         return output.join('\n');
       }
     }
@@ -238,9 +239,9 @@ export async function checkDependencies(params: DependenciesCheckParams = {}): P
     }
     
     return output.join('\n');
-  } catch (error) {
+  } catch (_error) {
     output.push(`**ERROR: Failed to check dependencies**\n`);
-    output.push(`**Error:** ${error instanceof Error ? error.message : String(error)}\n`);
+    output.push(`**Error:** ${_error instanceof Error ? _error.message : String(_error)}\n`);
     output.push('\n**Note:** Make sure npm is installed and package.json exists.\n');
     return output.join('\n');
   }
@@ -283,10 +284,10 @@ export async function checkDependenciesProgrammatic(
       success: true,
       result,
     };
-  } catch (error) {
+  } catch (_error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : String(error),
+      error: _error instanceof Error ? _error.message : String(_error),
     };
   }
 }

@@ -8,6 +8,7 @@
 
 import { AuditResult, AuditFinding, AuditParams } from '../types';
 import { securityAudit } from '../../security/composite/security-audit';
+import { FRONTEND_ROOT } from '../../utils/utils';
 
 /**
  * Audit security for a tier
@@ -25,7 +26,7 @@ export async function auditSecurity(params: AuditParams): Promise<AuditResult> {
     if (params.modifiedFiles && params.modifiedFiles.length > 0) {
       // If we have modified files, check if any are server files
       const hasServerFiles = params.modifiedFiles.some(f => f.startsWith('server/'));
-      const hasClientFiles = params.modifiedFiles.some(f => f.startsWith('client/'));
+      const hasClientFiles = params.modifiedFiles.some(f => f.startsWith(`${FRONTEND_ROOT}/`));
       
       if (hasServerFiles && !hasClientFiles) {
         // Only server files - use server/ for dependency checks
@@ -117,7 +118,7 @@ export async function auditSecurity(params: AuditParams): Promise<AuditResult> {
       // Check if this is Phase 3 (frontend work) - auth is deferred
       const isPhase3 = params.tier === 'phase' && params.identifier === '3';
       const hasOnlyClientFiles = params.modifiedFiles && params.modifiedFiles.length > 0 &&
-        params.modifiedFiles.every(f => f.startsWith('client/'));
+        params.modifiedFiles.every(f => f.startsWith(`${FRONTEND_ROOT}/`));
       
       if (isPhase3 || hasOnlyClientFiles) {
         findings.push({
@@ -154,14 +155,14 @@ export async function auditSecurity(params: AuditParams): Promise<AuditResult> {
       summary
     };
     
-  } catch (error) {
+  } catch (_error) {
     return {
       category: 'security',
       status: 'fail',
       score: 0,
       findings: [{
         type: 'error',
-        message: `Security audit failed: ${error instanceof Error ? error.message : String(error)}`,
+        message: `Security audit failed: ${_error instanceof Error ? _error.message : String(_error)}`,
         location: params.tier
       }],
       recommendations: ['Run /security-audit manually to review security issues'],

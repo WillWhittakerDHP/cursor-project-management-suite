@@ -83,11 +83,11 @@ export class TemplateManager {
       this.cache.set(cacheKey, content);
       
       return content;
-    } catch (error) {
+    } catch (_error) {
       throw new Error(
         `Template not found: ${templatePath}\n` +
         `Full path: ${fullPath}\n` +
-        `Error: ${error instanceof Error ? error.message : String(error)}`
+        `Error: ${_error instanceof Error ? _error.message : String(_error)}`
       );
     }
   }
@@ -163,11 +163,11 @@ export class TemplateManager {
             templates.push(identifier);
           }
         }
-      } catch (error) {
+      } catch (_error) {
         // Templates directory doesn't exist or can't be read - skip
         console.warn(
           `WARNING: Could not list templates from ${templatesDir}\n` +
-          `Error: ${error instanceof Error ? error.message : String(error)}`
+          `Error: ${_error instanceof Error ? _error.message : String(_error)}`
         );
       }
     }

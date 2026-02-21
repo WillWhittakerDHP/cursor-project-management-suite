@@ -119,10 +119,7 @@ export class MarkdownUtils {
     options: ExtractSectionOptions = {}
   ): Map<string, string> {
     const result = new Map<string, string>();
-    
-    // Parse structure once for efficiency
-    const structure = this.parseStructure(content);
-    
+
     for (const title of sectionTitles) {
       const section = this.extractSection(content, title, options);
       result.set(title, section);

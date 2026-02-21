@@ -72,9 +72,9 @@ Start Session [NEXT_SESSION]
 Completed Task 1.3.4: Relationship API Composables. Created composables for parent-child CRUD operations. All files compile successfully.
 
 **What you need to start:**
-- Review `client-vue/src/api/relationships.ts` for relationship patterns
+- Review `frontend-root/src/api/relationships.ts` for relationship patterns
 - Begin Session 1.4: Transformers
-- Follow patterns from `client/src/admin/dataTransformation/` (React reference)
+- Follow patterns from `frontend-root/src/admin/dataTransformation/` (React reference)
 ```
 
 ---

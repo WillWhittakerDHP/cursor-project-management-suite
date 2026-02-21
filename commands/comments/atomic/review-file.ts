@@ -188,9 +188,9 @@ export async function reviewFile(filePath: string): Promise<string> {
     }
     
     return output.join('\n');
-  } catch (error) {
+  } catch (_error) {
     output.push(`**ERROR: Failed to review file**\n`);
-    output.push(`**Error:** ${error instanceof Error ? error.message : String(error)}\n`);
+    output.push(`**Error:** ${_error instanceof Error ? _error.message : String(_error)}\n`);
     return output.join('\n');
   }
 }
@@ -224,9 +224,7 @@ function findSimilarPattern(lines: string[], index: number, _currentFilePath: st
   const composableMatch = currentLine.match(/use\w+\(/);
   
   if (functionMatch) {
-    const funcName = functionMatch[1];
     // Return a reference format (in real implementation, would search codebase)
-    // For now, return null to indicate no match found (first occurrence)
     return null;
   }
   

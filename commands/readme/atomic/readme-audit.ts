@@ -30,7 +30,6 @@ export async function auditReadmes(directory: string): Promise<ReadmeAuditResult
     
     // Collect all README files recursively
     for (const entry of entries) {
-      const fullPath = join(fullDir, entry.name);
       const relativePath = join(directory, entry.name);
       
       if (entry.isDirectory()) {
@@ -49,9 +48,9 @@ export async function auditReadmes(directory: string): Promise<ReadmeAuditResult
     }
     
     return results;
-  } catch (error) {
+  } catch (_error) {
     throw new Error(
-      `Failed to audit READMEs: ${error instanceof Error ? error.message : String(error)}`
+      `Failed to audit READMEs: ${_error instanceof Error ? _error.message : String(_error)}`
     );
   }
 }

@@ -91,7 +91,7 @@ Sync to `cursor-project-management-suite`:
 
 ```bash
 # Example: User asks to add a new feature
-$ git add client-vue/src/components/NewFeature.vue
+$ git add frontend-root/src/components/NewFeature.vue
 $ git commit -m "feat: Add new feature"
 $ git push origin feature/data-flow-alignment
 ```
@@ -132,7 +132,7 @@ $ git push origin feature/data-flow-alignment
 
 ```bash
 # Example: User updates both app code and cursor commands
-$ git add client-vue/src/components/Feature.vue
+$ git add frontend-root/src/components/Feature.vue
 $ git add .cursor/commands/testing/test-feature.ts
 $ git commit -m "feat: Add feature with test command"
 $ git push origin feature/data-flow-alignment
@@ -167,7 +167,7 @@ Before committing, verify:
 ┌─────────────────────────────────────────────────────────┐
 │   DHP_Differential_Scheduler (Main Workspace)           │
 │                                                         │
-│   ├── client-vue/          (App code)                  │
+│   ├── frontend-root/          (App code)                  │
 │   ├── server/              (App code)                  │
 │   ├── .cursor/             (Cursor environment)        │
 │   │   ├── commands/                                    │

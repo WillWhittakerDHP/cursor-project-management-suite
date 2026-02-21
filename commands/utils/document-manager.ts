@@ -115,8 +115,8 @@ export class DocumentManager {
     let existingContent = '';
     try {
       existingContent = await this.readFile(path);
-    } catch {} {
-      // File doesn't exist - start with empty content
+    } catch (err) {
+      console.warn('Document manager: readFile failed (file may not exist)', path, err);
       existingContent = '';
     }
 
@@ -236,7 +236,7 @@ export class DocumentManager {
           throw new Error('Session ID is required for session documents');
         }
         if (!WorkflowId.isValidSessionId(id)) {
-          throw new Error(`Invalid session ID format: ${id}. Expected format: X.Y`);
+          throw new Error(`Invalid session ID format: ${id}. Expected format: X.Y.Z`);
         }
         switch (docType) {
           case 'guide':
@@ -262,16 +262,16 @@ export class DocumentManager {
       try {
         await access(fullPath);
         return await readFile(fullPath, 'utf-8');
-      } catch {
-        // Fall back to project-manager/ location (without .cursor prefix)
+      } catch (err) {
+        console.warn('Document manager: primary path not found, trying fallback', filePath, err);
         if (filePath.startsWith('.project-manager/')) {
           const fallbackPath = filePath.replace('.project-manager/', 'project-manager/');
           fullPath = join(this.PROJECT_ROOT, fallbackPath);
           try {
             await access(fullPath);
             return await readFile(fullPath, 'utf-8');
-          } catch {
-            // Re-throw original error if fallback also fails
+          } catch (fallbackErr) {
+            console.warn('Document manager: fallback path also failed', fallbackPath, fallbackErr);
             throw new Error(`File not found: ${filePath} or ${fallbackPath}`);
           }
         }

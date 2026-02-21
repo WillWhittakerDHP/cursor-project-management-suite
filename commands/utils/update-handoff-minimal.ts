@@ -10,6 +10,7 @@
 
 import { readProjectFile, writeProjectFile, getCurrentDate, getCurrentBranch, PROJECT_ROOT } from './utils';
 import { WorkflowCommandContext } from './command-context';
+import { resolveFeatureName } from './feature-context';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
 
@@ -18,7 +19,7 @@ export interface MinimalHandoffUpdate {
   nextSession: string; // Format: X.Y (e.g., "1.4") - next session to start
   transitionNotes?: string; // Minimal notes about what changed/where we left off
   sessionId?: string; // Current session ID (extracted from lastCompletedTask if not provided)
-  featureName?: string; // Feature name (defaults to 'vue-migration')
+  featureName?: string; // Optional: resolved from .current-feature or git branch if not set
 }
 
 /**
@@ -29,8 +30,8 @@ async function ensureHandoffFileExists(handoffPath: string, sessionId: string, c
     // Try to read the file - if it exists, we're done
     await readProjectFile(handoffPath);
     return;
-  } catch {} {
-    // File doesn't exist - create it from template
+  } catch (err) {
+    console.warn('Update handoff minimal: handoff file not found, creating from template', handoffPath, err);
     const templatePath = context.paths.getTemplatePath('session', 'handoff');
     const templateContent = await readFile(join(PROJECT_ROOT, templatePath), 'utf-8');
     
@@ -50,7 +51,7 @@ async function ensureHandoffFileExists(handoffPath: string, sessionId: string, c
 }
 
 export async function updateHandoffMinimal(update: MinimalHandoffUpdate): Promise<void> {
-  const featureName = update.featureName || 'vue-migration';
+  const featureName = await resolveFeatureName(update.featureName);
   const context = new WorkflowCommandContext(featureName);
   // Extract session ID from lastCompletedTask if not provided (X.Y.Z -> X.Y)
   const sessionId = update.sessionId || update.lastCompletedTask.split('.').slice(0, 2).join('.');
@@ -97,9 +98,9 @@ Completed Task ${update.lastCompletedTask}
 - Begin Session ${update.nextSession}`;
   
   // Find existing sections and replace, or insert if not found
-  let statusIndex = lines.findIndex(line => line.trim().startsWith('##') && line.includes('Current Status'));
-  let nextActionIndex = lines.findIndex(line => line.trim().startsWith('##') && line.includes('Next Action'));
-  let transitionIndex = lines.findIndex(line => line.trim().startsWith('##') && line.includes('Transition Context'));
+  const statusIndex = lines.findIndex(line => line.trim().startsWith('##') && line.includes('Current Status'));
+  const nextActionIndex = lines.findIndex(line => line.trim().startsWith('##') && line.includes('Next Action'));
+  const transitionIndex = lines.findIndex(line => line.trim().startsWith('##') && line.includes('Transition Context'));
   
   // Replace or insert sections
   const updatedLines: string[] = [];

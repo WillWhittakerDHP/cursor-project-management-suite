@@ -7,8 +7,10 @@
  */
 
 import { WorkflowCommandContext } from '../../utils/command-context';
+import { resolveFeatureName } from '../../utils';
 import { WorkflowId } from '../../utils/id-utils';
 import { DocumentTier } from '../../utils/document-manager';
+import { MarkdownUtils } from '../../utils/markdown-utils';
 
 export interface ExtractSectionParams {
   tier: DocumentTier;
@@ -36,7 +38,7 @@ export interface ExtractSectionResult {
 export async function extractSectionProgrammatic(
   params: ExtractSectionParams
 ): Promise<ExtractSectionResult> {
-  const featureName = params.featureName || 'vue-migration';
+  const featureName = await resolveFeatureName(params.featureName);
   const context = new WorkflowCommandContext(featureName);
   
   // Validate identifier for phase/session
@@ -55,7 +57,7 @@ export async function extractSectionProgrammatic(
   if (params.tier === 'session' && params.identifier && !WorkflowId.isValidSessionId(params.identifier)) {
     return {
       success: false,
-      error: `Invalid session ID format. Expected X.Y (e.g., 2.1). Attempted: ${params.identifier}`
+      error: `Invalid session ID format. Expected X.Y.Z (e.g., 4.1.3). Attempted: ${params.identifier}`
     };
   }
   
@@ -95,7 +97,6 @@ export async function extractSectionProgrammatic(
     }
     
     // Extract section
-    const { MarkdownUtils } = await import('../../utils/markdown-utils');
     const sectionContent = MarkdownUtils.extractSection(content, params.sectionTitle);
     
     if (!sectionContent) {
@@ -121,10 +122,10 @@ export async function extractSectionProgrammatic(
       sectionContent,
       documentPath
     };
-  } catch (error) {
+  } catch (_error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : String(error)
+      error: _error instanceof Error ? _error.message : String(_error)
     };
   }
 }

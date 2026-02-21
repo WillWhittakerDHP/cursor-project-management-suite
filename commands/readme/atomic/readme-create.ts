@@ -65,9 +65,9 @@ export async function createReadme(params: ReadmeCreateParams): Promise<string> 
     return `✅ Created README: ${params.filePath}\n` +
            `   Type: ${params.type}\n` +
            `   Title: ${params.title}`;
-  } catch (error) {
+  } catch (_error) {
     throw new Error(
-      `Failed to create README: ${error instanceof Error ? error.message : String(error)}`
+      `Failed to create README: ${_error instanceof Error ? _error.message : String(_error)}`
     );
   }
 }

@@ -7,8 +7,10 @@
  */
 
 import { WorkflowCommandContext } from '../../utils/command-context';
+import { resolveFeatureName } from '../../utils';
 import { WorkflowId } from '../../utils/id-utils';
 import { DocumentTier } from '../../utils/document-manager';
+import { MarkdownUtils } from '../../utils/markdown-utils';
 
 export interface ListSectionsParams {
   tier: DocumentTier;
@@ -30,7 +32,7 @@ export interface SectionInfo {
  * @returns List of sections as formatted string
  */
 export async function listSections(params: ListSectionsParams): Promise<string> {
-  const featureName = params.featureName || 'vue-migration';
+  const featureName = await resolveFeatureName(params.featureName);
   const context = new WorkflowCommandContext(featureName);
   const output: string[] = [];
   
@@ -50,7 +52,7 @@ export async function listSections(params: ListSectionsParams): Promise<string> 
     return 'Error: Session ID is required for session documents';
   }
   if (params.tier === 'session' && params.identifier && !WorkflowId.isValidSessionId(params.identifier)) {
-    return `Error: Invalid session ID format. Expected X.Y (e.g., 2.1)\nAttempted: ${params.identifier}`;
+    return `Error: Invalid session ID format. Expected X.Y.Z (e.g., 4.1.3)\nAttempted: ${params.identifier}`;
   }
   
   try {
@@ -89,9 +91,8 @@ export async function listSections(params: ListSectionsParams): Promise<string> 
     }
     
     // Parse sections
-    const { MarkdownUtils } = await import('../../utils/markdown-utils');
     const structure = MarkdownUtils.parseStructure(content);
-    
+
     if (structure.size === 0) {
       output.push(`**No sections found in document**\n`);
       const documentPath = 
@@ -104,7 +105,7 @@ export async function listSections(params: ListSectionsParams): Promise<string> 
     
     // Sort sections by start position
     const sections = Array.from(structure.entries())
-      .map(([title, info]) => ({ title, ...info }))
+      .map(([, info]) => ({ ...info }))
       .sort((a, b) => a.start - b.start);
     
     output.push(`## Sections (${sections.length})\n\n`);
@@ -124,7 +125,7 @@ export async function listSections(params: ListSectionsParams): Promise<string> 
     output.push(`**Document:** ${documentPath}\n`);
     
     return output.join('\n');
-  } catch (error) {
+  } catch (_error) {
     const attemptedPath = 
       params.tier === 'feature' ? (params.docType === 'guide' ? context.paths.getFeatureGuidePath() : params.docType === 'log' ? context.paths.getFeatureLogPath() : context.paths.getFeatureHandoffPath()) :
       params.tier === 'phase' ? (params.docType === 'guide' ? context.paths.getPhaseGuidePath(params.identifier!) : params.docType === 'log' ? context.paths.getPhaseLogPath(params.identifier!) : context.paths.getPhaseHandoffPath(params.identifier!)) :
@@ -134,7 +135,7 @@ export async function listSections(params: ListSectionsParams): Promise<string> 
     output.push(`**Tier:** ${params.tier}\n`);
     output.push(`**Identifier:** ${params.identifier || 'none'}\n`);
     output.push(`**Attempted:** ${attemptedPath}\n`);
-    output.push(`**Error:** ${error instanceof Error ? error.message : String(error)}\n`);
+    output.push(`**Error:** ${_error instanceof Error ? _error.message : String(_error)}\n`);
     output.push(`**Suggestion:** Ensure the document file exists\n`);
     
     return output.join('\n');
@@ -150,7 +151,7 @@ export async function listSections(params: ListSectionsParams): Promise<string> 
 export async function listSectionsProgrammatic(
   params: ListSectionsParams
 ): Promise<{ success: boolean; sections?: SectionInfo[]; documentPath?: string; error?: string }> {
-  const featureName = params.featureName || 'vue-migration';
+  const featureName = await resolveFeatureName(params.featureName);
   const context = new WorkflowCommandContext(featureName);
   
   // Validate identifier for phase/session
@@ -169,7 +170,7 @@ export async function listSectionsProgrammatic(
   if (params.tier === 'session' && params.identifier && !WorkflowId.isValidSessionId(params.identifier)) {
     return {
       success: false,
-      error: `Invalid session ID format. Expected X.Y (e.g., 2.1). Attempted: ${params.identifier}`
+      error: `Invalid session ID format. Expected X.Y.Z (e.g., 4.1.3). Attempted: ${params.identifier}`
     };
   }
   
@@ -207,11 +208,10 @@ export async function listSectionsProgrammatic(
         }
         break;
     }
-    
+
     // Parse sections
-    const { MarkdownUtils } = await import('../../utils/markdown-utils');
     const structure = MarkdownUtils.parseStructure(content);
-    
+
     const documentPath = 
       params.tier === 'feature' ? (docType === 'guide' ? context.paths.getFeatureGuidePath() : docType === 'log' ? context.paths.getFeatureLogPath() : context.paths.getFeatureHandoffPath()) :
       params.tier === 'phase' ? (docType === 'guide' ? context.paths.getPhaseGuidePath(params.identifier!) : docType === 'log' ? context.paths.getPhaseLogPath(params.identifier!) : context.paths.getPhaseHandoffPath(params.identifier!)) :
@@ -230,10 +230,10 @@ export async function listSectionsProgrammatic(
       sections,
       documentPath
     };
-  } catch (error) {
+  } catch (_error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : String(error)
+      error: _error instanceof Error ? _error.message : String(_error)
     };
   }
 }

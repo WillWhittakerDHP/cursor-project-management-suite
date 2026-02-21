@@ -91,7 +91,8 @@ async function loadRegistryConfig(): Promise<RegistryConfig> {
   try {
     const raw = await readFile(configPath, 'utf-8');
     return JSON.parse(raw) as RegistryConfig;
-  } catch {
+  } catch (err) {
+    console.warn('Audit registry: failed to load registry', err);
     return {};
   }
 }

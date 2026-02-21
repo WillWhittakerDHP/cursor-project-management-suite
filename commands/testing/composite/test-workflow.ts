@@ -6,7 +6,6 @@
  * to provide a complete testing workflow.
  */
 
-import { testValidate } from '../atomic/test-validate';
 import { testLint } from '../atomic/test-lint';
 import { testRun } from '../atomic/test-run';
 import { testCoverage } from '../atomic/test-coverage';

@@ -88,7 +88,7 @@ const state = reactive({ count: 0 });
  * - Pinia store - Overkill for component-local state
  * 
  * RELATES TO: Our AdminContext uses similar reactive patterns
- * See: client/src/admin/contexts/adminContext.tsx
+ * See: frontend-root/src/admin/contexts/adminContext.tsx
  * 
  * RESOURCE: https://vuejs.org/guide/essentials/reactivity-fundamentals.html
  */

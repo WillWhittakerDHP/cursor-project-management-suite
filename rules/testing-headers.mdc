@@ -1,5 +1,7 @@
 ---
-alwaysApply: true
+alwaysApply: false
 ---
 
-Every test file must begin with a descriptive header comment explaining what it covers, how it works, what it validates, and dependencies. See: client/src/admin/tests/activePartsStateCalculator.test.ts for example format.
+TEMPORARILY DISABLED: Test files are excluded from linting/type-checking until Phase 3.0 of BETA_LAUNCH_CHECKLIST.md. Re-enable alwaysApply: true when that phase begins.
+
+Every test file must begin with a descriptive header comment explaining what it covers, how it works, what it validates, and dependencies. See: frontend-root/src/admin/tests/activePartsStateCalculator.test.ts for example format.

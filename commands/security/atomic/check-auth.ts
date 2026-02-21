@@ -120,8 +120,8 @@ export async function checkAuth(params: AuthCheckParams = {}): Promise<string> {
             globalAuth = true;
             break;
           }
-        } catch {
-          // Skip files we can't read
+        } catch (err) {
+          console.warn('Check auth: file not readable', appFile, err);
         }
       }
     }
@@ -156,16 +156,16 @@ export async function checkAuth(params: AuthCheckParams = {}): Promise<string> {
                 }
               }
             }
-          } catch {
-            // Skip files we can't read
+          } catch (err) {
+            console.warn('Check auth: file not readable', fullPath, err);
             continue;
           }
         }
-      } catch {
-        // Skip directories we can't read
+      } catch (err) {
+        console.warn('Check auth: directory not readable', dirPath, err);
       }
     };
-    
+
     const fullTargetPath = join(PROJECT_ROOT, targetPath);
     if (existsSync(fullTargetPath)) {
       scanDirectory(fullTargetPath);
@@ -225,8 +225,8 @@ export async function checkAuth(params: AuthCheckParams = {}): Promise<string> {
             }
           }
         });
-      } catch {
-        // Skip files we can't read
+      } catch (err) {
+        console.warn('Check auth: route file not readable', routeFile, err);
       }
     }
     
@@ -275,12 +275,12 @@ export async function checkAuth(params: AuthCheckParams = {}): Promise<string> {
                 result.summary.warningCount++;
               }
             }
-          } catch {
-            // Skip files we can't read
+          } catch (err) {
+            console.warn('Check auth: file not readable (password hashing)', fullPath, err);
           }
         }
-      } catch {
-        // Skip directories we can't read
+      } catch (err) {
+        console.warn('Check auth: directory not readable (password hashing)', dirPath, err);
       }
     };
     
@@ -308,8 +308,8 @@ export async function checkAuth(params: AuthCheckParams = {}): Promise<string> {
         if (allDeps.bcrypt || allDeps['argon2'] || allDeps['scrypt']) {
           passwordHashingFound = true;
         }
-      } catch {
-        // Skip if can't parse
+      } catch (err) {
+        console.warn('Check auth: package.json parse failed', err);
       }
     }
     
@@ -379,9 +379,9 @@ export async function checkAuth(params: AuthCheckParams = {}): Promise<string> {
     }
     
     return output.join('\n');
-  } catch (error) {
+  } catch (_error) {
     output.push(`**ERROR: Failed to check authentication patterns**\n`);
-    output.push(`**Error:** ${error instanceof Error ? error.message : String(error)}\n`);
+    output.push(`**Error:** ${_error instanceof Error ? _error.message : String(_error)}\n`);
     return output.join('\n');
   }
 }
@@ -429,10 +429,10 @@ export async function checkAuthProgrammatic(
       success: true,
       result,
     };
-  } catch (error) {
+  } catch (_error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : String(error),
+      error: _error instanceof Error ? _error.message : String(_error),
     };
   }
 }

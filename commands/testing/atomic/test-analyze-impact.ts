@@ -69,7 +69,7 @@ export async function testAnalyzeImpact(
       impact,
       message,
     };
-  } catch (error) {
+  } catch (_error) {
     return {
       success: false,
       impact: {
@@ -81,7 +81,7 @@ export async function testAnalyzeImpact(
         summary: 'Error analyzing impact',
         detectedChanges: [],
       },
-      message: `Error analyzing impact: ${error instanceof Error ? error.message : String(error)}`,
+      message: `Error analyzing impact: ${_error instanceof Error ? _error.message : String(_error)}`,
     };
   }
 }

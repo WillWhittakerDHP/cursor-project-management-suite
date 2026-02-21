@@ -7,8 +7,8 @@
  * Description: Create citations for multiple todos from a planning doc change
  */
 
-import { createCitationsForPlanningDocChange } from "../../utils/todo-citations';
-import { CitationContext } from "../../utils/todo-types';
+import { createCitationsForPlanningDocChange } from "../../utils/todo-citations";
+import { CitationContext } from "../../utils/todo-types";
 
 export async function createCitationsForChange(
   feature: string,
@@ -38,8 +38,8 @@ export async function createCitationsForChange(
     }
     
     return lines.join('\n');
-  } catch (error) {
-    return `❌ Error creating citations for change: ${error instanceof Error ? error.message : String(error)}`;
+  } catch (_error) {
+    return `❌ Error creating citations for change: ${_error instanceof Error ? _error.message : String(_error)}`;
   }
 }
 

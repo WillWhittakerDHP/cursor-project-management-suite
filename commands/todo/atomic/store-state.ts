@@ -7,8 +7,8 @@
  * Description: Store a snapshot of a todo's current state for rollback purposes
  */
 
-import { storePreviousState } from "../../utils/todo-rollback';
-import { Todo } from "../../utils/todo-types';
+import { storePreviousState } from "../../utils/todo-rollback";
+import { Todo } from "../../utils/todo-types";
 
 export async function storeState(
   feature: string,
@@ -19,8 +19,8 @@ export async function storeState(
   try {
     const state = await storePreviousState(feature, todo, changeLogId, reason);
     return `✅ State stored: ${state.id}\n**Todo:** ${todo.id}\n**Change Log:** ${changeLogId}\n**Timestamp:** ${new Date(state.timestamp).toLocaleString()}${reason ? `\n**Reason:** ${reason}` : ''}`;
-  } catch (error) {
-    return `❌ Error storing state: ${error instanceof Error ? error.message : String(error)}`;
+  } catch (_error) {
+    return `❌ Error storing state: ${_error instanceof Error ? _error.message : String(_error)}`;
   }
 }
 

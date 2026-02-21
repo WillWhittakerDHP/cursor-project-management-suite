@@ -139,7 +139,7 @@ export function getBlockingGatesCommand(gates: DecisionGate[]): DecisionGate[] {
 /**
  * Format decision gate result as string output
  */
-function formatDecisionGateResult(result: import('../../../project-manager/utils/planning-types').DecisionGateResult): string {
+function formatDecisionGateResult(result: import('../../utils/planning-types').DecisionGateResult): string {
   const output: string[] = [];
   
   output.push('# Decision Gate Result\n');

@@ -9,6 +9,7 @@
 import { execSync } from 'child_process';
 import { existsSync } from 'fs';
 import { join } from 'path';
+import { FRONTEND_ROOT } from '../../utils/utils';
 
 export interface ValidateSecurityParams {
   path?: string;
@@ -77,7 +78,7 @@ export async function validateSecurity(params: ValidateSecurityParams = {}): Pro
       // Check common source directories
       const commonPaths = [
         'server/src',
-        'client/src'
+        `${FRONTEND_ROOT}/src`
       ];
       
       for (const commonPath of commonPaths) {
@@ -177,7 +178,7 @@ export async function validateSecurity(params: ValidateSecurityParams = {}): Pro
                 }
               }
             }
-          } catch (parseError) {
+          } catch (_parseError) {
             // If parsing fails, ESLint might not be configured or there's a different error
             output.push(`⚠️ **Could not parse ESLint output for ${checkPath}**\n`);
             output.push(`Error: ${error.message}\n\n`);
@@ -232,9 +233,9 @@ export async function validateSecurity(params: ValidateSecurityParams = {}): Pro
     }
     
     return output.join('\n');
-  } catch (error) {
+  } catch (_error) {
     output.push(`**ERROR: Failed to validate security**\n`);
-    output.push(`**Error:** ${error instanceof Error ? error.message : String(error)}\n`);
+    output.push(`**Error:** ${_error instanceof Error ? _error.message : String(_error)}\n`);
     output.push('\n**Note:** Make sure ESLint and eslint-plugin-security are installed.\n');
     return output.join('\n');
   }
@@ -278,10 +279,10 @@ export async function validateSecurityProgrammatic(
       success: true,
       result
     };
-  } catch (error) {
+  } catch (_error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : String(error)
+      error: _error instanceof Error ? _error.message : String(_error)
     };
   }
 }

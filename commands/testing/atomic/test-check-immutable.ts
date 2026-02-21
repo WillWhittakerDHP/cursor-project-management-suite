@@ -65,14 +65,14 @@ export async function testCheckImmutable(
       canModify,
       message: message || (checkResult.isImmutable ? 'Test is immutable' : 'Test is not immutable'),
     };
-  } catch (error) {
+  } catch (_error) {
     return {
       success: false,
       isImmutable: false,
       hasMarker: false,
       testPasses: null,
       canModify: false,
-      message: `Error checking immutability: ${error instanceof Error ? error.message : String(error)}`,
+      message: `Error checking immutability: ${_error instanceof Error ? _error.message : String(_error)}`,
     };
   }
 }
@@ -101,14 +101,14 @@ export async function testCheckImmutableWithContextCommand(
       message: checkResult.message,
       autoClassifiedReason: checkResult.autoClassifiedReason,
     };
-  } catch (error) {
+  } catch (_error) {
     return {
       success: false,
       isImmutable: false,
       hasMarker: false,
       testPasses: null,
       canModify: false,
-      message: `Error checking immutability: ${error instanceof Error ? error.message : String(error)}`,
+      message: `Error checking immutability: ${_error instanceof Error ? _error.message : String(_error)}`,
     };
   }
 }

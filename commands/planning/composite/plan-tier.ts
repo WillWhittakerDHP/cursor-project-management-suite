@@ -6,7 +6,8 @@
  */
 
 import { planComplete } from './plan-complete';
-import { PlanningTier, AlternativeType } from '../../utils/planning-types';
+import { PlanningTier, AlternativeType, CriticalCheckType } from '../../utils/planning-types';
+import { resolveFeatureName } from '../../utils';
 
 /**
  * Plan for a specific tier
@@ -28,7 +29,7 @@ export async function planTier(
     requireAlternatives?: boolean;
     alternativeType?: AlternativeType;
     requireDecision?: boolean;
-    criticalChecks?: import('../../../project-manager/utils/planning-types').CriticalCheckType[];
+    criticalChecks?: CriticalCheckType[];
     requireCriticalChecks?: boolean;
   } = {}
 ): Promise<string> {
@@ -52,7 +53,7 @@ export async function planTier(
       featureName = identifier;
       break;
     case 'phase': {
-      featureName = feature || 'vue-migration';
+      featureName = await resolveFeatureName(feature);
       phase = parseInt(identifier, 10);
       if (isNaN(phase)) {
         return `Error: Invalid phase number: ${identifier}`;
@@ -60,24 +61,24 @@ export async function planTier(
       break;
     }
     case 'session': {
-      featureName = feature || 'vue-migration';
+      featureName = await resolveFeatureName(feature);
       sessionId = identifier;
-      // Validate session ID format (X.Y)
-      if (!/^\d+\.\d+$/.test(identifier)) {
-        return `Error: Invalid session ID format. Expected X.Y (e.g., 2.1), got: ${identifier}`;
+      // Validate session ID format (X.Y.Z)
+      if (!/^\d+\.\d+\.\d+$/.test(identifier)) {
+        return `Error: Invalid session ID format. Expected X.Y.Z (e.g., 4.1.3), got: ${identifier}`;
       }
       break;
     }
     case 'task': {
-      featureName = feature || 'vue-migration';
+      featureName = await resolveFeatureName(feature);
       taskId = identifier;
-      // Validate task ID format (X.Y.Z)
-      if (!/^\d+\.\d+\.\d+$/.test(identifier)) {
-        return `Error: Invalid task ID format. Expected X.Y.Z (e.g., 2.1.1), got: ${identifier}`;
+      // Validate task ID format (X.Y.Z.A)
+      if (!/^\d+\.\d+\.\d+\.\d+$/.test(identifier)) {
+        return `Error: Invalid task ID format. Expected X.Y.Z.A (e.g., 4.1.3.1), got: ${identifier}`;
       }
-      // Extract session ID from task ID
+      // Extract session ID from task ID (X.Y.Z.A → X.Y.Z)
       const parts = identifier.split('.');
-      sessionId = `${parts[0]}.${parts[1]}`;
+      sessionId = `${parts[0]}.${parts[1]}.${parts[2]}`;
       break;
     }
   }
@@ -108,7 +109,7 @@ function getTierOptions(
     requireAlternatives?: boolean;
     alternativeType?: AlternativeType;
     requireDecision?: boolean;
-    criticalChecks?: import('../../../project-manager/utils/planning-types').CriticalCheckType[];
+    criticalChecks?: CriticalCheckType[];
     requireCriticalChecks?: boolean;
   }
 ): typeof providedOptions {

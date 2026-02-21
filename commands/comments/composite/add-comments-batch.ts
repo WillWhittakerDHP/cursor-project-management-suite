@@ -61,11 +61,11 @@ export async function addCommentsBatch(params: BatchCommentParams): Promise<stri
     try {
       await addComment(addParams);
       results.push({ filePath: file.filePath, success: true });
-    } catch (error) {
+    } catch (_error) {
       results.push({
         filePath: file.filePath,
         success: false,
-        error: error instanceof Error ? error.message : String(error)
+        error: _error instanceof Error ? _error.message : String(_error)
       });
     }
   }

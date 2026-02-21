@@ -8,12 +8,10 @@
 import { 
   TriggerDefinition, 
   TriggerCondition, 
-  TriggerConditionType, 
   CitationContext,
   CitationPriority 
 } from './todo-types';
 import { lookupCitations, getUnreviewedCitations, getHighPriorityCitations } from './todo-citations';
-import { findTodoById, getAllTodos } from './todo-io';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 

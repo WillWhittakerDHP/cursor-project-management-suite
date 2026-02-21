@@ -7,6 +7,7 @@
 
 import { WorkflowCommandContext } from '../../utils/command-context';
 import { PROJECT_ROOT } from '../../utils/utils';
+import { glob } from 'glob';
 
 export interface TestGoalValidationResult {
   success: boolean;
@@ -65,8 +66,7 @@ async function findMatchingTestFiles(goal: string): Promise<string[]> {
   const testFiles: string[] = [];
   
   // Search for test files
-  const { glob: globFn } = await import('glob');
-  const allTestFiles = await globFn('**/*.{test,spec}.{ts,tsx,js,jsx}', {
+  const allTestFiles = await glob('**/*.{test,spec}.{ts,tsx,js,jsx}', {
     cwd: PROJECT_ROOT,
     ignore: ['**/node_modules/**', '**/dist/**', '**/build/**'],
   });
@@ -108,13 +108,13 @@ export async function validateTestGoals(
     } else if (tier === 'feature') {
       guideContent = await context.readFeatureGuide();
     }
-  } catch (error) {
+  } catch (_error) {
     return {
       success: false,
       aligned: [],
       gaps: [],
       extras: [],
-      message: `Failed to read ${tier} guide: ${error instanceof Error ? error.message : String(error)}`,
+      message: `Failed to read ${tier} guide: ${_error instanceof Error ? _error.message : String(_error)}`,
     };
   }
   
@@ -167,8 +167,7 @@ export async function validateTestGoals(
   }
   
   // Find extra test files (exist but not documented)
-  const { glob: globFn } = await import('glob');
-  const allTestFiles = await globFn('**/*.{test,spec}.{ts,tsx,js,jsx}', {
+  const allTestFiles = await glob('**/*.{test,spec}.{ts,tsx,js,jsx}', {
     cwd: PROJECT_ROOT,
     ignore: ['**/node_modules/**', '**/dist/**', '**/build/**'],
   });

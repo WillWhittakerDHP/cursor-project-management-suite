@@ -7,8 +7,8 @@
  * Description: Aggregate child details for parent todo and generate summary
  */
 
-import { aggregateDetails, generateSummary } from "../../utils/todo-scoping';
-import { Todo } from "../../utils/todo-types';
+import { aggregateDetails, generateSummary } from "../../utils/todo-scoping";
+import { Todo } from "../../utils/todo-types";
 
 export async function aggregateDetailsCommand(feature: string, parentTodo: Todo): Promise<string> {
   try {
@@ -64,8 +64,8 @@ export async function aggregateDetailsCommand(feature: string, parentTodo: Todo)
     }
     
     return lines.join('\n');
-  } catch (error) {
-    return `❌ Error aggregating details: ${error instanceof Error ? error.message : String(error)}`;
+  } catch (_error) {
+    return `❌ Error aggregating details: ${_error instanceof Error ? _error.message : String(_error)}`;
   }
 }
 

@@ -79,8 +79,8 @@ export async function cleanupTemporaryReadmes(
               removeTemp: true,
             });
             report.push(`✅ ${result}\n`);
-          } catch (error) {
-            report.push(`❌ Failed to consolidate: ${error instanceof Error ? error.message : String(error)}\n`);
+          } catch (_error) {
+            report.push(`❌ Failed to consolidate: ${_error instanceof Error ? _error.message : String(_error)}\n`);
           }
         } else if (options.deleteOnly || !readme.temporaryMetadata?.consolidateInto) {
           // Delete only
@@ -88,8 +88,8 @@ export async function cleanupTemporaryReadmes(
             const fullPath = join(PROJECT_ROOT, readme.filePath);
             await unlink(fullPath);
             report.push(`✅ Deleted: ${readme.filePath}\n`);
-          } catch (error) {
-            report.push(`❌ Failed to delete: ${error instanceof Error ? error.message : String(error)}\n`);
+          } catch (_error) {
+            report.push(`❌ Failed to delete: ${_error instanceof Error ? _error.message : String(_error)}\n`);
           }
         } else {
           report.push(`⚠️ Skipped (no consolidation target specified)\n`);
@@ -100,9 +100,9 @@ export async function cleanupTemporaryReadmes(
     }
     
     return report.join('\n');
-  } catch (error) {
+  } catch (_error) {
     throw new Error(
-      `Failed to cleanup temporary READMEs: ${error instanceof Error ? error.message : String(error)}`
+      `Failed to cleanup temporary READMEs: ${_error instanceof Error ? _error.message : String(_error)}`
     );
   }
 }

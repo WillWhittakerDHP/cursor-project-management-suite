@@ -25,10 +25,11 @@
 import { determineTier, TierAnalysis } from './tier-discriminator';
 import { readFile, writeFile, unlink } from 'fs/promises';
 import { join } from 'path';
-import { PROJECT_ROOT, getCurrentDate } from './utils';
-import { extractFilePaths } from '../../../../utils/context-gatherer';
+import { PROJECT_ROOT } from './utils';
+import { extractFilePaths } from './context-gatherer';
 import { checkDownstreamPlans } from './check-downstream-plans';
 import { WorkflowCommandContext } from './command-context';
+import { resolveFeatureName } from './feature-context';
 
 export interface ScopeAndSummarizeParams {
   description?: string;
@@ -65,8 +66,8 @@ async function readConversationContext(params: ScopeAndSummarizeParams): Promise
       if (stdinContent) {
         return stdinContent;
       }
-    } catch (error) {
-      // Silently fall through to next source
+    } catch (err) {
+      console.warn('Scope and summarize: failed to read conversation context from stdin', err);
     }
   }
   
@@ -80,7 +81,8 @@ async function readConversationContext(params: ScopeAndSummarizeParams): Promise
     try {
       const filePath = join(PROJECT_ROOT, params.contextFile);
       return await readFile(filePath, 'utf-8');
-    } catch {} {
+    } catch (err) {
+      console.warn('Scope and summarize: failed to read context file', params.contextFile, err);
       throw new Error(`Failed to read context file: ${params.contextFile}`);
     }
   }
@@ -170,7 +172,7 @@ async function createScopeDocument(
   const timestamp = new Date().toISOString().split('T')[0].replace(/-/g, '');
   const sessionPart = sessionId ? `session-${sessionId}-` : 'session-unknown-';
   const fileName = `${sessionPart}scope-${timestamp}.md`;
-  const filePath = join(PROJECT_ROOT, context.paths.basePath, 'sessions', fileName);
+  const filePath = join(PROJECT_ROOT, context.paths.getBasePath(), 'sessions', fileName);
   
   await writeFile(filePath, content, 'utf-8');
   return filePath;
@@ -181,8 +183,9 @@ async function createScopeDocument(
  */
 export async function scopeAndSummarize(
   params: ScopeAndSummarizeParams = {},
-  featureName: string = 'vue-migration'
+  featureName?: string
 ): Promise<ScopeAndSummarizeResult> {
+  const resolved = await resolveFeatureName(featureName);
   // Read conversation context
   const context = await readConversationContext(params);
   
@@ -191,8 +194,8 @@ export async function scopeAndSummarize(
     description: context,
     currentSessionId: params.currentSessionId,
     currentPhase: params.currentPhase,
-    featureName: params.featureName || featureName,
-  }, featureName);
+    featureName: params.featureName || resolved,
+  }, resolved);
   
   if (downstreamCheck.hasMatches) {
     // Change is already planned, return early
@@ -280,9 +283,9 @@ ${changeRequestCommand} "${changeRequestDescription.split('\n')[0]}"
   let documentPath: string | undefined;
   if (params.createDocument) {
     try {
-      documentPath = await createScopeDocument(output, params.currentSessionId, featureName);
-    } catch (error) {
-      console.warn(`Warning: Failed to create scope document: ${error instanceof Error ? error.message : String(error)}`);
+      documentPath = await createScopeDocument(output, params.currentSessionId, resolved);
+    } catch (_error) {
+      console.warn(`Warning: Failed to create scope document: ${_error instanceof Error ? _error.message : String(_error)}`);
     }
   }
   
@@ -304,8 +307,8 @@ ${changeRequestCommand} "${changeRequestDescription.split('\n')[0]}"
 export async function cleanupScopeDocument(documentPath: string): Promise<void> {
   try {
     await unlink(documentPath);
-  } catch (error) {
-    console.warn(`Warning: Failed to delete scope document ${documentPath}: ${error instanceof Error ? error.message : String(error)}`);
+  } catch (_error) {
+    console.warn(`Warning: Failed to delete scope document ${documentPath}: ${_error instanceof Error ? _error.message : String(_error)}`);
   }
 }
 

@@ -8,9 +8,9 @@
 
 import { WorkflowCommandContext } from '../../utils/command-context';
 import { WorkflowId } from '../../utils/id-utils';
-import { getAllTodos } from '../../utils/todo-io';
 import { getStatus, StatusTier } from '../../status/atomic/get-status';
 import { DocumentTier } from '../../utils/document-manager';
+import { resolveFeatureName } from '../../utils';
 
 export type HandoffTier = DocumentTier | 'task';
 
@@ -29,7 +29,7 @@ export interface GenerateHandoffParams {
  * @returns Formatted handoff output
  */
 export async function generateHandoff(params: GenerateHandoffParams): Promise<string> {
-  const featureName = params.featureName || 'vue-migration';
+  const featureName = await resolveFeatureName(params.featureName);
   const context = new WorkflowCommandContext(featureName);
   const output: string[] = [];
   
@@ -42,7 +42,7 @@ export async function generateHandoff(params: GenerateHandoffParams): Promise<st
   }
   
   if (params.tier === 'session' && params.identifier && !WorkflowId.isValidSessionId(params.identifier)) {
-    return `Error: Invalid session ID format. Expected X.Y (e.g., 2.1)\nAttempted: ${params.identifier}`;
+    return `Error: Invalid session ID format. Expected X.Y.Z (e.g., 4.1.3)\nAttempted: ${params.identifier}`;
   }
   
   try {
@@ -60,30 +60,12 @@ export async function generateHandoff(params: GenerateHandoffParams): Promise<st
     }
     
     // Get completed items
-    const feature = context.feature.name;
-    const allTodos = await getAllTodos(feature);
-    
     let completedItems: Array<{ id: string; title: string }> = [];
     
     if (statusInfo.children) {
       completedItems = statusInfo.children
         .filter(child => child.status === 'completed')
         .map(child => ({ id: child.todoId, title: child.title }));
-    }
-    
-    // Read current handoff to preserve structure
-    let currentHandoff = '';
-    try {
-      if (params.tier === 'feature') {
-        currentHandoff = await context.readFeatureHandoff();
-      } else if (params.tier === 'phase') {
-        currentHandoff = await context.readPhaseHandoff(params.identifier!);
-      } else {
-        currentHandoff = await context.readSessionHandoff(params.identifier!);
-      }
-    } catch {
-      // Handoff doesn't exist yet, will create from template
-      currentHandoff = '';
     }
     
     // Generate handoff content
@@ -172,9 +154,9 @@ export async function generateHandoff(params: GenerateHandoffParams): Promise<st
     output.push(`\n**Handoff Path:** ${handoffPath}\n`);
     
     return output.join('\n');
-  } catch (error) {
+  } catch (_error) {
     output.push(`**ERROR: Failed to generate handoff**\n`);
-    output.push(`**Error:** ${error instanceof Error ? error.message : String(error)}\n`);
+    output.push(`**Error:** ${_error instanceof Error ? _error.message : String(_error)}\n`);
     return output.join('\n');
   }
 }

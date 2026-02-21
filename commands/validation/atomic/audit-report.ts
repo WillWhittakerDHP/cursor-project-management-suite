@@ -3,7 +3,7 @@
  * Formats audit results into structured markdown report
  */
 
-import { AuditResult, AuditReport, AuditIssue } from './audit-types';
+import { AuditResult, AuditReport } from './audit-types';
 import { getCurrentDate } from '../../utils/utils';
 
 // Re-export AuditReport for convenience

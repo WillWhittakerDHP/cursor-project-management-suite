@@ -21,7 +21,7 @@ export interface ScopeAssessment {
   significance: ScopeChangeSignificance;
   requiresReplanning: boolean;
   reasons: string[];
-  suggestedPlanningCommand?: 'plan-phase' | 'plan-session' | 'plan-feature';
+  suggestedPlanningCommand?: 'phase-plan' | 'plan-session' | 'plan-feature';
 }
 
 /**
@@ -39,13 +39,13 @@ export function assessChangeScope(
 ): ScopeAssessment {
   const reasons: string[] = [];
   let requiresReplanning = false;
-  let suggestedPlanningCommand: 'plan-phase' | 'plan-session' | 'plan-feature' | undefined;
+  let suggestedPlanningCommand: 'phase-plan' | 'plan-session' | 'plan-feature' | undefined;
 
   // Architectural changes always require re-planning
   if (changeRequest.type === 'architectural') {
     requiresReplanning = true;
     reasons.push('Architectural changes require re-planning to ensure consistency');
-    suggestedPlanningCommand = tier === 'phase' ? 'plan-phase' : tier === 'session' ? 'plan-session' : 'plan-feature';
+    suggestedPlanningCommand = tier === 'phase' ? 'phase-plan' : tier === 'session' ? 'plan-session' : 'plan-feature';
   }
 
   // Changes affecting multiple tiers suggest significant scope
@@ -54,7 +54,7 @@ export function assessChangeScope(
     reasons.push(`Change affects multiple tiers: ${scope.tiersAffected.join(', ')}`);
     // Determine which planning command to use based on highest tier affected
     if (scope.tiersAffected.includes('phase')) {
-      suggestedPlanningCommand = 'plan-phase';
+      suggestedPlanningCommand = 'phase-plan';
     } else if (scope.tiersAffected.includes('session')) {
       suggestedPlanningCommand = 'plan-session';
     } else {
@@ -72,39 +72,39 @@ export function assessChangeScope(
   if (newTaskKeywords.some(keyword => descriptionLower.includes(keyword))) {
     requiresReplanning = true;
     reasons.push('Change adds new tasks, requiring session/phase re-planning');
-    suggestedPlanningCommand = tier === 'phase' ? 'plan-phase' : 'plan-session';
+    suggestedPlanningCommand = tier === 'phase' ? 'phase-plan' : 'plan-session';
   }
 
   if (removeTaskKeywords.some(keyword => descriptionLower.includes(keyword))) {
     requiresReplanning = true;
     reasons.push('Change removes tasks, requiring session/phase re-planning');
-    suggestedPlanningCommand = tier === 'phase' ? 'plan-phase' : 'plan-session';
+    suggestedPlanningCommand = tier === 'phase' ? 'phase-plan' : 'plan-session';
   }
 
   if (dependencyKeywords.some(keyword => descriptionLower.includes(keyword))) {
     requiresReplanning = true;
     reasons.push('Change affects dependencies, requiring re-planning');
-    suggestedPlanningCommand = tier === 'phase' ? 'plan-phase' : 'plan-session';
+    suggestedPlanningCommand = tier === 'phase' ? 'phase-plan' : 'plan-session';
   }
 
   if (structureKeywords.some(keyword => descriptionLower.includes(keyword))) {
     requiresReplanning = true;
     reasons.push('Change modifies structure, requiring re-planning');
-    suggestedPlanningCommand = tier === 'phase' ? 'plan-phase' : tier === 'session' ? 'plan-session' : 'plan-feature';
+    suggestedPlanningCommand = tier === 'phase' ? 'phase-plan' : tier === 'session' ? 'plan-session' : 'plan-feature';
   }
 
   // Large number of files affected suggests significant change
   if (scope.filesAffected.length > 10) {
     requiresReplanning = true;
     reasons.push(`Change affects ${scope.filesAffected.length} files, suggesting significant scope`);
-    suggestedPlanningCommand = tier === 'phase' ? 'plan-phase' : 'plan-session';
+    suggestedPlanningCommand = tier === 'phase' ? 'phase-plan' : 'plan-session';
   }
 
   // Refactoring that affects many files
   if (changeRequest.type === 'refactoring' && scope.filesAffected.length > 5) {
     requiresReplanning = true;
     reasons.push('Refactoring affects multiple files, may require re-planning');
-    suggestedPlanningCommand = tier === 'phase' ? 'plan-phase' : 'plan-session';
+    suggestedPlanningCommand = tier === 'phase' ? 'phase-plan' : 'plan-session';
   }
 
   // If no reasons found, it's a minor change

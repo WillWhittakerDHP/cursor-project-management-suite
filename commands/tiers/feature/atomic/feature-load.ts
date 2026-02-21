@@ -41,13 +41,13 @@ export async function featureLoad(featureName: string): Promise<string> {
       try {
         const aggregated = await aggregateDetails(featureName, featureTodo);
         output.push(`**Progress:** ${aggregated.progress.completed}/${aggregated.progress.total} phases completed, ${aggregated.progress.inProgress} in progress, ${aggregated.progress.pending} pending\n`);
-      } catch (error) {
+      } catch (_error) {
         // Aggregation failed, continue without it
       }
       
       output.push('\n---\n');
     }
-  } catch (error) {
+  } catch (_error) {
     // Todo not found or error loading, continue without it
   }
   
@@ -78,7 +78,7 @@ export async function featureLoad(featureName: string): Promise<string> {
       output.push(phasesSection);
       output.push('\n---\n');
     }
-  } catch (error) {
+  } catch (_error) {
     output.push('## Feature Guide\n');
     output.push(`**ERROR: Feature guide not found**\n`);
     output.push(`**Attempted:** ${featureGuidePath}\n`);
@@ -88,7 +88,6 @@ export async function featureLoad(featureName: string): Promise<string> {
   }
   
   // Load feature log
-  const featureLogPath = context.paths.getFeatureLogPath();
   try {
     const featureLogContent = await context.readFeatureLog();
     
@@ -113,12 +112,11 @@ export async function featureLoad(featureName: string): Promise<string> {
       output.push(inProgressPhasesSection);
       output.push('\n---\n');
     }
-  } catch (error) {
+  } catch (_error) {
     // Log file not found is not critical, just skip it
   }
   
   // Load feature handoff
-  const featureHandoffPath = context.paths.getFeatureHandoffPath();
   try {
     const handoffContent = await context.readFeatureHandoff();
     const transitionSection = MarkdownUtils.extractSection(handoffContent, 'Transition Context');
@@ -128,7 +126,9 @@ export async function featureLoad(featureName: string): Promise<string> {
       output.push(transitionSection);
       output.push('\n---\n');
     }
-  } catch {}
+  } catch (err) {
+    console.warn('Feature load: failed to read transition context or log', err);
+  }
   
   return output.join('\n');
 }

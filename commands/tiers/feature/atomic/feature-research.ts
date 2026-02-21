@@ -64,9 +64,9 @@ export async function featureResearch(featureName: string): Promise<string> {
       output.push('\n');
     }
     
-  } catch (error) {
+  } catch (_error) {
     output.push('**ERROR:** Could not load research question set\n');
-    output.push(`**Error:** ${error instanceof Error ? error.message : String(error)}\n`);
+    output.push(`**Error:** ${_error instanceof Error ? _error.message : String(_error)}\n`);
     output.push('**Suggestion:** See `.cursor/commands/docs/research-question-set.md` for complete question set\n');
   }
   

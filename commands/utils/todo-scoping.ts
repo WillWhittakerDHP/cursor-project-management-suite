@@ -5,8 +5,8 @@
  * and aggregating details across the four-tier hierarchy.
  */
 
-import { Todo, Scope, ScopeViolation, ScopeCorrection, AbstractionLevel, DetailLevel, TodoTier } from './todo-types';
-import { findTodoById, saveTodo, getAllTodos } from './todo-io';
+import { Todo, Scope, ScopeViolation, ScopeCorrection, AbstractionLevel, TodoTier } from './todo-types';
+import { saveTodo, getAllTodos } from './todo-io';
 
 // ===================================================================
 // SCOPE PROPERTY MANAGEMENT
@@ -379,21 +379,23 @@ export async function aggregateDetails(feature: string, parentTodo: Todo): Promi
  */
 export async function generateSummary(feature: string, todo: Todo): Promise<{
   title: string;
+  status: string;
   objectives: string[];
   progress: { completed: number; inProgress: number; pending: number; total: number };
   keyDependencies: string[];
   nextSteps: string[];
 }> {
   const aggregated = await aggregateDetails(feature, todo);
-  
+
   const summary = {
     title: todo.title,
+    status: aggregated.status,
     objectives: aggregated.objectives,
     progress: aggregated.progress,
     keyDependencies: [...new Set(aggregated.dependencies)],
     nextSteps: generateNextSteps(aggregated.tasks),
   };
-  
+
   return summary;
 }
 
@@ -460,7 +462,7 @@ function canSummarizeDetail(detail: string, scope: Scope): boolean {
 /**
  * Summarize detail for scope
  */
-function summarizeDetail(detail: string, scope: Scope): string {
+function summarizeDetail(detail: string, _scope: Scope): string {
   // Simplified summarization - in production, would have more sophisticated logic
   if (detail.length > 100) {
     return detail.substring(0, 100) + '...';

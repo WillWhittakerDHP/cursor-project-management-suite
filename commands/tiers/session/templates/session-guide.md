@@ -226,6 +226,7 @@ All tasks complete. Ready to run end-of-session workflow?
   ```
 - **If user says "yes" to push:** Execute git push, then end session
 - **If user says "no" to push:** End session without pushing (user can push manually later)
+- **Agent:** After session-end returns, use the command result's `outcome.nextAction` for the exact next step (do not infer from step text).
 
 **If user says "no" to session-end:**
 - Address any requested changes
@@ -235,7 +236,7 @@ All tasks complete. Ready to run end-of-session workflow?
 
 **Manual Alternative (5 Steps):**
 
-1. **Verify** - App starts (`/verify-app` or `npm run start:dev:vue`) and quality checks pass (`/verify vue`)
+1. **Verify** - App starts (`/verify-app` or `npm run start:dev`) and quality checks pass (`/verify vue`)
 2. **Document** - Update session log and handoff document (use `/log-task` and `/update-handoff-minimal` or manual)
 3. **Commit** - Git commit and push (`/git-commit [message]` and `/git-push` or manual)
 4. **Handoff** - Create compact prompt for next session:
@@ -431,14 +432,14 @@ Break each session into focused tasks:
 ### Task 1.1.1: Core Entity Types
 **Goal:** Port GlobalEntity types
 **Files:** 
-- client/src/global/types/globalEntityTypes.ts → client-vue/src/types/entities.ts
+- frontend-root/src/global/types/globalEntityTypes.ts → frontend-root/src/types/entities.ts
 **Learning Focus:** Understanding generic type patterns
 **Checkpoint:** Types compile without errors
 
 ### Task 1.1.2: Primitive Types  
 **Goal:** Port primitive type system
 **Files:**
-- client/src/global/types/globalPrimitiveTypes.ts → client-vue/src/types/properties.ts
+- frontend-root/src/global/types/globalPrimitiveTypes.ts → frontend-root/src/types/properties.ts
 **Learning Focus:** Dynamic primitive system architecture
 **Checkpoint:** Primitive types match React version
 ```

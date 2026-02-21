@@ -11,10 +11,11 @@ import { readFile, writeFile, readdir } from 'fs/promises';
 import { join, extname, relative } from 'path';
 import { existsSync } from 'fs';
 import { applyCompression, isCommentValuable, isRegularCommentValuable, detectCommentType } from '../utils/comment-compression';
+import { FRONTEND_ROOT } from '../../utils/utils';
 
 export interface CommentCleanupParams {
   dryRun?: boolean; // If true, preview changes without modifying files
-  paths?: string[]; // Optional: specific file paths to clean (if provided, only these files; otherwise scans client/ and server/)
+  paths?: string[]; // Optional: specific file paths to clean (if provided, only these files; otherwise scans frontend root and server/)
   compress?: boolean; // If true, compress verbose comment clusters to concise versions (default: true)
 }
 
@@ -72,7 +73,7 @@ export async function phaseCommentCleanup(
     }
   } else {
     // Default: scan entire directories
-    const scanPaths = ['client', 'server'];
+    const scanPaths = [FRONTEND_ROOT, 'server'];
     for (const scanPath of scanPaths) {
       const fullPath = join(process.cwd(), scanPath);
       if (existsSync(fullPath)) {
@@ -122,8 +123,8 @@ export async function phaseCommentCleanup(
           }
           summaryLines.push('');
         }
-      } catch (error) {
-        const errorMsg = `Error processing ${filePath}: ${error instanceof Error ? error.message : String(error)}`;
+      } catch (_error) {
+        const errorMsg = `Error processing ${filePath}: ${_error instanceof Error ? _error.message : String(_error)}`;
         result.errors?.push(errorMsg);
         summaryLines.push(`❌ ${errorMsg}\n`);
       }
@@ -143,10 +144,10 @@ export async function phaseCommentCleanup(
     }
 
     return result;
-  } catch (error) {
+  } catch (_error) {
     result.success = false;
-    result.errors?.push(error instanceof Error ? error.message : String(error));
-    result.summary = `❌ **Error:** ${error instanceof Error ? error.message : String(error)}`;
+    result.errors?.push(_error instanceof Error ? _error.message : String(_error));
+    result.summary = `❌ **Error:** ${_error instanceof Error ? _error.message : String(_error)}`;
     return result;
   }
 }
@@ -183,8 +184,8 @@ async function collectFiles(
     }
     
     return files;
-  } catch {} {
-    // Skip directories we can't read
+  } catch (err) {
+    console.warn('Phase comment cleanup: directory not readable', dir, err);
     return files;
   }
 }

@@ -18,11 +18,12 @@
  * PATTERN: Command router pattern - routes to appropriate handler based on tier
  */
 
-import { changeRequest, ChangeRequestParams } from '../tiers/session/composite/session-change';
-import { taskChange, TaskChangeRequestParams } from '../tiers/task/composite/task-change';
-import { phaseChange, PhaseChangeRequestParams } from '../tiers/phase/composite/phase-change';
+import { changeRequest } from '../tiers/session/composite/session';
+import { taskChange } from '../tiers/task/composite/task';
+import { phaseChange } from '../tiers/phase/composite/phase';
 import { WorkflowId } from './id-utils';
 import { TierAnalysis } from './tier-discriminator';
+import { resolveFeatureName } from './feature-context';
 
 export interface ExecuteChangeRequestParams {
   description: string;
@@ -46,7 +47,8 @@ export interface ExecuteChangeRequestResult {
 export async function executeChangeRequest(
   params: ExecuteChangeRequestParams
 ): Promise<ExecuteChangeRequestResult> {
-  const { description, tierAnalysis, sessionId, taskId, phase, featureName = 'vue-migration' } = params;
+  const { description, tierAnalysis, sessionId, taskId, phase } = params;
+  const featureName = await resolveFeatureName(params.featureName);
   
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -54,7 +56,7 @@ export async function executeChangeRequest(
     
     if (tierAnalysis.tier === 'task' && taskId) {
       if (!WorkflowId.isValidTaskId(taskId)) {
-        throw new Error(`Invalid task ID: ${taskId}. Expected format: X.Y.Z`);
+        throw new Error(`Invalid task ID: ${taskId}. Expected format: X.Y.Z.Z.A`);
       }
       
       changeResult = await taskChange({
@@ -70,7 +72,7 @@ export async function executeChangeRequest(
       
     } else if ((tierAnalysis.tier === 'session' || !tierAnalysis.tier) && sessionId) {
       if (!WorkflowId.isValidSessionId(sessionId)) {
-        throw new Error(`Invalid session ID: ${sessionId}. Expected format: X.Y`);
+        throw new Error(`Invalid session ID: ${sessionId}. Expected format: X.Y.Z`);
       }
       
       changeResult = await changeRequest({
@@ -88,11 +90,11 @@ export async function executeChangeRequest(
       output: changeResult.output || 'Change executed successfully',
     };
     
-  } catch (error) {
+  } catch (_error) {
     return {
       success: false,
       changeResult: null,
-      output: `Execution failed: ${error instanceof Error ? error.message : String(error)}`,
+      output: `Execution failed: ${_error instanceof Error ? _error.message : String(_error)}`,
     };
   }
 }

@@ -39,7 +39,8 @@ export async function testTemplate(
     // Check if template exists
     try {
       await access(templateFile);
-    } catch {
+    } catch (err) {
+      console.warn('Test template: template file not found', templateFile, err);
       return {
         success: false,
         filePath: '',
@@ -91,8 +92,8 @@ export async function testTemplate(
     // Ensure directory exists (simplified - in production, use mkdir -p)
     try {
       await access(outputDir);
-    } catch {
-      // Directory doesn't exist - would need mkdir in production
+    } catch (err) {
+      console.warn('Test template: output directory does not exist', outputDir, err);
       return {
         success: false,
         filePath: '',
@@ -108,8 +109,8 @@ export async function testTemplate(
         filePath: fullPath,
         message: `Test file already exists: ${filePath}. Use a different path or delete the existing file.`,
       };
-    } catch {
-      // File doesn't exist, proceed
+    } catch (err) {
+      console.warn('Test template: test file path check failed (proceeding to write)', fullPath, err);
     }
     
     // Write test file
@@ -120,11 +121,11 @@ export async function testTemplate(
       filePath: fullPath,
       message: `Test file generated successfully at ${filePath}. Remember to update the import path.`,
     };
-  } catch (error) {
+  } catch (_error) {
     return {
       success: false,
       filePath: '',
-      message: `Error generating test file: ${error instanceof Error ? error.message : String(error)}`,
+      message: `Error generating test file: ${_error instanceof Error ? _error.message : String(_error)}`,
     };
   }
 }

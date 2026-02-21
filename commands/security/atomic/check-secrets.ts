@@ -130,16 +130,16 @@ export async function checkSecrets(params: SecretsCheckParams = {}): Promise<str
                 scanFile(fullPath);
               }
             }
-          } catch {
-            // Skip files we can't read
+          } catch (err) {
+            console.warn('Check secrets: file not readable', entry, err);
             continue;
           }
         }
-      } catch {
-        // Skip directories we can't read
+      } catch (err) {
+        console.warn('Check secrets: directory not readable', dirPath, err);
       }
     };
-    
+
     const scanFile = (filePath: string): void => {
       try {
         const content = readFileSync(filePath, 'utf-8');
@@ -157,7 +157,7 @@ export async function checkSecrets(params: SecretsCheckParams = {}): Promise<str
           for (const { pattern, name, severity } of SECRET_PATTERNS) {
             const matches = Array.from(line.matchAll(pattern));
             
-            for (const match of matches) {
+            for (const _match of matches) {
               // Skip if it's a comment explaining why it's safe
               if (line.trim().startsWith('//') && line.includes('safe') || line.includes('example')) {
                 continue;
@@ -175,14 +175,18 @@ export async function checkSecrets(params: SecretsCheckParams = {}): Promise<str
                 result.errors.push(issue);
                 result.summary.errorCount++;
               } else {
-                result.warnings.push(issue);
+                result.warnings.push({
+                  file: relativePath,
+                  line: index + 1,
+                  message: issue.issue,
+                });
                 result.summary.warningCount++;
               }
             }
           }
         });
-      } catch {
-        // Skip files we can't read
+      } catch (err) {
+        console.warn('Check secrets: file not readable', filePath, err);
       }
     };
     
@@ -240,9 +244,9 @@ export async function checkSecrets(params: SecretsCheckParams = {}): Promise<str
     }
     
     return output.join('\n');
-  } catch (error) {
+  } catch (_error) {
     output.push(`**ERROR: Failed to check for secrets**\n`);
-    output.push(`**Error:** ${error instanceof Error ? error.message : String(error)}\n`);
+    output.push(`**Error:** ${_error instanceof Error ? _error.message : String(_error)}\n`);
     return output.join('\n');
   }
 }
@@ -284,10 +288,10 @@ export async function checkSecretsProgrammatic(
       success: true,
       result,
     };
-  } catch (error) {
+  } catch (_error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : String(error),
+      error: _error instanceof Error ? _error.message : String(_error),
     };
   }
 }

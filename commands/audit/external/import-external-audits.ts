@@ -6,7 +6,7 @@
  * to *capture* the latest Vue audit outputs as “external signals” when they exist.
  *
  * This module:
- * - does NOT execute `client/scripts/*`
+ * - does NOT execute frontend-root/scripts/*
  * - only reads/copies already-emitted artifacts (JSON/MD) into the workflow audit folder
  * - emits a timestamped import bundle under `.project-manager/.../audits/external/...`
  */
@@ -15,6 +15,7 @@ import { readFile, mkdir, copyFile, writeFile } from 'fs/promises';
 import { join, basename } from 'path';
 import { existsSync } from 'fs';
 import { WorkflowCommandContext } from '../../utils/command-context';
+import { FRONTEND_ROOT } from '../../utils/utils';
 
 type ExternalAuditSource = {
   sourceId: string;
@@ -42,6 +43,8 @@ export type ExternalAuditImportResult = {
 
 const PROJECT_ROOT = process.cwd();
 
+const FRONTEND_PLACEHOLDER = 'frontend-root';
+
 function loadDefaultConfig(): ExternalAuditConfig {
   return {
     sources: [
@@ -49,31 +52,35 @@ function loadDefaultConfig(): ExternalAuditConfig {
         sourceId: 'client-typecheck',
         label: 'Vue Typecheck Audit',
         paths: [
-          'client/.typecheck/typecheck-audit.json',
-          'client/.typecheck/typecheck-audit.md',
-          'client/.typecheck/typecheck-audit-summary.md',
+          `${FRONTEND_ROOT}/.typecheck/typecheck-audit.json`,
+          `${FRONTEND_ROOT}/.typecheck/typecheck-audit.md`,
+          `${FRONTEND_ROOT}/.typecheck/typecheck-audit-summary.md`,
         ],
       },
       {
         sourceId: 'client-composables-logic',
         label: 'Vue Composables Logic Audit',
         paths: [
-          'client/.audit/composables-logic-audit.json',
-          'client/.audit/composables-logic-audit.md',
-          'client/.audit/composables-logic-audit-summary.md',
+          `${FRONTEND_ROOT}/.audit/composables-logic-audit.json`,
+          `${FRONTEND_ROOT}/.audit/composables-logic-audit.md`,
+          `${FRONTEND_ROOT}/.audit/composables-logic-audit-summary.md`,
         ],
       },
       {
         sourceId: 'client-component-logic',
         label: 'Vue Component Logic Audit',
         paths: [
-          'client/.audit/component-logic-audit.json',
-          'client/.audit/component-logic-audit.md',
-          'client/.audit/component-logic-audit-summary.md',
+          `${FRONTEND_ROOT}/.audit/component-logic-audit.json`,
+          `${FRONTEND_ROOT}/.audit/component-logic-audit.md`,
+          `${FRONTEND_ROOT}/.audit/component-logic-audit-summary.md`,
         ],
       },
     ],
   };
+}
+
+function resolvePath(p: string): string {
+  return p.startsWith(`${FRONTEND_PLACEHOLDER}/`) ? p.replace(`${FRONTEND_PLACEHOLDER}/`, `${FRONTEND_ROOT}/`) : p;
 }
 
 async function loadConfig(): Promise<ExternalAuditConfig> {
@@ -82,12 +89,17 @@ async function loadConfig(): Promise<ExternalAuditConfig> {
   try {
     const raw = await readFile(configPath, 'utf-8');
     const parsed = JSON.parse(raw) as ExternalAuditConfig;
-    return parsed?.sources?.length ? parsed : loadDefaultConfig();
-  } catch (error) {
+    const config = parsed?.sources?.length ? parsed : loadDefaultConfig();
+    config.sources = config.sources.map(s => ({
+      ...s,
+      paths: s.paths.map(resolvePath),
+    }));
+    return config;
+  } catch (_error) {
     console.warn(
       `WARNING: Failed to load external audits config; using defaults.\n` +
       `Path: ${configPath}\n` +
-      `Error: ${error instanceof Error ? error.message : String(error)}\n`
+      `Error: ${_error instanceof Error ? _error.message : String(_error)}\n`
     );
     return loadDefaultConfig();
   }
@@ -147,8 +159,8 @@ export async function importExternalAudits(
       try {
         await copyFile(fromAbs, toAbs);
         copied.push({ from: relPath, to: toRelative(toAbs) });
-      } catch (error) {
-        errors.push(`${relPath}: ${error instanceof Error ? error.message : String(error)}`);
+      } catch (_error) {
+        errors.push(`${relPath}: ${_error instanceof Error ? _error.message : String(_error)}`);
       }
     }
 

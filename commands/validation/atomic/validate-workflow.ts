@@ -7,12 +7,13 @@
  */
 
 import { WorkflowCommandContext } from '../../utils/command-context';
+import { resolveFeatureName } from '../../utils';
 import { WorkflowId } from '../../utils/id-utils';
-import { getAllTodos } from '../../utils/todo-io';
 import { getStatus, StatusTier } from '../../status/atomic/get-status';
 import { DocumentTier } from '../../utils/document-manager';
 import { access } from 'fs/promises';
 import { join } from 'path';
+import { MarkdownUtils } from '../../utils/markdown-utils';
 
 export type ValidationTier = DocumentTier | 'task';
 
@@ -36,7 +37,7 @@ export interface ValidationResult {
  * @returns Formatted validation output
  */
 export async function validateWorkflow(params: ValidateWorkflowParams): Promise<string> {
-  const featureName = params.featureName || 'vue-migration';
+  const featureName = await resolveFeatureName(params.featureName);
   const context = new WorkflowCommandContext(featureName);
   const output: string[] = [];
   
@@ -49,7 +50,7 @@ export async function validateWorkflow(params: ValidateWorkflowParams): Promise<
   }
   
   if (params.tier === 'session' && params.identifier && !WorkflowId.isValidSessionId(params.identifier)) {
-    return `Error: Invalid session ID format. Expected X.Y (e.g., 2.1)\nAttempted: ${params.identifier}`;
+    return `Error: Invalid session ID format. Expected X.Y.Z (e.g., 4.1.3)\nAttempted: ${params.identifier}`;
   }
   
   const result: ValidationResult = {
@@ -137,9 +138,9 @@ export async function validateWorkflow(params: ValidateWorkflowParams): Promise<
     }
     
     return output.join('\n');
-  } catch (error) {
+  } catch (_error) {
     output.push(`**ERROR: Failed to validate workflow**\n`);
-    output.push(`**Error:** ${error instanceof Error ? error.message : String(error)}\n`);
+    output.push(`**Error:** ${_error instanceof Error ? _error.message : String(_error)}\n`);
     return output.join('\n');
   }
 }
@@ -171,7 +172,8 @@ async function checkDocuments(
     
     await access(join(PROJECT_ROOT, guidePath));
     info.push(`Guide exists: ${guidePath}`);
-  } catch {
+  } catch (err) {
+    console.warn('Validate workflow: guide not found', tier, identifier, err);
     warnings.push(`Guide not found: ${tier}${identifier ? ` ${identifier}` : ''}`);
   }
   
@@ -188,7 +190,8 @@ async function checkDocuments(
     
     await access(join(PROJECT_ROOT, logPath));
     info.push(`Log exists: ${logPath}`);
-  } catch {
+  } catch (err) {
+    console.warn('Validate workflow: log not found', tier, identifier, err);
     warnings.push(`Log not found: ${tier}${identifier ? ` ${identifier}` : ''}`);
   }
   
@@ -205,7 +208,8 @@ async function checkDocuments(
     
     await access(join(PROJECT_ROOT, handoffPath));
     info.push(`Handoff exists: ${handoffPath}`);
-  } catch {
+  } catch (err) {
+    console.warn('Validate workflow: handoff not found', tier, identifier, err);
     warnings.push(`Handoff not found: ${tier}${identifier ? ` ${identifier}` : ''}`);
   }
   
@@ -234,22 +238,21 @@ async function checkRequiredSections(
       } else {
         handoffContent = await context.readSessionHandoff(identifier!);
       }
-    } catch {
-      // Handoff doesn't exist, skip section checks
+    } catch (err) {
+      console.warn('Validate workflow: handoff not found, skipping section checks', tier, identifier, err);
       return { errors, warnings };
     }
     
     const requiredSections = ['Current Status', 'Next Action', 'Transition Context'];
-    const { MarkdownUtils } = await import('../../utils/markdown-utils');
-    
+
     for (const section of requiredSections) {
       const sectionContent = MarkdownUtils.extractSection(handoffContent, section);
       if (!sectionContent || sectionContent.trim().length === 0) {
         warnings.push(`Handoff missing section: ${section}`);
       }
     }
-  } catch (error) {
-    warnings.push(`Failed to check sections: ${error instanceof Error ? error.message : String(error)}`);
+  } catch (_error) {
+    warnings.push(`Failed to check sections: ${_error instanceof Error ? _error.message : String(_error)}`);
   }
   
   return { errors, warnings };
@@ -324,10 +327,10 @@ export async function validateWorkflowProgrammatic(
       success: true,
       result
     };
-  } catch (error) {
+  } catch (_error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : String(error)
+      error: _error instanceof Error ? _error.message : String(_error)
     };
   }
 }

@@ -46,8 +46,7 @@ export async function auditDocumentation(): Promise<AuditResult> {
   for (const file of compositeCommandFiles) {
     try {
       const content = await readFile(file, 'utf-8');
-      const lines = content.split('\n');
-      
+
       // Check for JSDoc comment at the top
       const hasJSDoc = content.includes('/**') && content.includes('* Composite Command:');
       if (!hasJSDoc) {
@@ -136,10 +135,10 @@ export async function auditDocumentation(): Promise<AuditResult> {
         }
       }
       
-    } catch (error) {
+    } catch (_error) {
       issues.push({
         severity: 'error',
-        message: `Failed to read file: ${error instanceof Error ? error.message : String(error)}`,
+        message: `Failed to read file: ${_error instanceof Error ? _error.message : String(_error)}`,
         file: file,
       });
     }
@@ -169,7 +168,9 @@ export async function auditDocumentation(): Promise<AuditResult> {
         });
       }
       
-    } catch {}
+    } catch (err) {
+      console.warn('Audit documentation: failed to check file', readmeFile, err);
+    }
   }
 
   const status = issues.some(i => i.severity === 'critical' || i.severity === 'error')

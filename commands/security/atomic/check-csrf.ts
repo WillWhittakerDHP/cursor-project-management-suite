@@ -106,8 +106,8 @@ export async function checkCSRF(params: CSRFCheckParams = {}): Promise<string> {
             globalCSRF = true;
             break;
           }
-        } catch {
-          // Skip files we can't read
+        } catch (err) {
+          console.warn('Check CSRF: file not readable', err);
         }
       }
     }
@@ -142,13 +142,13 @@ export async function checkCSRF(params: CSRFCheckParams = {}): Promise<string> {
                 }
               }
             }
-          } catch {
-            // Skip files we can't read
+          } catch (err) {
+            console.warn('Check CSRF: file not readable', entry, err);
             continue;
           }
         }
-      } catch {
-        // Skip directories we can't read
+      } catch (err) {
+        console.warn('Check CSRF: directory not readable', dirPath, err);
       }
     };
     
@@ -196,8 +196,8 @@ export async function checkCSRF(params: CSRFCheckParams = {}): Promise<string> {
             }
           }
         });
-      } catch {
-        // Skip files we can't read
+      } catch (err) {
+        console.warn('Check CSRF: file not readable', routeFile, err);
       }
     }
     
@@ -215,8 +215,8 @@ export async function checkCSRF(params: CSRFCheckParams = {}): Promise<string> {
         if (allDeps.csurf || allDeps['csrf'] || allDeps['express-csrf']) {
           csrfLibraryFound = true;
         }
-      } catch {
-        // Skip if can't parse
+      } catch (err) {
+        console.warn('Check CSRF: parse failed', err);
       }
     }
     
@@ -288,9 +288,9 @@ export async function checkCSRF(params: CSRFCheckParams = {}): Promise<string> {
     }
     
     return output.join('\n');
-  } catch (error) {
+  } catch (_error) {
     output.push(`**ERROR: Failed to check CSRF protection**\n`);
-    output.push(`**Error:** ${error instanceof Error ? error.message : String(error)}\n`);
+    output.push(`**Error:** ${_error instanceof Error ? _error.message : String(_error)}\n`);
     return output.join('\n');
   }
 }
@@ -338,10 +338,10 @@ export async function checkCSRFProgrammatic(
       success: true,
       result,
     };
-  } catch (error) {
+  } catch (_error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : String(error),
+      error: _error instanceof Error ? _error.message : String(_error),
     };
   }
 }

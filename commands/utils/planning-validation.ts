@@ -9,11 +9,15 @@ import {
   PlanningOutput,
   PlanningValidation,
   ValidationIssue,
-  ValidationSeverity,
   TierValidationRules,
   PlanningTier,
   DecisionGate,
 } from './planning-types';
+
+/** Read a field from planning output by rule-defined key. PlanningOutput has [key: string]: unknown. */
+function getPlanningField(planningOutput: PlanningOutput, field: string): unknown {
+  return Object.prototype.hasOwnProperty.call(planningOutput, field) ? planningOutput[field] : undefined;
+}
 
 // ===================================================================
 // VALIDATION RULES
@@ -140,7 +144,7 @@ export function validatePlanning(
   
   // Validate required fields
   for (const field of rules.requiredFields) {
-    const value = (planningOutput as Record<string, unknown>)[field];
+    const value = getPlanningField(planningOutput, field);
     
     if (value === undefined || value === null || value === '') {
       errors.push({
@@ -168,7 +172,7 @@ export function validatePlanning(
   
   // Check recommended fields
   for (const field of rules.recommendedFields) {
-    const value = (planningOutput as Record<string, unknown>)[field];
+    const value = getPlanningField(planningOutput, field);
     
     if (value === undefined || value === null || value === '') {
       warnings.push({

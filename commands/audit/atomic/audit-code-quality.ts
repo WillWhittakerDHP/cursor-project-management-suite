@@ -12,8 +12,8 @@
  * - Change detection means audits skip if < threshold files changed
  *
  * References:
- * - `client/.audit-reports/` - Audit outputs
- * - `client/.scripts/*audit*.mjs` - Audit scripts
+ * - frontend-root/.audit-reports/ - Audit outputs
+ * - frontend-root/.scripts/*audit*.mjs - Audit scripts
  */
 
 import { execSync } from 'child_process';
@@ -22,8 +22,9 @@ import { join } from 'path';
 import { AuditParams } from '../types';
 import { AuditResult, AuditFinding } from '../types';
 
-const PROJECT_ROOT = process.cwd();
-const CLIENT_ROOT = join(PROJECT_ROOT, 'client');
+import { PROJECT_ROOT, FRONTEND_ROOT } from '../../utils/utils';
+
+const CLIENT_ROOT = join(PROJECT_ROOT, FRONTEND_ROOT);
 const AUDIT_DIR = join(CLIENT_ROOT, '.audit-reports');
 const TYPECHECK_DIR = join(CLIENT_ROOT, '.audit-reports', 'typecheck');
 
@@ -47,7 +48,8 @@ function loadAuditJson(filePath: string): AuditJsonOutput | null {
   try {
     const raw = readFileSync(filePath, 'utf8');
     return JSON.parse(raw);
-  } catch {
+  } catch (err) {
+    console.warn('Audit code quality: analysis failed', err);
     return null;
   }
 }
@@ -353,7 +355,7 @@ export async function auditCodeQuality(_params: AuditParams): Promise<AuditResul
       stdio: 'pipe', // Suppress output (we'll read JSON instead)
       timeout: 300000, // 5 minute timeout
     });
-  } catch (error) {
+  } catch (_error) {
     // Non-fatal: audits may skip if below threshold, or may have errors
     // We'll still read whatever JSON outputs exist
   }

@@ -7,8 +7,8 @@
  * Description: Validate a todo's scope against its tier and parent
  */
 
-import { validateScope } from "../../utils/todo-scoping';
-import { Todo } from "../../utils/todo-types';
+import { validateScope } from "../../utils/todo-scoping";
+import { Todo } from "../../utils/todo-types";
 
 export async function validateScopeCommand(
   feature: string,
@@ -33,8 +33,8 @@ export async function validateScopeCommand(
     }
     
     return lines.join('\n');
-  } catch (error) {
-    return `❌ Error validating scope: ${error instanceof Error ? error.message : String(error)}`;
+  } catch (_error) {
+    return `❌ Error validating scope: ${_error instanceof Error ? _error.message : String(_error)}`;
   }
 }
 

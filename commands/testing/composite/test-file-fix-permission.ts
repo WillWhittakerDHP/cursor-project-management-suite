@@ -34,7 +34,7 @@ class PermissionStore {
     }
   }
   
-  check(testFilePath: string, conversationTurn: string): boolean {
+  check(testFilePath: string, _conversationTurn: string): boolean {
     const permission = this.permissions.get(testFilePath);
     if (!permission) {
       return false;
@@ -83,29 +83,7 @@ export async function requestTestFileFixPermission(
       conversationTurn: conversationContext,
     };
   }
-  
-  // Generate permission prompt format (for agent to show user)
-  const permissionPrompt = `## Test Code Error Detected
 
-**Error Type:** ${errorAnalysis.errorType}
-**Confidence:** ${errorAnalysis.confidence}
-**Affected Files:** 
-${testFiles.map(f => `- ${f}`).join('\n')}
-
-**Error Details:**
-${errorAnalysis.errorMessage}
-
-**Analysis:** ${errorAnalysis.recommendation}
-
-**Request:** Grant permission to fix this test file?
-
-**This will allow:**
-- Modifying the test file to fix the error
-- Re-running tests to verify the fix
-- Permission valid for this conversation turn and follow-up messages
-
-**Proceed with test file fix?** (yes/no)`;
-  
   // Return permission object (granted will be set by agent based on user response)
   return {
     granted: false, // Will be set to true by agent after user approval

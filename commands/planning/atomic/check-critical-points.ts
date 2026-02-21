@@ -24,8 +24,7 @@ export async function checkCriticalPoints(
   description?: string
 ): Promise<CriticalChecksResult> {
   const checks: CriticalCheck[] = [];
-  const now = new Date().toISOString();
-  
+
   // Create checks based on types
   for (const checkType of checkTypes) {
     const check = await createCriticalCheck(checkType, required, description);
@@ -133,11 +132,11 @@ async function performCheck(
           message: 'Documentation check completed',
           details: docCheckResult.substring(0, 500), // Truncate for details
         };
-      } catch (error) {
+      } catch (_error) {
         return {
           passed: false,
           message: 'Documentation check failed',
-          details: error instanceof Error ? error.message : String(error),
+          details: _error instanceof Error ? _error.message : String(_error),
         };
       }
       
@@ -155,11 +154,11 @@ async function performCheck(
           message: 'Reuse check completed',
           details: reuseCheckResult.substring(0, 500), // Truncate for details
         };
-      } catch (error) {
+      } catch (_error) {
         return {
           passed: false,
           message: 'Reuse check failed',
-          details: error instanceof Error ? error.message : String(error),
+          details: _error instanceof Error ? _error.message : String(_error),
         };
       }
       

@@ -19,24 +19,6 @@ interface CommandSignature {
 }
 
 /**
- * Recursively get all TypeScript files
- */
-async function getAllTsFiles(dir: string, fileList: string[] = []): Promise<string[]> {
-  const files = await readdir(dir, { withFileTypes: true });
-  
-  for (const file of files) {
-    const filePath = join(dir, file.name);
-    if (file.isDirectory() && !file.name.includes('node_modules') && !file.name.includes('.git')) {
-      await getAllTsFiles(filePath, fileList);
-    } else if (file.isFile() && file.name.endsWith('.ts') && !file.name.endsWith('.d.ts')) {
-      fileList.push(filePath);
-    }
-  }
-  
-  return fileList;
-}
-
-/**
  * Extract function signature from content
  */
 function extractSignature(content: string, functionName: string): CommandSignature | null {
@@ -120,8 +102,8 @@ export async function auditSignatures(): Promise<AuditResult> {
       }
       
       signaturesByTier[tier] = tierSignatures;
-    } catch (error) {
-      // Directory might not exist
+    } catch (err) {
+      console.warn('Audit signatures: tier directory not found or not readable', tierDir, err);
       signaturesByTier[tier] = [];
     }
   }

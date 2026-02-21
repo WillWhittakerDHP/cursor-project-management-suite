@@ -9,6 +9,7 @@
 import { getStatus, StatusTier, GetStatusParams } from '../atomic/get-status';
 import { queryChanges } from '../atomic/query-changes';
 import { queryCitationsForTier } from '../atomic/query-citations';
+import { resolveFeatureName } from '../../utils';
 import { status } from '../../utils/status';
 
 export interface StatusDetailedParams {
@@ -26,7 +27,7 @@ export interface StatusDetailedParams {
  * @returns Formatted detailed status output
  */
 export async function statusDetailed(params: StatusDetailedParams): Promise<string> {
-  const featureName = params.featureName || 'vue-migration';
+  const featureName = await resolveFeatureName(params.featureName);
   const output: string[] = [];
   
   output.push(`# Detailed Status: ${params.tier}${params.identifier ? ` ${params.identifier}` : ''}\n`);

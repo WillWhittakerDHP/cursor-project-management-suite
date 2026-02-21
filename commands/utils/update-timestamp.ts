@@ -5,9 +5,11 @@
 
 import { readProjectFile, writeProjectFile, getCurrentDate } from './utils';
 import { WorkflowCommandContext } from './command-context';
+import { resolveFeatureName } from './feature-context';
 
-export async function updateTimestamp(sessionId: string, featureName: string = 'vue-migration'): Promise<void> {
-  const context = new WorkflowCommandContext(featureName);
+export async function updateTimestamp(sessionId: string, featureName?: string): Promise<void> {
+  const resolved = await resolveFeatureName(featureName);
+  const context = new WorkflowCommandContext(resolved);
   const handoffPath = context.paths.getSessionHandoffPath(sessionId);
   const content = await readProjectFile(handoffPath);
   

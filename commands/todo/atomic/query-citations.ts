@@ -7,8 +7,8 @@
  * Description: Query citations with various filters
  */
 
-import { queryCitations } from "../../utils/todo-citations';
-import { CitationType, CitationPriority, CitationContext } from "../../utils/todo-types';
+import { queryCitations } from "../../utils/todo-citations";
+import { CitationType, CitationPriority, CitationContext } from "../../utils/todo-types";
 
 export async function queryCitationsCommand(
   feature: string,
@@ -46,8 +46,8 @@ export async function queryCitationsCommand(
     }
     
     return lines.join('\n');
-  } catch (error) {
-    return `❌ Error querying citations: ${error instanceof Error ? error.message : String(error)}`;
+  } catch (_error) {
+    return `❌ Error querying citations: ${_error instanceof Error ? _error.message : String(_error)}`;
   }
 }
 

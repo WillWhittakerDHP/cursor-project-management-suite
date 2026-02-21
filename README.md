@@ -28,7 +28,7 @@ To share this development environment with a teammate:
 
 Project root also contains:
 ├── .project-manager/  # Project-specific planning documentation
-└── client/.scripts/   # Client-specific code quality tools
+└── frontend-root/.scripts/   # Client-specific code quality tools
 ```
 
 ---
@@ -70,7 +70,7 @@ Both files are automatically loaded by Cursor (marked with `alwaysApply: true`).
 **Rule 3: Clear Transformation Functions Over Prop-Drilling**
 - Create typed, documented transformation functions
 - Avoid complex nested transformations
-- See: `client/src/admin/dataTransformation/`
+- See: `frontend-root/src/admin/dataTransformation/`
 
 #### Type Safety Rules
 
@@ -82,7 +82,7 @@ Both files are automatically loaded by Cursor (marked with `alwaysApply: true`).
 **Rule 5: Descriptive Generic Type Names**
 - Use `GlobalEntityKey` instead of `K`
 - Use `GlobalPropertyKey` instead of `P`
-- See: `client/src/global/types/globalEntityTypes.ts`
+- See: `frontend-root/src/global/types/globalEntityTypes.ts`
 
 #### Code Quality Rules
 
@@ -106,7 +106,7 @@ Both files are automatically loaded by Cursor (marked with `alwaysApply: true`).
 **Rule 10: Test File Documentation**
 - Every test file must begin with descriptive header comment
 - Explain: what it covers, how it works, what it validates, dependencies
-- See: `client/src/admin/tests/activePartsStateCalculator.test.ts`
+- See: `frontend-root/src/admin/tests/activePartsStateCalculator.test.ts`
 
 **Rule 11: Test File Immutability**
 - Tests are immutable once they pass, lint, and function correctly
@@ -116,8 +116,8 @@ Both files are automatically loaded by Cursor (marked with `alwaysApply: true`).
 **Rule 12: Testing Strategy - Hybrid Approach**
 - Fine-grained unit tests for pure functions, utilities, business logic
 - Integration tests for context coordination, component integration, user workflows
-- See: `client/src/booking/__tests__/utils/feeCalculation.test.ts` (unit)
-- See: `client/src/admin/tests/integration/contextIntegration.test.tsx` (integration)
+- See: `frontend-root/src/booking/__tests__/utils/feeCalculation.test.ts` (unit)
+- See: `frontend-root/src/admin/tests/integration/contextIntegration.test.tsx` (integration)
 
 **Rule 13: Test Execution in Development**
 - Tests run in watch mode: `npm run start:dev:testing`
@@ -136,8 +136,8 @@ Both files are automatically loaded by Cursor (marked with `alwaysApply: true`).
 
 **Rule 21: Documentation Checks at Critical Junctures**
 - Check existing documentation, patterns, reusable components before implementing
-- Before creating components: check `client/src/admin/components/generic/`
-- Before creating transformers: review `client/src/admin/dataTransformation/`
+- Before creating components: check `frontend-root/src/admin/components/generic/`
+- Before creating transformers: review `frontend-root/src/admin/dataTransformation/`
 - Before implementing similar functionality: search codebase for existing implementations
 
 **Rule 22: Pattern Reuse and Generic Component Creation**
@@ -145,7 +145,7 @@ Both files are automatically loaded by Cursor (marked with `alwaysApply: true`).
 - Create generic solutions after identifying patterns (2+ similar code structures)
 - Create generic component when: similar code appears 2+ times with same structure
 - Don't create generic component when: only one use case exists (premature abstraction)
-- See: `client/src/admin/components/generic/` for examples
+- See: `frontend-root/src/admin/components/generic/` for examples
 
 ### User Rules (Personal Preferences & Learning)
 

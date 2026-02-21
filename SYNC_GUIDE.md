@@ -213,4 +213,10 @@ git submodule add https://github.com/WillWhittakerDHP/cursor-project-management-
 - This setup was created on 2026-01-09
 - Current sync includes: PR workflow, code quality audits, structure consolidation
 
+### Critical files to keep in sync
+
+When syncing, ensure these are included so app start and session-end work correctly:
+
+- `commands/utils/verify-app.ts` – Port check (127.0.0.1), check-first, start:dev from resolved project root
+
 For questions about this setup, see `SUBMODULE_INFO.md` or the main project documentation.

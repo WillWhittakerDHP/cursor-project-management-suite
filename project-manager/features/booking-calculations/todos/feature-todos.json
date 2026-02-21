@@ -1,0 +1,21 @@
+{
+  "feature": "booking-calculations",
+  "todos": [
+    {
+      "id": "feature-booking-calculations",
+      "title": "Booking Calculations",
+      "description": "Extract and implement fee and time calculation logic. Shared calculation composable for booking wizard and admin preview.",
+      "status": "in_progress",
+      "tier": "feature",
+      "parentId": null,
+      "planningDocPath": ".project-manager/features/booking-calculations/feature-booking-calculations-guide.md",
+      "planningDocSection": "Feature Objectives",
+      "createdAt": "2026-02-20T19:02:30.946Z",
+      "updatedAt": "2026-02-20T19:02:30.946Z"
+    }
+  ],
+  "metadata": {
+    "version": "1.0",
+    "lastSynced": "2026-02-20T19:02:30.946Z"
+  }
+}

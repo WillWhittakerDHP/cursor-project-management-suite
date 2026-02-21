@@ -10,17 +10,17 @@ Technical standards, architectural patterns, and code quality rules.
 
 During refactors, do not introduce unnecessary fallbacks, filtering, new types, or new properties unless specifically directed. Always look for current property names and types.
 
-Maintain generic patterns with runtime configurations over specific type definitions. Prefer EntityBase<GlobalEntityKey> with runtime ENTITY_CONFIGS over BlockTypeEntity, PartTypeEntity, etc. See: client/src/global/types/globalEntityTypes.ts, server/src/config/entityRegistry.ts
+Maintain generic patterns with runtime configurations over specific type definitions. Prefer EntityBase<GlobalEntityKey> with runtime ENTITY_CONFIGS over BlockTypeEntity, PartTypeEntity, etc. See: frontend-root/src/global/types/globalEntityTypes.ts, server/src/config/entityRegistry.ts
 
-Create clear, typed, and well-documented data transformation functions instead of complex nested transformations or prop-drilling. See: client/src/admin/dataTransformation/bridgeToAdminTransformer.ts
+Create clear, typed, and well-documented data transformation functions instead of complex nested transformations or prop-drilling. See: frontend-root/src/admin/dataTransformation/bridgeToAdminTransformer.ts
 
 ## TYPE SAFETY RULES
 
-Avoid unnecessary type assertions (as any, as unknown, as unknown as). Use keyof and typeof only when necessary for type constraints, not as workarounds. Prefer type guards (value is Type) over type assertions. See: client/src/admin/dataTransformation/typeAdapters.ts for examples.
+Avoid unnecessary type assertions (as any, as unknown, as unknown as). Use keyof and typeof only when necessary for type constraints, not as workarounds. Prefer type guards (value is Type) over type assertions. See: frontend-root/src/admin/dataTransformation/typeAdapters.ts for examples.
 
 Include explicit return types in function definitions to avoid type casting: function DoAThing(): ReturnType<Generic> { ... } instead of function DoAThing() { ... return aThing as ReturnType<Generic> }.
 
-Title all generic typing and functions with descriptive names, not single letters: use GlobalEntityKey instead of K, GlobalPropertyKey instead of P. See: client/src/global/types/globalEntityTypes.ts
+Title all generic typing and functions with descriptive names, not single letters: use GlobalEntityKey instead of K, GlobalPropertyKey instead of P. See: frontend-root/src/global/types/globalEntityTypes.ts
 
 ## CODE QUALITY RULES
 
@@ -32,11 +32,11 @@ Handle errors safely with explicit logging. Do not create silent fallbacks or fi
 
 ## TESTING RULES
 
-Every test file must begin with a descriptive header comment explaining what it covers, how it works, what it validates, and dependencies. See: client/src/admin/tests/activePartsStateCalculator.test.ts for example format.
+Every test file must begin with a descriptive header comment explaining what it covers, how it works, what it validates, and dependencies. See: frontend-root/src/admin/tests/activePartsStateCalculator.test.ts for example format.
 
 Test files are immutable once they pass, lint, and function correctly. Only modify tests when the feature changes, the test has a bug, or refactoring requires updates. Never modify tests to make failing code pass - fix the code instead.
 
-Use fine-grained unit tests for pure functions, utilities, and business logic. Use integration tests for context coordination, component integration, and user workflows. See: client/src/booking/__tests__/utils/feeCalculation.test.ts (unit) and client/src/admin/tests/integration/contextIntegration.test.tsx (integration).
+Use fine-grained unit tests for pure functions, utilities, and business logic. Use integration tests for context coordination, component integration, and user workflows. See: frontend-root/src/booking/__tests__/utils/feeCalculation.test.ts (unit) and frontend-root/src/admin/tests/integration/contextIntegration.test.tsx (integration).
 
 Tests run in watch mode during development using npm run start:dev:testing. Use standard start:dev for development without test watching.
 
@@ -46,9 +46,9 @@ Build responsiveness into Vue.js components from the start using mobile-first ap
 
 ## DOCUMENTATION & PATTERN REUSE RULES
 
-Check existing documentation, patterns, and reusable components before implementing similar functionality. Before creating new components: check for existing generic/reusable components (see: client/src/admin/components/generic/). Before creating transformers: review existing transformer patterns (see: client/src/admin/dataTransformation/, client-vue/src/api/transformers/). Before implementing similar functionality: search codebase for existing implementations. Before duplicating code patterns: identify if generic solution exists. Check architecture documentation (SCHEDULER_COMPONENT_SPECS.md, VUE_MIGRATION_HANDOFF.md), component documentation (README files), and migration guides. Applies to all new implementations and component creation.
+Check existing documentation, patterns, and reusable components before implementing similar functionality. Before creating new components: check for existing generic/reusable components (see: frontend-root/src/admin/components/generic/). Before creating transformers: review existing transformer patterns (see: frontend-root/src/admin/dataTransformation/, frontend-root/src/api/transformers/). Before implementing similar functionality: search codebase for existing implementations. Before duplicating code patterns: identify if generic solution exists. Check architecture documentation (SCHEDULER_COMPONENT_SPECS.md, VUE_MIGRATION_HANDOFF.md), component documentation (README files), and migration guides. Applies to all new implementations and component creation.
 
-Identify reusable patterns before duplicating code. When similar code structures appear 2+ times, create generic/reusable components or utilities. Build reusable solutions after identifying patterns, not before. Pattern identification process: 1) Recognize repetition (similar code 2+ times), 2) Identify common structure, 3) Create generic solution, 4) Refactor existing code to use generic solution. Create generic component when: similar code appears 2+ times with same structure, pattern is clear and well-understood, multiple use cases share common logic, pattern is stable. Don't create generic component when: only one use case exists (premature abstraction), pattern is unclear or still evolving, use cases are too different to generalize. Examples: Generic field components (FieldRenderer, BaseField), generic transformers (AdminTransformer, GlobalTransformer), generic instance components (GenericInstance, GenericCollection). See: client/src/admin/components/generic/ for examples. Applies to all code duplication scenarios and component creation. Exception: Don't create generic solutions prematurely - wait until pattern is clear from multiple implementations.
+Identify reusable patterns before duplicating code. When similar code structures appear 2+ times, create generic/reusable components or utilities. Build reusable solutions after identifying patterns, not before. Pattern identification process: 1) Recognize repetition (similar code 2+ times), 2) Identify common structure, 3) Create generic solution, 4) Refactor existing code to use generic solution. Create generic component when: similar code appears 2+ times with same structure, pattern is clear and well-understood, multiple use cases share common logic, pattern is stable. Don't create generic component when: only one use case exists (premature abstraction), pattern is unclear or still evolving, use cases are too different to generalize. Examples: Generic field components (FieldRenderer, BaseField), generic transformers (AdminTransformer, GlobalTransformer), generic instance components (GenericInstance, GenericCollection). See: frontend-root/src/admin/components/generic/ for examples. Applies to all code duplication scenarios and component creation. Exception: Don't create generic solutions prematurely - wait until pattern is clear from multiple implementations.
 
 ## EXCEPTIONS
 

@@ -144,13 +144,13 @@ export async function checkIDOR(params: IDORCheckParams = {}): Promise<string> {
                 }
               }
             }
-          } catch {
-            // Skip files we can't read
+          } catch (err) {
+            console.warn('Check IDOR: file not readable', fullPath, err);
             continue;
           }
         }
-      } catch {
-        // Skip directories we can't read
+      } catch (err) {
+        console.warn('Check IDOR: directory not readable', dirPath, err);
       }
     };
     
@@ -235,8 +235,8 @@ export async function checkIDOR(params: IDORCheckParams = {}): Promise<string> {
             }
           }
         });
-      } catch {
-        // Skip files we can't read
+      } catch (err) {
+        console.warn('Check IDOR: controller file not readable', controllerFile, err);
       }
     }
     
@@ -289,9 +289,9 @@ export async function checkIDOR(params: IDORCheckParams = {}): Promise<string> {
     }
     
     return output.join('\n');
-  } catch (error) {
+  } catch (_error) {
     output.push(`**ERROR: Failed to check for IDOR vulnerabilities**\n`);
-    output.push(`**Error:** ${error instanceof Error ? error.message : String(error)}\n`);
+    output.push(`**Error:** ${_error instanceof Error ? _error.message : String(_error)}\n`);
     return output.join('\n');
   }
 }
@@ -339,10 +339,10 @@ export async function checkIDORProgrammatic(
       success: true,
       result,
     };
-  } catch (error) {
+  } catch (_error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : String(error),
+      error: _error instanceof Error ? _error.message : String(_error),
     };
   }
 }

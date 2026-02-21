@@ -4,7 +4,7 @@
  * Functions for enforcing decision gates, tracking decisions, and validating decision completeness.
  */
 
-import { DecisionGate, DecisionGateResult, DecisionStatus, Alternative } from './planning-types';
+import { DecisionGate, DecisionGateResult, Alternative } from './planning-types';
 
 // ===================================================================
 // DECISION GATE CREATION

@@ -7,8 +7,8 @@
  * Description: Create a citation linking a todo to a change log entry
  */
 
-import { createCitation } from "../../utils/todo-citations';
-import { CitationType, CitationContext, CitationPriority } from "../../utils/todo-types';
+import { createCitation } from "../../utils/todo-citations";
+import { CitationType, CitationContext, CitationPriority } from "../../utils/todo-types";
 
 export async function createCitationCommand(
   feature: string,
@@ -22,8 +22,8 @@ export async function createCitationCommand(
   try {
     const citation = await createCitation(feature, todoId, changeLogId, type, context, priority, metadata);
     return `✅ Citation created: ${citation.id}\n**Todo:** ${todoId}\n**Change Log:** ${changeLogId}\n**Type:** ${type}\n**Priority:** ${priority}\n**Context:** ${context.join(', ')}`;
-  } catch (error) {
-    return `❌ Error creating citation: ${error instanceof Error ? error.message : String(error)}`;
+  } catch (_error) {
+    return `❌ Error creating citation: ${_error instanceof Error ? _error.message : String(_error)}`;
   }
 }
 

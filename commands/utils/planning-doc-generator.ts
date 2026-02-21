@@ -97,8 +97,6 @@ export function generateFeatureHandoffFromPlan(
   content = content.replace(/\[Complete \/ In Progress\]/g, parsedPlan.metadata.status);
   content = content.replace(/\[Feature Status\]/g, parsedPlan.metadata.status);
   
-  // Replace transition context
-  const transitionContext = `**Where we left off:**\n${parsedPlan.overview}\n\n**What you need to start next feature:**\n${parsedPlan.dependencies.map(dep => `- ${dep}`).join('\n')}`;
   content = content.replace(/\[Minimal notes about feature completion - 2-3 sentences max\]/g, parsedPlan.overview);
   content = content.replace(/\[Brief bullet point about context needed\]/g, parsedPlan.dependencies[0] || '[Brief bullet point about context needed]');
   
@@ -167,8 +165,6 @@ export function generatePhaseGuideFromPlan(
   content = content.replace(/\[Not Started \/ In Progress \/ Complete\]/g, 'Not Started');
   content = content.replace(/\[Status\]/g, 'Not Started');
   
-  // Replace Phase Overview section
-  const overviewSection = `**Phase Number:** ${parsedPhase.number}\n**Phase Name:** ${parsedPhase.name}\n**Description:** ${parsedPhase.description}\n\n**Duration:** [Estimated weeks]\n**Status:** Not Started`;
   content = content.replace(/\[Brief description of phase objectives\]/g, parsedPhase.description);
   
   // Replace Phase Objectives section

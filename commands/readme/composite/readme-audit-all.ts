@@ -44,9 +44,9 @@ export async function auditAllReadmes(): Promise<string> {
     };
     
     return formatAuditReport(auditResult);
-  } catch (error) {
+  } catch (_error) {
     throw new Error(
-      `Failed to audit all READMEs: ${error instanceof Error ? error.message : String(error)}`
+      `Failed to audit all READMEs: ${_error instanceof Error ? _error.message : String(_error)}`
     );
   }
 }

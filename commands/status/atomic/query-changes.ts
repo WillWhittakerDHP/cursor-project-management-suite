@@ -7,8 +7,8 @@
  */
 
 import { WorkflowCommandContext } from '../../utils/command-context';
-import { WorkflowId } from '../../utils/id-utils';
-import { readChangeLog, getChangeLogEntry } from '../../utils/todo-io';
+import { resolveFeatureName } from '../../utils';
+import { readChangeLog } from '../../utils/todo-io';
 import { ChangeLogEntry } from '../../utils/todo-types';
 import { StatusTier } from './get-status';
 
@@ -30,7 +30,7 @@ export interface QueryChangesParams {
  * @returns Formatted changes output
  */
 export async function queryChanges(params: QueryChangesParams): Promise<string> {
-  const featureName = params.featureName || 'vue-migration';
+  const featureName = await resolveFeatureName(params.featureName);
   const context = new WorkflowCommandContext(featureName);
   const output: string[] = [];
   
@@ -125,9 +125,9 @@ export async function queryChanges(params: QueryChangesParams): Promise<string> 
     }
     
     return output.join('\n');
-  } catch (error) {
+  } catch (_error) {
     output.push(`**ERROR: Failed to query changes**\n`);
-    output.push(`**Error:** ${error instanceof Error ? error.message : String(error)}\n`);
+    output.push(`**Error:** ${_error instanceof Error ? _error.message : String(_error)}\n`);
     return output.join('\n');
   }
 }
@@ -141,7 +141,7 @@ export async function queryChanges(params: QueryChangesParams): Promise<string> 
 export async function queryChangesProgrammatic(
   params: QueryChangesParams
 ): Promise<{ success: boolean; changes?: ChangeLogEntry[]; error?: string }> {
-  const featureName = params.featureName || 'vue-migration';
+  const featureName = await resolveFeatureName(params.featureName);
   
   try {
     const changeLog = await readChangeLog(featureName);
@@ -207,10 +207,10 @@ export async function queryChangesProgrammatic(
       success: true,
       changes: filteredEntries
     };
-  } catch (error) {
+  } catch (_error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : String(error)
+      error: _error instanceof Error ? _error.message : String(_error)
     };
   }
 }

@@ -6,7 +6,7 @@
 
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { Todo, TodoFile, ChangeLog, ChangeLogEntry, RollbackHistory, PreviousState } from './todo-types';
+import { Todo, TodoFile, ChangeLog, ChangeLogEntry, RollbackHistory } from './todo-types';
 
 // ===================================================================
 // FILE PATHS

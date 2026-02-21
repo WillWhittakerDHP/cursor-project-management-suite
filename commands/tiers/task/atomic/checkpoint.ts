@@ -19,40 +19,29 @@ import { appendLog } from '../../../utils/append-log';
 import { getCurrentDate } from '../../../utils/utils';
 import { WorkflowId } from '../../../utils/id-utils';
 import { WorkflowCommandContext } from '../../../utils/command-context';
-import { TEST_CONFIG } from '../../testing/utils/test-config';
-import { shouldEnableWatchMode } from '../../testing/utils/smart-detection';
+import { TEST_CONFIG } from '../../../testing/utils/test-config';
+import { shouldEnableWatchMode } from '../../../testing/utils/smart-detection';
 import { 
   runInitialTestExecution,
-  executeWatchModeWithMonitoring,
-  parseTestOutput,
-  promptForResolution 
-} from '../../testing/utils/watch-mode-handler';
-import { analyzeTestError } from '../../testing/composite/test-error-analyzer';
-import { 
-  requestTestFileFixPermission,
-  grantTestFileFixPermission,
-  checkTestFileFixPermission 
-} from '../../testing/composite/test-file-fix-permission';
-import { executeTestFileFix } from '../../testing/composite/test-file-fix-workflow';
-import { 
-  analyzeCodeChangeImpact, 
-  getRecentlyModifiedFiles 
-} from '../../testing/composite/test-change-detector';
-import { preTestValidation } from '../../testing/composite/test-pre-run-validation';
+  parseTestOutput 
+} from '../../../testing/utils/watch-mode-handler';
+import { analyzeTestError } from '../../../testing/composite/test-error-analyzer';
+import { analyzeCodeChangeImpact, getRecentlyModifiedFiles } from '../../../testing/composite/test-change-detector';
+import { resolveFeatureName } from '../../../utils';
 
 export async function taskCheckpoint(
   taskId: string, 
   notes?: string, 
-  featureName: string = 'vue-migration',
+  featureName?: string,
   testTarget?: string
 ): Promise<{
   success: boolean;
   output: string;
 }> {
-  const context = new WorkflowCommandContext(featureName);
+  const resolvedFeatureName = await resolveFeatureName(featureName);
+  const context = new WorkflowCommandContext(resolvedFeatureName);
   const target = testTarget || TEST_CONFIG.defaultTarget;
-  const conversationTurn = `checkpoint-${taskId}-${Date.now()}`;
-  
+
   // Run quality checks (lint/type-check)
   const verifyResult = await verify('vue', false);
   
@@ -63,7 +52,15 @@ export async function taskCheckpoint(
     };
   }
   
-  // NEW: Analyze change impact before running tests
+  // Guard: If the master test switch is off, skip all test execution
+  if (!TEST_CONFIG.enabled) {
+    return {
+      success: true,
+      output: 'Quality checks passed. Tests skipped (TEST_ENABLED is not set to true).',
+    };
+  }
+  
+  // Analyze change impact before running tests
   let impactAnalysisOutput = '';
   try {
     const changedFiles = await getRecentlyModifiedFiles(TEST_CONFIG.watchMode.detectionWindow);
@@ -180,7 +177,7 @@ How would you like to proceed?
   
   // Extract session ID from task ID (X.Y.Z -> X.Y)
   const parsed = WorkflowId.parseTaskId(taskId);
-  const sessionId = parsed ? `${parsed.phase}.${parsed.session}` : undefined;
+  const sessionId = parsed ? parsed.sessionId : undefined;
   
   // Create checkpoint entry
   const checkpointEntry = `### Task Checkpoint: ${taskId}

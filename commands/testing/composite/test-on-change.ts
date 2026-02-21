@@ -11,9 +11,6 @@
  */
 
 import { testRun } from '../atomic/test-run';
-import { readFile } from 'fs/promises';
-import { join, relative } from 'path';
-import { PROJECT_ROOT } from '../../utils/utils';
 import { analyzeCodeChangeImpact, TestImpactAnalysis } from './test-change-detector';
 import { preTestValidation, PreTestValidationResult } from './test-pre-run-validation';
 
@@ -119,12 +116,12 @@ export async function testOnChange(
       impact,
       validation,
     };
-  } catch (error) {
+  } catch (_error) {
     return {
       success: false,
       testsRun: [],
       output: '',
-      message: `Error running tests on change: ${error instanceof Error ? error.message : String(error)}`,
+      message: `Error running tests on change: ${_error instanceof Error ? _error.message : String(_error)}`,
     };
   }
 }

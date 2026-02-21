@@ -7,8 +7,8 @@
  * Description: Automatically create a citation from a change log entry
  */
 
-import { createCitationFromChange } from "../../utils/todo-citations';
-import { CitationContext } from "../../utils/todo-types';
+import { createCitationFromChange } from "../../utils/todo-citations";
+import { CitationContext } from "../../utils/todo-types";
 
 export async function createCitationFromChangeCommand(
   feature: string,
@@ -24,8 +24,8 @@ export async function createCitationFromChangeCommand(
     }
     
     return `✅ Citation created from change: ${citation.id}\n**Todo:** ${todoId}\n**Change Log:** ${changeLogId}\n**Type:** ${citation.type}\n**Priority:** ${citation.priority}`;
-  } catch (error) {
-    return `❌ Error creating citation from change: ${error instanceof Error ? error.message : String(error)}`;
+  } catch (_error) {
+    return `❌ Error creating citation from change: ${_error instanceof Error ? _error.message : String(_error)}`;
   }
 }
 

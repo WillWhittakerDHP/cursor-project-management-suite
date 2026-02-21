@@ -7,7 +7,7 @@
  * Description: Get rollback history for a feature or specific todo
  */
 
-import { getRollbackHistory } from "../../utils/todo-rollback';
+import { getRollbackHistory } from "../../utils/todo-rollback";
 
 export async function getRollbackHistoryCommand(feature: string, todoId?: string): Promise<string> {
   try {
@@ -48,8 +48,8 @@ export async function getRollbackHistoryCommand(feature: string, todoId?: string
     }
     
     return lines.join('\n');
-  } catch (error) {
-    return `❌ Error getting rollback history: ${error instanceof Error ? error.message : String(error)}`;
+  } catch (_error) {
+    return `❌ Error getting rollback history: ${_error instanceof Error ? _error.message : String(_error)}`;
   }
 }
 

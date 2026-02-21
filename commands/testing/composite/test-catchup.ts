@@ -38,10 +38,10 @@ export async function testCatchup(params: TestCatchupParams = {}): Promise<{
       success: result.success,
       output: result.summary,
     };
-  } catch (error) {
+  } catch (_error) {
     return {
       success: false,
-      output: `Catch-up test execution failed: ${error instanceof Error ? error.message : String(error)}`,
+      output: `Catch-up test execution failed: ${_error instanceof Error ? _error.message : String(_error)}`,
     };
   }
 }

@@ -10,8 +10,8 @@
  * RESOURCE: Test immutability rules in .cursor/rules/immutable-tests.mdc
  */
 
-import { readFile, access, stat } from 'fs/promises';
-import { join, relative, dirname } from 'path';
+import { access, stat } from 'fs/promises';
+import { join } from 'path';
 import { PROJECT_ROOT } from '../../utils/utils';
 import { execSync } from 'child_process';
 
@@ -162,7 +162,8 @@ function getUncommittedFiles(): string[] {
         return parts.slice(1).join(' '); // Handle filenames with spaces
       })
       .filter(file => file.length > 0);
-  } catch {
+  } catch (err) {
+    console.warn('Test change detector: getChangedFilesFromGit failed', err);
     return [];
   }
 }
@@ -203,8 +204,8 @@ async function findAffectedTestFiles(changedFiles: string[]): Promise<string[]> 
       try {
         await access(join(PROJECT_ROOT, testFile));
         affectedTests.push(testFile);
-      } catch {
-        // Test file doesn't exist - no affected tests for this file
+      } catch (err) {
+        console.warn('Test change detector: test file not found', testFile, err);
       }
     }
   }
@@ -244,8 +245,6 @@ async function analyzeFileChanges(filePath: string): Promise<CodeChange[]> {
   const changes: CodeChange[] = [];
   
   try {
-    const fullPath = join(PROJECT_ROOT, filePath);
-    
     // Get git diff for the file
     const diff = execSync(`git diff HEAD ${filePath}`, {
       cwd: PROJECT_ROOT,
@@ -298,8 +297,8 @@ async function analyzeFileChanges(filePath: string): Promise<CodeChange[]> {
         }
       }
     }
-  } catch {
-    // If we can't analyze the file, return empty changes
+  } catch (err) {
+    console.warn('Test change detector: analyzeFileChanges failed', filePath, err);
   }
   
   return changes;
@@ -460,13 +459,14 @@ export async function getRecentlyModifiedFiles(
         if (now - modTime <= windowMs) {
           recentFiles.push(file);
         }
-      } catch {
-        // Skip files that can't be accessed
+      } catch (err) {
+        console.warn('Test change detector: file stat failed', file, err);
       }
     }
     
     return recentFiles;
-  } catch {
+  } catch (err) {
+    console.warn('Test change detector: getRecentlyModifiedFiles failed', err);
     return [];
   }
 }

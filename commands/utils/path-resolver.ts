@@ -21,7 +21,7 @@ export class WorkflowPathResolver {
 
   /**
    * Create a new path resolver for a specific feature
-   * @param featureName Feature name (e.g., "vue-migration")
+   * @param featureName Feature name (e.g. from .current-feature or git branch)
    */
   constructor(featureName: string) {
     this.featureName = featureName;
@@ -70,7 +70,7 @@ export class WorkflowPathResolver {
 
   /**
    * Get phase guide path
-   * @param phase Phase identifier (e.g., "1", "2")
+   * @param phase Phase identifier (e.g., "4.1", "4.2")
    * @returns Path to phase guide: `.project-manager/features/{feature}/phases/phase-{phase}-guide.md`
    */
   getPhaseGuidePath(phase: string): string {
@@ -79,7 +79,7 @@ export class WorkflowPathResolver {
 
   /**
    * Get phase log path
-   * @param phase Phase identifier (e.g., "1", "2")
+   * @param phase Phase identifier (e.g., "4.1", "4.2")
    * @returns Path to phase log: `.project-manager/features/{feature}/phases/phase-{phase}-log.md`
    */
   getPhaseLogPath(phase: string): string {
@@ -88,7 +88,7 @@ export class WorkflowPathResolver {
 
   /**
    * Get phase handoff path
-   * @param phase Phase identifier (e.g., "1", "2")
+   * @param phase Phase identifier (e.g., "4.1", "4.2")
    * @returns Path to phase handoff: `.project-manager/features/{feature}/phases/phase-{phase}-handoff.md`
    */
   getPhaseHandoffPath(phase: string): string {
@@ -97,7 +97,7 @@ export class WorkflowPathResolver {
 
   /**
    * Get session guide path
-   * @param sessionId Session ID in format X.Y (e.g., "2.1")
+   * @param sessionId Session ID in format X.Y.Z (e.g., "4.1.3")
    * @returns Path to session guide: `.project-manager/features/{feature}/sessions/session-{X.Y}-guide.md`
    */
   getSessionGuidePath(sessionId: string): string {
@@ -107,7 +107,7 @@ export class WorkflowPathResolver {
 
   /**
    * Get session log path
-   * @param sessionId Session ID in format X.Y (e.g., "2.1")
+   * @param sessionId Session ID in format X.Y.Z (e.g., "4.1.3")
    * @returns Path to session log: `.project-manager/features/{feature}/sessions/session-{X.Y}-log.md`
    */
   getSessionLogPath(sessionId: string): string {
@@ -117,7 +117,7 @@ export class WorkflowPathResolver {
 
   /**
    * Get session handoff path
-   * @param sessionId Session ID in format X.Y (e.g., "2.1")
+   * @param sessionId Session ID in format X.Y.Z (e.g., "4.1.3")
    * @returns Path to session handoff: `.project-manager/features/{feature}/sessions/session-{X.Y}-handoff.md`
    */
   getSessionHandoffPath(sessionId: string): string {
@@ -128,14 +128,14 @@ export class WorkflowPathResolver {
   /**
    * Get task guide path
    * Task guides are derived from session guides, so this returns the session guide path
-   * @param taskId Task ID in format X.Y.Z (e.g., "2.1.3")
+   * @param taskId Task ID in format X.Y.Z.A (e.g., "4.1.3.1")
    * @returns Path to session guide (tasks don't have separate guides): `.project-manager/features/{feature}/sessions/session-{X-Y}-guide.md`
    */
   getTaskGuidePath(taskId: string): string {
     // Extract session ID from task ID (X.Y.Z -> X.Y)
     const parts = taskId.split('.');
     if (parts.length < 2) {
-      throw new Error(`Invalid task ID format: ${taskId}. Expected format: X.Y.Z`);
+      throw new Error(`Invalid task ID format: ${taskId}. Expected format: X.Y.Z.A`);
     }
     const sessionId = `${parts[0]}.${parts[1]}`;
     return this.getSessionGuidePath(sessionId);
@@ -144,10 +144,10 @@ export class WorkflowPathResolver {
   /**
    * Get template path
    * @param tier Document tier: "feature", "phase", "session", or "planning"
-   * @param docType Document type: "guide", "log", "handoff", or planning template type ("architecture", "technology", "pattern", "risk")
+   * @param docType Document type: "guide", "log", "handoff", or planning template type ("architecture", "technology", "pattern", "risk", "general")
    * @returns Path to template: `.cursor/commands/tiers/{tier}/templates/{tier}-{docType}.md` or `.cursor/commands/planning/templates/planning-{docType}.md`
    */
-  getTemplatePath(tier: 'feature' | 'phase' | 'session' | 'planning', docType: 'guide' | 'log' | 'handoff' | 'architecture' | 'technology' | 'pattern' | 'risk'): string {
+  getTemplatePath(tier: 'feature' | 'phase' | 'session' | 'planning', docType: 'guide' | 'log' | 'handoff' | 'architecture' | 'technology' | 'pattern' | 'risk' | 'general'): string {
     if (tier === 'planning') {
       return `.cursor/commands/planning/templates/planning-${docType}.md`;
     }

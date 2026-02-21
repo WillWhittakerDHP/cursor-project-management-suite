@@ -1,0 +1,13 @@
+{
+  "tier": "feature",
+  "identifier": "booking-calculations",
+  "featureName": "booking-calculations",
+  "timestamp": "2026-02-20T18:56:13.315Z",
+  "scores": {
+    "comments": 50,
+    "security": 0,
+    "planning": 50,
+    "docs": 45,
+    "vue-architecture": 0
+  }
+}

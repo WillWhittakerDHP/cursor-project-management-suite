@@ -9,6 +9,7 @@
 
 import { cleanupTemporaryReadmes } from './readme-cleanup-temporary';
 import { WorkflowCommandContext } from '../../utils/command-context';
+import { resolveFeatureName } from '../../utils';
 
 export type WorkflowTier = 'feature' | 'phase' | 'session';
 
@@ -29,8 +30,8 @@ export interface WorkflowCleanupParams {
  */
 export async function workflowCleanupReadmes(params: WorkflowCleanupParams): Promise<string> {
   try {
-    const featureName = params.featureName || 
-                       (params.tier === 'feature' ? params.identifier : 'vue-migration');
+    const featureName = params.featureName ||
+                       (params.tier === 'feature' ? params.identifier : await resolveFeatureName());
     const context = new WorkflowCommandContext(featureName);
     
     // Determine directory scope based on tier
@@ -55,9 +56,9 @@ export async function workflowCleanupReadmes(params: WorkflowCleanupParams): Pro
     });
     
     return `# Workflow Cleanup: ${params.tier} ${params.identifier}\n\n${result}`;
-  } catch (error) {
+  } catch (_error) {
     throw new Error(
-      `Failed to cleanup READMEs for workflow: ${error instanceof Error ? error.message : String(error)}`
+      `Failed to cleanup READMEs for workflow: ${_error instanceof Error ? _error.message : String(_error)}`
     );
   }
 }

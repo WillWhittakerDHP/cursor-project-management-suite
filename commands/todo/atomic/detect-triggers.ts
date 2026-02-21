@@ -7,8 +7,8 @@
  * Description: Detect triggers for a specific workflow junction
  */
 
-import { detectTriggers } from "../../utils/todo-lookup-triggers';
-import { CitationContext } from "../../utils/todo-types';
+import { detectTriggers } from "../../utils/todo-lookup-triggers";
+import { CitationContext } from "../../utils/todo-types";
 
 export async function detectTriggersCommand(
   feature: string,
@@ -40,8 +40,8 @@ export async function detectTriggersCommand(
     }
     
     return lines.join('\n');
-  } catch (error) {
-    return `❌ Error detecting triggers: ${error instanceof Error ? error.message : String(error)}`;
+  } catch (_error) {
+    return `❌ Error detecting triggers: ${_error instanceof Error ? _error.message : String(_error)}`;
   }
 }
 

@@ -7,11 +7,12 @@
  */
 
 import { WorkflowCommandContext } from '../../utils/command-context';
-import { WorkflowId } from '../../utils/id-utils';
+import { resolveFeatureName } from '../../utils';
 import { getAllTodos } from '../../utils/todo-io';
 import { ValidationTier } from './validate-workflow';
 import { access } from 'fs/promises';
 import { join } from 'path';
+import { MarkdownUtils } from '../../utils/markdown-utils';
 
 export interface VerifyCompletenessParams {
   tier: ValidationTier;
@@ -33,7 +34,7 @@ export interface CompletenessResult {
  * @returns Formatted completeness output
  */
 export async function verifyCompleteness(params: VerifyCompletenessParams): Promise<string> {
-  const featureName = params.featureName || 'vue-migration';
+  const featureName = await resolveFeatureName(params.featureName);
   const context = new WorkflowCommandContext(featureName);
   const output: string[] = [];
   
@@ -59,8 +60,8 @@ export async function verifyCompleteness(params: VerifyCompletenessParams): Prom
     // Check documents exist
     const documents = ['guide', 'log', 'handoff'];
     for (const docType of documents) {
+      let docPath = '';
       try {
-        let docPath: string;
         if (params.tier === 'feature') {
           docPath = docType === 'guide' ? context.paths.getFeatureGuidePath() :
                    docType === 'log' ? context.paths.getFeatureLogPath() :
@@ -76,7 +77,8 @@ export async function verifyCompleteness(params: VerifyCompletenessParams): Prom
         }
         
         await access(join(PROJECT_ROOT, docPath));
-      } catch {
+      } catch (err) {
+        console.warn('Verify completeness: document not found or not accessible', docType, docPath, err);
         result.missingDocuments.push(`${docType}`);
         result.complete = false;
       }
@@ -93,14 +95,13 @@ export async function verifyCompleteness(params: VerifyCompletenessParams): Prom
         } else {
           handoffContent = await context.readSessionHandoff(params.identifier!);
         }
-      } catch {
-        // Handoff doesn't exist, already in missingDocuments
+      } catch (err) {
+        console.warn('Verify completeness: handoff read failed', params.tier, params.identifier, err);
       }
       
       if (handoffContent) {
         const requiredSections = ['Current Status', 'Next Action', 'Transition Context'];
-        const { MarkdownUtils } = await import('../../utils/markdown-utils');
-        
+
         for (const section of requiredSections) {
           const sectionContent = MarkdownUtils.extractSection(handoffContent, section);
           if (!sectionContent || sectionContent.trim().length === 0) {
@@ -109,7 +110,9 @@ export async function verifyCompleteness(params: VerifyCompletenessParams): Prom
           }
         }
       }
-    } catch {}
+    } catch (err) {
+      console.warn('Verify completeness: failed to check documents for tier', params.tier, err);
+    }
     
     // Check todo exists
     const allTodos = await getAllTodos(feature);
@@ -169,9 +172,9 @@ export async function verifyCompleteness(params: VerifyCompletenessParams): Prom
     }
     
     return output.join('\n');
-  } catch (error) {
+  } catch (_error) {
     output.push(`**ERROR: Failed to verify completeness**\n`);
-    output.push(`**Error:** ${error instanceof Error ? error.message : String(error)}\n`);
+    output.push(`**Error:** ${_error instanceof Error ? _error.message : String(_error)}\n`);
     return output.join('\n');
   }
 }

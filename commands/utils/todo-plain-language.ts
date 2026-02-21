@@ -8,9 +8,10 @@
  */
 
 import { Todo, TodoTier, TodoStatus, ParsedTodoComponents, ParsingResult, ParsingError } from './todo-types';
-import { findTodoById, getAllTodos, saveTodo } from './todo-io';
-import { assignScope, validateScope, enforceScope } from './todo-scoping';
+import { findTodoById, saveTodo } from './todo-io';
+import { assignScope, enforceScope } from './todo-scoping';
 import { tokenize, extractPriority, extractTags, extractDependencies, hasExplicitField, extractExplicitField } from './natural-language-parser';
+import { WorkflowCommandContext } from './command-context';
 
 // ===================================================================
 // NATURAL LANGUAGE PARSING
@@ -175,38 +176,6 @@ function extractStatusKeywords(tokens: string[]): TodoStatus | null {
 // Note: extractPriority(), extractTags(), and extractDependencies()
 // are now imported from natural-language-parser.ts
 
-function extractParentReference(tokens: string[], context?: {
-  feature?: string;
-  currentPhase?: number;
-  currentSession?: string;
-}): string | undefined {
-  const text = tokens.join(' ').toLowerCase();
-  
-  // Match explicit parent references
-  const parentMatches = text.match(/(?:under|in|part of|parent:)\s*(?:phase\s+)?(\d+)|(?:session\s+)?(\d+\.\d+)|(?:feature\s+)?([\w-]+)/i);
-  if (parentMatches) {
-    if (parentMatches[1]) {
-      return `phase-${parentMatches[1]}`;
-    }
-    if (parentMatches[2]) {
-      return `session-${parentMatches[2]}`;
-    }
-    if (parentMatches[3]) {
-      return `feature-${parentMatches[3]}`;
-    }
-  }
-  
-  // Infer from context
-  if (context?.currentSession) {
-    return `session-${context.currentSession}`;
-  }
-  if (context?.currentPhase) {
-    return `phase-${context.currentPhase}`;
-  }
-  
-  return undefined;
-}
-
 // ===================================================================
 // TODO GENERATION
 // ===================================================================
@@ -230,8 +199,11 @@ export async function generateTodoFromComponents(
     throw new Error('Tier is required');
   }
   
-  // Generate ID
-  const id = generateTodoId(components.tier, context);
+  // Generate ID — feature tier uses canonical id so phase-plan, feature-load, etc. can find it
+  const id =
+    components.tier === 'feature'
+      ? `feature-${feature}`
+      : generateTodoId(components.tier, context);
   
   // Determine parent
   let parentId: string | null = null;

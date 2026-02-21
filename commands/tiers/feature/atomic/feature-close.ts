@@ -37,7 +37,8 @@ export async function featureClose(featureName: string): Promise<string> {
       
       await writeProjectFile(featureGuidePath, guideContent);
       output.push(`**Guide Updated:** ${featureGuidePath}\n`);
-    } catch {
+    } catch (err) {
+      console.warn('Feature close: feature guide not found', featureGuidePath, err);
       output.push(`**WARNING:** Feature guide not found\n`);
     }
     
@@ -58,7 +59,8 @@ export async function featureClose(featureName: string): Promise<string> {
       
       await writeProjectFile(featureLogPath, logContent);
       output.push(`**Log Updated:** ${featureLogPath}\n`);
-    } catch {
+    } catch (err) {
+      console.warn('Feature close: feature log not found', featureLogPath, err);
       output.push(`**WARNING:** Feature log not found\n`);
     }
     
@@ -79,7 +81,8 @@ export async function featureClose(featureName: string): Promise<string> {
       
       await writeProjectFile(featureHandoffPath, handoffContent);
       output.push(`**Handoff Updated:** ${featureHandoffPath}\n`);
-    } catch {
+    } catch (err) {
+      console.warn('Feature close: feature handoff not found', featureHandoffPath, err);
       output.push(`**WARNING:** Feature handoff not found\n`);
     }
     
@@ -87,9 +90,9 @@ export async function featureClose(featureName: string): Promise<string> {
     output.push(`**Date:** ${new Date().toISOString().split('T')[0]}\n`);
     output.push(`**Status:** Feature closed successfully\n`);
     
-  } catch (error) {
+  } catch (_error) {
     output.push(`**ERROR:** Failed to close feature\n`);
-    output.push(`**Error:** ${error instanceof Error ? error.message : String(error)}\n`);
+    output.push(`**Error:** ${_error instanceof Error ? _error.message : String(_error)}\n`);
   }
   
   return output.join('\n');

@@ -9,7 +9,6 @@ import { createFromPlainLanguageProgrammatic } from './create-from-plain-languag
 import { findTodoById, saveTodo } from '../../utils/todo-io';
 import { WorkflowCommandContext } from '../../utils/command-context';
 import { WorkflowId } from '../../utils/id-utils';
-import { Todo } from '../../utils/todo-types';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
 
@@ -77,13 +76,12 @@ export async function createRetroactiveTodos(params: RetroactiveTodoParams): Pro
         try {
           sessionGuide = await readSessionGuideWithFallback(context, sessionId);
           sessionDescription = extractSessionDescription(sessionGuide);
-        } catch (error) {
+        } catch (_error) {
           // If guide doesn't exist, extract description from phase guide
           sessionDescription = extractSessionDescriptionFromPhaseGuide(phaseGuide, sessionId);
           // Continue without guide - we'll create session todo but skip tasks
         }
-        
-        const phaseTodo = await findTodoById(params.feature, `phase-${params.phase}`);
+
         const sessionTodoResult = await createFromPlainLanguageProgrammatic(
           params.feature,
           `Session ${sessionId}: ${sessionDescription}`,
@@ -103,8 +101,7 @@ export async function createRetroactiveTodos(params: RetroactiveTodoParams): Pro
           const taskIds = extractTaskIds(sessionGuide);
           for (const taskId of taskIds) {
             const taskDescription = extractTaskDescription(sessionGuide, taskId);
-            
-            const sessionTodo = await findTodoById(params.feature, `session-${sessionId}`);
+
             const taskTodoResult = await createFromPlainLanguageProgrammatic(
               params.feature,
               `Task ${taskId}: ${taskDescription}`,
@@ -120,8 +117,8 @@ export async function createRetroactiveTodos(params: RetroactiveTodoParams): Pro
             created.push(taskTodoResult.todo.id);
           }
         }
-      } catch (error) {
-        errors.push(`Error processing session ${sessionId}: ${error instanceof Error ? error.message : String(error)}`);
+      } catch (_error) {
+        errors.push(`Error processing session ${sessionId}: ${_error instanceof Error ? _error.message : String(_error)}`);
       }
     }
 
@@ -130,11 +127,11 @@ export async function createRetroactiveTodos(params: RetroactiveTodoParams): Pro
       created,
       errors,
     };
-  } catch (error) {
+  } catch (_error) {
     return {
       success: false,
       created,
-      errors: [...errors, `Fatal error: ${error instanceof Error ? error.message : String(error)}`],
+      errors: [...errors, `Fatal error: ${_error instanceof Error ? _error.message : String(_error)}`],
     };
   }
 }
@@ -147,7 +144,7 @@ export async function createRetroactiveTodos(params: RetroactiveTodoParams): Pro
  * PATTERN: Try current standard first, fallback to legacy format if needed
  * 
  * @param context Workflow command context
- * @param sessionId Session ID in format X.Y (e.g., "2.1")
+ * @param sessionId Session ID in format X.Y.Z (e.g., "4.1.3")
  * @returns Session guide content
  */
 async function readSessionGuideWithFallback(
@@ -157,16 +154,16 @@ async function readSessionGuideWithFallback(
   try {
     // Try dot format first (current standard)
     return await context.readSessionGuide(sessionId);
-  } catch (error) {
+  } catch (_error) {
     // Fallback to dash format (legacy Phase 2)
     const dashFormatId = sessionId.replace(/\./g, '-');
     const basePath = context.paths.getBasePath();
     const legacyPath = join(process.cwd(), `${basePath}/sessions/session-${dashFormatId}-guide.md`);
     try {
       return await readFile(legacyPath, 'utf-8');
-    } catch (legacyError) {
+    } catch (_legacyError) {
       // Re-throw original error if legacy path also fails
-      throw error;
+      throw _error;
     }
   }
 }
@@ -199,7 +196,7 @@ function extractPhaseDescription(guide: string): string {
  * Extract session IDs from phase guide
  */
 function extractSessionIds(guide: string): string[] {
-  const sessionMatches = guide.matchAll(/Session\s+(\d+\.\d+):/g);
+  const sessionMatches = guide.matchAll(/Session\s+(\d+\.\d+\.\d+):/g);
   const sessionIds: string[] = [];
   for (const match of sessionMatches) {
     if (WorkflowId.isValidSessionId(match[1])) {

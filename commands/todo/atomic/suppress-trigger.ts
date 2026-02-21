@@ -7,7 +7,7 @@
  * Description: Suppress a trigger temporarily
  */
 
-import { suppressTrigger } from "../../utils/todo-lookup-triggers';
+import { suppressTrigger } from "../../utils/todo-lookup-triggers";
 
 export async function suppressTriggerCommand(
   feature: string,
@@ -20,8 +20,8 @@ export async function suppressTriggerCommand(
     suppressedUntil.setHours(suppressedUntil.getHours() + durationHours);
     
     return `✅ Trigger suppressed: ${triggerId}\n**Duration:** ${durationHours} hour(s)\n**Suppressed until:** ${suppressedUntil.toLocaleString()}`;
-  } catch (error) {
-    return `❌ Error suppressing trigger: ${error instanceof Error ? error.message : String(error)}`;
+  } catch (_error) {
+    return `❌ Error suppressing trigger: ${_error instanceof Error ? _error.message : String(_error)}`;
   }
 }
 

@@ -10,6 +10,7 @@ import { AuditResult, AuditFinding, AuditParams } from '../types';
 import { getAllTodos } from '../../utils/todo-io';
 import { getStatus, StatusTier } from '../../status/atomic/get-status';
 import { WorkflowId } from '../../utils/id-utils';
+import { resolveFeatureName } from '../../utils';
 
 /**
  * Audit todos for a tier
@@ -19,7 +20,7 @@ export async function auditTodos(params: AuditParams): Promise<AuditResult> {
   const recommendations: string[] = [];
   let score = 100;
   
-  const featureName = params.featureName || 'vue-migration';
+  const featureName = await resolveFeatureName(params.featureName);
   
   try {
     // Get todo for this tier
@@ -84,23 +85,23 @@ export async function auditTodos(params: AuditParams): Promise<AuditResult> {
         const phaseNum = params.identifier;
         childCount = allTodos.filter(t => {
           const parsed = WorkflowId.parseSessionId(t.id.replace('session-', ''));
-          return parsed && parsed.phase === phaseNum;
+          return parsed && parsed.phaseId === phaseNum;
         }).length;
         childCompleted = allTodos.filter(t => {
           const parsed = WorkflowId.parseSessionId(t.id.replace('session-', ''));
-          return parsed && parsed.phase === phaseNum && t.status === 'completed';
+          return parsed && parsed.phaseId === phaseNum && t.status === 'completed';
         }).length;
       } else if (params.tier === 'session') {
         // Find task todos for this session
         const sessionId = params.identifier;
         childCount = allTodos.filter(t => {
           const parsed = WorkflowId.parseTaskId(t.id.replace('task-', ''));
-          return parsed && `${parsed.phase}.${parsed.session}` === sessionId;
+          return parsed && parsed.sessionId === sessionId;
         }).length;
         childCompleted = allTodos.filter(t => {
           const parsed = WorkflowId.parseTaskId(t.id.replace('task-', ''));
           return parsed && 
-                 `${parsed.phase}.${parsed.session}` === sessionId &&
+                 parsed.sessionId === sessionId &&
                  t.status === 'completed';
         }).length;
       }
@@ -129,8 +130,6 @@ export async function auditTodos(params: AuditParams): Promise<AuditResult> {
     
     // Check todo propagation (parent todo exists)
     if (params.tier !== 'feature') {
-      let parentTodoId = '';
-      
       if (params.tier === 'phase') {
         // Feature is parent
         const featureStatus = await getStatus({
@@ -152,15 +151,15 @@ export async function auditTodos(params: AuditParams): Promise<AuditResult> {
         if (parsed) {
           const phaseStatus = await getStatus({
             tier: 'phase',
-            identifier: parsed.phase,
+            identifier: parsed.phaseId,
             featureName
           });
           if (!phaseStatus) {
             findings.push({
               type: 'warning',
-              message: `Parent phase todo not found for phase ${parsed.phase}`,
+              message: `Parent phase todo not found for phase ${parsed.phaseId}`,
               location: statusInfo.todoId,
-              suggestion: `Create phase ${parsed.phase} todo`
+              suggestion: `Create phase ${parsed.phaseId} todo`
             });
             score -= 5;
           }
@@ -169,7 +168,7 @@ export async function auditTodos(params: AuditParams): Promise<AuditResult> {
         // Session is parent
         const parsed = WorkflowId.parseTaskId(params.identifier);
         if (parsed) {
-          const sessionId = `${parsed.phase}.${parsed.session}`;
+          const sessionId = parsed.sessionId;
           const sessionStatus = await getStatus({
             tier: 'session',
             identifier: sessionId,
@@ -220,14 +219,14 @@ export async function auditTodos(params: AuditParams): Promise<AuditResult> {
       summary
     };
     
-  } catch (error) {
+  } catch (_error) {
     return {
       category: 'todos',
       status: 'fail',
       score: 0,
       findings: [{
         type: 'error',
-        message: `Todo audit failed: ${error instanceof Error ? error.message : String(error)}`,
+        message: `Todo audit failed: ${_error instanceof Error ? _error.message : String(_error)}`,
         location: params.tier
       }],
       recommendations: ['Review todo system structure'],

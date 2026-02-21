@@ -7,8 +7,8 @@
  * Description: Lookup citations for a todo in a specific context
  */
 
-import { lookupCitations } from "../../utils/todo-citations';
-import { CitationContext } from "../../utils/todo-types';
+import { lookupCitations } from "../../utils/todo-citations";
+import { CitationContext } from "../../utils/todo-types";
 
 export async function lookupCitationsCommand(
   feature: string,
@@ -45,8 +45,8 @@ export async function lookupCitationsCommand(
     }
     
     return lines.join('\n');
-  } catch (error) {
-    return `❌ Error looking up citations: ${error instanceof Error ? error.message : String(error)}`;
+  } catch (_error) {
+    return `❌ Error looking up citations: ${_error instanceof Error ? _error.message : String(_error)}`;
   }
 }
 

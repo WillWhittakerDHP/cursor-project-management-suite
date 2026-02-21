@@ -7,8 +7,8 @@
  * Description: Activate a trigger and return citations to show
  */
 
-import { activateTrigger } from "../../utils/todo-lookup-triggers';
-import { TriggerDefinition } from "../../utils/todo-types';
+import { activateTrigger } from "../../utils/todo-lookup-triggers";
+import { TriggerDefinition } from "../../utils/todo-types";
 
 export async function activateTriggerCommand(
   feature: string,
@@ -39,8 +39,8 @@ export async function activateTriggerCommand(
     }
     
     return lines.join('\n');
-  } catch (error) {
-    return `❌ Error activating trigger: ${error instanceof Error ? error.message : String(error)}`;
+  } catch (_error) {
+    return `❌ Error activating trigger: ${_error instanceof Error ? _error.message : String(_error)}`;
   }
 }
 

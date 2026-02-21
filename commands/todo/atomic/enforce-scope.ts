@@ -7,8 +7,8 @@
  * Description: Enforce scope on a todo with specified mode (strict/warn/auto)
  */
 
-import { enforceScope } from "../../utils/todo-scoping';
-import { Todo } from "../../utils/todo-types';
+import { enforceScope } from "../../utils/todo-scoping";
+import { Todo } from "../../utils/todo-types";
 
 export async function enforceScopeCommand(
   feature: string,
@@ -37,8 +37,8 @@ export async function enforceScopeCommand(
     }
     
     return lines.join('\n');
-  } catch (error) {
-    return `❌ Error enforcing scope: ${error instanceof Error ? error.message : String(error)}`;
+  } catch (_error) {
+    return `❌ Error enforcing scope: ${_error instanceof Error ? _error.message : String(_error)}`;
   }
 }
 

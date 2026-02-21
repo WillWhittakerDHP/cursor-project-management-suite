@@ -6,9 +6,9 @@
  */
 
 import { TestErrorAnalysis } from './test-error-analyzer';
-import { checkTestFileFixPermission, grantTestFileFixPermission } from './test-file-fix-permission';
+import { checkTestFileFixPermission } from './test-file-fix-permission';
 import { testRun } from '../atomic/test-run';
-import { readFile, writeFile } from 'fs/promises';
+import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { PROJECT_ROOT } from '../../utils/utils';
 
@@ -29,7 +29,7 @@ async function applyTestFileFix(
   errorAnalysis: TestErrorAnalysis
 ): Promise<string> {
   const fullPath = join(PROJECT_ROOT, testFile);
-  let content = await readFile(fullPath, 'utf-8');
+  const content = await readFile(fullPath, 'utf-8');
   
   let fixApplied = '';
   
@@ -52,6 +52,7 @@ async function applyTestFileFix(
         }
       }
       break;
+    }
       
     case 'setup':
     case 'mock':

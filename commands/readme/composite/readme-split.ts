@@ -119,9 +119,9 @@ export async function splitReadme(params: ReadmeSplitParams): Promise<string> {
     return `✅ Split README: ${params.filePath}\n` +
            `   Extracted sections: ${params.sections.join(', ')}\n` +
            `   Created: ${guidePath}`;
-  } catch (error) {
+  } catch (_error) {
     throw new Error(
-      `Failed to split README: ${error instanceof Error ? error.message : String(error)}`
+      `Failed to split README: ${_error instanceof Error ? _error.message : String(_error)}`
     );
   }
 }

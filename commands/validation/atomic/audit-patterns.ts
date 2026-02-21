@@ -3,7 +3,7 @@
  * Checks for missing commands, naming consistency, and pattern adherence
  */
 
-import { readdir, access } from 'fs/promises';
+import { readdir } from 'fs/promises';
 import { join } from 'path';
 import { PROJECT_ROOT } from '../../utils/utils';
 import { AuditResult, AuditIssue } from './audit-types';
@@ -40,7 +40,7 @@ export async function auditPatterns(): Promise<AuditResult> {
       let compositeFiles: string[] = [];
       try {
         compositeFiles = await readdir(compositePath);
-      } catch (error) {
+      } catch (_error) {
         issues.push({
           severity: 'warning',
           message: `Composite directory not found for tier ${tier}`,
@@ -54,7 +54,9 @@ export async function auditPatterns(): Promise<AuditResult> {
       let atomicFiles: string[] = [];
       try {
         atomicFiles = await readdir(atomicPath);
-      } catch {}
+      } catch (err) {
+        console.warn(`Audit patterns: could not read atomic path for tier ${tier}`, atomicPath, err);
+      }
 
       // Check for expected commands
       const allFiles = [...compositeFiles, ...atomicFiles];
@@ -129,10 +131,10 @@ export async function auditPatterns(): Promise<AuditResult> {
         });
       }
 
-    } catch (error) {
+    } catch (_error) {
       issues.push({
         severity: 'error',
-        message: `Failed to audit tier ${tier}: ${error instanceof Error ? error.message : String(error)}`,
+        message: `Failed to audit tier ${tier}: ${_error instanceof Error ? _error.message : String(_error)}`,
         file: tierPath,
       });
     }
@@ -151,7 +153,9 @@ export async function auditPatterns(): Promise<AuditResult> {
           file: compositePath,
         });
       }
-    } catch {}
+    } catch (err) {
+      console.warn('Audit patterns: failed to audit tier', tier, err);
+    }
   }
 
   const status = issues.some(i => i.severity === 'critical' || i.severity === 'error')

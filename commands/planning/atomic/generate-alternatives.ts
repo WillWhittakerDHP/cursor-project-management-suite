@@ -29,7 +29,7 @@ export async function generateAlternativesCommand(
 /**
  * Format alternatives result as string output
  */
-function formatAlternativesResult(result: import('../../../project-manager/utils/planning-types').AlternativesResult): string {
+function formatAlternativesResult(result: import('../../utils/planning-types').AlternativesResult): string {
   const output: string[] = [];
   
   output.push('# Alternatives Generation Result\n');
@@ -117,7 +117,7 @@ function formatAlternativesResult(result: import('../../../project-manager/utils
  * @returns Formatted analysis result
  */
 export async function analyzeAlternativesCommand(
-  alternatives: import('../../../project-manager/utils/planning-types').Alternative[]
+  alternatives: import('../../utils/planning-types').Alternative[]
 ): Promise<string> {
   const analysis = analyzeAlternatives(alternatives);
   
@@ -127,7 +127,7 @@ export async function analyzeAlternativesCommand(
 /**
  * Format analysis result as string output
  */
-function formatAnalysisResult(analysis: import('../../../project-manager/utils/planning-types').AlternativeAnalysis): string {
+function formatAnalysisResult(analysis: import('../../utils/planning-types').AlternativeAnalysis): string {
   const output: string[] = [];
   
   output.push('# Alternatives Analysis\n');

@@ -15,8 +15,6 @@ import { writeFile } from 'fs/promises';
 import { join } from 'path';
 import { PROJECT_ROOT, getCurrentDate } from './utils';
 import { WorkflowCommandContext } from './command-context';
-import { TierAnalysis } from './tier-discriminator';
-
 export interface CreateScopeDocumentParams {
   analysisOutput: string; // Formatted analysis output
   sessionId?: string;
@@ -64,7 +62,7 @@ ${phase ? `**Phase:** ${phase}` : ''}
 ---
 
 ## Execution
-To execute this change: \`/execute-scoped-change ${sessionId || '[session-id]'}\`
+To execute this change, use the appropriate tier change command (\`/feature-change\`, \`/phase-change\`, \`/session-change\`, or \`/task-change\`) with the description above.
 `;
   
   await writeFile(filePath, documentContent, 'utf-8');

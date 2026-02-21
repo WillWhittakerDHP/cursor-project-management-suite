@@ -22,7 +22,7 @@ import { verifyCompleteness, VerifyCompletenessParams } from '../atomic/verify-c
 export async function validateComplete(
   tier: ValidationTier,
   identifier?: string,
-  featureName: string = 'vue-migration'
+  featureName?: string
 ): Promise<string> {
   const output: string[] = [];
   

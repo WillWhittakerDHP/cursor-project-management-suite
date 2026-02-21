@@ -103,7 +103,7 @@ export async function testEndWorkflow(
       return {
         success: false,
         tier,
-        results: {},
+        results: { run: { success: false, output: `Unknown workflow tier: ${tier}` } },
         message: `Unknown workflow tier: ${tier}`,
       };
   }

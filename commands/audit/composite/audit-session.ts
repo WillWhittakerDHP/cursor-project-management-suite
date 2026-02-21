@@ -16,6 +16,7 @@ import { auditTests } from '../atomic/audit-tests';
 import { auditDocs } from '../atomic/audit-docs';
 import { auditVueArchitecture } from '../atomic/audit-vue-architecture';
 import { WorkflowCommandContext } from '../../utils/command-context';
+import { resolveFeatureName } from '../../utils';
 import { writeAuditReport, calculateOverallStatus, getRelativePath, loadBaselineScore, compareBaselineToEnd } from '../utils';
 import { importExternalAudits } from '../external/import-external-audits';
 
@@ -37,7 +38,7 @@ export async function auditSession(params: AuditSessionParams): Promise<{
   fullReportPath?: string; // Full path for file opening
   output: string;
 }> {
-  const featureName = params.featureName || 'vue-migration';
+  const featureName = await resolveFeatureName(params.featureName);
   const context = new WorkflowCommandContext(featureName);
   
   const auditParams: AuditParams = {
@@ -54,50 +55,50 @@ export async function auditSession(params: AuditSessionParams): Promise<{
   // Run all 7 atomic audits
   try {
     results.push(await auditComments(auditParams));
-  } catch (error) {
-    errors.push(`Comments audit failed: ${error instanceof Error ? error.message : String(error)}`);
+  } catch (_error) {
+    errors.push(`Comments audit failed: ${_error instanceof Error ? _error.message : String(_error)}`);
   }
   
   try {
     results.push(await auditPlanning(auditParams));
-  } catch (error) {
-    errors.push(`Planning audit failed: ${error instanceof Error ? error.message : String(error)}`);
+  } catch (_error) {
+    errors.push(`Planning audit failed: ${_error instanceof Error ? _error.message : String(_error)}`);
   }
   
   try {
     results.push(await auditTodos(auditParams));
-  } catch (error) {
-    errors.push(`Todos audit failed: ${error instanceof Error ? error.message : String(error)}`);
+  } catch (_error) {
+    errors.push(`Todos audit failed: ${_error instanceof Error ? _error.message : String(_error)}`);
   }
   
   try {
     results.push(await auditSecurity(auditParams));
-  } catch (error) {
-    errors.push(`Security audit failed: ${error instanceof Error ? error.message : String(error)}`);
+  } catch (_error) {
+    errors.push(`Security audit failed: ${_error instanceof Error ? _error.message : String(_error)}`);
   }
   
   try {
     results.push(await auditCheckpoints(auditParams));
-  } catch (error) {
-    errors.push(`Checkpoints audit failed: ${error instanceof Error ? error.message : String(error)}`);
+  } catch (_error) {
+    errors.push(`Checkpoints audit failed: ${_error instanceof Error ? _error.message : String(_error)}`);
   }
   
   try {
     results.push(await auditTests(auditParams));
-  } catch (error) {
-    errors.push(`Tests audit failed: ${error instanceof Error ? error.message : String(error)}`);
+  } catch (_error) {
+    errors.push(`Tests audit failed: ${_error instanceof Error ? _error.message : String(_error)}`);
   }
   
   try {
     results.push(await auditDocs(auditParams));
-  } catch (error) {
-    errors.push(`Docs audit failed: ${error instanceof Error ? error.message : String(error)}`);
+  } catch (_error) {
+    errors.push(`Docs audit failed: ${_error instanceof Error ? _error.message : String(_error)}`);
   }
 
   try {
     results.push(await auditVueArchitecture(auditParams));
-  } catch (error) {
-    errors.push(`Vue architecture audit failed: ${error instanceof Error ? error.message : String(error)}`);
+  } catch (_error) {
+    errors.push(`Vue architecture audit failed: ${_error instanceof Error ? _error.message : String(_error)}`);
   }
   
   // Create audit result
@@ -127,9 +128,9 @@ export async function auditSession(params: AuditSessionParams): Promise<{
       }
       baselineComparison = compareBaselineToEnd(baseline, endScores);
     }
-  } catch (error) {
+  } catch (_error) {
     // Non-fatal - just log warning
-    console.warn(`Failed to load baseline for comparison: ${error instanceof Error ? error.message : String(error)}`);
+    console.warn(`Failed to load baseline for comparison: ${_error instanceof Error ? _error.message : String(_error)}`);
   }
   
   // Write audit report with baseline comparison
@@ -137,8 +138,8 @@ export async function auditSession(params: AuditSessionParams): Promise<{
   try {
     reportPath = await writeAuditReport(auditResult, context, 'end', baselineComparison);
     auditResult.reportPath = getRelativePath(reportPath);
-  } catch (error) {
-    errors.push(`Failed to write audit report: ${error instanceof Error ? error.message : String(error)}`);
+  } catch (_error) {
+    errors.push(`Failed to write audit report: ${_error instanceof Error ? _error.message : String(_error)}`);
   }
   
   // Generate output message
@@ -163,10 +164,10 @@ export async function auditSession(params: AuditSessionParams): Promise<{
     if (missingCount > 0) outputLines.push(`- **Missing:** ${missingCount} file(s) (signals not present yet)`);
     if (errorCount > 0) outputLines.push(`- **Errors:** ${errorCount} (copy failures)`);
     outputLines.push('');
-  } catch (error) {
+  } catch (_error) {
     outputLines.push('## External Signals (captured)');
     outputLines.push('');
-    outputLines.push(`- **⚠️ Import failed:** ${error instanceof Error ? error.message : String(error)}`);
+    outputLines.push(`- **⚠️ Import failed:** ${_error instanceof Error ? _error.message : String(_error)}`);
     outputLines.push('');
   }
   

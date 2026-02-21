@@ -19,6 +19,8 @@ import { MarkdownUtils } from '../../utils/markdown-utils';
 import { checkDownstreamPlans } from '../../utils/check-downstream-plans';
 import { createScopeDocument } from '../../utils/create-scope-document';
 import { resolveFeatureName } from '../../utils/feature-context';
+import { parseNaturalLanguage } from '../../utils/planning-parser';
+import { securityAudit } from '../../security/composite/security-audit';
 
 export type DocCheckType = 'component' | 'transformer' | 'pattern' | 'migration';
 
@@ -48,7 +50,8 @@ async function extractCurrentContextFromHandoff(featureName: string): Promise<{
     const phaseMatch = combined.match(/phase\s+(\d+)/i);
     const phase = phaseMatch ? phaseMatch[1] : undefined;
     return { sessionId, taskId, phase };
-  } catch {
+  } catch (err) {
+    console.warn('Plan with checks: failed to load plan', err);
     return {};
   }
 }
@@ -136,9 +139,9 @@ export async function planWithChecks(
     const parseResult = await parsePlainLanguage(description, tier, feature, resolvedPhase, resolvedSessionId, resolvedTaskId);
     output.push(parseResult);
     output.push('\n---\n');
-  } catch (error) {
+  } catch (_error) {
     output.push(`**ERROR:** Failed to parse planning input\n`);
-    output.push(`**Error:** ${error instanceof Error ? error.message : String(error)}\n`);
+    output.push(`**Error:** ${_error instanceof Error ? _error.message : String(_error)}\n`);
     output.push('\n---\n');
     return output.join('\n');
   }
@@ -149,9 +152,9 @@ export async function planWithChecks(
     const docCheckResult = await checkDocumentation(docCheckType);
     output.push(docCheckResult);
     output.push('\n---\n');
-  } catch (error) {
+  } catch (_error) {
     output.push(`**WARNING:** Documentation check failed\n`);
-    output.push(`**Error:** ${error instanceof Error ? error.message : String(error)}\n`);
+    output.push(`**Error:** ${_error instanceof Error ? _error.message : String(_error)}\n`);
     output.push('\n---\n');
   }
   
@@ -161,9 +164,9 @@ export async function planWithChecks(
     const reuseCheckResult = await checkReuse(description);
     output.push(reuseCheckResult);
     output.push('\n---\n');
-  } catch (error) {
+  } catch (_error) {
     output.push(`**WARNING:** Reuse check failed\n`);
-    output.push(`**Error:** ${error instanceof Error ? error.message : String(error)}\n`);
+    output.push(`**Error:** ${_error instanceof Error ? _error.message : String(_error)}\n`);
     output.push('\n---\n');
   }
   
@@ -179,7 +182,6 @@ export async function planWithChecks(
       sessionId: resolvedSessionId,
       taskId: resolvedTaskId,
     };
-    const { parseNaturalLanguage } = await import('../../utils/planning-parser');
     const parseResult = parseNaturalLanguage(input);
     
     if (parseResult.success && parseResult.output) {
@@ -194,9 +196,9 @@ export async function planWithChecks(
         });
       }
     }
-  } catch (error) {
+  } catch (_error) {
     output.push(`**WARNING:** Validation failed\n`);
-    output.push(`**Error:** ${error instanceof Error ? error.message : String(error)}\n`);
+    output.push(`**Error:** ${_error instanceof Error ? _error.message : String(_error)}\n`);
   }
   
   output.push('\n---\n');
@@ -204,12 +206,11 @@ export async function planWithChecks(
   // Step 5: Security Audit (optional but recommended)
   output.push('## Step 5: Security Validation\n');
   try {
-    const { securityAudit } = await import('../../security/composite/security-audit');
     const securityResult = await securityAudit({ path: 'server/src' });
     output.push(securityResult);
-  } catch (error) {
+  } catch (_error) {
     output.push(`**WARNING:** Security check failed\n`);
-    output.push(`**Error:** ${error instanceof Error ? error.message : String(error)}\n`);
+    output.push(`**Error:** ${_error instanceof Error ? _error.message : String(_error)}\n`);
     output.push('**Note:** Security checks are optional but recommended. You can run `/security-audit` manually.\n');
   }
   
@@ -228,8 +229,8 @@ export async function planWithChecks(
         featureName: resolvedFeature,
       });
       output.push(`\n---\n## Scope Document\n**Path:** \`${documentResult.documentPath}\`\n`);
-    } catch (error) {
-      output.push(`\n---\n## Scope Document\n**Warning:** Failed to create scope document: ${error instanceof Error ? error.message : String(error)}\n`);
+    } catch (_error) {
+      output.push(`\n---\n## Scope Document\n**Warning:** Failed to create scope document: ${_error instanceof Error ? _error.message : String(_error)}\n`);
     }
   }
 

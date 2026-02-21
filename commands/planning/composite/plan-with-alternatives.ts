@@ -8,7 +8,10 @@
 import { parsePlainLanguage } from '../atomic/parse-plain-language';
 import { generateAlternativesCommand, analyzeAlternativesCommand } from '../atomic/generate-alternatives';
 import { createDecisionGateCommand, enforceDecisionGateCommand } from '../atomic/enforce-decision-gate';
-import { PlanningInput, PlanningTier, AlternativeType } from '../../utils/planning-types';
+import { enforceDecisionGate } from '../../utils/decision-gate';
+import { PlanningInput, PlanningTier, AlternativeType, Alternative } from '../../utils/planning-types';
+import { parseNaturalLanguage } from '../../utils/planning-parser';
+import { generateAlternatives } from '../../utils/alternatives-generator';
 
 /**
  * Plan with alternatives and decision gate
@@ -52,7 +55,6 @@ export async function planWithAlternatives(
       sessionId,
       taskId,
     };
-    const { parseNaturalLanguage } = await import('../../../project-manager/utils/planning-parser');
     const parseResult = parseNaturalLanguage(input);
     
     if (!parseResult.success || !parseResult.output) {
@@ -69,27 +71,25 @@ export async function planWithAlternatives(
     const parseOutput = await parsePlainLanguage(description, tier, feature, phase, sessionId, taskId);
     output.push(parseOutput);
     output.push('\n---\n');
-  } catch (error) {
+  } catch (_error) {
     output.push(`**ERROR:** Failed to parse planning input\n`);
-    output.push(`**Error:** ${error instanceof Error ? error.message : String(error)}\n`);
+    output.push(`**Error:** ${_error instanceof Error ? _error.message : String(_error)}\n`);
     return output.join('\n');
   }
   
   // Step 2: Generate alternatives
   output.push('## Step 2: Generate Alternatives\n');
-  let alternatives;
+  let alternatives: Alternative[] = [];
   try {
     const alternativesResult = await generateAlternativesCommand(planningOutput, alternativeType, 3);
     output.push(alternativesResult);
     output.push('\n---\n');
-    
-    // Extract alternatives from result (we need to get them from the generator)
-    const { generateAlternatives } = await import('../../../project-manager/utils/alternatives-generator');
+
     const altResult = generateAlternatives(planningOutput, alternativeType, 3);
     alternatives = altResult.success ? altResult.alternatives : [];
-  } catch (error) {
+  } catch (_error) {
     output.push(`**ERROR:** Failed to generate alternatives\n`);
-    output.push(`**Error:** ${error instanceof Error ? error.message : String(error)}\n`);
+    output.push(`**Error:** ${_error instanceof Error ? _error.message : String(_error)}\n`);
     output.push('\n---\n');
     alternatives = [];
   }
@@ -101,9 +101,9 @@ export async function planWithAlternatives(
       const analysisResult = await analyzeAlternativesCommand(alternatives);
       output.push(analysisResult);
       output.push('\n---\n');
-    } catch (error) {
+    } catch (_error) {
       output.push(`**WARNING:** Failed to analyze alternatives\n`);
-      output.push(`**Error:** ${error instanceof Error ? error.message : String(error)}\n`);
+      output.push(`**Error:** ${_error instanceof Error ? _error.message : String(_error)}\n`);
       output.push('\n---\n');
     }
   }
@@ -119,18 +119,18 @@ export async function planWithAlternatives(
         requireDecision
       );
       
-      const gateResult = await enforceDecisionGateCommand(gate);
-      output.push(gateResult);
-      
-      if (!gateResult.canProceed && requireDecision) {
+      const gateOutput = await enforceDecisionGateCommand(gate);
+      output.push(gateOutput);
+      const decisionResult = enforceDecisionGate(gate);
+      if (!decisionResult.canProceed && requireDecision) {
         output.push('\n---\n');
         output.push('## ⚠️ Cannot Proceed\n');
         output.push('**A decision must be made before continuing.**\n');
         output.push('**Use:** `/planning-make-decision [gate-id] [alternative-id] [rationale]` to make a decision.\n');
       }
-    } catch (error) {
+    } catch (_error) {
       output.push(`**ERROR:** Failed to create decision gate\n`);
-      output.push(`**Error:** ${error instanceof Error ? error.message : String(error)}\n`);
+      output.push(`**Error:** ${_error instanceof Error ? _error.message : String(_error)}\n`);
     }
   } else {
     output.push('## Step 4: Decision Gate\n');

@@ -41,7 +41,7 @@ interface PartTypeEntity { id: string; name: string; }
 
 **Good Example:**
 ```typescript
-// ✅ Generic base with runtime config (see: client/src/global/types/globalEntityTypes.ts)
+// ✅ Generic base with runtime config (see: frontend-root/src/global/types/globalEntityTypes.ts)
 interface BaseGlobalEntity<GE extends GlobalEntityKey> {
   id: GlobalEntityId;
   entityKey: GE;
@@ -52,7 +52,7 @@ interface BaseGlobalEntity<GE extends GlobalEntityKey> {
 export const ENTITY_REGISTRY: Record<EntityType, EntityConfig> = { ... };
 ```
 
-**Codebase Reference:** `client/src/global/types/globalEntityTypes.ts`, `server/src/config/entityRegistry.ts`
+**Codebase Reference:** `frontend-root/src/global/types/globalEntityTypes.ts`, `server/src/config/entityRegistry.ts`
 
 ---
 
@@ -69,7 +69,7 @@ Create clear, typed, and well-documented data transformation functions instead o
 
 **Good Example:**
 ```typescript
-// ✅ Dedicated transformer class (see: client/src/admin/dataTransformation/bridgeToAdminTransformer.ts)
+// ✅ Dedicated transformer class (see: frontend-root/src/admin/dataTransformation/bridgeToAdminTransformer.ts)
 export class AdminTransformer {
   transformGlobalToAdmin(globalEntityMap: GlobalEntityMap): AdminEntityMap {
     // Clear, typed transformation logic
@@ -77,7 +77,7 @@ export class AdminTransformer {
 }
 ```
 
-**Codebase Reference:** `client/src/admin/dataTransformation/bridgeToAdminTransformer.ts`, `client/src/scheduler/dataTransformation/globalToSchedulerTransformer.ts`
+**Codebase Reference:** `frontend-root/src/admin/dataTransformation/bridgeToAdminTransformer.ts`, `frontend-root/src/scheduler/dataTransformation/globalToSchedulerTransformer.ts`
 
 ---
 
@@ -101,14 +101,14 @@ function transformData(input: InputType) {
 
 **Good Example:**
 ```typescript
-// ✅ Type guard (see: client/src/admin/dataTransformation/typeAdapters.ts)
+// ✅ Type guard (see: frontend-root/src/admin/dataTransformation/typeAdapters.ts)
 export function isAdminEntity<GE extends GlobalEntityKey>(
   entity: any
 ): entity is AdminEntity<GE> {
   return entity instanceof AdminEntity;
 }
 
-// ✅ Explicit return type (see: client/src/admin/dataTransformation/bridgeToAdminTransformer.ts)
+// ✅ Explicit return type (see: frontend-root/src/admin/dataTransformation/bridgeToAdminTransformer.ts)
 private transformSingleEntity<GE extends GlobalEntityKey>(
   globalEntity: GlobalEntity<GE>,
   entityKey: GE
@@ -122,8 +122,8 @@ type GlobalPropertyKey<GE extends GlobalEntityKey> = keyof GlobalEntity<GE>;
 ```
 
 **Codebase Reference:** 
-- Type guards: `client/src/admin/dataTransformation/typeAdapters.ts`
-- Explicit return types: `client/src/admin/dataTransformation/bridgeToAdminTransformer.ts`
+- Type guards: `frontend-root/src/admin/dataTransformation/typeAdapters.ts`
+- Explicit return types: `frontend-root/src/admin/dataTransformation/bridgeToAdminTransformer.ts`
 - Type constraints: `server/src/config/entityRegistry.ts` (isValidEntityType)
 
 **Exception:** `keyof` and `typeof` are legitimate TypeScript utilities when used for type constraints (not workarounds).
@@ -142,7 +142,7 @@ type EntityMap<T> = Record<T, Entity>;
 
 **Good Example:**
 ```typescript
-// ✅ Descriptive names (see: client/src/global/types/globalEntityTypes.ts)
+// ✅ Descriptive names (see: frontend-root/src/global/types/globalEntityTypes.ts)
 export type GlobalEntityKey = 'blockProfile' | 'blockType' | 'partProfile' | 'partType';
 export type GlobalPropertyKey<GE extends GlobalEntityKey> = keyof GlobalEntity<GE>;
 
@@ -152,7 +152,7 @@ function processEntity<EntityKey extends GlobalEntityKey>(
 ) { }
 ```
 
-**Codebase Reference:** `client/src/global/types/globalEntityTypes.ts`, `client/src/global/constants/entityConstants.ts`
+**Codebase Reference:** `frontend-root/src/global/types/globalEntityTypes.ts`, `frontend-root/src/global/constants/entityConstants.ts`
 
 ---
 
@@ -239,7 +239,7 @@ for (const item of items) {
 
 **Good Example:**
 ```typescript
-// ✅ Functional map (see: client/src/admin/dataTransformation/bridgeToAdminTransformer.ts)
+// ✅ Functional map (see: frontend-root/src/admin/dataTransformation/bridgeToAdminTransformer.ts)
 const result = items.map(item => process(item));
 
 // ✅ Functional reduce for accumulation
@@ -256,7 +256,7 @@ for (const item of items) {
 }
 ```
 
-**Codebase Reference:** `client/src/admin/dataTransformation/bridgeToAdminTransformer.ts` (lines 28-38), `clineDirectiveMarkdowns/architectural-todo/implementation_notes.md`
+**Codebase Reference:** `frontend-root/src/admin/dataTransformation/bridgeToAdminTransformer.ts` (lines 28-38), `clineDirectiveMarkdowns/architectural-todo/implementation_notes.md`
 
 **Exception:** `for...of` is acceptable for early returns, side effects, or when clarity is improved over functional alternatives.
 
@@ -323,7 +323,7 @@ import { calculateFee } from './utils';
 describe('calculateFee', () => { ... });
 ```
 
-**Codebase Reference:** See `client/src/admin/tests/activePartsStateCalculator.test.ts` for example format.
+**Codebase Reference:** See `frontend-root/src/admin/tests/activePartsStateCalculator.test.ts` for example format.
 
 ---
 
@@ -355,8 +355,8 @@ Use fine-grained unit tests for pure functions, utilities, and business logic. U
 - User workflows and end-to-end scenarios
 
 **Codebase Reference:** 
-- Unit tests: `client/src/booking/__tests__/utils/feeCalculation.test.ts`
-- Integration tests: `client/src/admin/tests/integration/contextIntegration.test.tsx`
+- Unit tests: `frontend-root/src/booking/__tests__/utils/feeCalculation.test.ts`
+- Integration tests: `frontend-root/src/admin/tests/integration/contextIntegration.test.tsx`
 
 ---
 
@@ -576,8 +576,8 @@ export class MyNewTransformer {
 **Good Example:**
 ```typescript
 // ✅ Checking existing transformer patterns first
-// Reviewed: client/src/admin/dataTransformation/bridgeToAdminTransformer.ts
-// Reviewed: client-vue/src/api/transformers/adminTransformer.ts
+// Reviewed: frontend-root/src/admin/dataTransformation/bridgeToAdminTransformer.ts
+// Reviewed: frontend-root/src/api/transformers/adminTransformer.ts
 // Following established pattern: transformXToY method, generic entity handling
 
 export class MyNewTransformer {
@@ -612,7 +612,7 @@ export class MyNewTransformer {
   />
 </template>
 
-<!-- Checked: client/src/admin/components/generic/fields/fieldRenderer.tsx -->
+<!-- Checked: frontend-root/src/admin/components/generic/fields/fieldRenderer.tsx -->
 <!-- Reusing: Generic field rendering pattern -->
 ```
 
@@ -628,9 +628,9 @@ Before implementing new functionality, verify:
 - [ ] Identified if existing pattern can be reused or extended
 
 **Codebase References:**
-- Generic Components: `client/src/admin/components/generic/`
-- Transformer Patterns: `client/src/admin/dataTransformation/`, `client-vue/src/api/transformers/`
-- Architecture Docs: `client/src/scheduler/clineSchedulerWizardDirectives/README.md`
+- Generic Components: `frontend-root/src/admin/components/generic/`
+- Transformer Patterns: `frontend-root/src/admin/dataTransformation/`, `frontend-root/src/api/transformers/`
+- Architecture Docs: `frontend-root/src/scheduler/clineSchedulerWizardDirectives/README.md`
 - Migration Guides: `VUE_MIGRATION_HANDOFF.md`, `clineDirectiveMarkdowns/vue-migration-reference/`
 
 **Scope:** Applies to all new implementations, component creation, and code duplication scenarios.
@@ -712,7 +712,7 @@ export class AdminTransformer {
 **Good Example:**
 ```vue
 <!-- ✅ Creating reusable FieldRenderer component -->
-<!-- See: client/src/admin/components/generic/fields/fieldRenderer.tsx -->
+<!-- See: frontend-root/src/admin/components/generic/fields/fieldRenderer.tsx -->
 
 <template>
   <!-- Generic field renderer used everywhere -->
@@ -766,9 +766,9 @@ When creating a generic/reusable component:
    - Solution: Generic components with configuration-driven behavior
 
 **Codebase References:**
-- Generic Fields: `client/src/admin/components/generic/fields/`
-- Generic Instances: `client/src/admin/components/generic/instances/`
-- Transformers: `client/src/admin/dataTransformation/`, `client-vue/src/api/transformers/`
+- Generic Fields: `frontend-root/src/admin/components/generic/fields/`
+- Generic Instances: `frontend-root/src/admin/components/generic/instances/`
+- Transformers: `frontend-root/src/admin/dataTransformation/`, `frontend-root/src/api/transformers/`
 
 **Scope:** Applies to all code duplication scenarios and component creation.
 

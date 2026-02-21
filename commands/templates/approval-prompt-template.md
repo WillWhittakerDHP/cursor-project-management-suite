@@ -61,12 +61,12 @@ When agents need to switch from Ask Mode to Agent Mode for implementation, they 
 ## Ready to Implement?
 
 **What will be changed:**
-- `client-vue/src/stores/globalStore.ts` - Create new Pinia store with getGlobalEntities and getGlobalRelationship methods
-- `client-vue/src/composables/useGlobalData.ts` - Create composable wrapping globalStore
+- `frontend-root/src/stores/globalStore.ts` - Create new Pinia store with getGlobalEntities and getGlobalRelationship methods
+- `frontend-root/src/composables/useGlobalData.ts` - Create composable wrapping globalStore
 
 **Files to be created:**
-- `client-vue/src/stores/globalStore.ts` - Pinia store for global data
-- `client-vue/src/composables/useGlobalData.ts` - Composable for global data access
+- `frontend-root/src/stores/globalStore.ts` - Pinia store for global data
+- `frontend-root/src/composables/useGlobalData.ts` - Composable for global data access
 
 **Implementation Plan:**
 1. Create globalStore.ts with Pinia defineStore setup syntax
@@ -84,13 +84,13 @@ When agents need to switch from Ask Mode to Agent Mode for implementation, they 
 ## Ready to Implement?
 
 **What will be changed:**
-- `client-vue/src/stores/globalStore.ts` - Rename getChildrenOf to getGlobalRelationship
-- `client-vue/src/composables/useGlobalData.ts` - Update method name reference
+- `frontend-root/src/stores/globalStore.ts` - Rename getChildrenOf to getGlobalRelationship
+- `frontend-root/src/composables/useGlobalData.ts` - Update method name reference
 - All files importing/using getChildrenOf
 
 **Files to be modified:**
-- `client-vue/src/stores/globalStore.ts` - Method rename
-- `client-vue/src/composables/useGlobalData.ts` - Update import/usage
+- `frontend-root/src/stores/globalStore.ts` - Method rename
+- `frontend-root/src/composables/useGlobalData.ts` - Update import/usage
 - [Other files found containing getChildrenOf]
 
 **Implementation Plan:**

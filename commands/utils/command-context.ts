@@ -36,7 +36,7 @@ export class WorkflowCommandContext {
 
   /**
    * Create a new command context
-   * @param featureName Feature name (e.g., "vue-migration")
+   * @param featureName Feature name (e.g. from .current-feature or git branch)
    * @param cache Optional file cache (creates new one if not provided)
    */
   constructor(featureName: string, cache?: FileCache) {
@@ -78,7 +78,7 @@ export class WorkflowCommandContext {
 
   /**
    * Read session guide
-   * @param sessionId Session ID in format X.Y (e.g., "2.1")
+   * @param sessionId Session ID in format X.Y.Z (e.g., "4.1.3")
    * @returns Session guide content
    */
   async readSessionGuide(sessionId: string): Promise<string> {
@@ -104,7 +104,7 @@ export class WorkflowCommandContext {
 
   /**
    * Read session log
-   * @param sessionId Session ID in format X.Y (e.g., "2.1")
+   * @param sessionId Session ID in format X.Y.Z (e.g., "4.1.3")
    * @returns Session log content
    */
   async readSessionLog(sessionId: string): Promise<string> {
@@ -130,7 +130,7 @@ export class WorkflowCommandContext {
 
   /**
    * Read session handoff
-   * @param sessionId Session ID in format X.Y (e.g., "2.1")
+   * @param sessionId Session ID in format X.Y.Z (e.g., "4.1.3")
    * @returns Session handoff content
    */
   async readSessionHandoff(sessionId: string): Promise<string> {

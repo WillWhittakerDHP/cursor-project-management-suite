@@ -4,7 +4,7 @@
  * Shows: phase, next action, last completed, branch, recent commits
  */
 
-import { readProjectFile, getCurrentBranch, runCommand } from './utils';
+import { getCurrentBranch, runCommand } from './utils';
 import { MarkdownUtils } from './markdown-utils';
 import { WorkflowCommandContext } from './command-context';
 

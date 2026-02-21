@@ -13,7 +13,10 @@ import { checkCriticalPoints, formatCriticalChecksResult } from '../atomic/check
 import { generateAlternativesCommand } from '../atomic/generate-alternatives';
 import { createDecisionGateCommand, enforceDecisionGateCommand } from '../atomic/enforce-decision-gate';
 import { validatePlanningCommand } from '../atomic/validate-planning';
-import { PlanningInput, PlanningTier, AlternativeType, CriticalCheckType } from '../../utils/planning-types';
+import { enforceDecisionGate } from '../../utils/decision-gate';
+import { PlanningInput, PlanningTier, AlternativeType, CriticalCheckType, Alternative } from '../../utils/planning-types';
+import { parseNaturalLanguage } from '../../utils/planning-parser';
+import { generateAlternatives } from '../../utils/alternatives-generator';
 
 /**
  * Complete planning workflow
@@ -71,7 +74,6 @@ export async function planComplete(
   output.push('## Step 1: Parse Planning Input\n');
   let planningOutput;
   try {
-    const { parseNaturalLanguage } = await import('../../../project-manager/utils/planning-parser');
     const parseResult = parseNaturalLanguage(input);
     
     if (!parseResult.success || !parseResult.output) {
@@ -88,9 +90,9 @@ export async function planComplete(
     const parseOutput = await parsePlainLanguage(description, tier, feature, phase, sessionId, taskId);
     output.push(parseOutput);
     output.push('\n---\n');
-  } catch (error) {
+  } catch (_error) {
     output.push(`**ERROR:** Failed to parse planning input\n`);
-    output.push(`**Error:** ${error instanceof Error ? error.message : String(error)}\n`);
+    output.push(`**Error:** ${_error instanceof Error ? _error.message : String(_error)}\n`);
     return output.join('\n');
   }
   
@@ -100,9 +102,9 @@ export async function planComplete(
     const docCheckResult = await checkDocumentation(docCheckType);
     output.push(docCheckResult);
     output.push('\n---\n');
-  } catch (error) {
+  } catch (_error) {
     output.push(`**WARNING:** Documentation check failed\n`);
-    output.push(`**Error:** ${error instanceof Error ? error.message : String(error)}\n`);
+    output.push(`**Error:** ${_error instanceof Error ? _error.message : String(_error)}\n`);
     output.push('\n---\n');
   }
   
@@ -112,31 +114,28 @@ export async function planComplete(
     const reuseCheckResult = await checkReuse(description);
     output.push(reuseCheckResult);
     output.push('\n---\n');
-  } catch (error) {
+  } catch (_error) {
     output.push(`**WARNING:** Reuse check failed\n`);
-    output.push(`**Error:** ${error instanceof Error ? error.message : String(error)}\n`);
+    output.push(`**Error:** ${_error instanceof Error ? _error.message : String(_error)}\n`);
     output.push('\n---\n');
   }
   
   // Step 4: Generate alternatives (if required)
-  let alternatives: import('../../../project-manager/utils/planning-types').Alternative[] = [];
-  let alternativesResult;
+  let alternatives: Alternative[] = [];
   if (requireAlternatives) {
     output.push('## Step 4: Generate Alternatives\n');
     try {
       const altResultOutput = await generateAlternativesCommand(planningOutput, alternativeType, 3);
       output.push(altResultOutput);
       output.push('\n---\n');
-      
-      const { generateAlternatives } = await import('../../../project-manager/utils/alternatives-generator');
+
       const altResult = generateAlternatives(planningOutput, alternativeType, 3);
       if (altResult.success) {
         alternatives = altResult.alternatives;
-        alternativesResult = altResult;
       }
-    } catch (error) {
+    } catch (_error) {
       output.push(`**ERROR:** Failed to generate alternatives\n`);
-      output.push(`**Error:** ${error instanceof Error ? error.message : String(error)}\n`);
+      output.push(`**Error:** ${_error instanceof Error ? _error.message : String(_error)}\n`);
       output.push('\n---\n');
     }
   }
@@ -153,8 +152,9 @@ export async function planComplete(
         requireDecision
       );
       
-      const gateResult = await enforceDecisionGateCommand(gate);
-      output.push(gateResult);
+      const gateOutput = await enforceDecisionGateCommand(gate);
+      output.push(gateOutput);
+      const gateResult = enforceDecisionGate(gate);
       decisionGate = gateResult;
       
       if (!gateResult.canProceed) {
@@ -163,9 +163,9 @@ export async function planComplete(
         output.push('**A decision must be made before continuing.**\n');
       }
       output.push('\n---\n');
-    } catch (error) {
+    } catch (_error) {
       output.push(`**ERROR:** Failed to create decision gate\n`);
-      output.push(`**Error:** ${error instanceof Error ? error.message : String(error)}\n`);
+      output.push(`**Error:** ${_error instanceof Error ? _error.message : String(_error)}\n`);
       output.push('\n---\n');
     }
   }
@@ -182,9 +182,9 @@ export async function planComplete(
       output.push('## ⚠️ Cannot Proceed\n');
       output.push('**Critical checks must pass before continuing.**\n');
     }
-  } catch (error) {
+  } catch (_error) {
     output.push(`**WARNING:** Critical checks failed\n`);
-    output.push(`**Error:** ${error instanceof Error ? error.message : String(error)}\n`);
+    output.push(`**Error:** ${_error instanceof Error ? _error.message : String(_error)}\n`);
     output.push('\n---\n');
   }
   
@@ -198,9 +198,9 @@ export async function planComplete(
       requireAlternatives
     );
     output.push(validationResult);
-  } catch (error) {
+  } catch (_error) {
     output.push(`**WARNING:** Validation failed\n`);
-    output.push(`**Error:** ${error instanceof Error ? error.message : String(error)}\n`);
+    output.push(`**Error:** ${_error instanceof Error ? _error.message : String(_error)}\n`);
   }
   
   output.push('\n---\n');

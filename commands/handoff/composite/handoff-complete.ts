@@ -6,6 +6,7 @@
  * Operates on: Complete handoff workflow
  */
 
+import { resolveFeatureName } from '../../utils';
 import { generateHandoff, HandoffTier, GenerateHandoffParams } from '../atomic/generate-handoff';
 import { reviewHandoff, ReviewHandoffParams } from '../atomic/review-handoff';
 
@@ -16,7 +17,7 @@ import { reviewHandoff, ReviewHandoffParams } from '../atomic/review-handoff';
  * 
  * @param tier Handoff tier
  * @param identifier Optional identifier
- * @param featureName Optional feature name
+ * @param featureName Optional feature name (from .current-feature or git branch if omitted)
  * @param nextIdentifier Optional next identifier
  * @param transitionNotes Optional transition notes
  * @returns Formatted handoff workflow output
@@ -24,10 +25,11 @@ import { reviewHandoff, ReviewHandoffParams } from '../atomic/review-handoff';
 export async function handoffComplete(
   tier: HandoffTier,
   identifier?: string,
-  featureName: string = 'vue-migration',
+  featureName?: string,
   nextIdentifier?: string,
   transitionNotes?: string
 ): Promise<string> {
+  const resolved = await resolveFeatureName(featureName);
   const output: string[] = [];
   
   output.push(`# Complete Handoff Workflow: ${tier}${identifier ? ` ${identifier}` : ''}\n`);
@@ -38,7 +40,7 @@ export async function handoffComplete(
   const generateParams: GenerateHandoffParams = {
     tier,
     identifier,
-    featureName,
+    featureName: resolved,
     nextIdentifier,
     transitionNotes
   };
@@ -52,7 +54,7 @@ export async function handoffComplete(
   const reviewParams: ReviewHandoffParams = {
     tier,
     identifier,
-    featureName
+    featureName: resolved
   };
   
   const reviewOutput = await reviewHandoff(reviewParams);

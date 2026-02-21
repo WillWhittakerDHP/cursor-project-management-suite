@@ -6,10 +6,11 @@
  * Operates on: Checkpoint operations across feature/phase/session/task
  */
 
+import { resolveFeatureName } from '../../utils';
 import { createCheckpoint, CheckpointTier, CreateCheckpointParams } from '../atomic/create-checkpoint';
 import { featureCheckpoint } from '../../tiers/feature/atomic/feature-checkpoint';
-import { phaseCheckpoint } from '../../tiers/phase/composite/phase-checkpoint';
-import { sessionCheckpoint } from '../../tiers/session/composite/session-checkpoint';
+import { phaseCheckpoint } from '../../tiers/phase/composite/phase';
+import { sessionCheckpoint } from '../../tiers/session/composite/session';
 import { taskCheckpoint } from '../../tiers/task/atomic/checkpoint';
 
 /**
@@ -20,7 +21,7 @@ import { taskCheckpoint } from '../../tiers/task/atomic/checkpoint';
  * 
  * @param tier Checkpoint tier
  * @param identifier Optional identifier (required for phase/session/task)
- * @param featureName Optional feature name (defaults to "vue-migration")
+ * @param featureName Optional feature name (from .current-feature or git branch if omitted)
  * @param runQualityChecks Whether to run quality checks (default: false)
  * @param notes Optional checkpoint notes
  * @returns Formatted checkpoint output
@@ -28,10 +29,11 @@ import { taskCheckpoint } from '../../tiers/task/atomic/checkpoint';
 export async function checkpoint(
   tier: CheckpointTier,
   identifier?: string,
-  featureName: string = 'vue-migration',
+  featureName?: string,
   runQualityChecks: boolean = false,
   notes?: string
 ): Promise<string> {
+  const resolved = await resolveFeatureName(featureName);
   // For task tier, delegate to task checkpoint (includes quality checks)
   if (tier === 'task') {
     if (!identifier) {
@@ -45,7 +47,7 @@ export async function checkpoint(
   const params: CreateCheckpointParams = {
     tier,
     identifier,
-    featureName,
+    featureName: resolved,
     runQualityChecks,
     notes
   };
@@ -62,24 +64,24 @@ export async function checkpoint(
   try {
     switch (tier) {
       case 'feature':
-        tierSpecificOutput = await featureCheckpoint(featureName);
+        tierSpecificOutput = await featureCheckpoint(resolved);
         break;
       case 'phase':
         if (!identifier) {
           return 'Error: Phase identifier is required for phase checkpoints';
         }
-        tierSpecificOutput = await phaseCheckpoint(identifier, featureName);
+        tierSpecificOutput = await phaseCheckpoint(identifier, resolved);
         break;
       case 'session':
         if (!identifier) {
           return 'Error: Session ID is required for session checkpoints';
         }
-        tierSpecificOutput = await sessionCheckpoint(identifier, featureName);
+        tierSpecificOutput = await sessionCheckpoint(identifier, resolved);
         break;
     }
-  } catch (error) {
+  } catch (_error) {
     // If tier-specific command fails, still return unified checkpoint result
-    tierSpecificOutput = `\n⚠️ Tier-specific checkpoint failed: ${error instanceof Error ? error.message : String(error)}\n`;
+    tierSpecificOutput = `\n⚠️ Tier-specific checkpoint failed: ${_error instanceof Error ? _error.message : String(_error)}\n`;
   }
   
   // Combine outputs
@@ -93,14 +95,15 @@ export async function checkpoint(
  * 
  * @param tier Checkpoint tier
  * @param identifier Optional identifier
- * @param featureName Optional feature name
+ * @param featureName Optional feature name (from .current-feature or git branch if omitted)
  * @returns Checkpoint review output
  */
 export async function checkpointReview(
   tier: CheckpointTier,
   identifier?: string,
-  featureName: string = 'vue-migration'
+  featureName?: string
 ): Promise<string> {
+  const resolved = await resolveFeatureName(featureName);
   const output: string[] = [];
   
   output.push(`# Checkpoint Review: ${tier}${identifier ? ` ${identifier}` : ''}\n`);
@@ -110,7 +113,7 @@ export async function checkpointReview(
   const params: CreateCheckpointParams = {
     tier,
     identifier,
-    featureName,
+    featureName: resolved,
     runQualityChecks: true
   };
   

@@ -9,11 +9,15 @@
  * PATTERN: Utility functions that parse guides and check file existence
  */
 
-import { readProjectFile, PROJECT_ROOT } from './utils';
+import { PROJECT_ROOT } from './utils';
 import { access } from 'fs/promises';
 import { join } from 'path';
-import { MarkdownUtils } from './markdown-utils';
 import { WorkflowCommandContext } from './command-context';
+import { resolveFeatureName } from './feature-context';
+
+const FRONTEND_ROOT = 'client';
+const FRONTEND_PREFIX = `${FRONTEND_ROOT}/`;
+const FRONTEND_SRC_PREFIX = `${FRONTEND_ROOT}/src/`;
 
 /**
  * File status information
@@ -58,7 +62,7 @@ export interface CurrentStateSummary {
 /**
  * Extract file paths from markdown content
  * Looks for patterns like:
- * - `client/src/...` (Vue paths - migration complete)
+ * - `<frontend-root>/src/...` (Vue paths)
  * - Backtick-wrapped paths
  * - Code block paths
  */
@@ -70,22 +74,25 @@ export function extractFilePaths(content: string): string[] {
   let match;
   while ((match = backtickPattern.exec(content)) !== null) {
     const path = match[1].trim();
-    if (path.startsWith('client/')) {
+    if (path.startsWith(FRONTEND_PREFIX)) {
       paths.push(path);
     }
   }
   
   // Pattern for code block paths (lines starting with file paths)
-  const codeBlockPattern = /^(\s*)(client\/)[^\s]+$/gm;
+  const codeBlockPattern = /^(\s*)([A-Za-z0-9._-]+\/)[^\s]+$/gm;
   while ((match = codeBlockPattern.exec(content)) !== null) {
-    paths.push(match[0].trim());
+    const potentialPath = match[0].trim();
+    if (potentialPath.startsWith(FRONTEND_PREFIX)) {
+      paths.push(potentialPath);
+    }
   }
   
   // Pattern for markdown links with file paths
   const linkPattern = /\[([^\]]+)\]\(([^)]+)\)/g;
   while ((match = linkPattern.exec(content)) !== null) {
     const url = match[2];
-    if (url.startsWith('client/')) {
+    if (url.startsWith(FRONTEND_PREFIX)) {
       paths.push(url);
     }
   }
@@ -102,38 +109,39 @@ export async function checkFileExists(filePath: string): Promise<boolean> {
     const fullPath = join(PROJECT_ROOT, filePath);
     await access(fullPath);
     return true;
-  } catch {
+  } catch (err) {
+    console.warn('Context gatherer: file not found', filePath, err);
     return false;
   }
 }
 
 /**
  * Map React path to Vue path (OBSOLETE - migration complete)
- * Migration is complete: client/ is now the Vue app
+ * Migration is complete: frontend root is the Vue app
  * Kept for backward compatibility but returns path as-is
  */
 export function mapReactToVuePath(reactPath: string): string {
-  // Migration complete - client/ is now Vue, so return as-is
+  // Migration complete - frontend root is Vue, so return as-is
   return reactPath;
 }
 
 /**
  * Map Vue path to React path (OBSOLETE - migration complete)
- * Migration is complete: client/ is now the Vue app
+ * Migration is complete: frontend root is the Vue app
  * Kept for backward compatibility but returns path as-is
  */
 export function mapVueToReactPath(vuePath: string): string {
-  // Migration complete - client/ is now Vue, so return as-is
+  // Migration complete - frontend root is Vue, so return as-is
   return vuePath;
 }
 
 /**
  * Determine file type (Vue - migration complete)
- * Migration is complete: client/ is now the Vue app
+ * Migration is complete: frontend root is the Vue app
  */
 export function getFileType(filePath: string): 'react' | 'vue' | 'unknown' {
-  if (filePath.startsWith('client/src/') || filePath.startsWith('client/')) {
-    return 'vue'; // Migration complete - client/ is now Vue
+  if (filePath.startsWith(FRONTEND_SRC_PREFIX) || filePath.startsWith(FRONTEND_PREFIX)) {
+    return 'vue'; // Migration complete - frontend root is Vue
   }
   return 'unknown';
 }
@@ -195,13 +203,15 @@ export async function gatherFileStatuses(filePaths: string[]): Promise<FileStatu
  */
 export async function extractFilesFromSessionGuide(
   sessionId: string,
-  featureName: string = 'vue-migration'
+  featureName?: string
 ): Promise<string[]> {
   try {
-    const context = new WorkflowCommandContext(featureName);
+    const resolved = await resolveFeatureName(featureName);
+    const context = new WorkflowCommandContext(resolved);
     const guideContent = await context.readSessionGuide(sessionId);
     return extractFilePaths(guideContent);
-  } catch {
+  } catch (err) {
+    console.warn('Context gatherer: extractFilesFromSessionGuide failed', sessionId, err);
     return [];
   }
 }
@@ -211,13 +221,15 @@ export async function extractFilesFromSessionGuide(
  */
 export async function extractFilesFromPhaseGuide(
   phase: string,
-  featureName: string = 'vue-migration'
+  featureName?: string
 ): Promise<string[]> {
   try {
-    const context = new WorkflowCommandContext(featureName);
+    const resolved = await resolveFeatureName(featureName);
+    const context = new WorkflowCommandContext(resolved);
     const guideContent = await context.readPhaseGuide(phase);
     return extractFilePaths(guideContent);
-  } catch {
+  } catch (err) {
+    console.warn('Context gatherer: extractFilesFromPhaseGuide failed', phase, err);
     return [];
   }
 }
@@ -227,9 +239,10 @@ export async function extractFilesFromPhaseGuide(
  */
 export async function generateCurrentStateSummary(
   sessionId: string,
-  featureName: string = 'vue-migration'
+  featureName?: string
 ): Promise<CurrentStateSummary> {
-  const filePaths = await extractFilesFromSessionGuide(sessionId, featureName);
+  const resolved = await resolveFeatureName(featureName);
+  const filePaths = await extractFilesFromSessionGuide(sessionId, resolved);
   const fileStatuses = await gatherFileStatuses(filePaths);
   
   // Separate React and Vue files
@@ -276,32 +289,15 @@ export async function generateCurrentStateSummary(
  */
 export async function gatherComponentContext(
   componentName: string,
-  featureName: string = 'vue-migration'
+  featureName?: string
 ): Promise<FileContext> {
-  // Common patterns for component paths
-  const reactPatterns = [
-    `client/src/admin/components/${componentName}.tsx`,
-    `client/src/admin/components/${componentName}.ts`,
-    `client/src/components/${componentName}.tsx`,
-    `client/src/components/${componentName}.ts`,
-    `client/src/${componentName}.tsx`,
-    `client/src/${componentName}.ts`,
-  ];
-  
+  await resolveFeatureName(featureName);
+  // Common patterns for Vue component paths
   const vuePatterns = [
-    `client/src/components/${componentName}.vue`,
-    `client/src/components/${componentName}.ts`,
-    `client/src/${componentName}.vue`,
+    `${FRONTEND_ROOT}/src/components/${componentName}.vue`,
+    `${FRONTEND_ROOT}/src/components/${componentName}.ts`,
+    `${FRONTEND_ROOT}/src/${componentName}.vue`,
   ];
-  
-  // Try to find React component
-  let reactPath: string | undefined;
-  for (const pattern of reactPatterns) {
-    if (await checkFileExists(pattern)) {
-      reactPath = pattern;
-      break;
-    }
-  }
   
   // Try to find Vue component
   let vuePath: string | undefined;
@@ -312,12 +308,7 @@ export async function gatherComponentContext(
     }
   }
   
-  // If React found but Vue not, map React to Vue
-  if (reactPath && !vuePath) {
-    vuePath = mapReactToVuePath(reactPath.replace(/\.tsx?$/, '.vue'));
-  }
-  
-  return await gatherFileContext(reactPath, vuePath);
+  return await gatherFileContext(undefined, vuePath);
 }
 
 /**
@@ -325,7 +316,7 @@ export async function gatherComponentContext(
  */
 export async function findRelatedFiles(
   pattern: string,
-  baseDir: string = PROJECT_ROOT
+  _baseDir: string = PROJECT_ROOT
 ): Promise<string[]> {
   // Simple pattern matching - can be enhanced with glob later
   const results: string[] = [];

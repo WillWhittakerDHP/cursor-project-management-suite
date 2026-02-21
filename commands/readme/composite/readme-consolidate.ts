@@ -34,8 +34,8 @@ export async function consolidateReadmes(params: ReadmeConsolidateParams): Promi
     let targetContent = '';
     try {
       targetContent = await readFile(targetPath, 'utf-8');
-    } catch {
-      // Target doesn't exist, will create new
+    } catch (err) {
+      console.warn('Readme consolidate: target file not found, will create new', targetPath, err);
     }
     
     // Extract unique sections from sources
@@ -107,7 +107,7 @@ export async function consolidateReadmes(params: ReadmeConsolidateParams): Promi
     consolidatedLines.push('');
     
     // Add consolidated sections
-    for (const [section, content] of consolidatedSections.entries()) {
+    for (const [, content] of consolidatedSections.entries()) {
       consolidatedLines.push(content);
       consolidatedLines.push('');
     }
@@ -128,9 +128,9 @@ export async function consolidateReadmes(params: ReadmeConsolidateParams): Promi
     return `✅ Consolidated ${params.sources.length} README(s) into ${params.target}\n` +
            `   Sources: ${params.sources.join(', ')}\n` +
            (params.removeSources ? `   Removed source files` : '');
-  } catch (error) {
+  } catch (_error) {
     throw new Error(
-      `Failed to consolidate READMEs: ${error instanceof Error ? error.message : String(error)}`
+      `Failed to consolidate READMEs: ${_error instanceof Error ? _error.message : String(_error)}`
     );
   }
 }

@@ -11,8 +11,7 @@
 
 import { readdir } from 'fs/promises';
 import { join } from 'path';
-
-const PROJECT_ROOT = process.cwd();
+import { PROJECT_ROOT, FRONTEND_ROOT } from '../../utils/utils';
 
 interface ReuseCheckResult {
   similarPatterns: string[];
@@ -59,19 +58,19 @@ export async function checkReuse(description: string): Promise<string> {
   
   output.push('## Generic Component Locations\n');
   output.push('### Field Components\n');
-  output.push('- `client/src/admin/components/generic/fields/FieldRenderer.tsx` - Generic field renderer');
-  output.push('- `client/src/admin/components/generic/fields/BaseField.tsx` - Base field wrapper');
-  output.push('- `client/src/admin/components/generic/fields/PrimitiveFieldFactory.tsx` - Primitive field factory');
-  output.push('- `client/src/admin/components/generic/fields/SelectFieldFactory.tsx` - Select field factory\n');
+  output.push(`- \`${FRONTEND_ROOT}/src/admin/components/generic/fields/FieldRenderer.tsx\` - Generic field renderer`);
+  output.push(`- \`${FRONTEND_ROOT}/src/admin/components/generic/fields/BaseField.tsx\` - Base field wrapper`);
+  output.push(`- \`${FRONTEND_ROOT}/src/admin/components/generic/fields/PrimitiveFieldFactory.tsx\` - Primitive field factory`);
+  output.push(`- \`${FRONTEND_ROOT}/src/admin/components/generic/fields/SelectFieldFactory.tsx\` - Select field factory\n`);
   
   output.push('### Instance Components\n');
-  output.push('- `client/src/admin/components/generic/instances/GenericInstance.tsx` - Generic instance component');
-  output.push('- `client/src/admin/components/generic/instances/GenericCollection.tsx` - Generic collection component\n');
+  output.push(`- \`${FRONTEND_ROOT}/src/admin/components/generic/instances/GenericInstance.tsx\` - Generic instance component`);
+  output.push(`- \`${FRONTEND_ROOT}/src/admin/components/generic/instances/GenericCollection.tsx\` - Generic collection component\n`);
   
   output.push('### Transformers\n');
-  output.push('- `client/src/admin/dataTransformation/bridgeToAdminTransformer.ts` - Admin transformer pattern');
-  output.push('- `client/src/api/transformers/adminTransformer.ts` - Vue admin transformer');
-  output.push('- `client/src/api/transformers/globalTransformer.ts` - Global transformer pattern\n');
+  output.push(`- \`${FRONTEND_ROOT}/src/admin/dataTransformation/bridgeToAdminTransformer.ts\` - Admin transformer pattern`);
+  output.push(`- \`${FRONTEND_ROOT}/src/api/transformers/adminTransformer.ts\` - Vue admin transformer`);
+  output.push(`- \`${FRONTEND_ROOT}/src/api/transformers/globalTransformer.ts\` - Global transformer pattern\n`);
   
   if (results.suggestions.length > 0) {
     output.push('## Suggestions\n');
@@ -119,7 +118,7 @@ async function searchForPatterns(description: string): Promise<ReuseCheckResult>
   
   // Search generic components directory
   try {
-    const genericDir = join(PROJECT_ROOT, 'client/src/admin/components/generic');
+    const genericDir = join(PROJECT_ROOT, FRONTEND_ROOT, 'src/admin/components/generic');
     const entries = await readdir(genericDir, { withFileTypes: true, recursive: true });
     
     for (const entry of entries) {
@@ -135,22 +134,22 @@ async function searchForPatterns(description: string): Promise<ReuseCheckResult>
         }
       }
     }
-  } catch (error) {
-    const fullPath = join(PROJECT_ROOT, 'client/src/admin/components/generic');
+  } catch (_error) {
+    const fullPath = join(PROJECT_ROOT, FRONTEND_ROOT, 'src/admin/components/generic');
     console.warn(
       `WARNING: Could not read generic components directory\n` +
-      `Attempted: client/src/admin/components/generic\n` +
+      `Attempted: ${FRONTEND_ROOT}/src/admin/components/generic\n` +
       `Full Path: ${fullPath}\n` +
       `Suggestion: Directory might not exist yet, which is okay\n` +
-      `Error: ${error instanceof Error ? error.message : String(error)}\n`
+      `Error: ${_error instanceof Error ? _error.message : String(_error)}\n`
     );
   }
   
   // Search transformer directory
   try {
     const transformerDirs = [
-      join(PROJECT_ROOT, 'client/src/admin/dataTransformation'),
-      join(PROJECT_ROOT, 'client/src/api/transformers')
+      join(PROJECT_ROOT, FRONTEND_ROOT, 'src/admin/dataTransformation'),
+      join(PROJECT_ROOT, FRONTEND_ROOT, 'src/api/transformers')
     ];
     
     for (const dir of transformerDirs) {
@@ -171,21 +170,21 @@ async function searchForPatterns(description: string): Promise<ReuseCheckResult>
             }
           }
         }
-      } catch (error) {
+      } catch (_error) {
         const fullPath = join(PROJECT_ROOT, dir);
         console.warn(
           `WARNING: Could not read transformer directory\n` +
           `Attempted: ${dir}\n` +
           `Full Path: ${fullPath}\n` +
           `Suggestion: Directory might not exist yet, which is okay\n` +
-          `Error: ${error instanceof Error ? error.message : String(error)}\n`
+          `Error: ${_error instanceof Error ? _error.message : String(_error)}\n`
         );
       }
     }
-  } catch (error) {
+  } catch (_error) {
     console.warn(
       `WARNING: Error during transformer directory search\n` +
-      `Error: ${error instanceof Error ? error.message : String(error)}\n`
+      `Error: ${_error instanceof Error ? _error.message : String(_error)}\n`
     );
   }
   

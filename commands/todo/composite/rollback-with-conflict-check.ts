@@ -7,10 +7,10 @@
  * Description: Composite workflow: detect conflicts → rollback → log
  */
 
-import { rollbackToState } from "../../utils/todo-rollback';
-import { detectConflicts } from "../../utils/todo-rollback';
-import { findTodoById } from "../../utils/todo-io';
-import { getPreviousState } from "../../utils/todo-rollback';
+import { rollbackToState } from "../../utils/todo-rollback";
+import { detectConflicts } from "../../utils/todo-rollback";
+import { findTodoById } from "../../utils/todo-io";
+import { getPreviousState } from "../../utils/todo-rollback";
 
 export async function rollbackWithConflictCheck(
   feature: string,
@@ -64,8 +64,8 @@ export async function rollbackWithConflictCheck(
     }
     
     return lines.join('\n');
-  } catch (error) {
-    return `❌ Error in rollback with conflict check: ${error instanceof Error ? error.message : String(error)}`;
+  } catch (_error) {
+    return `❌ Error in rollback with conflict check: ${_error instanceof Error ? _error.message : String(_error)}`;
   }
 }
 

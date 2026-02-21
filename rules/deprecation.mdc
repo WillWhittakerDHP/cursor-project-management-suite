@@ -3,7 +3,7 @@ alwaysApply: true
 ---
 
 Vue-only development:
-- All new features and changes should be implemented in the Vue codebase (`client-vue/`)
+- All new features and changes should be implemented in the Vue frontend codebase (`frontend root directory`)
 - The React codebase has been removed (archived in `react-codebase-archive-2025-11-26`)
 - For historical reference, the React codebase can be restored from the archive tag if needed
 - All development work should focus exclusively on the Vue application

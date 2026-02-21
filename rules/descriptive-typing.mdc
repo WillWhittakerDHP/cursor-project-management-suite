@@ -2,4 +2,4 @@
 alwaysApply: true
 ---
 
-Title all generic typing and functions with descriptive names, not single letters: use GlobalEntityKey instead of K, GlobalPropertyKey instead of P. See: client/src/global/types/globalEntityTypes.ts
+Title all generic typing and functions with descriptive names, not single letters: use GlobalEntityKey instead of K, GlobalPropertyKey instead of P. See: frontend-root/src/global/types/globalEntityTypes.ts

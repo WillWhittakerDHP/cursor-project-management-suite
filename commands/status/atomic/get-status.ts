@@ -11,6 +11,7 @@ import { WorkflowId } from '../../utils/id-utils';
 import { getAllTodos } from '../../utils/todo-io';
 import { aggregateDetails } from '../../utils/todo-scoping';
 import { DocumentTier } from '../../utils/document-manager';
+import { resolveFeatureName } from '../../utils';
 
 export type StatusTier = DocumentTier | 'task';
 
@@ -43,7 +44,7 @@ export interface StatusInfo {
  * @returns Status information
  */
 export async function getStatus(params: GetStatusParams): Promise<StatusInfo | null> {
-  const featureName = params.featureName || 'vue-migration';
+  const featureName = await resolveFeatureName(params.featureName);
   const context = new WorkflowCommandContext(featureName);
   
   // Validate identifier
@@ -133,7 +134,8 @@ export async function getStatus(params: GetStatusParams): Promise<StatusInfo | n
       progress,
       children
     };
-  } catch {} {
+  } catch (err) {
+    console.warn('Get status: failed to get todo status', err);
     return null;
   }
 }

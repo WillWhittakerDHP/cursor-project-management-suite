@@ -7,7 +7,7 @@
  * Description: Rollback specific fields of a todo to a previous state
  */
 
-import { rollbackFields } from "../../utils/todo-rollback';
+import { rollbackFields } from "../../utils/todo-rollback";
 
 export async function rollbackFieldsCommand(
   feature: string,
@@ -49,8 +49,8 @@ export async function rollbackFieldsCommand(
     }
     
     return lines.join('\n');
-  } catch (error) {
-    return `❌ Error rolling back fields: ${error instanceof Error ? error.message : String(error)}`;
+  } catch (_error) {
+    return `❌ Error rolling back fields: ${_error instanceof Error ? _error.message : String(_error)}`;
   }
 }
 

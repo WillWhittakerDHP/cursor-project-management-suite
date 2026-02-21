@@ -7,7 +7,7 @@
  */
 
 import { WorkflowCommandContext } from '../../utils/command-context';
-import { WorkflowId } from '../../utils/id-utils';
+import { resolveFeatureName } from '../../utils';
 import { queryCitations } from '../../utils/todo-citations';
 import { CitationType, CitationPriority, CitationContext } from '../../utils/todo-types';
 import { StatusTier } from './get-status';
@@ -31,7 +31,7 @@ export interface QueryCitationsParams {
  * @returns Formatted citations output
  */
 export async function queryCitationsForTier(params: QueryCitationsParams): Promise<string> {
-  const featureName = params.featureName || 'vue-migration';
+  const featureName = await resolveFeatureName(params.featureName);
   const context = new WorkflowCommandContext(featureName);
   const output: string[] = [];
   
@@ -153,9 +153,9 @@ export async function queryCitationsForTier(params: QueryCitationsParams): Promi
     }
     
     return output.join('\n');
-  } catch (error) {
+  } catch (_error) {
     output.push(`**ERROR: Failed to query citations**\n`);
-    output.push(`**Error:** ${error instanceof Error ? error.message : String(error)}\n`);
+    output.push(`**Error:** ${_error instanceof Error ? _error.message : String(_error)}\n`);
     return output.join('\n');
   }
 }

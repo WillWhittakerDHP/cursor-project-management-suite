@@ -1,12 +1,13 @@
 /**
  * Command: /create-retroactive-todos [feature] [phase] [session?]
- * 
+ *
  * Create retroactive todos from planning documents for phases/sessions
  * that were created manually without going through planning commands.
- * 
+ *
  * Usage:
- *   /create-retroactive-todos vue-migration 3
- *   /create-retroactive-todos vue-migration 3 3.1
+ *   /create-retroactive-todos <feature> <phase> [session?]
+ *   e.g. /create-retroactive-todos my-feature 3
+ *   e.g. /create-retroactive-todos my-feature 3 3.1
  */
 
 import { createRetroactiveTodos, RetroactiveTodoParams } from './create-retroactive-todos';
@@ -55,4 +56,3 @@ export async function createRetroactiveTodosCommand(
 
   return output.join('\n');
 }
-

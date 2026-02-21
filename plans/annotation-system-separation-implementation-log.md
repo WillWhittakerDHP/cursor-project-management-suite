@@ -6,11 +6,11 @@ Original plan: Annotation System Separation (created via mcp_create_plan)
 ## Implementation Progress
 
 ### Completed Tasks
-- [x] Create USER_TYPES constant and UserType type in `client-vue/src/constants/userTypes.ts`
-- [x] Create ANNOTATION_KEYS constant and GlobalAnnotationKey type in `client-vue/src/constants/annotations.ts`
-- [x] Create Annotation types in `client-vue/src/types/annotations.ts`
-- [x] Create AnnotationTransformer in `client-vue/src/utils/transformers/annotationTransformers.ts`
-- [x] Create annotation utilities in `client-vue/src/utils/annotationUtils.ts` (migrated from descriptionValidation.ts)
+- [x] Create USER_TYPES constant and UserType type in `frontend-root/src/constants/userTypes.ts`
+- [x] Create ANNOTATION_KEYS constant and GlobalAnnotationKey type in `frontend-root/src/constants/annotations.ts`
+- [x] Create Annotation types in `frontend-root/src/types/annotations.ts`
+- [x] Create AnnotationTransformer in `frontend-root/src/utils/transformers/annotationTransformers.ts`
+- [x] Create annotation utilities in `frontend-root/src/utils/annotationUtils.ts` (migrated from descriptionValidation.ts)
 - [x] Update `types/entities.ts` to use AnnotationWithMetadata instead of DescriptionWithMetadata
 - [x] Update `fetchToGlobalTransformer.ts` to use AnnotationTransformer
 

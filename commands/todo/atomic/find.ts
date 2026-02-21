@@ -7,8 +7,8 @@
  * Description: Find a todo by ID and return formatted output
  */
 
-import { findTodoById } from "../../utils/todo-io';
-import { Todo } from "../../utils/todo-types';
+import { findTodoById } from "../../utils/todo-io";
+import { Todo } from "../../utils/todo-types";
 
 export async function findTodo(feature: string, todoId: string): Promise<string> {
   try {
@@ -19,8 +19,8 @@ export async function findTodo(feature: string, todoId: string): Promise<string>
     }
     
     return formatTodo(todo);
-  } catch (error) {
-    return `❌ Error finding todo: ${error instanceof Error ? error.message : String(error)}`;
+  } catch (_error) {
+    return `❌ Error finding todo: ${_error instanceof Error ? _error.message : String(_error)}`;
   }
 }
 

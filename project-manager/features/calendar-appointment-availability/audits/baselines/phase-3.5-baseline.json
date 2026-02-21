@@ -1,0 +1,13 @@
+{
+  "tier": "phase",
+  "identifier": "3.5",
+  "featureName": "calendar-appointment-availability",
+  "timestamp": "2026-02-21T00:46:30.524Z",
+  "scores": {
+    "comments": 75,
+    "security": 0,
+    "planning": 90,
+    "docs": 75,
+    "vue-architecture": 0
+  }
+}

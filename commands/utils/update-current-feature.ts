@@ -7,7 +7,7 @@
  * Use this after git operations (merge, checkout, branch switch) to keep config in sync.
  */
 
-import { writeFile, unlink } from 'fs/promises';
+import { readFile, writeFile, unlink } from 'fs/promises';
 import { join } from 'path';
 import { getCurrentBranch } from './utils';
 
@@ -27,14 +27,13 @@ export interface UpdateCurrentFeatureResult {
 export async function updateCurrentFeature(): Promise<UpdateCurrentFeatureResult> {
   const PROJECT_ROOT = process.cwd();
   const configPath = join(PROJECT_ROOT, '.project-manager/.current-feature');
-  const { readFile } = await import('fs/promises');
-  
+
   // Get previous feature from config (if exists)
   let previousFeature: string | undefined;
   try {
     previousFeature = (await readFile(configPath, 'utf-8')).trim();
-  } catch {
-    // Config file doesn't exist, that's okay
+  } catch (err) {
+    console.warn('Update current feature: config file not found or not writable', err);
   }
   
   // Get current git branch
@@ -52,8 +51,8 @@ export async function updateCurrentFeature(): Promise<UpdateCurrentFeatureResult
         currentBranch,
         message: `Removed .current-feature config (on ${currentBranch} branch). Config will auto-detect from git branch when starting next feature.`,
       };
-    } catch {} {
-      // File might not exist, that's okay
+    } catch (err) {
+      console.warn('Update current feature: failed to read or remove .current-feature', err);
       return {
         success: true,
         previousFeature,

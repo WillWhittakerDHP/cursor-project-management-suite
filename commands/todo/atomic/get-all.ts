@@ -7,8 +7,8 @@
  * Description: Get all todos for a feature with summary statistics
  */
 
-import { getAllTodos } from "../../utils/todo-io';
-import { Todo } from "../../utils/todo-types';
+import { getAllTodos } from "../../utils/todo-io";
+import { Todo } from "../../utils/todo-types";
 
 export async function getAllTodosCommand(feature: string): Promise<string> {
   try {
@@ -44,8 +44,8 @@ export async function getAllTodosCommand(feature: string): Promise<string> {
     }
     
     return lines.join('\n');
-  } catch (error) {
-    return `❌ Error getting todos: ${error instanceof Error ? error.message : String(error)}`;
+  } catch (_error) {
+    return `❌ Error getting todos: ${_error instanceof Error ? _error.message : String(_error)}`;
   }
 }
 

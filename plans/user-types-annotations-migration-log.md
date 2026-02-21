@@ -79,7 +79,7 @@
 ### Phase 4: Frontend Types and Constants
 
 #### Task 4.1: Create User Type Utilities
-- [ ] Create `client-vue/src/utils/userTypeUtils.ts`
+- [ ] Create `frontend-root/src/utils/userTypeUtils.ts`
   - [ ] `getUserTypeBlockShapeId()`: Fetch "User Type" BlockShape ID
   - [ ] `fetchUserTypeBlockInstances()`: Fetch user type BlockInstances
   - [ ] `getUserTypeById(id: string)`: Get BlockInstance by ID
@@ -87,7 +87,7 @@
   - [ ] `isUserTypeBlockInstance(blockInstance: BlockInstanceEntity)`: Check if BlockInstance is user type
 
 #### Task 4.2: Update User Type Constants
-- [x] Update `client-vue/src/constants/userTypes.ts`
+- [x] Update `frontend-root/src/constants/userTypes.ts`
   - [x] Remove hardcoded `USER_TYPES` array
   - [x] Change `UserType` type to `GlobalEntityId | null` (BlockInstance ID)
   - [x] Add `USER_TYPE_BLOCK_SHAPE_NAME = "User Type"` constant
@@ -95,7 +95,7 @@
   - [x] Add `getUserTypeOptions()` function
 
 #### Task 4.3: Update Annotation Types
-- [ ] Update `client-vue/src/types/annotations.ts`
+- [ ] Update `frontend-root/src/types/annotations.ts`
   - [ ] Update `Annotation.userType`: Change to `string | null` (BlockInstance ID)
   - [ ] Update `AnnotationMetadata.userType`: Same change
   - [ ] Add comment explaining BlockInstance ID usage
@@ -103,7 +103,7 @@
 ### Phase 5: Frontend Transformers and Utilities
 
 #### Task 5.1: Update Annotation Transformers
-- [x] Update `client-vue/src/utils/transformers/annotationTransformers.ts`
+- [x] Update `frontend-root/src/utils/transformers/annotationTransformers.ts`
   - [x] Update `transformApiAnnotation()`: Accept BlockInstance ID
   - [x] Update `transformAnnotationsWithMetadata()`: Use BlockInstance ID
   - [x] Remove `USER_TYPES.includes()` validation
@@ -112,26 +112,26 @@
   - [x] Update `getThroughAttributes()`: Use new field names
 
 #### Task 5.2: Update Annotation Utilities
-- [x] Update `client-vue/src/utils/annotationUtils.ts`
+- [x] Update `frontend-root/src/utils/annotationUtils.ts`
   - [x] Remove `USER_TYPES` import
   - [x] Update `hasDuplicateUserType()`: Compare BlockInstance IDs (no change needed - already compares IDs)
   - [x] Update `validateAnnotationMetadata()`: Validate BlockInstance ID is string or null
   - [x] Remove `USER_TYPE_OPTIONS` constant (replaced by function in userTypes.ts)
 
 #### Task 5.3: Update Entity Transformers
-- [ ] Update `client-vue/src/utils/transformers/fetchToGlobalTransformer.ts`
+- [ ] Update `frontend-root/src/utils/transformers/fetchToGlobalTransformer.ts`
   - [ ] Update annotation transformation to handle `user_type_block_instance_id`
   - [ ] Include `userTypeBlockInstance` association in queries
 
 #### Task 5.4: Update Scheduler Transformer
-- [ ] Update `client-vue/src/utils/transformers/globalToSchedulerTransformer.ts`
+- [ ] Update `frontend-root/src/utils/transformers/globalToSchedulerTransformer.ts`
   - [ ] Update to use BlockInstance ID for userType
   - [ ] Resolve BlockInstance names when needed
 
 ### Phase 6: Frontend Components
 
 #### Task 6.1: Update DescriptionsField Component
-- [x] Update `client-vue/src/components/admin/generic/fields/DescriptionsField.vue`
+- [x] Update `frontend-root/src/components/admin/generic/fields/DescriptionsField.vue`
   - [x] Remove `USER_TYPES` import
   - [x] Import `getUserTypeOptions` from `@/constants/userTypes`
   - [x] Import `useGlobalComp` to get GlobalData
@@ -142,7 +142,7 @@
   - [x] Update mutation functions to use new field names
 
 #### Task 6.2: Update Entity Types
-- [x] Update `client-vue/src/types/entities.ts`
+- [x] Update `frontend-root/src/types/entities.ts`
   - [x] Remove `description` property from `BlockInstanceEntity`
   - [x] Update `descriptions` → `annotations` property name
 

@@ -9,13 +9,14 @@
  * management utilities. Use todo commands from `.cursor/commands/todo/` for integration.
  * Todo status should be updated based on phase progress using `saveTodoCommand()`.
  * 
- * @param featureName Feature name (e.g., "vue-migration")
+ * @param featureName Feature name (e.g. from .current-feature or git branch)
  */
 
 import { findTodoById, saveTodo } from '../../../utils/todo-io';
-import { getAllTodos } from '../../../utils/todo-io';
 import { aggregateDetails } from '../../../utils/todo-scoping';
 import { WorkflowCommandContext } from '../../../utils/command-context';
+import { writeFile } from 'fs/promises';
+import { join } from 'path';
 
 export async function featureCheckpoint(featureName: string): Promise<string> {
   const context = new WorkflowCommandContext(featureName);
@@ -62,9 +63,9 @@ export async function featureCheckpoint(featureName: string): Promise<string> {
       output.push(`**Suggestion:** Use \`/plan-feature ${featureName} [description]\` to create feature todo\n`);
       output.push('\n---\n');
     }
-  } catch (error) {
+  } catch (_error) {
     output.push(`**WARNING: Could not update feature todo**\n`);
-    output.push(`**Error:** ${error instanceof Error ? error.message : String(error)}\n`);
+    output.push(`**Error:** ${_error instanceof Error ? _error.message : String(_error)}\n`);
     output.push('\n---\n');
   }
   
@@ -74,8 +75,8 @@ export async function featureCheckpoint(featureName: string): Promise<string> {
     let logContent = '';
     try {
       logContent = await context.readFeatureLog();
-    } catch {
-      // Log file doesn't exist, we'll create it
+    } catch (err) {
+      console.warn('Feature checkpoint: feature log not found, creating default content', featureName, err);
       logContent = `# Feature ${featureName} Log\n\n**Purpose:** Track feature-level progress, decisions, and blockers\n\n**Tier:** Feature (Tier 0 - Highest Level)\n\n---\n\n## Feature Status\n\n**Feature:** ${featureName}\n**Status:** In Progress\n**Started:** ${checkpointDate}\n\n---\n\n`;
     }
     
@@ -93,8 +94,6 @@ export async function featureCheckpoint(featureName: string): Promise<string> {
     // Write log using DocumentManager
     // Note: DocumentManager doesn't have writeLog, so we'll use appendLog with replacement logic
     // For now, we'll write directly using the path resolver
-    const { writeFile } = await import('fs/promises');
-    const { join } = await import('path');
     const PROJECT_ROOT = process.cwd();
     const logPath = context.paths.getFeatureLogPath();
     await writeFile(join(PROJECT_ROOT, logPath), logContent, 'utf-8');
@@ -102,9 +101,9 @@ export async function featureCheckpoint(featureName: string): Promise<string> {
     
     output.push(`**Log Updated:** ${context.paths.getFeatureLogPath()}\n`);
     
-  } catch (error) {
+  } catch (_error) {
     output.push(`**WARNING: Failed to update log file**\n`);
-    output.push(`**Error:** ${error instanceof Error ? error.message : String(error)}\n`);
+    output.push(`**Error:** ${_error instanceof Error ? _error.message : String(_error)}\n`);
   }
   
   return output.join('\n');

@@ -7,8 +7,8 @@
  * Description: Assign scope to a todo (inherit from parent or use default)
  */
 
-import { assignScope } from "../../utils/todo-scoping';
-import { Todo } from "../../utils/todo-types';
+import { assignScope } from "../../utils/todo-scoping";
+import { Todo } from "../../utils/todo-types";
 
 export async function assignScopeCommand(
   feature: string,
@@ -35,8 +35,8 @@ export async function assignScopeCommand(
     lines.push(`- **Forbidden Details:** ${scope.forbiddenDetails.join(', ') || 'None'}`);
     
     return lines.join('\n');
-  } catch (error) {
-    return `❌ Error assigning scope: ${error instanceof Error ? error.message : String(error)}`;
+  } catch (_error) {
+    return `❌ Error assigning scope: ${_error instanceof Error ? _error.message : String(_error)}`;
   }
 }
 

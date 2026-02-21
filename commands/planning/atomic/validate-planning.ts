@@ -11,7 +11,7 @@ import {
   getBlockingIssues,
   getTierValidationRules,
 } from '../../utils/planning-validation';
-import { PlanningOutput, PlanningTier, DecisionGate } from '../../utils/planning-types';
+import { PlanningOutput, PlanningTier, PlanningValidation, TierValidationRules, DecisionGate } from '../../utils/planning-types';
 
 /**
  * Validate planning output
@@ -37,7 +37,7 @@ export async function validatePlanningCommand(
  * Format validation result as string output
  */
 function formatValidationResult(
-  validation: import('../../../project-manager/utils/planning-types').PlanningValidation,
+  validation: PlanningValidation,
   tier: PlanningTier
 ): string {
   const output: string[] = [];
@@ -126,7 +126,7 @@ function formatValidationResult(
  * @param tier Planning tier
  * @returns Tier validation rules
  */
-export function getTierValidationRulesCommand(tier: PlanningTier): import('../../../project-manager/utils/planning-types').TierValidationRules {
+export function getTierValidationRulesCommand(tier: PlanningTier): TierValidationRules {
   return getTierValidationRules(tier);
 }
 

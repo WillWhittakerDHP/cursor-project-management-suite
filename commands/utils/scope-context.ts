@@ -15,7 +15,7 @@ import { determineTier, TierAnalysis } from './tier-discriminator';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { PROJECT_ROOT } from './utils';
-import { extractFilePaths } from '../../../../utils/context-gatherer';
+import { extractFilePaths } from './context-gatherer';
 
 export interface ScopeContextParams {
   description?: string;
@@ -46,7 +46,7 @@ async function readConversationContext(params: ScopeContextParams): Promise<stri
       if (stdinContent) {
         return stdinContent;
       }
-    } catch (error) {
+    } catch (_error) {
       // Silently fall through to next source
     }
   }
@@ -61,7 +61,7 @@ async function readConversationContext(params: ScopeContextParams): Promise<stri
     try {
       const filePath = join(PROJECT_ROOT, params.contextFile);
       return await readFile(filePath, 'utf-8');
-    } catch {} {
+    } catch (_err) {
       throw new Error(`Failed to read context file: ${params.contextFile}`);
     }
   }

@@ -7,10 +7,11 @@
  */
 
 import { WorkflowCommandContext } from './command-context';
+import { resolveFeatureName } from './feature-context';
 
-export function generatePrompt(sessionId: string, description: string): string {
-  // Deterministic: prompt always points at the canonical workflow handoff path for the feature.
-  const context = new WorkflowCommandContext('vue-migration');
-  return `@${context.paths.getFeatureHandoffPath()} Continue Vue migration - start Session ${sessionId} (${description})`;
+export async function generatePrompt(sessionId: string, description: string, featureName?: string): Promise<string> {
+  const resolved = await resolveFeatureName(featureName);
+  const context = new WorkflowCommandContext(resolved);
+  return `@${context.paths.getFeatureHandoffPath()} Continue - start Session ${sessionId} (${description})`;
 }
 

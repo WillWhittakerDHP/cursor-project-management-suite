@@ -5,8 +5,8 @@
  * detection and resolution.
  */
 
-import { Todo, PreviousState, Rollback, RollbackHistory, RollbackConflict, RollbackType } from './todo-types';
-import { findTodoById, saveTodo, readChangeLog, readRollbackHistory, writeRollbackHistory, getChangeLogEntry } from './todo-io';
+import { Todo, PreviousState, Rollback, RollbackConflict } from './todo-types';
+import { findTodoById, saveTodo, readChangeLog, readRollbackHistory, writeRollbackHistory } from './todo-io';
 import { addChangeLogEntry } from './todo-io';
 
 function generateStateId(): string {
@@ -223,11 +223,7 @@ export async function rollbackFields(
   // If no conflicts, apply selective rollback
   if (conflicts.length === 0) {
     const rolledBackTodo = { ...todo };
-    for (const field of fields) {
-      if (field in previousState.state) {
-        (rolledBackTodo as Record<string, unknown>)[field] = (previousState.state as Record<string, unknown>)[field];
-      }
-    }
+    copyFieldsByKey(rolledBackTodo, previousState.state, fields);
     await saveTodo(feature, rolledBackTodo);
     
     // Log change
@@ -430,12 +426,18 @@ export async function cancelRollback(feature: string, rollbackId: string): Promi
 // HELPER FUNCTIONS
 // ===================================================================
 
+/** Copy listed keys from source onto target (for selective rollback). Todo has [key: string]: unknown. */
+function copyFieldsByKey(target: Todo, source: Todo | Record<string, unknown>, keys: string[]): void {
+  const s = source as Record<string, unknown>;
+  for (const key of keys) {
+    if (key in s) target[key] = s[key];
+  }
+}
+
 function extractFields(todo: Todo, fields: string[]): Partial<Todo> {
   const extracted: Partial<Todo> = {};
   for (const field of fields) {
-    if (field in todo) {
-      (extracted as Record<string, unknown>)[field] = (todo as Record<string, unknown>)[field];
-    }
+    if (field in todo) extracted[field] = todo[field];
   }
   return extracted;
 }

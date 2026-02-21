@@ -45,8 +45,8 @@ export async function verify(target: string = 'all', includeTests: boolean = fal
     try {
       const testResult = await testRun(target);
       results.test = testResult;
-    } catch {} {
-      // Fallback to old test command if new structure not available
+    } catch (err) {
+      console.warn('Verify: testRun failed, using fallback test command', err);
       const testResult = await test(target);
       results.test = testResult;
     }

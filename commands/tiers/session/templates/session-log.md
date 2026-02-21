@@ -24,10 +24,10 @@
 **Goal:** [What was accomplished]
 
 **Files Created:**
-- `client-vue/src/[path]` - [Description]
+- `frontend-root/src/[path]` - [Description]
 
 **Files Modified:**
-- `client-vue/src/[path]` - [Description]
+- `frontend-root/src/[path]` - [Description]
 
 **Vue.js Concepts Learned:**
 - **[Concept]**: [Explanation]
@@ -130,10 +130,10 @@
 **Goal:** [What we accomplished]
 
 **Files Created:**
-- `client-vue/src/[path]` - [Description]
+- `frontend-root/src/[path]` - [Description]
 
 **Files Modified:**
-- `client-vue/src/[path]` - [Description]
+- `frontend-root/src/[path]` - [Description]
 
 **Vue.js Concepts Learned:**
 - **[Concept]**: [Explanation]
@@ -170,10 +170,10 @@
 **Goal:** [Goal]
 
 **Source Files:**
-- `client/src/[path]`
+- `frontend-root/src/[path]`
 
 **Target Files:**
-- `client-vue/src/[path]` ✅
+- `frontend-root/src/[path]` ✅
 
 **Key Features:**
 - **[Feature]**: [Description]
@@ -199,8 +199,8 @@
 **Goal:** [What we're accomplishing]
 
 **Files:**
-- Source: `client/src/[path]`
-- Target: `client-vue/src/[path]`
+- Source: `frontend-root/src/[path]`
+- Target: `frontend-root/src/[path]`
 
 **Vue.js Concepts:**
 - [Concept 1]: [Explanation]

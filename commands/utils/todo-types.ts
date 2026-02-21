@@ -32,6 +32,9 @@ export interface Todo {
   // Advanced features
   citations?: Citation[];
   scope?: Scope;
+
+  /** Allow dynamic key access for rollback/copy helpers; all declared properties are assignable to unknown. */
+  [key: string]: unknown;
 }
 
 export interface TodoFile {

@@ -348,8 +348,8 @@ export async function loadBaselineScore(
   try {
     const content = await readFile(filePath, 'utf-8');
     return JSON.parse(content) as BaselineScores;
-  } catch (error) {
-    console.warn(`Failed to load baseline score from ${filePath}: ${error instanceof Error ? error.message : String(error)}`);
+  } catch (_error) {
+    console.warn(`Failed to load baseline score from ${filePath}: ${_error instanceof Error ? _error.message : String(_error)}`);
     return null;
   }
 }

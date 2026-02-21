@@ -14,6 +14,8 @@ import { findTodoById } from '../../../utils/todo-io';
 import { aggregateDetails, generateSummary } from '../../../utils/todo-scoping';
 import { WorkflowCommandContext } from '../../../utils/command-context';
 import { MarkdownUtils } from '../../../utils/markdown-utils';
+import { writeFile } from 'fs/promises';
+import { join } from 'path';
 
 export async function featureSummarize(featureName: string): Promise<string> {
   const context = new WorkflowCommandContext(featureName);
@@ -33,7 +35,10 @@ export async function featureSummarize(featureName: string): Promise<string> {
     if (featureTodo) {
       aggregatedData = await aggregateDetails(featureName, featureTodo);
       summaryData = await generateSummary(featureName, featureTodo);
-      
+      if (!summaryData) {
+        output.push(`# Feature ${featureName} Summary\n`);
+        output.push(`**Note:** Summary data unavailable.\n`);
+      } else {
       output.push(`# Feature ${featureName} Summary\n`);
       output.push(`**Date:** ${new Date().toISOString().split('T')[0]}\n`);
       output.push(`**Status:** ${summaryData.status}\n`);
@@ -84,10 +89,11 @@ export async function featureSummarize(featureName: string): Promise<string> {
           output.push('\n---\n');
         }
       }
+      }
     }
-  } catch (error) {
+  } catch (_error) {
     output.push(`⚠️ **Warning: Could not load todos for aggregation**\n`);
-    output.push(`**Error:** ${error instanceof Error ? error.message : String(error)}\n`);
+    output.push(`**Error:** ${_error instanceof Error ? _error.message : String(_error)}\n`);
     output.push(`**Falling back to log parsing...**\n`);
     output.push('\n---\n');
   }
@@ -97,18 +103,17 @@ export async function featureSummarize(featureName: string): Promise<string> {
     let logContent = '';
     try {
       logContent = await context.readFeatureLog();
-    } catch {
+    } catch (err) {
+      console.warn('Feature summarize: feature log not found', featureLogPath, err);
       if (!aggregatedData) {
         output.push(`**ERROR:** Feature log not found at ${featureLogPath}\n`);
         return output.join('\n');
       }
-      // If we have aggregated data, log file is optional
     }
     
     // Extract completed phases from log (if not already extracted from todos)
     if (!aggregatedData && logContent) {
       const completedPhasesSection = MarkdownUtils.extractSection(logContent, 'Completed Phases');
-      const inProgressPhasesSection = MarkdownUtils.extractSection(logContent, 'In Progress Phases');
       const keyDecisionsSection = MarkdownUtils.extractSection(logContent, 'Key Decisions');
       
       // Generate summary from log
@@ -145,12 +150,10 @@ export async function featureSummarize(featureName: string): Promise<string> {
       }
       
       // Write log using DocumentManager
-      const { writeFile } = await import('fs/promises');
-      const { join } = await import('path');
       const PROJECT_ROOT = process.cwd();
       await writeFile(join(PROJECT_ROOT, featureLogPath), logContent, 'utf-8');
       context.cache.invalidate(featureLogPath);
-      
+
       output.push(`**Log Updated:** ${featureLogPath}\n`);
       output.push('\n---\n\n');
       output.push(summaryContent);
@@ -160,11 +163,11 @@ export async function featureSummarize(featureName: string): Promise<string> {
         let logContent = '';
         try {
           logContent = await context.readFeatureLog();
-        } catch {
-          // Log file doesn't exist, that's okay
+        } catch (err) {
+          console.warn('Feature summarize: feature log not found (optional update)', err);
         }
         
-        if (logContent) {
+        if (logContent && summaryData) {
           const summaryContent = `## Feature Completion Summary\n\n**Feature:** ${featureName}\n**Completed:** ${new Date().toISOString().split('T')[0]}\n\n**Status:** ${summaryData.status}\n**Progress:** ${summaryData.progress.completed}/${summaryData.progress.total} phases completed\n\n`;
           
           const summaryIndex = logContent.indexOf('## Feature Completion Summary');
@@ -185,14 +188,12 @@ export async function featureSummarize(featureName: string): Promise<string> {
           }
           
           // Write log using DocumentManager
-          const { writeFile } = await import('fs/promises');
-          const { join } = await import('path');
           const PROJECT_ROOT = process.cwd();
           await writeFile(join(PROJECT_ROOT, featureLogPath), logContent, 'utf-8');
           context.cache.invalidate(featureLogPath);
           output.push(`**Log Updated:** ${featureLogPath}\n`);
         }
-      } catch (error) {
+      } catch (_error) {
         // Log update is optional
       }
     }
@@ -209,25 +210,23 @@ export async function featureSummarize(featureName: string): Promise<string> {
           const summarySection = `## Feature Summary\n\n**Status:** ${summaryData.status}\n**Progress:** ${summaryData.progress.completed}/${summaryData.progress.total} phases completed\n\n**Objectives:**\n${summaryData.objectives.map(obj => `- ${obj}`).join('\n')}\n\n---\n\n`;
           handoffContent = handoffContent.slice(0, notesIndex) + summarySection + handoffContent.slice(notesIndex);
           // Write handoff using DocumentManager
-          const { writeFile } = await import('fs/promises');
-          const { join } = await import('path');
           const PROJECT_ROOT = process.cwd();
           await writeFile(join(PROJECT_ROOT, featureHandoffPath), handoffContent, 'utf-8');
           context.cache.invalidate(featureHandoffPath);
           output.push(`**Handoff Updated:** ${featureHandoffPath}\n`);
         }
       }
-    } catch {
-      // Handoff update is optional
+    } catch (err) {
+      console.warn('Feature summarize: handoff update failed (optional)', err);
     }
     
     if (!summaryData) {
       output.push(`**Status:** Summary generated successfully\n`);
     }
     
-  } catch (error) {
+  } catch (_error) {
     output.push(`**ERROR:** Failed to generate summary\n`);
-    output.push(`**Error:** ${error instanceof Error ? error.message : String(error)}\n`);
+    output.push(`**Error:** ${_error instanceof Error ? _error.message : String(_error)}\n`);
   }
   
   return output.join('\n');

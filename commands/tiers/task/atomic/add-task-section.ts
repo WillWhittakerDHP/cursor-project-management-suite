@@ -8,6 +8,7 @@
 
 import { readProjectFile, writeProjectFile } from '../../../utils/utils';
 import { WorkflowCommandContext } from '../../../utils/command-context';
+import { resolveFeatureName } from '../../../utils';
 
 export interface TaskSection {
   id: string;
@@ -22,8 +23,9 @@ export interface TaskSection {
   completionSummary: string[];
 }
 
-export async function addTaskSection(section: TaskSection, featureName: string = 'vue-migration'): Promise<void> {
-  const context = new WorkflowCommandContext(featureName);
+export async function addTaskSection(section: TaskSection, featureName?: string): Promise<void> {
+  const resolved = await resolveFeatureName(featureName);
+  const context = new WorkflowCommandContext(resolved);
   // Extract session ID from task ID (X.Y.Z -> X.Y)
   const sessionId = section.id.split('.').slice(0, 2).join('.');
   const handoffPath = context.paths.getSessionHandoffPath(sessionId);

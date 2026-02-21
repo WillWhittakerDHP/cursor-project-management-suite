@@ -33,7 +33,8 @@ export async function testValidate(filePath: string): Promise<TestValidationResu
     const fullPath = join(PROJECT_ROOT, filePath);
     try {
       await access(fullPath);
-    } catch {
+    } catch (err) {
+      console.warn('Test validate: test file not found', filePath, err);
       return {
         success: false,
         isValid: false,
@@ -105,11 +106,11 @@ export async function testValidate(filePath: string): Promise<TestValidationResu
       issues,
       warnings,
     };
-  } catch (error) {
+  } catch (_error) {
     return {
       success: false,
       isValid: false,
-      issues: [`Error validating test file: ${error instanceof Error ? error.message : String(error)}`],
+      issues: [`Error validating test file: ${_error instanceof Error ? _error.message : String(_error)}`],
       warnings: [],
     };
   }

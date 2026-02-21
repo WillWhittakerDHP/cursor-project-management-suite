@@ -11,10 +11,11 @@ import { readFile, writeFile, readdir } from 'fs/promises';
 import { join, extname, relative } from 'path';
 import { existsSync } from 'fs';
 import { applyCompression } from '../utils/comment-compression';
+import { FRONTEND_ROOT } from '../../utils/utils';
 
 export interface CommentCleanupParams {
   dryRun?: boolean; // If true, preview changes without modifying files
-  paths?: string[]; // Optional: specific paths to clean (default: client/ and server/)
+  paths?: string[]; // Optional: specific paths to clean (default: frontend root and server/)
   compress?: boolean; // If true, compress verbose comment clusters to concise versions (default: true)
 }
 
@@ -50,7 +51,7 @@ export async function featureCommentCleanup(
   };
 
   // Default paths to scan
-  const scanPaths = paths || ['client', 'server'];
+  const scanPaths = paths || [FRONTEND_ROOT, 'server'];
   
   // File extensions to process
   const extensions = ['.ts', '.tsx', '.vue', '.js', '.jsx', '.md'];
@@ -109,8 +110,8 @@ export async function featureCommentCleanup(
           }
           summaryLines.push('');
         }
-      } catch (error) {
-        const errorMsg = `Error processing ${filePath}: ${error instanceof Error ? error.message : String(error)}`;
+      } catch (_error) {
+        const errorMsg = `Error processing ${filePath}: ${_error instanceof Error ? _error.message : String(_error)}`;
         result.errors?.push(errorMsg);
         summaryLines.push(`❌ ${errorMsg}\n`);
       }
@@ -130,10 +131,10 @@ export async function featureCommentCleanup(
     }
 
     return result;
-  } catch (error) {
+  } catch (_error) {
     result.success = false;
-    result.errors?.push(error instanceof Error ? error.message : String(error));
-    result.summary = `❌ **Error:** ${error instanceof Error ? error.message : String(error)}`;
+    result.errors?.push(_error instanceof Error ? _error.message : String(_error));
+    result.summary = `❌ **Error:** ${_error instanceof Error ? _error.message : String(_error)}`;
     return result;
   }
 }
@@ -170,8 +171,8 @@ async function collectFiles(
     }
     
     return files;
-  } catch {} {
-    // Skip directories we can't read
+  } catch (err) {
+    console.warn('Feature comment cleanup: directory not readable', dir, err);
     return files;
   }
 }

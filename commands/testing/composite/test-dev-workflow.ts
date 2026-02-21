@@ -12,7 +12,6 @@
 
 import { testValidate, TestValidationResult } from '../atomic/test-validate';
 import { testCheckImmutable, ImmutabilityCheckCommandResult } from '../atomic/test-check-immutable';
-import { testWatch } from '../atomic/test-watch';
 import { TEST_CONFIG } from '../utils/test-config';
 import { 
   runInitialTestExecution,
@@ -23,11 +22,9 @@ import {
 import { analyzeTestError, TestErrorAnalysis } from './test-error-analyzer';
 import { 
   requestTestFileFixPermission,
-  grantTestFileFixPermission,
-  checkTestFileFixPermission 
+  grantTestFileFixPermission 
 } from './test-file-fix-permission';
 import { executeTestFileFix } from './test-file-fix-workflow';
-import { WorkflowCommandContext } from '../../utils/command-context';
 
 export interface TestDevWorkflowOptions {
   filePath?: string;
@@ -64,8 +61,7 @@ export async function testDevWorkflow(
   
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const results: any = {};
-  const context = new WorkflowCommandContext('vue-migration');
-  
+
   // Step 1: Validate test file structure (if file path provided)
   if (filePath && !skipValidation) {
     const validationResult = await testValidate(filePath);

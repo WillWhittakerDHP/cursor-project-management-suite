@@ -2,4 +2,4 @@
 alwaysApply: true
 ---
 
-Maintain generic patterns with runtime configurations over specific type definitions. Prefer EntityBase<GlobalEntityKey> with runtime ENTITY_CONFIGS over BlockTypeEntity, PartTypeEntity, etc. See: client/src/global/types/globalEntityTypes.ts, server/src/config/entityRegistry.ts
+Maintain generic patterns with runtime configurations over specific type definitions. Prefer EntityBase<GlobalEntityKey> with runtime ENTITY_CONFIGS over BlockTypeEntity, PartTypeEntity, etc. See: frontend-root/src/global/types/globalEntityTypes.ts, server/src/config/entityRegistry.ts

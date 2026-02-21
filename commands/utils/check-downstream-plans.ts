@@ -16,6 +16,7 @@ import { access } from 'fs/promises';
 import { join } from 'path';
 import { PROJECT_ROOT } from './utils';
 import { WorkflowId } from './id-utils';
+import { resolveFeatureName } from './feature-context';
 
 export interface DownstreamMatch {
   tier: 'feature' | 'phase' | 'session';
@@ -195,14 +196,16 @@ function getFutureSessionIds(currentSessionId?: string): string[] {
   
   const futureIds: string[] = [];
   // Generate potential future session IDs (up to 10 sessions ahead)
-  for (let session = parsed.session + 1; session <= parsed.session + 10; session++) {
-    futureIds.push(`${parsed.phase}.${session}`);
+  const sessionNum = Number(parsed.session);
+  const phaseNum = Number(parsed.phase);
+  for (let session = sessionNum + 1; session <= sessionNum + 10; session++) {
+    futureIds.push(`${parsed.feature}.${parsed.phase}.${session}`);
   }
   
   // Also check next phase sessions
-  for (let phase = parsed.phase + 1; phase <= parsed.phase + 3; phase++) {
+  for (let phase = phaseNum + 1; phase <= phaseNum + 3; phase++) {
     for (let session = 1; session <= 5; session++) {
-      futureIds.push(`${phase}.${session}`);
+      futureIds.push(`${parsed.feature}.${phase}.${session}`);
     }
   }
   
@@ -252,8 +255,9 @@ function extractTitle(content: string): string {
  */
 export async function checkDownstreamPlans(
   params: CheckDownstreamPlansParams,
-  featureName: string = 'vue-migration'
+  featureName?: string
 ): Promise<CheckDownstreamPlansResult> {
+  const resolved = await resolveFeatureName(featureName);
   const keywords = extractKeywords(params.description);
   if (keywords.length === 0) {
     return {
@@ -263,7 +267,7 @@ export async function checkDownstreamPlans(
     };
   }
   
-  const context = new WorkflowCommandContext(featureName);
+  const context = new WorkflowCommandContext(resolved);
   const allMatches: DownstreamMatch[] = [];
   
   // Search future session guides
@@ -276,8 +280,8 @@ export async function checkDownstreamPlans(
       const title = extractTitle(content);
       const matches = searchGuideContent(content, keywords, 'session', sessionId, title);
       allMatches.push(...matches);
-    } catch {
-      // Guide doesn't exist, skip
+    } catch (err) {
+      console.warn('Check downstream plans: session guide not found', sessionId, err);
     }
   }
   
@@ -291,8 +295,8 @@ export async function checkDownstreamPlans(
       const title = extractTitle(content);
       const matches = searchGuideContent(content, keywords, 'phase', phaseId, title);
       allMatches.push(...matches);
-    } catch {
-      // Guide doesn't exist, skip
+    } catch (err) {
+      console.warn('Check downstream plans: phase guide not found', phaseId, err);
     }
   }
   
@@ -308,16 +312,16 @@ export async function checkDownstreamPlans(
       if (score > 20) {
         allMatches.push({
           tier: 'feature',
-          id: featureName,
-          title: `Feature: ${featureName}`,
+          id: resolved,
+          title: `Feature: ${resolved}`,
           section: 'Future Phases',
           excerpt: excerpt || futurePhasesSection.substring(0, 200),
           confidence,
         });
       }
     }
-  } catch {
-    // Feature guide doesn't exist, skip
+  } catch (err) {
+    console.warn('Check downstream plans: feature guide not found', featureName, err);
   }
   
   // Sort matches by confidence and score

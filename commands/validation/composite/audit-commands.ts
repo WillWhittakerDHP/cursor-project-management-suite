@@ -39,8 +39,8 @@ export async function auditCommands(): Promise<string> {
     const patternResult = await auditPatterns();
     results.push(patternResult);
     output.push(`✅ Completed: ${patternResult.status} (${patternResult.issues.length} issues)\n\n`);
-  } catch (error) {
-    output.push(`❌ Failed: ${error instanceof Error ? error.message : String(error)}\n\n`);
+  } catch (_error) {
+    output.push(`❌ Failed: ${_error instanceof Error ? _error.message : String(_error)}\n\n`);
   }
   
   try {
@@ -48,8 +48,8 @@ export async function auditCommands(): Promise<string> {
     const dependencyResult = await auditDependencies();
     results.push(dependencyResult);
     output.push(`✅ Completed: ${dependencyResult.status} (${dependencyResult.issues.length} issues)\n\n`);
-  } catch (error) {
-    output.push(`❌ Failed: ${error instanceof Error ? error.message : String(error)}\n\n`);
+  } catch (_error) {
+    output.push(`❌ Failed: ${_error instanceof Error ? _error.message : String(_error)}\n\n`);
   }
   
   try {
@@ -57,8 +57,8 @@ export async function auditCommands(): Promise<string> {
     const exportResult = await auditExports();
     results.push(exportResult);
     output.push(`✅ Completed: ${exportResult.status} (${exportResult.issues.length} issues)\n\n`);
-  } catch (error) {
-    output.push(`❌ Failed: ${error instanceof Error ? error.message : String(error)}\n\n`);
+  } catch (_error) {
+    output.push(`❌ Failed: ${_error instanceof Error ? _error.message : String(_error)}\n\n`);
   }
   
   try {
@@ -66,8 +66,8 @@ export async function auditCommands(): Promise<string> {
     const signatureResult = await auditSignatures();
     results.push(signatureResult);
     output.push(`✅ Completed: ${signatureResult.status} (${signatureResult.issues.length} issues)\n\n`);
-  } catch (error) {
-    output.push(`❌ Failed: ${error instanceof Error ? error.message : String(error)}\n\n`);
+  } catch (_error) {
+    output.push(`❌ Failed: ${_error instanceof Error ? _error.message : String(_error)}\n\n`);
   }
   
   try {
@@ -75,8 +75,8 @@ export async function auditCommands(): Promise<string> {
     const docResult = await auditDocumentation();
     results.push(docResult);
     output.push(`✅ Completed: ${docResult.status} (${docResult.issues.length} issues)\n\n`);
-  } catch (error) {
-    output.push(`❌ Failed: ${error instanceof Error ? error.message : String(error)}\n\n`);
+  } catch (_error) {
+    output.push(`❌ Failed: ${_error instanceof Error ? _error.message : String(_error)}\n\n`);
   }
 
   try {
@@ -84,8 +84,8 @@ export async function auditCommands(): Promise<string> {
     const registryResult = await auditRegistry();
     results.push(registryResult);
     output.push(`✅ Completed: ${registryResult.status} (${registryResult.issues.length} issues)\n\n`);
-  } catch (error) {
-    output.push(`❌ Failed: ${error instanceof Error ? error.message : String(error)}\n\n`);
+  } catch (_error) {
+    output.push(`❌ Failed: ${_error instanceof Error ? _error.message : String(_error)}\n\n`);
   }
 
   try {
@@ -93,8 +93,8 @@ export async function auditCommands(): Promise<string> {
     const fallbackResult = await auditFallback();
     results.push(fallbackResult);
     output.push(`✅ Completed: ${fallbackResult.status} (${fallbackResult.issues.length} issues)\n\n`);
-  } catch (error) {
-    output.push(`❌ Failed: ${error instanceof Error ? error.message : String(error)}\n\n`);
+  } catch (_error) {
+    output.push(`❌ Failed: ${_error instanceof Error ? _error.message : String(_error)}\n\n`);
   }
   
   output.push('---\n\n');
@@ -108,8 +108,8 @@ export async function auditCommands(): Promise<string> {
     await writeProjectFile('.cursor/commands/validation/AUDIT_REPORT.md', reportMarkdown);
     output.push('## Report Saved\n\n');
     output.push('✅ Audit report saved to `.cursor/commands/validation/AUDIT_REPORT.md`\n\n');
-  } catch (error) {
-    output.push(`⚠️ Failed to save report: ${error instanceof Error ? error.message : String(error)}\n\n`);
+  } catch (_error) {
+    output.push(`⚠️ Failed to save report: ${_error instanceof Error ? _error.message : String(_error)}\n\n`);
   }
   
   output.push('---\n\n');

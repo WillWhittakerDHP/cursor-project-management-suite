@@ -7,6 +7,7 @@
  */
 
 import { WorkflowCommandContext } from '../../utils/command-context';
+import { resolveFeatureName } from '../../utils';
 import { WorkflowId } from '../../utils/id-utils';
 import { MarkdownUtils } from '../../utils/markdown-utils';
 import { DocumentTier } from '../../utils/document-manager';
@@ -32,7 +33,7 @@ export interface HandoffReviewResult {
  * @returns Formatted review output
  */
 export async function reviewHandoff(params: ReviewHandoffParams): Promise<string> {
-  const featureName = params.featureName || 'vue-migration';
+  const featureName = await resolveFeatureName(params.featureName);
   const context = new WorkflowCommandContext(featureName);
   const output: string[] = [];
   
@@ -45,7 +46,7 @@ export async function reviewHandoff(params: ReviewHandoffParams): Promise<string
   }
   
   if (params.tier === 'session' && params.identifier && !WorkflowId.isValidSessionId(params.identifier)) {
-    return `Error: Invalid session ID format. Expected X.Y (e.g., 2.1)\nAttempted: ${params.identifier}`;
+    return `Error: Invalid session ID format. Expected X.Y.Z (e.g., 4.1.3)\nAttempted: ${params.identifier}`;
   }
   
   try {
@@ -59,9 +60,9 @@ export async function reviewHandoff(params: ReviewHandoffParams): Promise<string
       } else {
         handoffContent = await context.readSessionHandoff(params.identifier!);
       }
-    } catch (error) {
+    } catch (_error) {
       output.push('**ERROR: Handoff not found**\n');
-      output.push(`**Error:** ${error instanceof Error ? error.message : String(error)}\n`);
+      output.push(`**Error:** ${_error instanceof Error ? _error.message : String(_error)}\n`);
       output.push(`**Suggestion:** Use \`/handoff-generate ${params.tier} ${params.identifier || ''}\` to create handoff\n`);
       return output.join('\n');
     }
@@ -160,9 +161,9 @@ export async function reviewHandoff(params: ReviewHandoffParams): Promise<string
     output.push(`\n**Handoff Path:** ${handoffPath}\n`);
     
     return output.join('\n');
-  } catch (error) {
+  } catch (_error) {
     output.push(`**ERROR: Failed to review handoff**\n`);
-    output.push(`**Error:** ${error instanceof Error ? error.message : String(error)}\n`);
+    output.push(`**Error:** ${_error instanceof Error ? _error.message : String(_error)}\n`);
     return output.join('\n');
   }
 }
@@ -176,7 +177,7 @@ export async function reviewHandoff(params: ReviewHandoffParams): Promise<string
 export async function reviewHandoffProgrammatic(
   params: ReviewHandoffParams
 ): Promise<{ success: boolean; result?: HandoffReviewResult; error?: string }> {
-  const featureName = params.featureName || 'vue-migration';
+  const featureName = await resolveFeatureName(params.featureName);
   const context = new WorkflowCommandContext(featureName);
   
   try {
@@ -190,10 +191,10 @@ export async function reviewHandoffProgrammatic(
       } else {
         handoffContent = await context.readSessionHandoff(params.identifier!);
       }
-    } catch (error) {
+    } catch (_error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : String(error)
+        error: _error instanceof Error ? _error.message : String(_error)
       };
     }
     
@@ -229,10 +230,10 @@ export async function reviewHandoffProgrammatic(
         recommendations
       }
     };
-  } catch (error) {
+  } catch (_error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : String(error)
+      error: _error instanceof Error ? _error.message : String(_error)
     };
   }
 }

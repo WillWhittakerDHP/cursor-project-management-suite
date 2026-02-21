@@ -38,9 +38,9 @@ export async function extractReadmeSection(
     }
     
     return section;
-  } catch (error) {
+  } catch (_error) {
     throw new Error(
-      `Failed to extract section: ${error instanceof Error ? error.message : String(error)}`
+      `Failed to extract section: ${_error instanceof Error ? _error.message : String(_error)}`
     );
   }
 }

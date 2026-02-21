@@ -7,7 +7,7 @@
  * Description: Dismiss a citation (mark as reviewed and don't show again)
  */
 
-import { dismissCitation } from "../../utils/todo-citations';
+import { dismissCitation } from "../../utils/todo-citations";
 
 export async function dismissCitationCommand(
   feature: string,
@@ -17,8 +17,8 @@ export async function dismissCitationCommand(
   try {
     await dismissCitation(feature, todoId, citationId);
     return `✅ Citation dismissed: ${citationId}\n**Todo:** ${todoId}\n**Dismissed at:** ${new Date().toISOString()}`;
-  } catch (error) {
-    return `❌ Error dismissing citation: ${error instanceof Error ? error.message : String(error)}`;
+  } catch (_error) {
+    return `❌ Error dismissing citation: ${_error instanceof Error ? _error.message : String(_error)}`;
   }
 }
 

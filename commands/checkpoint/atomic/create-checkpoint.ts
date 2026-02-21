@@ -6,6 +6,7 @@
  */
 
 import { WorkflowCommandContext } from '../../utils/command-context';
+import { resolveFeatureName } from '../../utils';
 import { WorkflowId } from '../../utils/id-utils';
 import { getAllTodos } from '../../utils/todo-io';
 import { aggregateDetails } from '../../utils/todo-scoping';
@@ -41,7 +42,7 @@ export interface CheckpointResult {
  * @returns Checkpoint result
  */
 export async function createCheckpoint(params: CreateCheckpointParams): Promise<CheckpointResult> {
-  const featureName = params.featureName || 'vue-migration';
+  const featureName = await resolveFeatureName(params.featureName);
   const context = new WorkflowCommandContext(featureName);
   const output: string[] = [];
   
@@ -56,14 +57,14 @@ export async function createCheckpoint(params: CreateCheckpointParams): Promise<
   if (params.tier === 'session' && params.identifier && !WorkflowId.isValidSessionId(params.identifier)) {
     return {
       success: false,
-      output: `Error: Invalid session ID format. Expected X.Y (e.g., 2.1)\nAttempted: ${params.identifier}`
+      output: `Error: Invalid session ID format. Expected X.Y.Z (e.g., 4.1.3)\nAttempted: ${params.identifier}`
     };
   }
   
   if (params.tier === 'task' && params.identifier && !WorkflowId.isValidTaskId(params.identifier)) {
     return {
       success: false,
-      output: `Error: Invalid task ID format. Expected X.Y.Z (e.g., 2.1.3)\nAttempted: ${params.identifier}`
+      output: `Error: Invalid task ID format. Expected X.Y.Z.A (e.g., 4.1.3.1)\nAttempted: ${params.identifier}`
     };
   }
   
@@ -83,8 +84,8 @@ export async function createCheckpoint(params: CreateCheckpointParams): Promise<
       } else {
         output.push('✅ **Quality checks passed**\n\n');
       }
-    } catch (error) {
-      output.push(`⚠️ **Quality checks error:** ${error instanceof Error ? error.message : String(error)}\n\n`);
+    } catch (_error) {
+      output.push(`⚠️ **Quality checks error:** ${_error instanceof Error ? _error.message : String(_error)}\n\n`);
     }
   }
   
@@ -180,9 +181,9 @@ export async function createCheckpoint(params: CreateCheckpointParams): Promise<
       output.push(`**Suggestion:** Create the todo first using planning commands\n`);
       output.push('\n---\n');
     }
-  } catch (error) {
+  } catch (_error) {
     output.push(`**WARNING: Could not load todos**\n`);
-    output.push(`**Error:** ${error instanceof Error ? error.message : String(error)}\n`);
+    output.push(`**Error:** ${_error instanceof Error ? _error.message : String(_error)}\n`);
     output.push('\n---\n');
   }
   

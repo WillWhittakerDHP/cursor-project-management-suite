@@ -7,6 +7,7 @@
 
 import { PlanningTemplateType, TemplateApplicationResult, PlanningOutput } from '../../utils/planning-types';
 import { WorkflowCommandContext } from '../../utils/command-context';
+import { resolveFeatureName } from '../../utils';
 import { readFile } from 'fs/promises';
 
 /**
@@ -14,24 +15,25 @@ import { readFile } from 'fs/promises';
  * 
  * @param templateType Type of template to apply
  * @param planningOutput Planning data to populate template
- * @param feature Feature name context
+ * @param feature Feature name (optional; resolved from .current-feature or git branch)
  * @returns Template application result
  */
 export async function applyTemplate(
   templateType: PlanningTemplateType,
   planningOutput: PlanningOutput,
-  feature: string = 'vue-migration'
+  feature?: string
 ): Promise<TemplateApplicationResult> {
   try {
-    const context = new WorkflowCommandContext(feature);
+    const resolvedFeature = await resolveFeatureName(feature);
+    const context = new WorkflowCommandContext(resolvedFeature);
     const templatePath = context.paths.getTemplatePath('planning', templateType);
     
     // Try to load template
     let templateContent: string;
     try {
       templateContent = await readFile(templatePath, 'utf-8');
-    } catch {
-      // Fallback to default template structure
+    } catch (err) {
+      console.warn('Apply template: template file not found, using default', templatePath, err);
       templateContent = generateDefaultTemplate(templateType);
     }
     

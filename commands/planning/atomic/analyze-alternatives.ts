@@ -23,7 +23,7 @@ export async function analyzeAlternativesCommand(alternatives: Alternative[]): P
 /**
  * Format analysis result as string output
  */
-function formatAnalysisResult(analysis: import('../../../project-manager/utils/planning-types').AlternativeAnalysis): string {
+function formatAnalysisResult(analysis: import('../../utils/planning-types').AlternativeAnalysis): string {
   const output: string[] = [];
   
   output.push('# Alternatives Analysis\n');

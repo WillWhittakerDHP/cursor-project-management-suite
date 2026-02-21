@@ -2,7 +2,6 @@
  * Session-end implementation. Used by tier-end and by session-end (thin wrapper).
  * Exports deriveSessionDescription for use by session-start-impl.
  */
-
 import { verifyApp } from '../../../utils/verify-app';
 import { verify } from '../../../utils/verify';
 import { formatTaskEntry, TaskEntry } from '../../task/atomic/format-task-entry';
@@ -10,8 +9,7 @@ import { appendLog } from '../../../utils/append-log';
 import { updateHandoffMinimal, MinimalHandoffUpdate } from '../../../utils/update-handoff-minimal';
 import { updateGuide, GuideUpdate } from '../../../utils/update-guide';
 import { gitCommit } from '../../../git/atomic/commit';
-import { gitPush } from '../../../git/atomic/push';
-import { markSessionComplete, MarkSessionCompleteParams } from './session';
+import { sessionEnd, markSessionComplete, MarkSessionCompleteParams } from './session';
 import { workflowCleanupReadmes } from '../../../readme/composite/readme-workflow-cleanup';
 import { testEndWorkflow } from '../../../testing/composite/test-end-workflow';
 import { isLastSessionInPhase, getPhaseFromSessionId } from '../../../utils/phase-session-utils';
@@ -21,22 +19,20 @@ import { gitMerge } from '../../../git/atomic/merge';
 import { getCurrentBranch, runCommand } from '../../../utils/utils';
 import { validateTestGoals } from '../../../testing/composite/test-goal-validator';
 import { analyzeTestError } from '../../../testing/composite/test-error-analyzer';
-import { requestTestFileFixPermission, grantTestFileFixPermission, checkTestFileFixPermission } from '../../../testing/composite/test-file-fix-permission';
-import { executeTestFileFix } from '../../../testing/composite/test-file-fix-workflow';
+import { requestTestFileFixPermission } from '../../../testing/composite/test-file-fix-permission';
 import { TEST_CONFIG } from '../../../testing/utils/test-config';
 import { resolveRunTests, buildPlanModeResult } from '../../../utils/tier-end-utils';
 import { getCurrentDate } from '../../../utils/utils';
 import { runCatchUpTests } from '../../../testing/composite/test-catchup-workflow';
 import { 
   analyzeCodeChangeImpact, 
-  getRecentlyModifiedFiles 
 } from '../../../testing/composite/test-change-detector';
 import { CommandExecutionMode, isPlanMode, resolveCommandExecutionMode } from '../../../utils/command-execution-mode';
 import { auditCodeQuality } from '../../../audit/atomic/audit-code-quality';
 import { WorkflowId } from '../../../utils/id-utils';
-import { readProjectFile } from '../../../utils/utils';
 import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
+import { checkGitHubCLI, createPullRequest } from '../../../scripts/create-pr';
 
 const FRONTEND_ROOT = 'client';
 
@@ -61,7 +57,7 @@ function buildOutcome(
 }
 
 export interface SessionEndParams {
-  sessionId: string; // Format: X.Y (e.g., "1.3")
+  sessionId: string; // Format: X.Y.Z (e.g., "4.1.3")
   description?: string; // Optional: Will be derived from session log/guide if not provided
   nextSession?: string; // Optional: Will be derived from phase guide if not provided
   lastCompletedTask?: string; // Optional: Format: X.Y.Z (e.g., "1.3.4") - last task completed in this session
@@ -96,8 +92,8 @@ export async function deriveSessionDescription(
     if (logTitleMatch) {
       return logTitleMatch[1].trim();
     }
-  } catch {
-    // Session log might not exist, continue
+  } catch (err) {
+    console.warn('Session end: session log not found or unreadable', sessionId, err);
   }
 
   try {
@@ -111,23 +107,23 @@ export async function deriveSessionDescription(
     if (descMatch) {
       return descMatch[1].trim();
     }
-  } catch {
-    // Session guide might not exist, continue
+  } catch (err) {
+    console.warn('Session end: session guide not found or unreadable', sessionId, err);
   }
 
   try {
     // Try phase guide as fallback
     const parsed = WorkflowId.parseSessionId(sessionId);
     if (parsed) {
-      const phaseGuide = await context.readPhaseGuide(parsed.phase.toString());
+      const phaseGuide = await context.readPhaseGuide(parsed.phaseId);
       const sessionRegex = new RegExp(`Session\\s+${sessionId.replace(/\./g, '\\.')}:\\s*(.+?)(?:\\n|$)`, 'i');
       const match = phaseGuide.match(sessionRegex);
       if (match) {
         return match[1].trim();
       }
     }
-  } catch {
-    // Phase guide might not exist, continue
+  } catch (err) {
+    console.warn('Session end: phase guide not found or unreadable (session name fallback)', sessionId, err);
   }
 
   // Default fallback
@@ -149,10 +145,10 @@ async function deriveNextSession(
   }
 
   try {
-    const phaseGuide = await context.readPhaseGuide(parsed.phase.toString());
+    const phaseGuide = await context.readPhaseGuide(parsed.phaseId);
     
     // Extract all session IDs from phase guide
-    const sessionMatches = phaseGuide.matchAll(/Session\s+(\d+\.\d+):/g);
+    const sessionMatches = phaseGuide.matchAll(/Session\s+(\d+\.\d+\.\d+):/g);
     const sessionIds: string[] = [];
     for (const match of sessionMatches) {
       if (WorkflowId.isValidSessionId(match[1])) {
@@ -178,8 +174,8 @@ async function deriveNextSession(
     // If this is the last session, check for next phase
     // For now, return null - caller can handle this
     return null;
-  } catch {
-    // Phase guide might not exist
+  } catch (err) {
+    console.warn('Session end: phase guide not found (derive next session)', parsed.phase, err);
     return null;
   }
 }
@@ -261,10 +257,10 @@ export async function sessionEndImpl(params: SessionEndParams): Promise<SessionE
         // Don't fail entire workflow, but log clearly
         steps.gitCommitFeature.output += '\n⚠️ Feature commit failed, but continuing workflow. You may need to commit manually.';
       }
-    } catch (error) {
+    } catch (_error) {
       steps.gitCommitFeature = {
         success: false,
-        output: `Feature commit failed (non-critical): ${error instanceof Error ? error.message : String(error)}\n` +
+        output: `Feature commit failed (non-critical): ${_error instanceof Error ? _error.message : String(_error)}\n` +
           `You can commit manually later.`,
       };
     }
@@ -299,7 +295,7 @@ export async function sessionEndImpl(params: SessionEndParams): Promise<SessionE
         (codeQualityAudit.summary ? codeQualityAudit.summary + '\n\n' : '') +
         'Vue architecture gate failed. Fix component/composable boundaries or provide an explicit override.\n' +
         'Required param:\n' +
-        'vueArchitectureOverride: { reason: \"...\", followUpTaskId: \"X.Y.Z\" }\n' +
+        'vueArchitectureOverride: { reason: "...", followUpTaskId: "X.Y.Z" }\n' +
         'Reference:\n' +
         '- `.project-manager/patterns/vue-architecture-contract.md`\n' +
         '- `.project-manager/patterns/composable-taxonomy.md`';
@@ -346,10 +342,10 @@ export async function sessionEndImpl(params: SessionEndParams): Promise<SessionE
       
       steps.codeQualityAudit.output += `\n\nReview detailed reports in: ${FRONTEND_ROOT}/.audit-reports/`;
     }
-  } catch (error) {
+  } catch (_error) {
     steps.codeQualityAudit = {
       success: false,
-      output: `Code quality audit failed (non-critical): ${error instanceof Error ? error.message : String(error)}\n` +
+      output: `Code quality audit failed (non-critical): ${_error instanceof Error ? _error.message : String(_error)}\n` +
         `You can run manually: cd ${FRONTEND_ROOT} && npm run audit:all`,
     };
     // Don't fail session-end if code quality audit fails
@@ -377,10 +373,10 @@ export async function sessionEndImpl(params: SessionEndParams): Promise<SessionE
           ),
         };
       }
-    } catch (error) {
+    } catch (_error) {
       steps.testGoalValidation = {
         success: false,
-        output: `Test goal validation failed: ${error instanceof Error ? error.message : String(error)}`,
+        output: `Test goal validation failed: ${_error instanceof Error ? _error.message : String(_error)}`,
       };
       return {
         success: false,
@@ -513,10 +509,10 @@ export async function sessionEndImpl(params: SessionEndParams): Promise<SessionE
                 'Fix app code that caused test failure, then re-run /session-end.'
               ),
             };
-          } catch (error) {
+          } catch (_error) {
             steps.testErrorAnalysis = {
               success: false,
-              output: `Error analysis failed: ${error instanceof Error ? error.message : String(error)}`,
+              output: `Error analysis failed: ${_error instanceof Error ? _error.message : String(_error)}`,
             };
             return {
               success: false,
@@ -539,10 +535,10 @@ export async function sessionEndImpl(params: SessionEndParams): Promise<SessionE
         success: true,
         output: 'Test execution recorded in session log',
       };
-    } catch (error) {
+    } catch (_error) {
       steps.runTests = {
         success: false,
-        output: `Test execution failed: ${error instanceof Error ? error.message : String(error)}`,
+        output: `Test execution failed: ${_error instanceof Error ? _error.message : String(_error)}`,
       };
       return {
         success: false,
@@ -577,10 +573,10 @@ export async function sessionEndImpl(params: SessionEndParams): Promise<SessionE
         output: 'Test strategy or justification found in session guide',
       };
     }
-  } catch (error) {
+  } catch (_error) {
     steps.testDocumentation = {
       success: false,
-      output: `Test documentation check failed (non-critical): ${error instanceof Error ? error.message : String(error)}`,
+      output: `Test documentation check failed (non-critical): ${_error instanceof Error ? _error.message : String(_error)}`,
     };
   }
   
@@ -625,11 +621,11 @@ export async function sessionEndImpl(params: SessionEndParams): Promise<SessionE
     };
     const markCompleteOutput = await markSessionComplete(markCompleteParams);
     steps.markSessionComplete = { success: true, output: markCompleteOutput };
-  } catch (error) {
+  } catch (_error) {
     // Log error but don't fail entire session-end - user can manually check off if needed
     steps.markSessionComplete = {
       success: false,
-      output: `Failed to mark session complete in phase guide: ${error instanceof Error ? error.message : String(error)}\n` +
+      output: `Failed to mark session complete in phase guide: ${_error instanceof Error ? _error.message : String(_error)}\n` +
         `Session ID: ${params.sessionId}\n` +
         `You may need to manually check off the session in the phase guide.`,
     };
@@ -642,9 +638,8 @@ export async function sessionEndImpl(params: SessionEndParams): Promise<SessionE
       const context = await WorkflowCommandContext.getCurrent();
       const currentBranch = await getCurrentBranch();
       
-      // Extract phase number from sessionId
-      const phaseMatch = params.sessionId.match(/^(\d+)/);
-      const phase = phaseMatch ? phaseMatch[1] : '1';
+      // Extract phase ID from sessionId (X.Y.Z → X.Y)
+      const phase = WorkflowId.extractPhaseId(params.sessionId) || '1';
       
       const sessionBranchName = `${context.feature.name}-phase-${phase}-session-${params.sessionId}`;
       const phaseBranchName = `${context.feature.name}-phase-${phase}`;
@@ -686,16 +681,15 @@ export async function sessionEndImpl(params: SessionEndParams): Promise<SessionE
           output: `Skipped merge - not on session branch (current: ${currentBranch})`,
         };
       }
-    } catch (error) {
+    } catch (_error) {
       const errorContext = await WorkflowCommandContext.getCurrent();
-      const errorPhaseMatch = params.sessionId.match(/^(\d+)/);
-      const errorPhase = errorPhaseMatch ? errorPhaseMatch[1] : '1';
+      const errorPhase = WorkflowId.extractPhaseId(params.sessionId) || '1';
       const errorSessionBranchName = `${errorContext.feature.name}-phase-${errorPhase}-session-${params.sessionId}`;
       const errorPhaseBranchName = `${errorContext.feature.name}-phase-${errorPhase}`;
       
       steps.gitMerge = {
         success: false,
-        output: `Branch merge failed (non-critical): ${error instanceof Error ? error.message : String(error)}\n` +
+        output: `Branch merge failed (non-critical): ${_error instanceof Error ? _error.message : String(_error)}\n` +
           `You can merge manually with: git checkout ${errorPhaseBranchName} && git merge ${errorSessionBranchName}`,
       };
       // Don't fail entire session-end if merge fails
@@ -706,7 +700,6 @@ export async function sessionEndImpl(params: SessionEndParams): Promise<SessionE
   
   if (!params.skipGit) {
     try {
-      const { checkGitHubCLI, createPullRequest } = await import('../../../../.scripts/create-pr.mjs');
       const currentBranch = await getCurrentBranch();
       
       // Only create PR if not on main/master
@@ -745,11 +738,11 @@ export async function sessionEndImpl(params: SessionEndParams): Promise<SessionE
           output: 'Skipped PR creation - GitHub CLI not authenticated',
         };
       }
-    } catch (error) {
+    } catch (_error) {
       const currentBranch = await getCurrentBranch();
       steps.createPR = {
         success: false,
-        output: `PR creation failed (non-critical): ${error instanceof Error ? error.message : String(error)}\n\n` +
+        output: `PR creation failed (non-critical): ${_error instanceof Error ? _error.message : String(_error)}\n\n` +
           `**Create PR manually:** https://github.com/WillWhittakerDHP/DHP_Differential_Scheduler/compare/main...${currentBranch}`,
       };
     }
@@ -781,10 +774,10 @@ export async function sessionEndImpl(params: SessionEndParams): Promise<SessionE
           output: 'No audit fixes to commit (no uncommitted changes)',
         };
       }
-    } catch (error) {
+    } catch (_error) {
       steps.gitCommitAuditFixes = {
         success: false,
-        output: `Audit fix commit failed (non-critical): ${error instanceof Error ? error.message : String(error)}\n` +
+        output: `Audit fix commit failed (non-critical): ${_error instanceof Error ? _error.message : String(_error)}\n` +
           `You can commit manually later.`,
       };
     }
@@ -825,13 +818,13 @@ export async function sessionEndImpl(params: SessionEndParams): Promise<SessionE
     };
     steps.afterPushShowNextStep = {
       success: true,
-      output: `After push or skip: show next step. Example: /session-start ${nextSession || 'X.Y'} "Session Name"`,
+      output: `After push or skip: show next step. Example: /session-start ${nextSession || 'X.Y.Z'} "Session Name"`,
     };
   } else {
     steps.gitPush = { success: true, output: 'Skipped (skipGit=true)' };
     steps.afterPushShowNextStep = {
       success: true,
-      output: `Next: /session-start ${nextSession || 'X.Y'} "Session Name" or use handoff doc.`,
+      output: `Next: /session-start ${nextSession || 'X.Y.Z'} "Session Name" or use handoff doc.`,
     };
   }
 
@@ -842,10 +835,10 @@ export async function sessionEndImpl(params: SessionEndParams): Promise<SessionE
       identifier: params.sessionId,
     });
     steps.readmeCleanup = { success: true, output: cleanupResult };
-  } catch (error) {
+  } catch (_error) {
     steps.readmeCleanup = {
       success: false,
-      output: `README cleanup failed (non-critical): ${error instanceof Error ? error.message : String(error)}`,
+      output: `README cleanup failed (non-critical): ${_error instanceof Error ? _error.message : String(_error)}`,
     };
     // Don't fail entire session-end if cleanup fails
   }
@@ -873,22 +866,22 @@ export async function sessionEndImpl(params: SessionEndParams): Promise<SessionE
           // Log but don't block - catch-up is informational
           steps.catchupTests.output += '\n⚠️ Catch-up tests completed with failures. Review output above.';
         }
-      } catch (error) {
+      } catch (_error) {
         steps.catchupTests = {
           success: false,
-          output: `Catch-up test execution failed (non-critical): ${error instanceof Error ? error.message : String(error)}`,
+          output: `Catch-up test execution failed (non-critical): ${_error instanceof Error ? _error.message : String(_error)}`,
         };
       }
     }
-  } catch (error) {
+  } catch (_error) {
     steps.catchupTests = {
       success: false,
-      output: `Catch-up check failed (non-critical): ${error instanceof Error ? error.message : String(error)}`,
+      output: `Catch-up check failed (non-critical): ${_error instanceof Error ? _error.message : String(_error)}`,
     };
   }
 
   let isLastSession = false;
-  let phaseNum: number | null = null;
+  let phaseNum: string | null = null;
   try {
     const context = await WorkflowCommandContext.getCurrent();
     isLastSession = await isLastSessionInPhase(context.feature.name, params.sessionId);
@@ -909,21 +902,22 @@ export async function sessionEndImpl(params: SessionEndParams): Promise<SessionE
         output: 'Not the last session in phase - phase-end not needed yet',
       };
     }
-  } catch (error) {
+  } catch (_error) {
     steps.phaseEndPrompt = {
       success: false,
-      output: `Phase-end check failed (non-critical): ${error instanceof Error ? error.message : String(error)}`,
+      output: `Phase-end check failed (non-critical): ${_error instanceof Error ? _error.message : String(_error)}`,
     };
   }
 
+  // tierUp('session') === 'phase': when last session in phase, next step is phase-end
   const nextAction =
     isLastSession && phaseNum !== null
       ? (!params.skipGit
           ? `Prompt user: "Proceed with push?" (yes/no). If yes, run git push. If no, session ends without push. Then show steps.phaseEndPrompt.output and suggest running /phase-end ${phaseNum} to complete the phase.`
           : `Show user steps.phaseEndPrompt.output and suggest running /phase-end ${phaseNum} to complete the phase.`)
       : (!params.skipGit
-          ? `Prompt user: "Proceed with push?" (yes/no). If yes, run git push. If no, session ends without push. Then show: To start next session run /session-start ${nextSession || 'X.Y'} "Session Name".`
-          : `Show user: To start next session run /session-start ${nextSession || 'X.Y'} "Session Name".`);
+          ? `Prompt user: "Proceed with push?" (yes/no). If yes, run git push. If no, session ends without push. Then show: To start next session run /session-start ${nextSession || 'X.Y.Z'} "Session Name".`
+          : `Show user: To start next session run /session-start ${nextSession || 'X.Y.Z'} "Session Name".`);
 
   return {
     success: true,
@@ -942,16 +936,15 @@ if (isEntryPoint) {
     const sessionId = process.argv[2] ?? process.env.SESSION_ID ?? '';
     const runTests = process.argv.includes('--test');
     const planMode = process.argv.includes('--plan');
-    if (!sessionId || !/^\d+\.\d+(\.\d+)?$/.test(sessionId)) {
+    if (!sessionId || !/^\d+\.\d+\.\d+$/.test(sessionId)) {
       const sessionIdShort = sessionId || '<sessionId>';
       console.error(`Usage: npx tsx .cursor/commands/tiers/session/composite/session-end-impl.ts <sessionId> [--test|--no-tests] [--plan]`);
-      console.error(`Example: npx tsx .cursor/commands/tiers/session/composite/session-end-impl.ts 2.2.6`);
-      console.error(`Session ID must be X.Y or X.Y.Z (e.g. 2.2.6). Got: ${sessionIdShort}`);
+      console.error(`Example: npx tsx .cursor/commands/tiers/session/composite/session-end-impl.ts 4.1.3`);
+      console.error(`Session ID must be X.Y.Z (e.g. 4.1.3). Got: ${sessionIdShort}`);
       process.exit(1);
     }
-    const sessionIdXY = sessionId.includes('.') ? sessionId.split('.').slice(0, 2).join('.') : sessionId;
     const result = await sessionEnd({
-      sessionId: sessionIdXY,
+      sessionId,
       runTests,
       mode: planMode ? 'plan' : 'execute',
     });

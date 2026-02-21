@@ -39,9 +39,8 @@ const DEPRECATED_REPLACEMENTS: Record<string, string> = {
   FILE_PATHS: 'WorkflowCommandContext.paths',
   getSessionLogPath: 'WorkflowCommandContext.paths.getSessionLogPath()',
   extractMarkdownSection: 'MarkdownUtils.extractSection()',
-  parseTaskId: 'WorkflowId.parseTaskId() or WorkflowCommandContext.idUtils.parseTaskId()',
+  parseTaskId: 'WorkflowId.parseTaskId() or WorkflowCommandContext.idUtils.parseTaskId() (task = tier below session)',
   parseSessionId: 'WorkflowId.parseSessionId() or WorkflowCommandContext.idUtils.parseSessionId()',
-  parseSubSessionId: 'WorkflowId.parseTaskId() or WorkflowCommandContext.idUtils.parseTaskId()',
 };
 
 // Files that legitimately define or document deprecated functions
@@ -246,7 +245,6 @@ export async function auditDependencies(): Promise<AuditResult> {
   // Get all TypeScript files in commands directory
   const commandsDir = join(PROJECT_ROOT, '.cursor/commands');
   const allFiles = await getAllTsFiles(commandsDir);
-  const commandFiles = allFiles.map(f => f.replace(commandsDir + '/', ''));
 
   // Check exports in index.ts
   const indexPath = join(PROJECT_ROOT, '.cursor/commands/index.ts');
@@ -263,7 +261,8 @@ export async function auditDependencies(): Promise<AuditResult> {
       
       try {
         await access(resolvedPath);
-      } catch {} {
+      } catch (err) {
+        console.warn('Audit dependencies: export path not found', resolvedPath, err);
         issues.push({
           severity: 'error',
           message: `Export references non-existent file: ${exportPath}`,
@@ -273,10 +272,10 @@ export async function auditDependencies(): Promise<AuditResult> {
         });
       }
     }
-  } catch (error) {
+  } catch (_error) {
     issues.push({
       severity: 'error',
-      message: `Failed to read index.ts: ${error instanceof Error ? error.message : String(error)}`,
+      message: `Failed to read index.ts: ${_error instanceof Error ? _error.message : String(_error)}`,
       file: indexPath,
     });
   }
@@ -357,15 +356,15 @@ export async function auditDependencies(): Promise<AuditResult> {
           
           try {
             await access(resolvedImport);
-          } catch {} {
-            // Try without .ts extension
+          } catch (err) {
+            console.warn('Audit dependencies: import path not found, trying variants', resolvedImport, err);
             try {
               await access(resolvedImport.replace('.ts', ''));
-            } catch {
-              // Check if it's a directory with index.ts
+            } catch (_e2) {
               try {
                 await access(join(resolvedImport.replace('.ts', ''), 'index.ts'));
-              } catch {
+              } catch (_e3) {
+                console.warn('Audit dependencies: import resolves to non-existent file', resolvedImport);
                 issues.push({
                   severity: 'error',
                   message: `Import resolves to non-existent file: ${importPath}`,
@@ -426,10 +425,10 @@ export async function auditDependencies(): Promise<AuditResult> {
         }
       }
 
-    } catch (error) {
+    } catch (_error) {
       issues.push({
         severity: 'error',
-        message: `Failed to read file ${file}: ${error instanceof Error ? error.message : String(error)}`,
+        message: `Failed to read file ${file}: ${_error instanceof Error ? _error.message : String(_error)}`,
         file: filePath,
       });
     }

@@ -1,5 +1,7 @@
 ---
-alwaysApply: true
+alwaysApply: false
 ---
+
+TEMPORARILY DISABLED: Test files are excluded from linting/type-checking until Phase 3.0 of BETA_LAUNCH_CHECKLIST.md. Re-enable alwaysApply: true when that phase begins.
 
 Tests run in watch mode during development using npm run start:dev:testing. Use standard start:dev for development without test watching.

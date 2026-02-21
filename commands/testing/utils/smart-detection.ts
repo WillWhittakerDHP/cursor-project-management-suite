@@ -14,7 +14,7 @@
 import { stat, readdir } from 'fs/promises';
 import { join } from 'path';
 import { execSync } from 'child_process';
-import { PROJECT_ROOT } from '../../utils/utils';
+import { PROJECT_ROOT, FRONTEND_ROOT } from '../../utils/utils';
 import { WorkflowCommandContext } from '../../utils/command-context';
 
 export interface DetectionResult {
@@ -40,7 +40,7 @@ async function checkFileModifications(
   try {
     // Check common test directories
     const testDirs = [
-      join(PROJECT_ROOT, 'client', 'src'),
+      join(PROJECT_ROOT, FRONTEND_ROOT, 'src'),
       join(PROJECT_ROOT, 'server', 'src'),
     ];
     
@@ -53,12 +53,12 @@ async function checkFileModifications(
             if (stats.mtime.getTime() > cutoffTime) {
               modifiedFiles.push(file);
             }
-          } catch {
-            // File may have been deleted, skip
+          } catch (err) {
+            console.warn('Smart detection: file stat failed (may have been deleted)', file, err);
           }
         }
-      } catch {
-        // Directory may not exist, skip
+      } catch (err) {
+        console.warn('Smart detection: directory not found or not readable', dir, err);
       }
     }
     
@@ -72,16 +72,16 @@ async function checkFileModifications(
             if (stats.mtime.getTime() > cutoffTime) {
               modifiedFiles.push(file);
             }
-          } catch {
-            // File may have been deleted, skip
+          } catch (err) {
+            console.warn('Smart detection: app file stat failed (may have been deleted)', file, err);
           }
         }
-      } catch {
-        // Directory may not exist, skip
+      } catch (err) {
+        console.warn('Smart detection: app directory not found or not readable', dir, err);
       }
     }
-  } catch {} {
-    // If detection fails, return no detection
+  } catch (err) {
+    console.warn('Smart detection: failed to detect modified files', err);
     return { detected: false, files: [] };
   }
   
@@ -112,8 +112,8 @@ async function findTestFiles(dir: string, pattern: RegExp): Promise<string[]> {
         files.push(fullPath);
       }
     }
-  } catch {
-    // Directory may not be accessible, skip
+  } catch (err) {
+    console.warn('Smart detection: findTestFiles directory not accessible', dir, err);
   }
   
   return files;
@@ -143,8 +143,8 @@ async function findAppFiles(dir: string, testPattern: RegExp): Promise<string[]>
         files.push(fullPath);
       }
     }
-  } catch {
-    // Directory may not be accessible, skip
+  } catch (err) {
+    console.warn('Smart detection: findAppFiles directory not accessible', dir, err);
   }
   
   return files;
@@ -181,8 +181,8 @@ function checkGitStatus(): { detected: boolean; files: string[] } {
       detected: relevantFiles.length > 0,
       files: relevantFiles,
     };
-  } catch {
-    // Git may not be available or not a git repo
+  } catch (err) {
+    console.warn('Smart detection: git not available or not a repo', err);
     return { detected: false, files: [] };
   }
 }
@@ -235,8 +235,8 @@ async function checkSessionContext(
       detected: false,
       reason: 'No test-related activity detected in session context',
     };
-  } catch {
-    // If we can't read session log, assume no detection
+  } catch (err) {
+    console.warn('Smart detection: could not read session log for test context', err);
     return {
       detected: false,
       reason: 'Could not read session context',

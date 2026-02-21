@@ -1,5 +1,7 @@
 ---
-alwaysApply: true
+alwaysApply: false
 ---
+
+TEMPORARILY DISABLED: Test files are excluded from linting/type-checking until Phase 3.0 of BETA_LAUNCH_CHECKLIST.md. Re-enable alwaysApply: true when that phase begins.
 
 Test files may use fallbacks and type assertions for test setup. Migration scripts may use more permissive patterns. When fixing legacy code, prefer gradual improvement over strict adherence.

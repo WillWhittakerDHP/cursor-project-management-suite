@@ -25,15 +25,6 @@ export interface ValidationResult {
 }
 
 /**
- * Required sections for standard README
- */
-const REQUIRED_SECTIONS = [
-  'Title',
-  'Purpose',
-  'Overview',
-];
-
-/**
  * Validate README structure
  * 
  * @param filePath Path to README file
@@ -90,9 +81,9 @@ export async function validateReadme(filePath: string): Promise<ValidationResult
     }
     
     return result;
-  } catch (error) {
+  } catch (_error) {
     throw new Error(
-      `Failed to validate README: ${error instanceof Error ? error.message : String(error)}`
+      `Failed to validate README: ${_error instanceof Error ? _error.message : String(_error)}`
     );
   }
 }

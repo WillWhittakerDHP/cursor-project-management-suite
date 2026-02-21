@@ -1,6 +1,6 @@
 # `.cursor` Refactor Audit (Deterministic Outputs)
 
-This folder mirrors the **data-first audit style** used in `client-vue/.audit` and `client-vue/.typecheck`.
+This folder mirrors the **data-first audit style** used in `frontend-root/.audit` and `frontend-root/.typecheck`.
 
 The goal is to support a safe, reliable `.cursor/commands` refactor by generating **repeatable reports**:
 - A **machine-readable JSON** file for tooling and trend comparisons

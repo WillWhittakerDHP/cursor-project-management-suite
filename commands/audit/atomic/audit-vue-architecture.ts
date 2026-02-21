@@ -8,7 +8,7 @@
  *   - composables naming/structure drift (basic checks)
  *
  * Scope:
- * - Reads `client/src/**`
+ * - Reads `<frontend-root>/src/**`
  * - Deterministic heuristics only (no AST dependencies)
  *
  * References:
@@ -24,6 +24,8 @@ import { AuditParams } from '../types';
 import { AuditResult, AuditFinding } from '../types';
 
 const PROJECT_ROOT = process.cwd();
+const FRONTEND_ROOT = 'client';
+const FRONTEND_SRC_SEGMENTS: [string, string] = [FRONTEND_ROOT, 'src'];
 
 type _FileScanResult = {
   file: string;
@@ -141,7 +143,7 @@ export async function auditVueArchitecture(_params: AuditParams): Promise<AuditR
   const findings: AuditFinding[] = [];
   const recommendations: string[] = [];
 
-  const vueSrcDir = join(PROJECT_ROOT, 'client', 'src');
+  const vueSrcDir = join(PROJECT_ROOT, ...FRONTEND_SRC_SEGMENTS);
   if (!existsSync(vueSrcDir)) {
     return {
       category: 'vue-architecture',
@@ -150,13 +152,13 @@ export async function auditVueArchitecture(_params: AuditParams): Promise<AuditR
       findings: [
         {
           type: 'warning',
-          message: 'client/src not found; cannot run Vue architecture audit.',
-          location: 'client/src',
+          message: `${FRONTEND_ROOT}/src not found; cannot run Vue architecture audit.`,
+          location: `${FRONTEND_ROOT}/src`,
           suggestion: 'Ensure the Vue client exists and the path is correct.',
         },
       ],
       recommendations: [],
-      summary: 'Vue architecture audit skipped (missing client/src).',
+      summary: `Vue architecture audit skipped (missing ${FRONTEND_ROOT}/src).`,
     };
   }
 
@@ -173,10 +175,10 @@ export async function auditVueArchitecture(_params: AuditParams): Promise<AuditR
         const file = toRepoPath(abs);
         findings.push(...scanVueComponentScript(file, script));
       }
-    } catch (error) {
+    } catch (_error) {
       findings.push({
         type: 'warning',
-        message: `Failed to read .vue file for audit: ${error instanceof Error ? error.message : String(error)}`,
+        message: `Failed to read .vue file for audit: ${_error instanceof Error ? _error.message : String(_error)}`,
         location: toRepoPath(abs),
       });
     }
@@ -188,10 +190,10 @@ export async function auditVueArchitecture(_params: AuditParams): Promise<AuditR
     try {
       const content = await readFile(abs, 'utf-8');
       findings.push(...scanComposableNaming(toRepoPath(abs), content));
-    } catch (error) {
+    } catch (_error) {
       findings.push({
         type: 'info',
-        message: `Failed to read .ts file for composable naming audit: ${error instanceof Error ? error.message : String(error)}`,
+        message: `Failed to read .ts file for composable naming audit: ${_error instanceof Error ? _error.message : String(_error)}`,
         location: toRepoPath(abs),
       });
     }

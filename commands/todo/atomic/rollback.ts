@@ -7,7 +7,7 @@
  * Description: Rollback a todo to a previous state
  */
 
-import { rollbackToState } from "../../utils/todo-rollback';
+import { rollbackToState } from "../../utils/todo-rollback";
 
 export async function rollback(feature: string, todoId: string, stateId: string, reason?: string): Promise<string> {
   try {
@@ -43,8 +43,8 @@ export async function rollback(feature: string, todoId: string, stateId: string,
     }
     
     return lines.join('\n');
-  } catch (error) {
-    return `❌ Error rolling back: ${error instanceof Error ? error.message : String(error)}`;
+  } catch (_error) {
+    return `❌ Error rolling back: ${_error instanceof Error ? _error.message : String(_error)}`;
   }
 }
 

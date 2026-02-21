@@ -14,6 +14,8 @@ import { WorkflowCommandContext } from './command-context';
 import { WorkflowId } from './id-utils';
 
 const PROJECT_ROOT = process.cwd();
+const FRONTEND_ROOT = 'client';
+const FRONTEND_PREFIX = `${FRONTEND_ROOT}/`;
 
 /**
  * Extract files from session log markdown
@@ -49,8 +51,8 @@ async function extractFilesFromSessionLog(sessionLogPath: string): Promise<strin
     }
 
     return files;
-  } catch {} {
-    // If we can't read the file, return empty array
+  } catch (err) {
+    console.warn('Detect modified files: read failed', err);
     return [];
   }
 }
@@ -59,7 +61,7 @@ async function extractFilesFromSessionLog(sessionLogPath: string): Promise<strin
  * Detect files from git history for a phase
  * Uses git log to find files changed between phase start and end
  */
-function detectFilesFromGitHistory(phase: string, featureName: string): string[] {
+function detectFilesFromGitHistory(phase: string, _featureName: string): string[] {
   try {
     // Try to find phase start commit (look for phase start messages)
     // This is a heuristic - we look for commits mentioning the phase
@@ -78,8 +80,8 @@ function detectFilesFromGitHistory(phase: string, featureName: string): string[]
       if (startCommitOutput) {
         startCommit = startCommitOutput.split('\n')[0];
       }
-    } catch {
-      // If we can't find a start commit, use HEAD~30 as fallback
+    } catch (err) {
+      console.warn('Detect modified files: could not find phase start commit, using HEAD~30', err);
       startCommit = 'HEAD~30';
     }
 
@@ -98,16 +100,16 @@ function detectFilesFromGitHistory(phase: string, featureName: string): string[]
       .split('\n')
       .map(line => line.trim())
       .filter(line => line.length > 0)
-      // Filter to relevant paths (client, server, or .cursor commands)
+      // Filter to relevant paths (frontend, server, or .cursor commands)
       .filter(file => 
-        file.startsWith('client/') ||
+        file.startsWith(FRONTEND_PREFIX) ||
         file.startsWith('server/') ||
         file.startsWith('.cursor/commands/')
       );
 
     return files;
-  } catch {} {
-    // If git command fails, return empty array
+  } catch (err) {
+    console.warn('Detect modified files: git command failed (phase history)', err);
     return [];
   }
 }
@@ -120,7 +122,7 @@ function handleFileRenames(files: string[]): string[] {
   const renamedFiles: string[] = [];
   const fileRenameMap: Record<string, string> = {
     // Phase 3 specific: properties.ts was renamed to primitives.ts
-    'client/src/constants/properties.ts': 'client/src/constants/primitives.ts',
+    [`${FRONTEND_ROOT}/src/constants/properties.ts`]: `${FRONTEND_ROOT}/src/constants/primitives.ts`,
   };
 
   for (const file of files) {
@@ -171,8 +173,8 @@ export async function detectPhaseModifiedFiles(
       for (const file of sessionFiles) {
         files.add(file);
       }
-    } catch {} {
-      // Continue to next session if this one fails
+    } catch (err) {
+      console.warn('Detect modified files: extractFilesFromSessionLog failed for session', sessionId, err);
       continue;
     }
   }
@@ -218,13 +220,13 @@ export async function detectSessionModifiedFiles(
  * Detect modified files for a feature
  * Uses git history to find all files changed in feature branch
  * 
- * @param featureName Feature name (e.g., "vue-migration")
+ * @param featureName Feature name (e.g. from .current-feature or git branch)
  * @param context Workflow command context
  * @returns Array of relative file paths
  */
 export async function detectFeatureModifiedFiles(
-  featureName: string,
-  context: WorkflowCommandContext
+  _featureName: string,
+  _context: WorkflowCommandContext
 ): Promise<string[]> {
   try {
     // Get current branch name
@@ -246,7 +248,7 @@ export async function detectFeatureModifiedFiles(
         });
         baseBranch = branch;
         break;
-      } catch {
+      } catch (_err) {
         continue;
       }
     }
@@ -264,14 +266,14 @@ export async function detectFeatureModifiedFiles(
       .map(line => line.trim())
       .filter(line => line.length > 0)
       .filter(file => 
-        file.startsWith('client/') ||
+        file.startsWith(FRONTEND_PREFIX) ||
         file.startsWith('server/') ||
         file.startsWith('.cursor/commands/')
       );
 
     return handleFileRenames(files);
-  } catch {} {
-    // If git command fails, return empty array
+  } catch (err) {
+    console.warn('Detect modified files: git command failed (feature)', err);
     return [];
   }
 }

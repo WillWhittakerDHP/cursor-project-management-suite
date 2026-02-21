@@ -50,7 +50,6 @@ export async function preTestValidation(
 ): Promise<PreTestValidationResult> {
   const {
     changedFiles = [],
-    testTarget,
     autoDetectRecent = true,
     detectionWindowMinutes = 5,
     skipPromptOnNonBreaking = true,

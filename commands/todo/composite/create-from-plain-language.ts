@@ -68,8 +68,8 @@ export async function createFromPlainLanguage(
     }
     
     return lines.join('\n');
-  } catch (error) {
-    return `❌ Error creating todo from plain language: ${error instanceof Error ? error.message : String(error)}`;
+  } catch (_error) {
+    return `❌ Error creating todo from plain language: ${_error instanceof Error ? _error.message : String(_error)}`;
   }
 }
 

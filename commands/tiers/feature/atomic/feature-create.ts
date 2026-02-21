@@ -66,9 +66,9 @@ export async function featureCreate(featureName: string, description: string): P
     output.push('3. Update feature guide with research findings\n');
     output.push('4. Run `/feature-start [name]` to begin feature work\n');
     
-  } catch (error) {
+  } catch (_error) {
     output.push(`**ERROR:** Failed to create feature structure\n`);
-    output.push(`**Error:** ${error instanceof Error ? error.message : String(error)}\n`);
+    output.push(`**Error:** ${_error instanceof Error ? _error.message : String(_error)}\n`);
   }
   
   return output.join('\n');

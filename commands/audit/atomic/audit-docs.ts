@@ -9,6 +9,7 @@
 import { AuditResult, AuditFinding, AuditParams } from '../types';
 import { WorkflowCommandContext } from '../../utils/command-context';
 import { MarkdownUtils } from '../../utils/markdown-utils';
+import { resolveFeatureName } from '../../utils';
 
 /**
  * Audit docs for a tier
@@ -31,7 +32,7 @@ export async function auditDocs(params: AuditParams): Promise<AuditResult> {
     };
   }
   
-  const featureName = params.featureName || 'vue-migration';
+  const featureName = await resolveFeatureName(params.featureName);
   const context = new WorkflowCommandContext(featureName);
   
   try {
@@ -54,7 +55,8 @@ export async function auditDocs(params: AuditParams): Promise<AuditResult> {
         guidePath = context.paths.getSessionGuidePath(params.identifier);
         guideExists = true;
       }
-    } catch {} {
+    } catch (err) {
+      console.warn('Audit docs: guide not found', params.tier, params.identifier, err);
       findings.push({
         type: 'error',
         message: `Guide document not found for ${params.tier} ${params.identifier}`,
@@ -109,7 +111,8 @@ export async function auditDocs(params: AuditParams): Promise<AuditResult> {
         logPath = context.paths.getSessionLogPath(params.identifier);
         logExists = true;
       }
-    } catch {} {
+    } catch (err) {
+      console.warn('Audit docs: log not found', params.tier, params.identifier, err);
       findings.push({
         type: 'warning',
         message: `Log document not found for ${params.tier} ${params.identifier}`,
@@ -167,7 +170,8 @@ export async function auditDocs(params: AuditParams): Promise<AuditResult> {
         handoffPath = context.paths.getSessionHandoffPath(params.identifier);
         handoffExists = true;
       }
-    } catch {} {
+    } catch (err) {
+      console.warn('Audit docs: handoff not found', params.tier, params.identifier, err);
       findings.push({
         type: 'warning',
         message: `Handover document not found for ${params.tier} ${params.identifier}`,
@@ -257,14 +261,14 @@ export async function auditDocs(params: AuditParams): Promise<AuditResult> {
       summary
     };
     
-  } catch (error) {
+  } catch (_error) {
     return {
       category: 'docs',
       status: 'fail',
       score: 0,
       findings: [{
         type: 'error',
-        message: `Docs audit failed: ${error instanceof Error ? error.message : String(error)}`,
+        message: `Docs audit failed: ${_error instanceof Error ? _error.message : String(_error)}`,
         location: params.tier
       }],
       recommendations: ['Review documentation structure'],

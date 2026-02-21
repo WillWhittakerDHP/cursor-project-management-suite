@@ -163,7 +163,7 @@ export function determineTier(description: string): TierAnalysis {
       // Extract phase number if present
       const phaseMatch = descLower.match(/phase\s+(\d+)/i);
       const phaseNum = phaseMatch ? phaseMatch[1] : 'N';
-      suggestedCommand = `/plan-phase ${phaseNum} "${description}"`;
+      suggestedCommand = `/phase-plan ${phaseNum} "${description}"`;
       break;
     }
     case 'session': {

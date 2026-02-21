@@ -68,9 +68,9 @@ export async function markTemporaryReadme(params: MarkTemporaryParams): Promise<
            `   Reason: ${params.reason}\n` +
            (params.expiryDate ? `   Expiry: ${params.expiryDate}\n` : '') +
            (params.consolidateInto ? `   Consolidate into: ${params.consolidateInto}\n` : '');
-  } catch (error) {
+  } catch (_error) {
     throw new Error(
-      `Failed to mark README as temporary: ${error instanceof Error ? error.message : String(error)}`
+      `Failed to mark README as temporary: ${_error instanceof Error ? _error.message : String(_error)}`
     );
   }
 }

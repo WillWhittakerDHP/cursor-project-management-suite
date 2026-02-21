@@ -86,10 +86,10 @@ async function scanFile(filePath: string): Promise<AuditIssue[]> {
         }
       }
     }
-  } catch (error) {
+  } catch (_error) {
     issues.push({
-      severity: 'error',
-      message: `Failed to scan file: ${error instanceof Error ? error.message : String(error)}`,
+      severity: 'critical',
+      message: `Failed to scan file: ${_error instanceof Error ? _error.message : String(_error)}`,
       file: filePath.replace(PROJECT_ROOT + '/', ''),
     });
   }
@@ -116,7 +116,7 @@ async function listTypeScriptFiles(dirPath: string): Promise<string[]> {
         files.push(fullPath);
       }
     }
-  } catch (error) {
+  } catch (_error) {
     // Directory might not exist or be inaccessible
   }
   
@@ -168,16 +168,16 @@ export async function auditFallback(): Promise<AuditResult> {
       recommendations.push('No fallback/legacy patterns found - session-tier commands are clean');
     }
     
-  } catch (error) {
+  } catch (_error) {
     issues.push({
-      severity: 'error',
-      message: `Failed to audit session-tier files: ${error instanceof Error ? error.message : String(error)}`,
+      severity: 'critical',
+      message: `Failed to audit session-tier files: ${_error instanceof Error ? _error.message : String(_error)}`,
       file: SESSION_TIER_PATH.replace(PROJECT_ROOT + '/', ''),
     });
   }
   
   // Determine status
-  const hasCritical = issues.some(i => i.severity === 'critical' || i.severity === 'error');
+  const hasCritical = issues.some(i => i.severity === 'critical');
   const hasWarnings = issues.some(i => i.severity === 'warning');
   
   let status: 'pass' | 'warning' | 'error' = 'pass';
@@ -192,6 +192,6 @@ export async function auditFallback(): Promise<AuditResult> {
     status,
     issues,
     recommendations,
-    summary: `Scanned ${await listTypeScriptFiles(SESSION_TIER_PATH).then(f => f.length)} file(s) in session tier. Found ${issues.length} issue(s): ${issues.filter(i => i.severity === 'critical' || i.severity === 'error').length} critical, ${issues.filter(i => i.severity === 'warning').length} warnings`,
+    summary: `Scanned ${await listTypeScriptFiles(SESSION_TIER_PATH).then(f => f.length)} file(s) in session tier. Found ${issues.length} issue(s): ${issues.filter(i => i.severity === 'critical').length} critical, ${issues.filter(i => i.severity === 'warning').length} warnings`,
   };
 }

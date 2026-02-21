@@ -17,10 +17,11 @@ import { auditSecurity } from '../atomic/audit-security';
 import { auditDocs } from '../atomic/audit-docs';
 import { auditVueArchitecture } from '../atomic/audit-vue-architecture';
 import { WorkflowCommandContext } from '../../utils/command-context';
+import { resolveFeatureName } from '../../utils';
 import { writeAuditReport, calculateOverallStatus, getRelativePath, storeBaselineScore } from '../utils';
 
 export interface AuditPhaseStartParams {
-  phase: string; // Format: N (e.g., "1")
+  phase: string; // Format: X.Y (e.g., "4.1")
   featureName?: string;
 }
 
@@ -36,7 +37,7 @@ export async function auditPhaseStart(params: AuditPhaseStartParams): Promise<{
   fullReportPath?: string;
   output: string;
 }> {
-  const featureName = params.featureName || 'vue-migration';
+  const featureName = await resolveFeatureName(params.featureName);
   const context = new WorkflowCommandContext(featureName);
   
   const auditParams: AuditParams = {
@@ -52,32 +53,32 @@ export async function auditPhaseStart(params: AuditPhaseStartParams): Promise<{
   // Run only baseline audits (subset of full audit suite)
   try {
     results.push(await auditComments(auditParams));
-  } catch (error) {
-    errors.push(`Comments audit failed: ${error instanceof Error ? error.message : String(error)}`);
+  } catch (_error) {
+    errors.push(`Comments audit failed: ${_error instanceof Error ? _error.message : String(_error)}`);
   }
   
   try {
     results.push(await auditSecurity(auditParams));
-  } catch (error) {
-    errors.push(`Security audit failed: ${error instanceof Error ? error.message : String(error)}`);
+  } catch (_error) {
+    errors.push(`Security audit failed: ${_error instanceof Error ? _error.message : String(_error)}`);
   }
   
   try {
     results.push(await auditPlanning(auditParams));
-  } catch (error) {
-    errors.push(`Planning audit failed: ${error instanceof Error ? error.message : String(error)}`);
+  } catch (_error) {
+    errors.push(`Planning audit failed: ${_error instanceof Error ? _error.message : String(_error)}`);
   }
   
   try {
     results.push(await auditDocs(auditParams));
-  } catch (error) {
-    errors.push(`Docs audit failed: ${error instanceof Error ? error.message : String(error)}`);
+  } catch (_error) {
+    errors.push(`Docs audit failed: ${_error instanceof Error ? _error.message : String(_error)}`);
   }
 
   try {
     results.push(await auditVueArchitecture(auditParams));
-  } catch (error) {
-    errors.push(`Vue architecture audit failed: ${error instanceof Error ? error.message : String(error)}`);
+  } catch (_error) {
+    errors.push(`Vue architecture audit failed: ${_error instanceof Error ? _error.message : String(_error)}`);
   }
   
   // Create audit result
@@ -103,8 +104,8 @@ export async function auditPhaseStart(params: AuditPhaseStartParams): Promise<{
       }
     }
     await storeBaselineScore('phase', params.phase, featureName, scores);
-  } catch (error) {
-    errors.push(`Failed to store baseline scores: ${error instanceof Error ? error.message : String(error)}`);
+  } catch (_error) {
+    errors.push(`Failed to store baseline scores: ${_error instanceof Error ? _error.message : String(_error)}`);
   }
   
   // Write audit report (marked as start audit)
@@ -112,8 +113,8 @@ export async function auditPhaseStart(params: AuditPhaseStartParams): Promise<{
   try {
     reportPath = await writeAuditReport(auditResult, context, 'start');
     auditResult.reportPath = getRelativePath(reportPath);
-  } catch (error) {
-    errors.push(`Failed to write audit report: ${error instanceof Error ? error.message : String(error)}`);
+  } catch (_error) {
+    errors.push(`Failed to write audit report: ${_error instanceof Error ? _error.message : String(_error)}`);
   }
   
   // Generate output message

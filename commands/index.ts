@@ -3,6 +3,20 @@
  * Exports all commands organized by tier (Feature → Phase → Session → Task)
  */
 
+// Tier configs and shared operations (config-driven pipeline)
+export * from './tiers/shared/types';
+export * from './tiers/shared/tier-change';
+export * from './tiers/shared/tier-validate';
+export * from './tiers/shared/tier-complete';
+export * from './tiers/shared/tier-checkpoint';
+export * from './tiers/shared/tier-plan';
+export * from './tiers/shared/tier-start';
+export * from './tiers/shared/tier-end';
+export * from './tiers/configs/feature';
+export * from './tiers/configs/phase';
+export * from './tiers/configs/session';
+export * from './tiers/configs/task';
+
 // Feature tier (Tier 0 - Highest Level)
 export * from './tiers/feature/atomic/feature-create';
 export * from './tiers/feature/atomic/feature-research';
@@ -10,31 +24,14 @@ export * from './tiers/feature/atomic/feature-load';
 export * from './tiers/feature/atomic/feature-checkpoint';
 export * from './tiers/feature/atomic/feature-summarize';
 export * from './tiers/feature/atomic/feature-close';
-export * from './tiers/feature/composite/plan-feature';
-export * from './tiers/feature/composite/feature-start';
-export * from './tiers/feature/composite/feature-end';
-export * from './tiers/feature/composite/feature-change';
+export * from './tiers/feature/composite/feature';
 
 // Phase tier (Tier 1 - High-Level)
-export * from './tiers/phase/composite/plan-phase';
-export * from './tiers/phase/composite/phase-start';
-export * from './tiers/phase/composite/phase-change';
-export * from './tiers/phase/composite/phase-checkpoint';
-export * from './tiers/phase/composite/phase-end';
-export * from './tiers/phase/composite/mark-phase-complete';
-export * from './tiers/phase/composite/validate-phase';
+export * from './tiers/phase/composite/phase';
 
 // Session tier (Tier 2 - Medium-Level)
 export * from './tiers/session/atomic/create-session-label';
-export * from './tiers/session/composite/plan-session';
-export * from './tiers/session/composite/session-start';
-export * from './tiers/session/composite/session-checkpoint';
-export * from './tiers/session/composite/session-end';
-export * from './tiers/session/composite/session-change';
-export * from './tiers/session/composite/mark-session-complete';
-export * from './tiers/session/composite/update-handoff';
-export * from './tiers/session/composite/new-agent';
-export * from './tiers/session/composite/validate-session';
+export * from './tiers/session/composite/session';
 
 // Task tier (Tier 3 - Low-Level)
 export * from './tiers/task/atomic/format-task-entry';
@@ -42,14 +39,7 @@ export * from './tiers/task/atomic/add-task-section';
 export * from './tiers/task/atomic/mark-complete';
 export { taskCheckpoint } from './tiers/task/atomic/checkpoint';
 // Deprecated: format-subsession-entry and add-subsession-section are kept for backward compatibility but not exported
-export * from './tiers/task/composite/plan-task';
-export * from './tiers/task/composite/task-start';
-export * from './tiers/task/composite/task-change';
-export * from './tiers/task/composite/task-end';
-export * from './tiers/task/composite/log-task';
-export * from './tiers/task/composite/mark-task-complete';
-// Deprecated: log-subsession is kept for backward compatibility
-export * from './tiers/task/composite/log-subsession';
+export * from './tiers/task/composite/task';
 
 // Utils (Cross-tier utilities)
 export { readHandoff, type HandoffTier as ReadHandoffTier } from './utils/read-handoff';
@@ -76,17 +66,28 @@ export * from './utils/verify';
 export * from './utils/check-before-implement';
 export * from './utils/utils';
 export * from './utils/tier-discriminator';
+export * from './utils/tier-navigation';
 export * from './utils/scope-and-summarize';
 export * from './utils/scope-and-change';
 export * from './utils/planning-doc-parser';
 export * from './utils/planning-doc-generator';
+export {
+  runTier,
+  type TierRunParams,
+  type TierRunResult,
+  type FeatureStartParams,
+  type PhaseStartParams,
+  type SessionStartParams,
+  type TaskStartParams,
+  type TaskEndResult,
+} from './utils/tier-runner';
 
-// Workflow Manager Commands (Unified workflow utilities)
-export * from './workflow/workflow-read-guide';
-export * from './workflow/workflow-read-log';
-export * from './workflow/workflow-read-handoff';
-export * from './workflow/workflow-update-section';
-export * from './workflow/workflow-create-from-template';
+// Document operations (unified; formerly workflow/)
+export * from './document/composite/read-guide';
+export * from './document/composite/read-log';
+export * from './document/composite/read-handoff';
+export * from './document/composite/update-section';
+export * from './document/composite/create-from-template';
 
 // Todo tier (Cross-tier utilities)
 // Atomic I/O commands
@@ -118,6 +119,7 @@ export * from './todo/atomic/suppress-trigger';
 // Composite commands
 export * from './todo/composite/create-from-plain-language';
 export * from './todo/composite/create-citations-for-change';
+export * from './todo/composite/create-retroactive-todos-command';
 export * from './todo/composite/rollback-with-conflict-check';
 export * from './todo/composite/aggregate-details';
 
@@ -131,10 +133,13 @@ export * from './planning/atomic/check-critical-points';
 export { analyzeAlternativesCommand as generateAlternatives } from './planning/atomic/generate-alternatives';
 export { analyzeAlternativesCommand as analyzeAlternatives } from './planning/atomic/analyze-alternatives';
 export * from './planning/atomic/enforce-decision-gate';
-export * from './planning/composite/plan-with-checks';
+export { planWithChecks, type PlanWithChecksOptions, type DocCheckType } from './planning/composite/plan-with-checks';
 export * from './planning/composite/plan-with-alternatives';
 export * from './planning/composite/plan-complete';
 export * from './planning/composite/plan-tier';
+export * from './planning/utils/resolve-planning-description';
+export { runPlanningWithChecks, type RunPlanningWithChecksParams } from './planning/utils/run-planning-pipeline';
+export * from './planning/utils/create-planning-todo';
 
 // Document operations (Cross-tier utilities)
 export * from './document/atomic/read-section';
@@ -175,8 +180,8 @@ export * from './handoff/composite/handoff-complete';
 export * from './comments/atomic/format-comment';
 export * from './comments/atomic/add-comment';
 export * from './comments/atomic/review-file';
-export * from './comments/atomic/phase-comment-cleanup';
-export * from './comments/atomic/feature-comment-cleanup';
+export { phaseCommentCleanup, type CommentCleanupParams as PhaseCommentCleanupParams, type CommentCleanupResult as PhaseCommentCleanupResult } from './comments/atomic/phase-comment-cleanup';
+export { featureCommentCleanup, type CommentCleanupParams as FeatureCommentCleanupParams, type CommentCleanupResult as FeatureCommentCleanupResult } from './comments/atomic/feature-comment-cleanup';
 export * from './comments/composite/add-comments-batch';
 export * from './comments/composite/review-and-add';
 
@@ -186,11 +191,6 @@ export * from './validation/atomic/security-check';
 export * from './validation/atomic/verify-completeness';
 export * from './validation/composite/audit-commands';
 export * from './validation/composite/validate-complete';
-
-// Batch operations (Cross-tier utilities)
-export * from './batch/atomic/batch-operation';
-export * from './batch/composite/batch-update-logs';
-export * from './batch/composite/batch-generate-handoffs';
 
 // Testing operations (Cross-tier utilities)
 // Atomic test commands

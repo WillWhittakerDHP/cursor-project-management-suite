@@ -3,7 +3,7 @@
  */
 
 export interface AuditIssue {
-  severity: 'critical' | 'warning' | 'info';
+  severity: 'critical' | 'warning' | 'info' | 'error';
   message: string;
   file?: string;
   line?: number;

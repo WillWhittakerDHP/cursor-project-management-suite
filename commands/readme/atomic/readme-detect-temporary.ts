@@ -90,9 +90,9 @@ export async function detectTemporaryReadme(filePath: string): Promise<Temporary
     }
     
     return null;
-  } catch (error) {
+  } catch (_error) {
     throw new Error(
-      `Failed to detect temporary README: ${error instanceof Error ? error.message : String(error)}`
+      `Failed to detect temporary README: ${_error instanceof Error ? _error.message : String(_error)}`
     );
   }
 }

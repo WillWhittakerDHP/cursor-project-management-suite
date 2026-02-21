@@ -7,8 +7,8 @@
  * Description: Detect scope creep violations in a todo
  */
 
-import { detectScopeCreep } from "../../utils/todo-scoping';
-import { Todo } from "../../utils/todo-types';
+import { detectScopeCreep } from "../../utils/todo-scoping";
+import { Todo } from "../../utils/todo-types";
 
 export async function detectScopeCreepCommand(todo: Todo): Promise<string> {
   try {
@@ -37,8 +37,8 @@ export async function detectScopeCreepCommand(todo: Todo): Promise<string> {
     }
     
     return lines.join('\n');
-  } catch (error) {
-    return `❌ Error detecting scope creep: ${error instanceof Error ? error.message : String(error)}`;
+  } catch (_error) {
+    return `❌ Error detecting scope creep: ${_error instanceof Error ? _error.message : String(_error)}`;
   }
 }
 

@@ -9,12 +9,12 @@
 
 When responding to a `/session-start` command, follow this concise, focused structure:
 
-**⚠️ IMPORTANT: Mode Enforcement**
+**⚠️ IMPORTANT: Mode and switching gate**
 
-- This command MUST be run in **Plan Mode (Ask Mode)** for planning
-- The command performs safe setup operations (branch creation, validation, context loading)
-- **Do NOT implement changes** until the plan is approved
-- After plan approval, switch to **Agent Mode** for implementation
+- The **mode gate** (e.g. "Ensure Plan mode before running /session-start…") is **injected by the generic tier-start dispatcher** (`tier-start.ts`), not by the session impl. All mode logic lives in `.cursor/commands/utils/command-execution-mode.ts` (`modeGateText`, `CursorMode`, `CommandExecutionMode`). See START_END_PLAYBOOK_STRUCTURE.md → "Mode and switching gate."
+- This command MUST be run in **Plan Mode (Ask Mode)** for planning; CreatePlan and AskQuestion are used in Plan mode.
+- The command performs safe setup operations (branch creation, validation, context loading).
+- **Do NOT implement changes** until the plan is approved. After plan approval, switch to **Agent Mode** and invoke with `{ mode: 'execute' }` for implementation.
 
 ```
 ## Session: [X.Y] - [Description]
@@ -255,6 +255,6 @@ import { defineStore } from 'pinia'
 ## Related Documents
 
 - Session Guide Template: `.cursor/commands/tiers/session/templates/session-guide.md`
-- Session Start Command: `.cursor/commands/tiers/session/composite/session.ts` (exports `sessionStart`). Invoke `sessionStart(sessionId, description?, options)`.
+- Session Start Command: `.cursor/commands/tiers/session/composite/session.ts` (exports `sessionStart`). Invoke `sessionStart(sessionId, description?, options)`. First run (Ask mode): omit options for plan + AskQuestion. After user approval, in Agent mode invoke with **`options: { mode: 'execute' }`** to run steps. The mode gate text is injected by the generic `tier-start.ts` dispatcher via `modeGateText` from `command-execution-mode.ts`, not by the session impl.
 - Workflow Rules: `.cursor/rules/USER_CODING_RULES.md` (Rule 19)
 

@@ -11,7 +11,6 @@
 import { readFile, access } from 'fs/promises';
 import { join } from 'path';
 import { PROJECT_ROOT } from '../../utils/utils';
-import { runCommand } from '../../utils/utils';
 
 export type ModificationReason = 'feature-change' | 'test-bug' | 'refactoring' | 'other';
 
@@ -39,7 +38,8 @@ export async function isTestImmutable(filePath: string): Promise<ImmutabilityChe
     // Check if file exists
     try {
       await access(fullPath);
-    } catch {
+    } catch (err) {
+      console.warn('Test immutability: file not found', filePath, err);
       return {
         isImmutable: false,
         hasMarker: false,
@@ -71,12 +71,12 @@ export async function isTestImmutable(filePath: string): Promise<ImmutabilityChe
       hasMarker: true,
       testPasses,
     };
-  } catch (error) {
+  } catch (_error) {
     return {
       isImmutable: false,
       hasMarker: false,
       testPasses: null,
-      reason: error instanceof Error ? error.message : String(error),
+      reason: _error instanceof Error ? _error.message : String(_error),
     };
   }
 }
@@ -87,19 +87,12 @@ export async function isTestImmutable(filePath: string): Promise<ImmutabilityChe
  */
 async function checkTestStatus(filePath: string): Promise<boolean | null> {
   try {
-    // Determine target based on file path
-    let target = 'vue';
-    if (filePath.includes('/server/')) {
-      target = 'server';
-    } else if (filePath.includes('/client/')) {
-      target = 'vue';
-    }
-    
     // Extract test file name for targeted execution
     // For now, we'll do a basic check - in production, run the specific test
     // This is a placeholder - actual implementation would run: npm test -- filePath
     return null; // Return null to indicate check not performed (would require test execution)
-  } catch {
+  } catch (err) {
+    console.warn('Test immutability: checkTestStatus failed', filePath, err);
     return null;
   }
 }

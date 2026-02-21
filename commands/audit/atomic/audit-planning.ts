@@ -9,6 +9,7 @@
 import { AuditResult, AuditFinding, AuditParams } from '../types';
 import { WorkflowCommandContext } from '../../utils/command-context';
 import { MarkdownUtils } from '../../utils/markdown-utils';
+import { resolveFeatureName } from '../../utils';
 
 /**
  * Audit planning for a tier
@@ -31,7 +32,7 @@ export async function auditPlanning(params: AuditParams): Promise<AuditResult> {
     };
   }
   
-  const featureName = params.featureName || 'vue-migration';
+  const featureName = await resolveFeatureName(params.featureName);
   const context = new WorkflowCommandContext(featureName);
   
   try {
@@ -43,7 +44,8 @@ export async function auditPlanning(params: AuditParams): Promise<AuditResult> {
       try {
         planningContent = await context.readFeatureGuide();
         planningPath = context.paths.getFeatureGuidePath();
-      } catch {} {
+      } catch (err) {
+        console.warn('Audit planning: feature guide not found', err);
         findings.push({
           type: 'error',
           message: 'Feature guide not found',
@@ -56,12 +58,13 @@ export async function auditPlanning(params: AuditParams): Promise<AuditResult> {
       try {
         planningContent = await context.readPhaseGuide(params.identifier);
         planningPath = context.paths.getPhaseGuidePath(params.identifier);
-      } catch {} {
+      } catch (err) {
+        console.warn('Audit planning: phase guide not found', params.identifier, err);
         findings.push({
           type: 'error',
           message: `Phase ${params.identifier} guide not found`,
           location: `phase-${params.identifier}-guide.md`,
-          suggestion: 'Create phase guide using /plan-phase command'
+          suggestion: 'Create phase guide using /phase-plan command'
         });
         score -= 30;
       }
@@ -69,7 +72,8 @@ export async function auditPlanning(params: AuditParams): Promise<AuditResult> {
       try {
         planningContent = await context.readSessionGuide(params.identifier);
         planningPath = context.paths.getSessionGuidePath(params.identifier);
-      } catch {} {
+      } catch (err) {
+        console.warn('Audit planning: session guide not found', params.identifier, err);
         findings.push({
           type: 'error',
           message: `Session ${params.identifier} guide not found`,
@@ -218,14 +222,14 @@ export async function auditPlanning(params: AuditParams): Promise<AuditResult> {
       summary
     };
     
-  } catch (error) {
+  } catch (_error) {
     return {
       category: 'planning',
       status: 'fail',
       score: 0,
       findings: [{
         type: 'error',
-        message: `Planning audit failed: ${error instanceof Error ? error.message : String(error)}`,
+        message: `Planning audit failed: ${_error instanceof Error ? _error.message : String(_error)}`,
         location: params.tier
       }],
       recommendations: ['Review planning document structure and content'],

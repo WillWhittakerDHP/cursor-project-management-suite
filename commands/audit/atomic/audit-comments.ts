@@ -63,7 +63,9 @@ export async function auditComments(params: AuditParams): Promise<AuditResult> {
           filesDetectedViaFallback = true;
         }
       }
-    } catch {}
+    } catch (err) {
+      console.warn('Comment audit: failed to detect or read modified files list', err);
+    }
   }
   
   // If still no files, return warning with improved message
@@ -109,7 +111,8 @@ export async function auditComments(params: AuditParams): Promise<AuditResult> {
       // Check if file exists
       try {
         await readFile(fullPath, 'utf-8');
-      } catch {
+      } catch (err) {
+        console.warn('Audit comments: file not found', filePath, err);
         findings.push({
           type: 'warning',
           message: `File not found: ${filePath}`,
@@ -155,13 +158,8 @@ export async function auditComments(params: AuditParams): Promise<AuditResult> {
       const lines = fileContent.split('\n');
       
       // Check for proper comment format
-      let hasStructuredComment = false;
-      let hasReferenceComment = false;
-      let hasLearningComment = false;
-      
       for (const line of lines) {
         if (line.includes('STRUCTURED:')) {
-          hasStructuredComment = true;
           // Check format compliance
           if (!line.includes('WHAT:') && !line.includes('HOW:') && !line.includes('WHY:')) {
             // Check if it's in a multi-line comment block
@@ -181,7 +179,6 @@ export async function auditComments(params: AuditParams): Promise<AuditResult> {
           }
         }
         if (line.includes('REFERENCE:')) {
-          hasReferenceComment = true;
           if (!line.includes('See:') && !lines[lines.indexOf(line) + 1]?.includes('See:')) {
             findings.push({
               type: 'warning',
@@ -191,9 +188,6 @@ export async function auditComments(params: AuditParams): Promise<AuditResult> {
             });
             score -= 3;
           }
-        }
-        if (line.includes('LEARNING:') || line.includes('WHY:') || line.includes('PATTERN:') || line.includes('COMPARISON:')) {
-          hasLearningComment = true;
         }
       }
       
@@ -235,10 +229,10 @@ export async function auditComments(params: AuditParams): Promise<AuditResult> {
         });
       }
       
-    } catch (error) {
+    } catch (_error) {
       findings.push({
         type: 'error',
-        message: `Failed to audit file: ${error instanceof Error ? error.message : String(error)}`,
+        message: `Failed to audit file: ${_error instanceof Error ? _error.message : String(_error)}`,
         location: filePath
       });
       score -= 10;

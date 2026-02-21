@@ -10,13 +10,11 @@
  * Function renamed from `checkDocs()` to `checkDocumentation()` for clarity.
  */
 
-import { readProjectFile } from '../../utils/utils';
-import { readFile, readdir } from 'fs/promises';
+import { PROJECT_ROOT, FRONTEND_ROOT } from '../../utils/utils';
+import { readdir } from 'fs/promises';
 import { join } from 'path';
 import { MarkdownUtils } from '../../utils/markdown-utils';
 import { WorkflowCommandContext } from '../../utils/command-context';
-
-const PROJECT_ROOT = process.cwd();
 
 type DocCheckType = 'component' | 'transformer' | 'pattern' | 'migration';
 
@@ -74,10 +72,10 @@ async function checkComponentDocs(): Promise<string> {
   const sections: string[] = [];
   
   sections.push('## Generic/Reusable Components\n');
-  sections.push('**Location**: `client/src/admin/components/generic/`\n');
+  sections.push(`**Location**: \`${FRONTEND_ROOT}/src/admin/components/generic/\`\n`);
   
   try {
-    const genericDir = join(PROJECT_ROOT, 'client/src/admin/components/generic');
+    const genericDir = join(PROJECT_ROOT, FRONTEND_ROOT, 'src/admin/components/generic');
     const entries = await readdir(genericDir, { withFileTypes: true });
     
     const components: string[] = [];
@@ -95,14 +93,14 @@ async function checkComponentDocs(): Promise<string> {
     } else {
       sections.push('*No generic components found in expected location*');
     }
-  } catch (error) {
-    const fullPath = join(PROJECT_ROOT, 'client/src/admin/components/generic');
+  } catch (_error) {
+    const fullPath = join(PROJECT_ROOT, FRONTEND_ROOT, 'src/admin/components/generic');
     sections.push(`**ERROR: Could not read generic components directory**\n`);
-    sections.push(`**Attempted:** client/src/admin/components/generic\n`);
+    sections.push(`**Attempted:** ${FRONTEND_ROOT}/src/admin/components/generic\n`);
     sections.push(`**Full Path:** ${fullPath}\n`);
     sections.push(`**Expected:** Generic components directory\n`);
     sections.push(`**Suggestion:** Verify directory exists or create it\n`);
-    sections.push(`**Error Details:** ${error instanceof Error ? error.message : String(error)}\n`);
+    sections.push(`**Error Details:** ${_error instanceof Error ? _error.message : String(_error)}\n`);
   }
   
   sections.push('\n### Key Generic Components\n');
@@ -114,7 +112,7 @@ async function checkComponentDocs(): Promise<string> {
   
   sections.push('\n### Architecture Documentation\n');
   sections.push('- `SCHEDULER_COMPONENT_SPECS.md` - Component specifications');
-  sections.push('- `client/src/scheduler/clineSchedulerWizardDirectives/README.md` - Reusable patterns');
+  sections.push(`- \`${FRONTEND_ROOT}/src/scheduler/clineSchedulerWizardDirectives/README.md\` - Reusable patterns`);
   
   return sections.join('\n');
 }
@@ -124,8 +122,8 @@ async function checkTransformerDocs(): Promise<string> {
   
   sections.push('## Transformer Patterns\n');
   sections.push('**Locations**:');
-  sections.push('- `client/src/admin/dataTransformation/`');
-  sections.push('- `client/src/api/transformers/`\n');
+  sections.push(`- \`${FRONTEND_ROOT}/src/admin/dataTransformation/\``);
+  sections.push(`- \`${FRONTEND_ROOT}/src/api/transformers/\`\n`);
   
   sections.push('### Existing Transformer Classes\n');
   sections.push('- `AdminTransformer` - Transforms GlobalEntity → AdminEntity');
@@ -158,9 +156,9 @@ async function checkTransformerDocs(): Promise<string> {
   sections.push('```\n');
   
   sections.push('### Codebase References\n');
-  sections.push('- `client/src/admin/dataTransformation/bridgeToAdminTransformer.ts`');
-  sections.push('- `client/src/api/transformers/adminTransformer.ts`');
-  sections.push('- `client/src/api/transformers/globalTransformer.ts`');
+  sections.push(`- \`${FRONTEND_ROOT}/src/admin/dataTransformation/bridgeToAdminTransformer.ts\``);
+  sections.push(`- \`${FRONTEND_ROOT}/src/api/transformers/adminTransformer.ts\``);
+  sections.push(`- \`${FRONTEND_ROOT}/src/api/transformers/globalTransformer.ts\``);
   
   return sections.join('\n');
 }
@@ -187,22 +185,21 @@ async function checkPatternDocs(): Promise<string> {
   
   sections.push('### Codebase Search\n');
   sections.push('Search for similar patterns before implementing:');
-  sections.push('- Generic components: `client/src/admin/components/generic/`');
-  sections.push('- Transformers: `client/src/admin/dataTransformation/`');
-  sections.push('- Composables: `client/src/composables/`');
+  sections.push(`- Generic components: \`${FRONTEND_ROOT}/src/admin/components/generic/\``);
+  sections.push(`- Transformers: \`${FRONTEND_ROOT}/src/admin/dataTransformation/\``);
+  sections.push(`- Composables: \`${FRONTEND_ROOT}/src/composables/\``);
   
   return sections.join('\n');
 }
 
 async function checkMigrationDocs(): Promise<string> {
   const sections: string[] = [];
+  const context = await WorkflowCommandContext.getCurrent();
   
   sections.push('## Migration Documentation\n');
   sections.push('**Key documents for Vue migration:**\n');
   
   try {
-    // Use WorkflowCommandContext to get paths dynamically
-    const context = await WorkflowCommandContext.getCurrent();
     const handoffContent = await context.readFeatureHandoff();
     const sessionGuideContent = await context.readSessionGuide('1.1'); // Default to first session
     
@@ -239,15 +236,14 @@ async function checkMigrationDocs(): Promise<string> {
         sections.push('');
       }
     }
-  } catch (error) {
+  } catch (_error) {
     sections.push(`**ERROR: Could not read migration documents**\n`);
     sections.push(`**Suggestion:** Verify migration documents exist or create them\n`);
-    sections.push(`**Error Details:** ${error instanceof Error ? error.message : String(error)}\n`);
+    sections.push(`**Error Details:** ${_error instanceof Error ? _error.message : String(_error)}\n`);
   }
   
   sections.push('### Migration Reference Guides\n');
   sections.push('- `VUE_MIGRATION_HANDOFF.md` - Current migration status and patterns');
-  const context = new WorkflowCommandContext('vue-migration');
   sections.push(`- \`${context.paths.getBasePath()}/sessions/session-[X.Y]-guide.md\` - Session structure and workflow`);
   sections.push('- `clineDirectiveMarkdowns/vue-migration-reference/VUE_QUICK_REFERENCE.md` - React → Vue patterns');
   sections.push('- `clineDirectiveMarkdowns/vue-migration-reference/VUE_MIGRATION_CHECKLIST.md` - Migration checklist');

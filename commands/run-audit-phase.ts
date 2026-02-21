@@ -4,16 +4,15 @@
  */
 
 import { auditPhase } from './audit/composite/audit-phase';
+import { resolveFeatureName } from './utils';
 
 const phase = process.argv[2] || '3';
-const featureName = process.argv[3] || 'vue-migration';
 
-console.log(`Running audit for Phase ${phase} of feature ${featureName}...\n`);
-
-auditPhase({
-  phase,
-  featureName,
-})
+void resolveFeatureName(process.argv[3])
+  .then((featureName) => {
+    console.log(`Running audit for Phase ${phase} of feature ${featureName}...\n`);
+    return auditPhase({ phase, featureName });
+  })
   .then((result) => {
     console.log(result.output);
     if (result.fullReportPath) {
@@ -21,7 +20,7 @@ auditPhase({
     }
     process.exit(result.success ? 0 : 1);
   })
-  .catch((error) => {
+  .catch((error: unknown) => {
     console.error('Error running audit:', error);
     process.exit(1);
   });

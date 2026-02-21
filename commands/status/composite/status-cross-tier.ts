@@ -7,6 +7,7 @@
  */
 
 import { getStatus, StatusTier, GetStatusParams } from '../atomic/get-status';
+import { resolveFeatureName } from '../../utils';
 
 export interface StatusCrossTierParams {
   tiers: Array<{
@@ -23,7 +24,7 @@ export interface StatusCrossTierParams {
  * @returns Formatted cross-tier status output
  */
 export async function statusCrossTier(params: StatusCrossTierParams): Promise<string> {
-  const featureName = params.featureName || 'vue-migration';
+  const featureName = await resolveFeatureName(params.featureName);
   const output: string[] = [];
   
   output.push(`# Cross-Tier Status\n`);

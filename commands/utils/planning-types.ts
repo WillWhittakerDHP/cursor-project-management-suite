@@ -67,6 +67,9 @@ export interface PlanningOutput {
   tags?: string[];
   /** Metadata */
   metadata?: Record<string, unknown>;
+
+  /** Allow dynamic key access for validation by rule-defined field names. */
+  [key: string]: unknown;
 }
 
 /**

@@ -46,8 +46,8 @@ async function hasTestsRun(
     // Check for test execution record
     const testRunPattern = /\*\*Tests Run:\*\*/i;
     return testRunPattern.test(logContent);
-  } catch {
-    // If log doesn't exist, assume tests haven't run
+  } catch (err) {
+    console.warn('Test catchup: log not found or unreadable', tier, id, err);
     return false;
   }
 }
@@ -65,14 +65,15 @@ async function getCompletedPhases(
     // Try to read feature guide first
     try {
       featureContent = await context.readFeatureGuide();
-    } catch {
-      // Fall back to feature-plan.md if guide doesn't exist
+    } catch (err) {
+      console.warn('Test catchup: feature guide not found, falling back to feature-plan', err);
       const planPath = context.paths.getFeaturePlanPath();
       try {
         const fullPath = join(PROJECT_ROOT, planPath);
         await access(fullPath);
         featureContent = await readProjectFile(planPath);
-      } catch {
+      } catch (planErr) {
+        console.warn('Test catchup: feature-plan not found', planPath, planErr);
         featureContent = '';
       }
       
@@ -95,13 +96,14 @@ async function getCompletedPhases(
         if (isComplete) {
           phases.push(phase);
         }
-      } catch {
-        // Skip phases we can't read
+      } catch (err) {
+        console.warn('Test catchup: phase guide not found or unreadable', phase, err);
       }
     }
     
     return phases;
-  } catch {
+  } catch (err) {
+    console.warn('Test catchup: getCompletedPhases failed', err);
     return [];
   }
 }
@@ -130,7 +132,8 @@ async function getCompletedSessions(
     }
     
     return sessions;
-  } catch {
+  } catch (err) {
+    console.warn('Test catchup: getCompletedSessions failed', phase, err);
     return [];
   }
 }
@@ -164,8 +167,9 @@ export async function runCatchUpTests(
   const completedPhases = await getCompletedPhases(context);
   
   // Filter to target phase if specified
-  const phasesToTest = options?.targetPhase
-    ? completedPhases.filter(p => parseInt(p) <= parseInt(options.targetPhase))
+  const targetPhase = options?.targetPhase ?? '';
+  const phasesToTest = targetPhase
+    ? completedPhases.filter(p => parseInt(p) <= parseInt(targetPhase, 10))
     : completedPhases;
   
   // Test each phase
@@ -183,11 +187,11 @@ export async function runCatchUpTests(
             error: testResult.message,
           });
         }
-      } catch (error) {
+      } catch (_error) {
         failures.push({
           tier: 'phase',
           id: phase,
-          error: error instanceof Error ? error.message : String(error),
+          error: _error instanceof Error ? _error.message : String(_error),
         });
       }
     }
@@ -217,11 +221,11 @@ export async function runCatchUpTests(
               error: testResult.message,
             });
           }
-        } catch (error) {
+        } catch (_error) {
           failures.push({
             tier: 'session',
             id: sessionId,
-            error: error instanceof Error ? error.message : String(error),
+            error: _error instanceof Error ? _error.message : String(_error),
           });
         }
       }

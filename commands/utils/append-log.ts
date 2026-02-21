@@ -5,17 +5,19 @@
  * @param content Content to append to log
  * @param sessionId Optional session ID (X.Y format). If provided, writes to session-specific log file.
  *                  If not provided, writes to feature log for backward compatibility.
- * @param featureName Optional feature name (defaults to "vue-migration" for backward compatibility)
+ * @param featureName Optional: resolved from .current-feature or git branch
  */
 
 import { WorkflowCommandContext } from './command-context';
+import { resolveFeatureName } from './feature-context';
 
 export async function appendLog(
   content: string,
   sessionId?: string,
-  featureName: string = 'vue-migration'
+  featureName?: string
 ): Promise<void> {
-  const context = new WorkflowCommandContext(featureName);
+  const resolved = await resolveFeatureName(featureName);
+  const context = new WorkflowCommandContext(resolved);
 
   if (sessionId) {
     // Use session-specific log

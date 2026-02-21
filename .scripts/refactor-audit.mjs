@@ -17,7 +17,7 @@ import {
  *
  * Purpose:
  * - Deterministic, data-first inventory of refactor blockers inside `.cursor/commands/`
- * - Emits JSON + Markdown reports (like `client/scripts/*audit*.mjs`)
+ * - Emits JSON + Markdown reports (like `frontend-root/scripts/*audit*.mjs`)
  *
  * What it detects (high leverage):
  * - Plan/execute mixing: Ask-mode claims but includes side-effects (git/file writes/runCommand)

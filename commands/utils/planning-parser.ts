@@ -111,8 +111,7 @@ function extractObjectives(tokens: string[], structured?: string[]): string[] {
   }
   
   const objectives: string[] = [];
-  const objectiveKeywords = ['goal', 'aim', 'target', 'objective', 'purpose', 'achieve', 'implement', 'build', 'create'];
-  
+
   // Look for explicit objective markers
   const text = tokens.join(' ');
   const objectivePatterns = [
@@ -149,8 +148,7 @@ function extractScope(tokens: string[], structured?: string): string {
   }
   
   const text = tokens.join(' ');
-  const scopeKeywords = ['scope', 'boundary', 'include', 'exclude', 'within', 'limited to'];
-  
+
   // Look for explicit scope markers
   const scopePatterns = [
     /scope[:\s]+(.+?)(?:\.|$)/gi,

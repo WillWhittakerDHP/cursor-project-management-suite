@@ -118,7 +118,7 @@ export function isCommentValuable(comment: string, type: string): boolean {
  */
 export function isRegularCommentValuable(comment: string): boolean {
   // Remove comment markers
-  let cleaned = comment
+  const cleaned = comment
     .replace(/^\/\*\*?|\*\/$/g, '') // Remove /** */ or /* */
     .replace(/^\s*\*\s?/gm, '') // Remove leading * from JSDoc lines
     .replace(/^\/\/\s*/gm, '') // Remove // from single-line comments
@@ -419,7 +419,7 @@ export function applyCompression(lines: string[]): { lines: string[]; compressio
   
   // Process clusters in reverse order to maintain line numbers
   const clustersToCompress = clusters.reverse();
-  let finalLines = [...lines];
+  const finalLines = [...lines];
   let compressionCount = 0;
   
   for (const cluster of clustersToCompress) {

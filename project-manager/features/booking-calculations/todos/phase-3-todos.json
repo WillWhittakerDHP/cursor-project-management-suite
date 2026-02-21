@@ -1,0 +1,41 @@
+{
+  "feature": "booking-calculations",
+  "todos": [
+    {
+      "id": "phase-3",
+      "title": "phase 3",
+      "description": "0: calculation & availability audit (new)",
+      "status": "pending",
+      "tier": "phase",
+      "parentId": "feature-booking-calculations",
+      "planningDocPath": ".project-manager/features/booking-calculations/phases/phase-3-guide.md",
+      "planningDocSection": "Phase Objectives",
+      "createdAt": "2026-02-20T19:45:46.701Z",
+      "updatedAt": "2026-02-20T19:45:46.702Z",
+      "tags": [],
+      "blockedBy": [],
+      "scope": {
+        "level": "phase",
+        "abstraction": "medium-high",
+        "detailLevel": "focused",
+        "allowedDetails": [
+          "objectives",
+          "sessions",
+          "dependencies",
+          "high_level_tasks"
+        ],
+        "forbiddenDetails": [
+          "implementation_details",
+          "specific_apis",
+          "code_snippets"
+        ],
+        "inheritedFrom": "feature-booking-calculations"
+      }
+    }
+  ],
+  "metadata": {
+    "version": "1.0",
+    "lastSynced": "2026-02-20T19:45:46.703Z"
+  },
+  "phase": 3
+}

@@ -7,15 +7,15 @@
  * Description: Save a todo with validation feedback
  */
 
-import { saveTodo } from "../../utils/todo-io';
-import { Todo } from "../../utils/todo-types';
+import { saveTodo } from "../../utils/todo-io";
+import { Todo } from "../../utils/todo-types";
 
 export async function saveTodoCommand(feature: string, todo: Todo): Promise<string> {
   try {
     await saveTodo(feature, todo);
     return `✅ Todo saved: ${todo.id}\n**Title:** ${todo.title}\n**Status:** ${todo.status}`;
-  } catch (error) {
-    return `❌ Error saving todo: ${error instanceof Error ? error.message : String(error)}`;
+  } catch (_error) {
+    return `❌ Error saving todo: ${_error instanceof Error ? _error.message : String(_error)}`;
   }
 }
 

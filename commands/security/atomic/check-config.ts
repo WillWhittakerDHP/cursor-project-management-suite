@@ -6,7 +6,7 @@
  * Operates on: Security configuration validation
  */
 
-import { readFileSync, existsSync, readdirSync } from 'fs';
+import { readFileSync, existsSync, readdirSync, statSync } from 'fs';
 import { join } from 'path';
 
 export interface ConfigCheckParams {
@@ -94,8 +94,8 @@ export async function checkConfig(params: ConfigCheckParams = {}): Promise<strin
             });
             result.summary.warningCount++;
           }
-        } catch {
-          // Skip files we can't read
+        } catch (err) {
+          console.warn('Check config: config file not readable', configFile, err);
         }
       }
     }
@@ -111,7 +111,7 @@ export async function checkConfig(params: ConfigCheckParams = {}): Promise<strin
     ];
     
     let corsFound = false;
-    let corsPermissive = false;
+    let _corsPermissive = false;
     
     for (const appFile of appFiles) {
       if (existsSync(appFile)) {
@@ -125,7 +125,7 @@ export async function checkConfig(params: ConfigCheckParams = {}): Promise<strin
             // Check for overly permissive CORS
             if (content.match(/origin\s*[:=]\s*["']\*["']/gi) || 
                 content.match(/cors\({\s*origin\s*:\s*true/gi)) {
-              corsPermissive = true;
+              _corsPermissive = true;
               result.warnings.push({
                 file: relativePath,
                 message: 'CORS configured to allow all origins (*)',
@@ -133,8 +133,8 @@ export async function checkConfig(params: ConfigCheckParams = {}): Promise<strin
               result.summary.warningCount++;
             }
           }
-        } catch {
-          // Skip files we can't read
+        } catch (err) {
+          console.warn('Check config: app file not readable (CORS)', appFile, err);
         }
       }
     }
@@ -160,8 +160,8 @@ export async function checkConfig(params: ConfigCheckParams = {}): Promise<strin
             helmetFound = true;
             break;
           }
-        } catch {
-          // Skip files we can't read
+        } catch (err) {
+          console.warn('Check config: app file not readable (helmet)', appFile, err);
         }
       }
     }
@@ -179,8 +179,8 @@ export async function checkConfig(params: ConfigCheckParams = {}): Promise<strin
         if (allDeps.helmet) {
           helmetFound = true;
         }
-      } catch {
-        // Skip if can't parse
+      } catch (err) {
+        console.warn('Check config: package.json parse failed', err);
       }
     }
     
@@ -206,7 +206,7 @@ export async function checkConfig(params: ConfigCheckParams = {}): Promise<strin
           }
           
           try {
-            const stat = require('fs').statSync(fullPath);
+            const stat = statSync(fullPath);
             
             if (stat.isDirectory()) {
               checkVerboseErrors(fullPath);
@@ -224,12 +224,12 @@ export async function checkConfig(params: ConfigCheckParams = {}): Promise<strin
                 result.summary.warningCount++;
               }
             }
-          } catch {
-            // Skip files we can't read
+          } catch (err) {
+            console.warn('Check config: file not readable (verbose errors)', fullPath, err);
           }
         }
-      } catch {
-        // Skip directories we can't read
+      } catch (err) {
+        console.warn('Check config: directory not readable (verbose errors)', dirPath, err);
       }
     };
     
@@ -251,8 +251,8 @@ export async function checkConfig(params: ConfigCheckParams = {}): Promise<strin
             httpsEnforced = true;
             break;
           }
-        } catch {
-          // Skip files we can't read
+        } catch (err) {
+          console.warn('Check config: app file not readable (HTTPS)', appFile, err);
         }
       }
     }
@@ -283,8 +283,8 @@ export async function checkConfig(params: ConfigCheckParams = {}): Promise<strin
               sessionHttpOnly = true;
             }
           }
-        } catch {
-          // Skip files we can't read
+        } catch (err) {
+          console.warn('Check config: app file not readable (session)', appFile, err);
         }
       }
     }
@@ -346,9 +346,9 @@ export async function checkConfig(params: ConfigCheckParams = {}): Promise<strin
     }
     
     return output.join('\n');
-  } catch (error) {
+  } catch (_error) {
     output.push(`**ERROR: Failed to check security configuration**\n`);
-    output.push(`**Error:** ${error instanceof Error ? error.message : String(error)}\n`);
+    output.push(`**Error:** ${_error instanceof Error ? _error.message : String(_error)}\n`);
     return output.join('\n');
   }
 }
@@ -390,10 +390,10 @@ export async function checkConfigProgrammatic(
       success: true,
       result,
     };
-  } catch (error) {
+  } catch (_error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : String(error),
+      error: _error instanceof Error ? _error.message : String(_error),
     };
   }
 }

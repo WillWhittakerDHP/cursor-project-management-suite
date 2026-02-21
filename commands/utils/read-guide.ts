@@ -4,17 +4,19 @@
  * 
  * @param sessionId Optional session ID (X.Y format). If provided, reads session-specific guide.
  *                  If not provided, reads template guide.
- * @param featureName Optional feature name (defaults to "vue-migration" for backward compatibility)
+ * @param featureName Optional: resolved from .current-feature or git branch
  */
 
 import { WorkflowCommandContext } from './command-context';
 import { MarkdownUtils } from './markdown-utils';
+import { resolveFeatureName } from './feature-context';
 
 export async function readGuide(
   sessionId?: string,
-  featureName: string = 'vue-migration'
+  featureName?: string
 ): Promise<string> {
-  const context = new WorkflowCommandContext(featureName);
+  const resolved = await resolveFeatureName(featureName);
+  const context = new WorkflowCommandContext(resolved);
   
   let guideContent: string;
   let usingTemplate = false;
@@ -23,7 +25,7 @@ export async function readGuide(
   if (sessionId) {
     try {
       guideContent = await context.readSessionGuide(sessionId);
-    } catch (error) {
+    } catch (_error) {
       // Session-specific guide doesn't exist - fail explicitly
       const attemptedPath = context.paths.getSessionGuidePath(sessionId);
       throw new Error(
@@ -38,11 +40,11 @@ export async function readGuide(
     try {
       guideContent = await context.templates.loadTemplate('session', 'guide');
       usingTemplate = true;
-    } catch (error) {
+    } catch (_error) {
       throw new Error(
         `ERROR: Template guide not found\n` +
         `Attempted: ${context.paths.getTemplatePath('session', 'guide')}\n` +
-        `Error: ${error instanceof Error ? error.message : String(error)}`
+        `Error: ${_error instanceof Error ? _error.message : String(_error)}`
       );
     }
   }
@@ -51,12 +53,12 @@ export async function readGuide(
   let templateContent = '';
   try {
     templateContent = await context.templates.loadTemplate('session', 'guide');
-  } catch (error) {
+  } catch (_error) {
     // Template not found - log warning but continue with session guide only
     console.warn(
       `WARNING: Template guide not found for fallback\n` +
       `Attempted: ${context.paths.getTemplatePath('session', 'guide')}\n` +
-      `Error: ${error instanceof Error ? error.message : String(error)}\n`
+      `Error: ${_error instanceof Error ? _error.message : String(_error)}\n`
     );
   }
   

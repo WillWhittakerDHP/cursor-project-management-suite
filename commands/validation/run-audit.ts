@@ -10,8 +10,8 @@ async function main() {
     const report = await auditCommands();
     console.log(report);
     process.exit(0);
-  } catch (error) {
-    console.error('Audit failed:', error);
+  } catch (_error) {
+    console.error('Audit failed:', _error);
     process.exit(1);
   }
 }

@@ -7,7 +7,7 @@
  * Description: Mark a citation as reviewed
  */
 
-import { reviewCitation } from "../../utils/todo-citations';
+import { reviewCitation } from "../../utils/todo-citations";
 
 export async function reviewCitationCommand(
   feature: string,
@@ -17,8 +17,8 @@ export async function reviewCitationCommand(
   try {
     await reviewCitation(feature, todoId, citationId);
     return `✅ Citation reviewed: ${citationId}\n**Todo:** ${todoId}\n**Reviewed at:** ${new Date().toISOString()}`;
-  } catch (error) {
-    return `❌ Error reviewing citation: ${error instanceof Error ? error.message : String(error)}`;
+  } catch (_error) {
+    return `❌ Error reviewing citation: ${_error instanceof Error ? _error.message : String(_error)}`;
   }
 }
 

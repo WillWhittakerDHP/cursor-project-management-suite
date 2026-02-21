@@ -8,6 +8,7 @@
 
 import { AuditResult, AuditFinding, AuditParams } from '../types';
 import { WorkflowCommandContext } from '../../utils/command-context';
+import { resolveFeatureName } from '../../utils';
 
 /**
  * Audit checkpoints for a tier
@@ -17,7 +18,7 @@ export async function auditCheckpoints(params: AuditParams): Promise<AuditResult
   const recommendations: string[] = [];
   let score = 100;
   
-  const featureName = params.featureName || 'vue-migration';
+  const featureName = await resolveFeatureName(params.featureName);
   const context = new WorkflowCommandContext(featureName);
   
   try {
@@ -29,7 +30,8 @@ export async function auditCheckpoints(params: AuditParams): Promise<AuditResult
       try {
         logContent = await context.readFeatureLog();
         logPath = context.paths.getFeatureLogPath();
-      } catch {
+      } catch (err) {
+        console.warn('Audit checkpoints: feature log not found', err);
         findings.push({
           type: 'error',
           message: 'Feature log not found',
@@ -42,7 +44,8 @@ export async function auditCheckpoints(params: AuditParams): Promise<AuditResult
       try {
         logContent = await context.readPhaseLog(params.identifier);
         logPath = context.paths.getPhaseLogPath(params.identifier);
-      } catch {} {
+      } catch (err) {
+        console.warn('Audit checkpoints: phase log not found', params.identifier, err);
         findings.push({
           type: 'error',
           message: `Phase ${params.identifier} log not found`,
@@ -55,7 +58,8 @@ export async function auditCheckpoints(params: AuditParams): Promise<AuditResult
       try {
         logContent = await context.readSessionLog(params.identifier);
         logPath = context.paths.getSessionLogPath(params.identifier);
-      } catch {} {
+      } catch (err) {
+        console.warn('Audit checkpoints: session log not found', params.identifier, err);
         findings.push({
           type: 'error',
           message: `Session ${params.identifier} log not found`,
@@ -72,7 +76,8 @@ export async function auditCheckpoints(params: AuditParams): Promise<AuditResult
         try {
           logContent = await context.readSessionLog(sessionId);
           logPath = context.paths.getSessionLogPath(sessionId);
-        } catch {} {
+        } catch (err) {
+          console.warn('Audit checkpoints: session log not found', sessionId, err);
           findings.push({
             type: 'error',
             message: `Session ${sessionId} log not found`,
@@ -225,14 +230,14 @@ export async function auditCheckpoints(params: AuditParams): Promise<AuditResult
       summary
     };
     
-  } catch (error) {
+  } catch (_error) {
     return {
       category: 'checkpoints',
       status: 'fail',
       score: 0,
       findings: [{
         type: 'error',
-        message: `Checkpoint audit failed: ${error instanceof Error ? error.message : String(error)}`,
+        message: `Checkpoint audit failed: ${_error instanceof Error ? _error.message : String(_error)}`,
         location: params.tier
       }],
       recommendations: ['Review checkpoint documentation structure'],

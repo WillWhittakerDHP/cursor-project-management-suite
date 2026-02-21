@@ -12,15 +12,8 @@
 import { spawn, ChildProcess } from 'child_process';
 import { join } from 'path';
 import * as process from 'process';
-import { PROJECT_ROOT } from '../../utils/utils';
-import { TEST_CONFIG } from './test-config';
+import { PROJECT_ROOT, FRONTEND_ROOT } from '../../utils/utils';
 import { analyzeTestError, TestErrorAnalysis } from '../composite/test-error-analyzer';
-import { 
-  requestTestFileFixPermission, 
-  grantTestFileFixPermission,
-  checkTestFileFixPermission 
-} from '../composite/test-file-fix-permission';
-import { executeTestFileFix } from '../composite/test-file-fix-workflow';
 import { testRun } from '../atomic/test-run';
 
 export interface WatchModeResult {
@@ -128,8 +121,7 @@ export async function executeWatchModeWithMonitoring(
   options: WatchModeOptions = {}
 ): Promise<WatchModeResult> {
   const target = options.testTarget || testTarget;
-  const conversationTurn = options.conversationTurn || 'default';
-  
+
   // Build watch command
   const commands: Record<string, { cwd: string; command: string; args: string[] }> = {
     vue: {
@@ -143,7 +135,7 @@ export async function executeWatchModeWithMonitoring(
       args: ['run', 'test', '--', '--watch'],
     },
     all: {
-      cwd: join(PROJECT_ROOT, 'client'),
+      cwd: join(PROJECT_ROOT, FRONTEND_ROOT),
       command: 'npm',
       args: ['run', 'test:watch'],
     },
@@ -158,7 +150,7 @@ export async function executeWatchModeWithMonitoring(
     let outputBuffer = '';
     let errorBuffer = '';
     let hasFailed = false;
-    let errors: TestErrorAnalysis[] = [];
+    const errors: TestErrorAnalysis[] = [];
     let watchProcess: ChildProcess | null = null;
     let stopped = false;
     

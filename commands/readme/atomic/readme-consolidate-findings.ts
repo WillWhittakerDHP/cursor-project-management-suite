@@ -86,9 +86,9 @@ export async function consolidateFindings(params: ConsolidateFindingsParams): Pr
     return `✅ Consolidated findings from ${params.tempReadme} into ${params.targetReadme}\n` +
            `   Section: ${targetSection}\n` +
            (params.removeTemp !== false ? `   Removed temporary file: ${params.tempReadme}` : '');
-  } catch (error) {
+  } catch (_error) {
     throw new Error(
-      `Failed to consolidate findings: ${error instanceof Error ? error.message : String(error)}`
+      `Failed to consolidate findings: ${_error instanceof Error ? _error.message : String(_error)}`
     );
   }
 }

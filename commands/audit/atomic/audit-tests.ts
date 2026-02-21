@@ -44,7 +44,7 @@ export async function auditTests(params: AuditParams): Promise<AuditResult> {
     }
     
     // Find test files for modified files
-    let testFiles: string[] = [];
+    const testFiles: string[] = [];
     let testFilesFound = 0;
     let testFilesWithHeaders = 0;
     
@@ -77,8 +77,8 @@ export async function auditTests(params: AuditParams): Promise<AuditResult> {
             testFiles.push(pattern);
             testFilesFound++;
             break;
-          } catch {
-            // File doesn't exist, continue
+          } catch (err) {
+            console.warn('Audit tests: test file not found', pattern, err);
           }
         }
       }
@@ -144,10 +144,10 @@ export async function auditTests(params: AuditParams): Promise<AuditResult> {
           score -= 10;
         }
         
-      } catch (error) {
+      } catch (_error) {
         findings.push({
           type: 'error',
-          message: `Failed to read test file: ${error instanceof Error ? error.message : String(error)}`,
+          message: `Failed to read test file: ${_error instanceof Error ? _error.message : String(_error)}`,
           location: testFile
         });
         score -= 5;
@@ -234,14 +234,14 @@ export async function auditTests(params: AuditParams): Promise<AuditResult> {
       summary
     };
     
-  } catch (error) {
+  } catch (_error) {
     return {
       category: 'tests',
       status: 'fail',
       score: 0,
       findings: [{
         type: 'error',
-        message: `Test audit failed: ${error instanceof Error ? error.message : String(error)}`,
+        message: `Test audit failed: ${_error instanceof Error ? _error.message : String(_error)}`,
         location: params.tier
       }],
       recommendations: ['Review test structure and coverage'],

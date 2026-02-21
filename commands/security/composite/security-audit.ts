@@ -142,9 +142,9 @@ export async function securityAudit(params: SecurityAuditParams = {}): Promise<s
     }
     
     return output.join('\n');
-  } catch (error) {
+  } catch (_error) {
     output.push(`**ERROR: Security audit failed**\n`);
-    output.push(`**Error:** ${error instanceof Error ? error.message : String(error)}\n`);
+    output.push(`**Error:** ${_error instanceof Error ? _error.message : String(_error)}\n`);
     return output.join('\n');
   }
 }
@@ -166,11 +166,11 @@ export async function securityAuditProgrammatic(
       success: true,
       hasErrors,
     };
-  } catch (error) {
+  } catch (_error) {
     return {
       success: false,
       hasErrors: true,
-      error: error instanceof Error ? error.message : String(error),
+      error: _error instanceof Error ? _error.message : String(_error),
     };
   }
 }

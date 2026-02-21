@@ -28,14 +28,14 @@
  */
 
 import { scopeAndSummarize, ScopeAndSummarizeParams, ScopeAndSummarizeResult, cleanupScopeDocument } from './scope-and-summarize';
-import { changeRequest, ChangeRequestParams } from '../tiers/session/composite/session-change';
-import { taskChange, TaskChangeRequestParams } from '../tiers/task/composite/task-change';
-import { phaseChange, PhaseChangeRequestParams } from '../tiers/phase/composite/phase-change';
+import { changeRequest } from '../tiers/session/composite/session';
+import { taskChange } from '../tiers/task/composite/task';
 import { WorkflowCommandContext } from './command-context';
 import { MarkdownUtils } from './markdown-utils';
 import { WorkflowId } from './id-utils';
 import { appendLog } from './append-log';
 import { getCurrentDate } from './utils';
+import { resolveFeatureName } from './feature-context';
 
 export interface ScopeAndChangeParams extends ScopeAndSummarizeParams {
   sessionId?: string; // Optional - will try to extract from context if not provided
@@ -85,8 +85,8 @@ async function extractCurrentContext(featureName: string): Promise<{
     const phase = phaseMatch ? phaseMatch[1] : undefined;
     
     return { sessionId, taskId, phase };
-  } catch {} {
-    // Silently return empty if can't extract
+  } catch (err) {
+    console.warn('Scope and change: failed to extract changed files', err);
     return {};
   }
 }
@@ -104,7 +104,10 @@ function isSafeForAutoExecution(
   
   const reasons: string[] = [];
   const { tierAnalysis } = result;
-  
+  if (tierAnalysis == null) {
+    return { safe: false, reasons: ['Tier analysis unavailable'] };
+  }
+
   // Check confidence
   if (tierAnalysis.confidence !== 'high') {
     reasons.push(`Tier confidence is ${tierAnalysis.confidence} (requires HIGH)`);
@@ -180,17 +183,17 @@ ${summaryResult.tierAnalysis?.reasoning.map(r => `- ${r}`).join('\n') || '- [No 
     if (taskId) {
       const parsed = WorkflowId.parseTaskId(taskId);
       if (parsed) {
-        const sessionIdFromTask = `${parsed.phase}.${parsed.session}`;
-        await appendLog(logContent, 'session', sessionIdFromTask, featureName);
+        const sessionIdFromTask = parsed.sessionId;
+        await appendLog(logContent, sessionIdFromTask, featureName);
       }
     } else if (sessionId) {
-      await appendLog(logContent, 'session', sessionId, featureName);
+      await appendLog(logContent, sessionId, featureName);
     } else {
       // Fall back to feature log
       await context.appendFeatureLog(logContent);
     }
-  } catch (error) {
-    console.warn(`Warning: Failed to log scope analysis: ${error instanceof Error ? error.message : String(error)}`);
+  } catch (_error) {
+    console.warn(`Warning: Failed to log scope analysis: ${_error instanceof Error ? _error.message : String(_error)}`);
   }
 }
 
@@ -199,12 +202,13 @@ ${summaryResult.tierAnalysis?.reasoning.map(r => `- ${r}`).join('\n') || '- [No 
  */
 export async function scopeAndChange(
   params: ScopeAndChangeParams = {},
-  featureName: string = 'vue-migration'
+  featureName?: string
 ): Promise<ScopeAndChangeResult> {
+  const resolved = await resolveFeatureName(featureName);
   // Step 1: Extract current context if IDs not provided
   let { sessionId, taskId, phase } = params;
   if (!sessionId && !taskId && !phase) {
-    const context = await extractCurrentContext(featureName);
+    const context = await extractCurrentContext(resolved);
     sessionId = sessionId || context.sessionId;
     taskId = taskId || context.taskId;
     phase = phase || context.phase;
@@ -217,48 +221,57 @@ export async function scopeAndChange(
     currentPhase: phase,
     createDocument: true, // Always create document for scope-and-change
   };
-  const summaryResult = await scopeAndSummarize(summarizeParams, featureName);
-  
+  const summaryResult = await scopeAndSummarize(summarizeParams, resolved);
+  const tierAnalysis = summaryResult.tierAnalysis;
+  if (tierAnalysis == null) {
+    return {
+      success: true,
+      autoExecuted: false,
+      tierAnalysis: undefined,
+      output: summaryResult.output + '\n**Note:** Tier analysis unavailable; manual execution required.',
+      documentPath: summaryResult.documentPath,
+    };
+  }
+
   // Step 3: Check if change is already planned downstream
   if (summaryResult.downstreamMatch) {
     return {
       success: true,
       autoExecuted: false,
-      tierAnalysis: summaryResult.tierAnalysis,
+      tierAnalysis,
       output: summaryResult.output,
       documentPath: summaryResult.documentPath,
     };
   }
-  
+
   // Step 4: Check auto-execution criteria
   const safetyCheck = isSafeForAutoExecution(summaryResult, params);
-  
+
   // Step 5: Determine if we can auto-execute
-  const canAutoExecute = safetyCheck.safe && 
-    summaryResult.tierAnalysis &&
-    (summaryResult.tierAnalysis.tier === 'session' || summaryResult.tierAnalysis.tier === 'task') &&
+  const canAutoExecute = safetyCheck.safe &&
+    (tierAnalysis.tier === 'session' || tierAnalysis.tier === 'task') &&
     (sessionId || taskId);
-  
+
   if (canAutoExecute) {
     // Auto-execute appropriate change command
     try {
       const description = summaryResult.summary || params.description || '';
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let changeResult: any;
-      
-      if (summaryResult.tierAnalysis.tier === 'task' && taskId) {
+
+      if (tierAnalysis.tier === 'task' && taskId) {
         // Execute task-change
         if (!WorkflowId.isValidTaskId(taskId)) {
-          throw new Error(`Invalid task ID: ${taskId}. Expected format: X.Y.Z`);
+          throw new Error(`Invalid task ID: ${taskId}. Expected format: X.Y.Z.Z.A`);
         }
         
         changeResult = await taskChange({
           description,
           taskId,
-        }, featureName);
+        }, resolved);
         
         // Log scope analysis and cleanup document
-        await logScopeAnalysis(summaryResult, sessionId, taskId, featureName);
+        await logScopeAnalysis(summaryResult, sessionId, taskId, resolved);
         if (summaryResult.documentPath) {
           await cleanupScopeDocument(summaryResult.documentPath);
         }
@@ -266,7 +279,7 @@ export async function scopeAndChange(
         return {
           success: true,
           autoExecuted: true,
-          tierAnalysis: summaryResult.tierAnalysis,
+          tierAnalysis,
           changeResult,
           output: `## ✅ Auto-Executed: /task-change
 
@@ -285,19 +298,19 @@ ${summaryResult.output}
 
 **Note:** Scope analysis has been logged and temporary scope document cleaned up.`,
         };
-      } else if (summaryResult.tierAnalysis.tier === 'session' && sessionId) {
+      } else if (tierAnalysis.tier === 'session' && sessionId) {
         // Execute session-change
         if (!WorkflowId.isValidSessionId(sessionId)) {
-          throw new Error(`Invalid session ID: ${sessionId}. Expected format: X.Y`);
+          throw new Error(`Invalid session ID: ${sessionId}. Expected format: X.Y.Z`);
         }
         
         changeResult = await changeRequest({
           description,
           sessionId,
-        }, featureName);
+        }, resolved);
         
         // Log scope analysis and cleanup document
-        await logScopeAnalysis(summaryResult, sessionId, taskId, featureName);
+        await logScopeAnalysis(summaryResult, sessionId, taskId, resolved);
         if (summaryResult.documentPath) {
           await cleanupScopeDocument(summaryResult.documentPath);
         }
@@ -305,7 +318,7 @@ ${summaryResult.output}
         return {
           success: true,
           autoExecuted: true,
-          tierAnalysis: summaryResult.tierAnalysis,
+          tierAnalysis,
           changeResult,
           output: `## ✅ Auto-Executed: /session-change
 
@@ -327,22 +340,22 @@ ${summaryResult.output}
       } else {
         throw new Error(`Cannot auto-execute: Missing required ID (sessionId or taskId)`);
       }
-    } catch (error) {
+    } catch (_error) {
       // If auto-execution fails, fall back to showing analysis
       return {
         success: false,
         autoExecuted: false,
-        tierAnalysis: summaryResult.tierAnalysis,
+        tierAnalysis,
         output: `## ⚠️ Auto-Execution Failed
 
-**Error:** ${error instanceof Error ? error.message : String(error)}
+**Error:** ${_error instanceof Error ? _error.message : String(_error)}
 
 ### Analysis
 ${summaryResult.output}
 
 ### Manual Execution Required
 Please review the analysis above and execute the appropriate change command manually:
-- \`${summaryResult.tierAnalysis.suggestedCommand}\`
+- \`${tierAnalysis.suggestedCommand}\`
 - Or use: \`/session-change "${summaryResult.summary}"\` (if session-level)
 - Or use: \`/task-change "${summaryResult.summary}"\` (if task-level)`,
       };
@@ -360,11 +373,11 @@ Please review the analysis above and execute the appropriate change command manu
     return {
       success: true,
       autoExecuted: false,
-      tierAnalysis: summaryResult.tierAnalysis,
+      tierAnalysis,
       output: `## ⚠️ Requires Review Before Execution
 
-**Tier:** ${summaryResult.tierAnalysis.tier.charAt(0).toUpperCase() + summaryResult.tierAnalysis.tier.slice(1)}
-**Confidence:** ${summaryResult.tierAnalysis.confidence.charAt(0).toUpperCase() + summaryResult.tierAnalysis.confidence.slice(1)}${reasonsList}${missingIdNote}
+**Tier:** ${tierAnalysis.tier.charAt(0).toUpperCase() + tierAnalysis.tier.slice(1)}
+**Confidence:** ${tierAnalysis.confidence.charAt(0).toUpperCase() + tierAnalysis.confidence.slice(1)}${reasonsList}${missingIdNote}
 
 ### Analysis
 ${summaryResult.output}
@@ -374,17 +387,17 @@ Please review the analysis above and execute the appropriate change command manu
 
 **Suggested command:**
 \`\`\`
-${summaryResult.tierAnalysis.suggestedCommand}
+${tierAnalysis.suggestedCommand}
 \`\`\`
 
 **Or use tier-specific change command:**
-${summaryResult.tierAnalysis.tier === 'session' && sessionId
+${tierAnalysis.tier === 'session' && sessionId
   ? `\`\`\`\n/session-change "${summaryResult.summary}" ${sessionId}\n\`\`\``
-  : summaryResult.tierAnalysis.tier === 'task' && taskId
+  : tierAnalysis.tier === 'task' && taskId
   ? `\`\`\`\n/task-change "${summaryResult.summary}" ${taskId}\n\`\`\``
-  : summaryResult.tierAnalysis.tier === 'phase' && phase
+  : tierAnalysis.tier === 'phase' && phase
   ? `\`\`\`\n/phase-change "${summaryResult.summary}" ${phase}\n\`\`\``
-  : `\`\`\`\n/${summaryResult.tierAnalysis.tier}-change "${summaryResult.summary}"\n\`\`\``
+  : `\`\`\`\n/${tierAnalysis.tier}-change "${summaryResult.summary}"\n\`\`\``
 }`,
     };
   }

@@ -9,7 +9,7 @@
  * - `extractMarkdownSection()` - Basic markdown extraction
  * - `parseTaskId()` - Basic ID parsing
  * - `parseSessionId()` - Basic ID parsing
- * - `parseSubSessionId` - Alias for parseTaskId
+ * - Task IDs: Use WorkflowId.parseTaskId (task = tier below session).
  * 
  * ## Migration Guide
  * 
@@ -41,8 +41,11 @@
 
 import { readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
+import { execSync } from 'child_process';
 
 export const PROJECT_ROOT = process.cwd();
+/** Frontend app root directory (Vue). Use for path construction; avoid hardcoding the frontend path. */
+export const FRONTEND_ROOT = 'client';
 
 /**
  * Read a file from the project root
@@ -72,14 +75,13 @@ export function getCurrentDate(): string {
  * Get current git branch
  */
 export async function getCurrentBranch(): Promise<string> {
-  const { execSync } = await import('child_process');
   try {
     return execSync('git branch --show-current', { encoding: 'utf-8' }).trim();
-  } catch (error) {
+  } catch (_error) {
     console.warn(
       `WARNING: Could not get current git branch, defaulting to 'main'\n` +
       `Command: git branch --show-current\n` +
-      `Error: ${error instanceof Error ? error.message : String(error)}\n`
+      `Error: ${_error instanceof Error ? _error.message : String(_error)}\n`
     );
     return 'main';
   }
@@ -90,7 +92,6 @@ export async function getCurrentBranch(): Promise<string> {
  * Uses git merge-base to find common ancestor and verify parent is ancestor of child
  */
 export async function isBranchBasedOn(childBranch: string, parentBranch: string): Promise<boolean> {
-  const { execSync } = await import('child_process');
   try {
     // Get merge base between the two branches
     const mergeBase = execSync(`git merge-base ${parentBranch} ${childBranch}`, {
@@ -108,7 +109,7 @@ export async function isBranchBasedOn(childBranch: string, parentBranch: string)
     
     // If merge base equals parent HEAD, then parent is ancestor of child (child is based on parent)
     return mergeBase === parentHead;
-  } catch (error) {
+  } catch (_error) {
     // If branches don't exist or can't compare, return false
     return false;
   }
@@ -118,7 +119,6 @@ export async function isBranchBasedOn(childBranch: string, parentBranch: string)
  * Check if a branch exists
  */
 export async function branchExists(branchName: string): Promise<boolean> {
-  const { execSync } = await import('child_process');
   try {
     execSync(`git rev-parse --verify ${branchName}`, {
       encoding: 'utf-8',
@@ -126,7 +126,7 @@ export async function branchExists(branchName: string): Promise<boolean> {
       stdio: 'pipe'
     });
     return true;
-  } catch (error) {
+  } catch (_error) {
     return false;
   }
 }
@@ -135,7 +135,6 @@ export async function branchExists(branchName: string): Promise<boolean> {
  * Run a command and return output
  */
 export async function runCommand(command: string, cwd?: string): Promise<{ success: boolean; output: string; error?: string }> {
-  const { execSync } = await import('child_process');
   try {
     const output = execSync(command, { 
       encoding: 'utf-8',
@@ -279,18 +278,17 @@ export async function identifyChangeScope(changeRequest: ChangeRequest): Promise
   // If it's a naming change, search for files containing the old value
   if (changeRequest.type === 'naming' && changeRequest.oldValue) {
     try {
-      const { execSync } = await import('child_process');
       // Search for the old value in code files
       const searchResult = execSync(
-        `grep -r --include="*.ts" --include="*.tsx" --include="*.vue" --include="*.js" --include="*.jsx" -l "${changeRequest.oldValue}" client/ 2>/dev/null || true`,
+        `grep -r --include="*.ts" --include="*.tsx" --include="*.vue" --include="*.js" --include="*.jsx" -l "${changeRequest.oldValue}" "${FRONTEND_ROOT}/" 2>/dev/null || true`,
         { encoding: 'utf-8', cwd: PROJECT_ROOT }
       );
       
       const files = searchResult.trim().split('\n').filter(f => f.length > 0);
       filesAffected.push(...files);
-    } catch (error) {
+    } catch (_error) {
       // If grep fails, continue without file list
-      console.warn(`Could not search for files containing ${changeRequest.oldValue}: ${error instanceof Error ? error.message : String(error)}`);
+      console.warn(`Could not search for files containing ${changeRequest.oldValue}: ${_error instanceof Error ? _error.message : String(_error)}`);
     }
   }
   
@@ -314,102 +312,5 @@ export async function identifyChangeScope(changeRequest: ChangeRequest): Promise
   };
 }
 
-/**
- * Plan Mode Enforcement Result
- */
-export interface PlanModeEnforcementResult {
-  allowed: boolean;
-  message: string;
-  mode: import('./command-execution-mode').CommandExecutionMode;
-}
-
-/**
- * Enforce plan mode (Ask Mode) for planning commands
- * 
- * This function checks if we're in plan mode and provides clear instructions
- * if not. Since we cannot directly detect Cursor's mode, we provide explicit
- * instructions and require acknowledgment.
- * 
- * @param commandName Name of the command being executed (e.g., "session-start", "phase-start")
- * @returns PlanModeEnforcementResult with allowed status and instructions
- */
-export function enforcePlanMode(
-  commandName: string,
-  options?: import('./command-execution-mode').CommandExecutionOptions
-): PlanModeEnforcementResult {
-  // Align with the shared plan/execute system:
-  // - default to **plan** for commands that explicitly call `enforcePlanMode`
-  // - allow callers to explicitly opt into `execute` by passing `{ mode: 'execute' }`
-  const mode: import('./command-execution-mode').CommandExecutionMode = options?.mode ?? 'plan';
-
-  // Since we cannot directly detect Cursor's mode, we provide explicit instructions
-  // The system_reminder in the system prompt indicates plan mode is active
-  // If we're executing code, we're likely not in plan mode
-  
-  const message = `## ⚠️ PLAN MODE ENFORCEMENT REQUIRED
-
-**Command:** \`/${commandName}\`
-
-**Resolved Mode:** \`${mode}\`
-
-**This command MUST be run in Plan Mode (Ask Mode) for planning and review.**
-
-### Current Status
-- **Mode Check:** Cannot directly detect Cursor mode
-- **Action Required:** Verify you are in Plan Mode before proceeding
-
-### How to Ensure Plan Mode
-
-1. **Check Your Mode:**
-   - Look for "Plan mode is active" indicator in system messages
-   - If you see "Plan mode is active" → You're good to proceed ✅
-   - If you don't see this → Switch to Plan Mode first ⚠️
-
-2. **Switch to Plan Mode (if needed):**
-   - Use Cursor's mode toggle to switch to Plan Mode / Ask Mode
-   - The command should show a plan, not execute code directly
-
-3. **What This Command Does:**
-   - ✅ Creates/checks branches (safe operations)
-   - ✅ Validates prerequisites (read-only checks)
-   - ✅ Loads context and guides (read-only operations)
-   - ✅ Generates a plan for review
-   - ❌ Does NOT implement changes (implementation happens after approval)
-
-### Workflow
-
-1. **Run command in Plan Mode** → Get plan and context
-2. **Review the plan** → Understand what will be done
-3. **Approve the plan** → Explicitly confirm you want to proceed
-4. **Switch to Agent Mode** → Only then should implementation begin
-5. **Implement changes** → Execute the approved plan
-
-### Important Notes
-
-- **Branch operations are safe** - Creating/checking branches doesn't modify code
-- **Validation is read-only** - Checking prerequisites doesn't change anything
-- **Context loading is read-only** - Reading guides/handoffs doesn't modify files
-- **Implementation requires approval** - No code changes happen until you approve
-
-### If You're Already in Plan Mode
-
-If you see "Plan mode is active" in your system messages, you can proceed.
-The command will:
-- Perform safe setup operations (branches, validation)
-- Load context and generate a plan
-- Wait for your approval before any implementation
-
----
-
-**Next Step:** Verify Plan Mode is active, then re-run this command.`;
-
-  // We always allow the command to proceed, but provide clear instructions
-  // The actual enforcement happens through the instructions and workflow
-  return {
-    allowed: true, // Allow command to proceed, but with clear instructions
-    message,
-    mode,
-  };
-}
 
 

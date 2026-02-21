@@ -1,0 +1,524 @@
+{
+  "tier": "feature",
+  "identifier": "booking-calculations",
+  "overallStatus": "fail",
+  "results": [
+    {
+      "category": "comments",
+      "status": "warn",
+      "score": 50,
+      "findings": [
+        {
+          "type": "warning",
+          "message": "No modified files provided for comment audit",
+          "suggestion": "Provide modified files list for comprehensive comment audit. Files can be detected from session logs or git history."
+        }
+      ],
+      "recommendations": [
+        "Include modified files list in audit parameters",
+        "Files can be auto-detected from session logs if available",
+        "Run audit with explicit file list: /audit-comments [tier] [id] [files...]"
+      ],
+      "summary": "Comment audit skipped - no files to audit"
+    },
+    {
+      "category": "security",
+      "status": "fail",
+      "score": 0,
+      "findings": [
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: **Dependency vulnerabilities detected**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **@eslint/config-array@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **@eslint/eslintrc@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **@jest/core@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **@jest/expect@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **@jest/globals@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **@jest/reporters@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **@jest/transform@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **@typescript-eslint/eslint-plugin@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **@typescript-eslint/parser@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **@typescript-eslint/type-utils@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **@typescript-eslint/typescript-estree@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **@typescript-eslint/utils@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **babel-jest@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **babel-plugin-istanbul@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **create-jest@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **editorconfig@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **eslint@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **gaxios@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **glob@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **jest@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **jest-circus@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **jest-cli@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **jest-config@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **jest-resolve-dependencies@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **jest-runner@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **jest-runtime@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **jest-snapshot@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **js-beautify@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **minimatch@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **nodemon@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **rimraf@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **sequelize-cli@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **test-exclude@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **ts-jest@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "warning",
+          "message": "1. Dependency Vulnerabilities: -  **@babel/helpers@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security best practices"
+        },
+        {
+          "type": "warning",
+          "message": "1. Dependency Vulnerabilities: -  **ajv@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security best practices"
+        },
+        {
+          "type": "warning",
+          "message": "1. Dependency Vulnerabilities: -  **js-yaml@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security best practices"
+        },
+        {
+          "type": "warning",
+          "message": "3. Security Configuration: -  **server/src/middlewares/errorHandler.ts**",
+          "location": "3. Security Configuration",
+          "suggestion": "Review security best practices"
+        },
+        {
+          "type": "warning",
+          "message": "3. Security Configuration: -  **server/src/routes/external/oauthCallbackRouter.ts**",
+          "location": "3. Security Configuration",
+          "suggestion": "Review security best practices"
+        },
+        {
+          "type": "warning",
+          "message": "3. Security Configuration: -  **server/src/routes/internal/relationships/relationshipCrudRouter.ts**",
+          "location": "3. Security Configuration",
+          "suggestion": "Review security best practices"
+        },
+        {
+          "type": "warning",
+          "message": "3. Security Configuration: -  **app configuration**",
+          "location": "3. Security Configuration",
+          "suggestion": "Review security best practices"
+        },
+        {
+          "type": "warning",
+          "message": "3. Security Configuration: -  **session configuration**",
+          "location": "3. Security Configuration",
+          "suggestion": "Review security best practices"
+        },
+        {
+          "type": "warning",
+          "message": "3. Security Configuration: -  **session configuration**",
+          "location": "3. Security Configuration",
+          "suggestion": "Review security best practices"
+        },
+        {
+          "type": "warning",
+          "message": "5. Authentication Patterns: -  **package.json**",
+          "location": "5. Authentication Patterns",
+          "suggestion": "Review security best practices"
+        },
+        {
+          "type": "error",
+          "message": "6. IDOR Vulnerabilities: **1 security check(s) found issues**",
+          "location": "6. IDOR Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "6. IDOR Vulnerabilities: | Dependencies |  Issues Found |",
+          "location": "6. IDOR Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        }
+      ],
+      "recommendations": [
+        "Fix 37 security error(s) immediately",
+        "Review SECURITY_GUIDELINES.md for best practices",
+        "Address 10 security warning(s)",
+        "Ensure all API endpoints have proper authentication",
+        "Validate all user inputs on server side"
+      ],
+      "summary": "Security audit failed. 37 error(s), 10 warning(s)."
+    },
+    {
+      "category": "planning",
+      "status": "fail",
+      "score": 50,
+      "findings": [
+        {
+          "type": "error",
+          "message": "Feature guide not found",
+          "location": "feature guide",
+          "suggestion": "Create feature guide using /plan-feature command"
+        },
+        {
+          "type": "warning",
+          "message": "Missing or incomplete section: Architecture",
+          "location": ".project-manager/features/booking-calculations/feature-booking-calculations-guide.md",
+          "suggestion": "Add or complete Architecture section in planning document"
+        },
+        {
+          "type": "warning",
+          "message": "Missing or incomplete section: Implementation Plan",
+          "location": ".project-manager/features/booking-calculations/feature-booking-calculations-guide.md",
+          "suggestion": "Add or complete Implementation Plan section in planning document"
+        }
+      ],
+      "recommendations": [
+        "Add missing sections: Architecture, Implementation Plan",
+        "Planning document needs significant improvement"
+      ],
+      "summary": "Planning document partially meets quality standards. 2 missing section(s)."
+    },
+    {
+      "category": "docs",
+      "status": "fail",
+      "score": 45,
+      "findings": [
+        {
+          "type": "error",
+          "message": "Guide document not found for feature booking-calculations",
+          "location": ".project-manager/features/booking-calculations/feature-booking-calculations-guide.md",
+          "suggestion": "Create guide document using appropriate planning command"
+        },
+        {
+          "type": "warning",
+          "message": "Guide missing or incomplete section: Architecture",
+          "location": ".project-manager/features/booking-calculations/feature-booking-calculations-guide.md",
+          "suggestion": "Add or complete Architecture section in guide"
+        },
+        {
+          "type": "warning",
+          "message": "Guide missing or incomplete section: Implementation Plan",
+          "location": ".project-manager/features/booking-calculations/feature-booking-calculations-guide.md",
+          "suggestion": "Add or complete Implementation Plan section in guide"
+        },
+        {
+          "type": "warning",
+          "message": "Log document not found for feature booking-calculations",
+          "location": ".project-manager/features/booking-calculations/feature-booking-calculations-log.md",
+          "suggestion": "Create log document to track progress"
+        },
+        {
+          "type": "warning",
+          "message": "Handover document not found for feature booking-calculations",
+          "location": ".project-manager/features/booking-calculations/feature-booking-calculations-handoff.md",
+          "suggestion": "Create handover document for transition context"
+        },
+        {
+          "type": "warning",
+          "message": "Handover missing or incomplete section: Next Action",
+          "location": ".project-manager/features/booking-calculations/feature-booking-calculations-handoff.md",
+          "suggestion": "Add or complete Next Action section in handover"
+        }
+      ],
+      "recommendations": [
+        "Review documentation structure and completeness"
+      ],
+      "summary": "3/3 documents exist. 6 issue(s) found."
+    },
+    {
+      "category": "vue-architecture",
+      "status": "fail",
+      "score": 0,
+      "findings": [
+        {
+          "type": "warning",
+          "message": "Component script is large (211 non-empty lines). This often indicates logic creep.",
+          "location": "client/src/@core/components/TheCustomizer.vue",
+          "suggestion": "Move domain rules/orchestration into composables; keep only UI state and event wiring."
+        },
+        {
+          "type": "error",
+          "message": "Component script references a network/fetch client. Data fetching should be moved into composables/stores/services.",
+          "location": "client/src/components/admin/dev/ApiDevPanel.vue",
+          "suggestion": "Extract to a composable (use*Query) or store/service and keep component as wiring + UI behavior."
+        },
+        {
+          "type": "warning",
+          "message": "Component script is large (411 non-empty lines). This often indicates logic creep.",
+          "location": "client/src/components/admin/generic/EntityCard.vue",
+          "suggestion": "Move domain rules/orchestration into composables; keep only UI state and event wiring."
+        },
+        {
+          "type": "warning",
+          "message": "Component script is large (196 non-empty lines). This often indicates logic creep.",
+          "location": "client/src/components/admin/generic/EntityCardSubPanels.vue",
+          "suggestion": "Move domain rules/orchestration into composables; keep only UI state and event wiring."
+        },
+        {
+          "type": "warning",
+          "message": "Component script is large (187 non-empty lines). This often indicates logic creep.",
+          "location": "client/src/components/admin/generic/fields/FieldRenderer.vue",
+          "suggestion": "Move domain rules/orchestration into composables; keep only UI state and event wiring."
+        },
+        {
+          "type": "warning",
+          "message": "Component script is large (207 non-empty lines). This often indicates logic creep.",
+          "location": "client/src/components/admin/generic/fields/SelectInputs.vue",
+          "suggestion": "Move domain rules/orchestration into composables; keep only UI state and event wiring."
+        },
+        {
+          "type": "warning",
+          "message": "Component script is large (215 non-empty lines). This often indicates logic creep.",
+          "location": "client/src/components/admin/metadata/AdminPrimitiveMetadataEditor.vue",
+          "suggestion": "Move domain rules/orchestration into composables; keep only UI state and event wiring."
+        },
+        {
+          "type": "error",
+          "message": "Component script references a network/fetch client. Data fetching should be moved into composables/stores/services.",
+          "location": "client/src/components/booking/BookingWizard.vue",
+          "suggestion": "Extract to a composable (use*Query) or store/service and keep component as wiring + UI behavior."
+        },
+        {
+          "type": "warning",
+          "message": "Component script is large (235 non-empty lines). This often indicates logic creep.",
+          "location": "client/src/components/booking/BookingWizard.vue",
+          "suggestion": "Move domain rules/orchestration into composables; keep only UI state and event wiring."
+        },
+        {
+          "type": "warning",
+          "message": "Component script is large (257 non-empty lines). This often indicates logic creep.",
+          "location": "client/src/components/booking/dev/DevPanelsContainer.vue",
+          "suggestion": "Move domain rules/orchestration into composables; keep only UI state and event wiring."
+        },
+        {
+          "type": "error",
+          "message": "Component script references a network/fetch client. Data fetching should be moved into composables/stores/services.",
+          "location": "client/src/components/booking/steps/PropertyDetailsStep.vue",
+          "suggestion": "Extract to a composable (use*Query) or store/service and keep component as wiring + UI behavior."
+        },
+        {
+          "type": "error",
+          "message": "Component script references a network/fetch client. Data fetching should be moved into composables/stores/services.",
+          "location": "client/src/components/common/AddressAutocomplete.vue",
+          "suggestion": "Extract to a composable (use*Query) or store/service and keep component as wiring + UI behavior."
+        },
+        {
+          "type": "warning",
+          "message": "Component script is large (271 non-empty lines). This often indicates logic creep.",
+          "location": "client/src/components/common/AddressAutocomplete.vue",
+          "suggestion": "Move domain rules/orchestration into composables; keep only UI state and event wiring."
+        },
+        {
+          "type": "warning",
+          "message": "Component script is large (320 non-empty lines). This often indicates logic creep.",
+          "location": "client/src/views/admin/tabs/InstancesTab.vue",
+          "suggestion": "Move domain rules/orchestration into composables; keep only UI state and event wiring."
+        },
+        {
+          "type": "warning",
+          "message": "Component defines many local functions (8). Consider extracting reusable/domain logic into composables.",
+          "location": "client/src/views/admin/tabs/InstancesTab.vue",
+          "suggestion": "If functions implement business rules or shared transforms, move them into composables/utilities."
+        },
+        {
+          "type": "warning",
+          "message": "Component script is large (377 non-empty lines). This often indicates logic creep.",
+          "location": "client/src/views/admin/tabs/ShapesTab.vue",
+          "suggestion": "Move domain rules/orchestration into composables; keep only UI state and event wiring."
+        },
+        {
+          "type": "warning",
+          "message": "Component defines many local functions (18). Consider extracting reusable/domain logic into composables.",
+          "location": "client/src/views/admin/tabs/ShapesTab.vue",
+          "suggestion": "If functions implement business rules or shared transforms, move them into composables/utilities."
+        },
+        {
+          "type": "warning",
+          "message": "Component defines many local functions (9). Consider extracting reusable/domain logic into composables.",
+          "location": "client/src/views/admin/tabs/components/AppointmentsTable.vue",
+          "suggestion": "If functions implement business rules or shared transforms, move them into composables/utilities."
+        }
+      ],
+      "recommendations": [
+        "Review `.project-manager/patterns/vue-architecture-contract.md` and move domain logic out of components.",
+        "Review `.project-manager/patterns/composable-taxonomy.md` and standardize composable naming/return shapes."
+      ],
+      "summary": "Scanned 149 .vue file(s); found 4 error(s), 14 warning(s)."
+    }
+  ],
+  "timestamp": "2026-02-20T18:56:13.315Z",
+  "reportPath": "",
+  "featureName": "booking-calculations",
+  "auditType": "start",
+  "baselineComparison": []
+}
