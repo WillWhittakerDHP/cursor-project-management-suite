@@ -3,9 +3,6 @@
  */
 
 import { readHandoff } from '../../../utils/read-handoff';
-import type { Todo } from '../../../utils/todo-types';
-import { findTodoById } from '../../../utils/todo-io';
-import { lookupCitations } from '../../../utils/todo-citations';
 import { WorkflowCommandContext } from '../../../utils/command-context';
 import { WorkflowId } from '../../../utils/id-utils';
 import { extractFilePaths, gatherFileStatuses } from '../../../utils/context-gatherer';
@@ -40,59 +37,28 @@ export async function taskStartImpl(
   const feature = resolvedFeatureName;
 
   if (isPlanMode(mode)) {
-    const taskTodoId = `session-${sessionId}-${parsed.task}`;
     const sessionGuidePath = context.paths.getSessionGuidePath(sessionId);
     const sessionHandoffPath = context.paths.getSessionHandoffPath(sessionId);
     const sessionLogPath = context.paths.getSessionLogPath(sessionId);
     const planSteps = [
-      `Todo: lookup task todo by id: \`${taskTodoId}\` (feature: \`${feature}\`)`,
-      `Todo: lookup citations for \`${taskTodoId}\` (junction: task-start)`,
       `Docs: read task handoff context (from session handoff): \`${sessionHandoffPath}\``,
-      `Docs: read session guide (fallback task parsing): \`${sessionGuidePath}\``,
-      `Docs: (reference) session log path (task updates happen at task-end): \`${sessionLogPath}\``,
-      'Output: show task details, citations, and auto-gathered file context (if present)',
+      `Docs: read session guide (task section): \`${sessionGuidePath}\``,
+      `Docs: (reference) session log path (task updates at task-end): \`${sessionLogPath}\``,
+      'Output: show task details and auto-gathered file context (if present)',
     ];
-    output.push(formatPlanModePreview(planSteps, { intro: 'This is a deterministic preview. No todo reads, file reads, or git operations will be executed.' }));
+    output.push(formatPlanModePreview(planSteps, { intro: 'This is a deterministic preview. No file reads or git operations will be executed.' }));
     return output.join('\n');
   }
 
-  const taskTodoId = `session-${sessionId}-${parsed.task}`;
-  let taskTodo: Todo | null = null;
-
   try {
-    taskTodo = await findTodoById(feature, taskTodoId);
-  } catch (err) {
-    console.warn('Task start: failed to load task todo', taskTodoId, err);
-  }
-
-  if (taskTodo) {
-    output.push('## Task Details\n');
-    output.push(`**Title:** ${taskTodo.title}\n`);
-    output.push(`**Status:** ${taskTodo.status}\n`);
-    if (taskTodo.description) output.push(`**Description:** ${taskTodo.description}\n`);
-    if (taskTodo.planningDocPath) output.push(`**Planning Doc:** ${taskTodo.planningDocPath}\n`);
-    if (taskTodo.tags?.length) output.push(`**Tags:** ${taskTodo.tags.join(', ')}\n`);
-    output.push('\n---\n');
-
-    try {
-      const citations = await lookupCitations(feature, taskTodoId, 'task-start');
-      if (citations.length > 0) {
-        output.push('## Citations\n');
-        output.push(`**Found ${citations.length} citation(s) for review:**\n`);
-        for (const citation of citations) {
-          output.push(`- **${citation.priority.toUpperCase()}** (${citation.type}): Change ${citation.changeLogId}\n`);
-          if (citation.metadata?.reason) output.push(`  - Reason: ${citation.metadata.reason}\n`);
-        }
-        output.push('\n---\n');
-      }
-    } catch (err) {
-      console.warn('Task start: could not read session handoff', sessionId, err);
+    const taskStatus = await TASK_CONFIG.controlDoc.readStatus(context, taskId);
+    if (taskStatus !== null) {
+      output.push('## Task Status\n');
+      output.push(`**Status:** ${taskStatus}\n`);
+      output.push('\n---\n');
     }
-  } else {
-    output.push('## Task Details\n');
-    output.push(`**WARNING: Task todo not found: ${taskTodoId}**\n`);
-    output.push(`**Suggestion:** Use \`/plan-task ${taskId} [description]\` to create task todo\n`);
-    output.push('\n---\n');
+  } catch (err) {
+    console.warn('Task start: could not read task status from session guide', err);
   }
 
   try {

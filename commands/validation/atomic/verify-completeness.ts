@@ -8,7 +8,6 @@
 
 import { WorkflowCommandContext } from '../../utils/command-context';
 import { resolveFeatureName } from '../../utils';
-import { getAllTodos } from '../../utils/todo-io';
 import { ValidationTier } from './validate-workflow';
 import { access } from 'fs/promises';
 import { join } from 'path';
@@ -24,7 +23,6 @@ export interface CompletenessResult {
   complete: boolean;
   missingDocuments: string[];
   missingSections: string[];
-  missingTodos: string[];
 }
 
 /**
@@ -49,8 +47,7 @@ export async function verifyCompleteness(params: VerifyCompletenessParams): Prom
   const result: CompletenessResult = {
     complete: true,
     missingDocuments: [],
-    missingSections: [],
-    missingTodos: []
+    missingSections: []
   };
   
   try {
@@ -114,35 +111,10 @@ export async function verifyCompleteness(params: VerifyCompletenessParams): Prom
       console.warn('Verify completeness: failed to check documents for tier', params.tier, err);
     }
     
-    // Check todo exists
-    const allTodos = await getAllTodos(feature);
-    let todoId: string;
-    
-    switch (params.tier) {
-      case 'feature':
-        todoId = `feature-${featureName}`;
-        break;
-      case 'phase':
-        todoId = `phase-${params.identifier}`;
-        break;
-      case 'session':
-        todoId = `session-${params.identifier}`;
-        break;
-      case 'task':
-        todoId = `task-${params.identifier}`;
-        break;
-    }
-    
-    const todo = allTodos.find(t => t.id === todoId);
-    if (!todo) {
-      result.missingTodos.push(todoId);
-      result.complete = false;
-    }
-    
     // Output results
     if (result.complete) {
       output.push('✅ **Completeness verified**\n\n');
-      output.push('All required documents, sections, and todos are present.\n');
+      output.push('All required documents and sections are present.\n');
     } else {
       output.push('❌ **Completeness check failed**\n\n');
       
@@ -162,13 +134,6 @@ export async function verifyCompleteness(params: VerifyCompletenessParams): Prom
         output.push('\n');
       }
       
-      if (result.missingTodos.length > 0) {
-        output.push('## Missing Todos\n\n');
-        for (const todo of result.missingTodos) {
-          output.push(`- ❌ ${todo}\n`);
-        }
-        output.push('\n');
-      }
     }
     
     return output.join('\n');

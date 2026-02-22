@@ -2,7 +2,7 @@
  * Scope Assessment Utility
  * 
  * Determines if a change request requires re-planning (significant scope change)
- * vs. can be handled with direct todo updates (minor scope change).
+ * vs. can be handled with direct doc updates (minor scope change).
  * 
  * Criteria for significant scope change (requires re-planning):
  * - New tasks added

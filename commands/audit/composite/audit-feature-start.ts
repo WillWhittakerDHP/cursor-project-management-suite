@@ -7,12 +7,10 @@
  * 
  * LEARNING: Start audits establish baseline scores for comparison with end audits
  * WHY: Enables tracking improvement/regression during the feature
- * PATTERN: Lightweight audit subset (comments, security, planning, docs)
+ * PATTERN: Lightweight audit subset (security, docs, vue-architecture)
  */
 
 import { TierAuditResult, AuditParams } from '../types';
-import { auditComments } from '../atomic/audit-comments';
-import { auditPlanning } from '../atomic/audit-planning';
 import { auditSecurity } from '../atomic/audit-security';
 import { auditDocs } from '../atomic/audit-docs';
 import { auditVueArchitecture } from '../atomic/audit-vue-architecture';
@@ -25,8 +23,7 @@ export interface AuditFeatureStartParams {
 
 /**
  * Run baseline audits for feature tier start
- * Only runs: comments, security, planning, docs
- * Skips: todos (not applicable at start), checkpoints (none yet), tests (no new tests)
+ * Only runs: security, docs, vue-architecture
  */
 export async function auditFeatureStart(params: AuditFeatureStartParams): Promise<{
   success: boolean;
@@ -46,26 +43,13 @@ export async function auditFeatureStart(params: AuditFeatureStartParams): Promis
   
   const results = [];
   const errors: string[] = [];
-  
-  // Run only baseline audits (subset of full audit suite)
-  try {
-    results.push(await auditComments(auditParams));
-  } catch (_error) {
-    errors.push(`Comments audit failed: ${_error instanceof Error ? _error.message : String(_error)}`);
-  }
-  
+
   try {
     results.push(await auditSecurity(auditParams));
   } catch (_error) {
     errors.push(`Security audit failed: ${_error instanceof Error ? _error.message : String(_error)}`);
   }
-  
-  try {
-    results.push(await auditPlanning(auditParams));
-  } catch (_error) {
-    errors.push(`Planning audit failed: ${_error instanceof Error ? _error.message : String(_error)}`);
-  }
-  
+
   try {
     results.push(await auditDocs(auditParams));
   } catch (_error) {

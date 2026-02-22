@@ -23,7 +23,6 @@ const OVERLAP_SPECS: Record<string, TierOverlapSearchSpec> = {
       'createBranch.*feature',
       'feature.*branch.*develop',
       'current-feature',
-      'feature-plan',
       'generateFeatureGuide',
       'feature-load',
     ],
@@ -97,7 +96,6 @@ const OVERLAP_SPECS: Record<string, TierOverlapSearchSpec> = {
     whatItDoes: 'Loads task context from session guide/handoff, task todo lookup, citations.',
     searchQueries: [
       'task.*guide',
-      'findTodoById',
       'task.*context',
       'session.*guide.*task',
     ],

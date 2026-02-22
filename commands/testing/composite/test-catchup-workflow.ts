@@ -8,8 +8,6 @@ import { WorkflowCommandContext } from '../../utils/command-context';
 import { readProjectFile } from '../../utils/utils';
 import { testEndWorkflow } from './test-end-workflow';
 import { TEST_CONFIG } from '../utils/test-config';
-import { access } from 'fs/promises';
-import { join } from 'path';
 import { PROJECT_ROOT } from '../../utils/utils';
 
 export interface CatchUpTestResult {
@@ -53,34 +51,18 @@ async function hasTestsRun(
 }
 
 /**
- * Get all completed phases for a feature
- * Falls back to feature-plan.md if feature guide doesn't exist
+ * Get all completed phases for a feature (from feature guide)
  */
 async function getCompletedPhases(
   context: WorkflowCommandContext
 ): Promise<string[]> {
   try {
     let featureContent = '';
-    
-    // Try to read feature guide first
     try {
       featureContent = await context.readFeatureGuide();
     } catch (err) {
-      console.warn('Test catchup: feature guide not found, falling back to feature-plan', err);
-      const planPath = context.paths.getFeaturePlanPath();
-      try {
-        const fullPath = join(PROJECT_ROOT, planPath);
-        await access(fullPath);
-        featureContent = await readProjectFile(planPath);
-      } catch (planErr) {
-        console.warn('Test catchup: feature-plan not found', planPath, planErr);
-        featureContent = '';
-      }
-      
-      if (!featureContent) {
-        // If neither exists, return empty array
-        return [];
-      }
+      console.warn('Test catchup: feature guide not found', err);
+      return [];
     }
     
     // Match Phase X or Phase X.Y format (e.g., "Phase 1" or "Phase 1.2")

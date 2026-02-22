@@ -1,11 +1,15 @@
 /**
  * Session checkpoint implementation. Used by tier-checkpoint and by session-checkpoint (thin wrapper).
+ * Reads task progress from session guide task sections (### Task N: and **Status:**).
  */
 
 import { getCurrentDate } from '../../../utils/utils';
-import { getAllTodos } from '../../../utils/todo-io';
+import { readProjectFile } from '../../../utils/utils';
 import { WorkflowCommandContext } from '../../../utils/command-context';
 import { resolveFeatureName } from '../../../utils';
+import { MarkdownUtils } from '../../../utils/markdown-utils';
+
+const TASK_STATUS_REGEX = /\*\*Status:\*\*\s*([^\n]+)/i;
 
 export async function sessionCheckpointImpl(
   sessionId: string,
@@ -20,62 +24,49 @@ export async function sessionCheckpointImpl(
   output.push('---\n');
 
   try {
-    const feature = context.feature.name;
-    const allTodos = await getAllTodos(feature);
-    const sessionTodoId = `session-${sessionId}`;
-    const sessionTasks = allTodos.filter(todo =>
-      todo.parentId === sessionTodoId && todo.tier === 'task'
-    );
+    const sessionGuidePath = context.paths.getSessionGuidePath(sessionId);
+    const guideContent = await readProjectFile(sessionGuidePath);
 
-    const completedTasks = sessionTasks.filter(todo => todo.status === 'completed');
-    const inProgressTasks = sessionTasks.filter(todo => todo.status === 'in_progress');
-    const pendingTasks = sessionTasks.filter(todo => todo.status === 'pending');
+    const sessionStatus = await (await import('../../configs/session')).SESSION_CONFIG.controlDoc.readStatus(context, sessionId);
+    output.push('## Session Status\n');
+    output.push(`**Status:** ${sessionStatus ?? 'unknown'}\n`);
+    output.push('\n---\n');
 
-    if (completedTasks.length > 0) {
+    const taskSectionTitles = guideContent.match(/### Task\s+(\d+):/g) ?? [];
+    const completed: string[] = [];
+    const notComplete: string[] = [];
+    for (const titleMatch of taskSectionTitles) {
+      const taskNum = titleMatch.replace(/### Task\s+(\d+):.*/, '$1');
+      const section = MarkdownUtils.extractSection(guideContent, 'Task ' + taskNum);
+      const statusMatch = section.match(TASK_STATUS_REGEX);
+      const status = statusMatch?.[1]?.toLowerCase() ?? '';
+      const taskId = `${sessionId}.${taskNum}`;
+      if (status.includes('complete') || status.includes('done')) {
+        completed.push(taskId);
+      } else {
+        notComplete.push(taskId);
+      }
+    }
+
+    if (completed.length > 0) {
       output.push('## Completed Tasks\n');
-      for (const task of completedTasks) {
-        output.push(`- ✅ **${task.id}**: ${task.title}`);
-        if (task.completedAt) {
-          output.push(` (Completed: ${new Date(task.completedAt).toLocaleDateString()})`);
-        }
-        output.push('\n');
-      }
+      for (const id of completed) output.push(`- ✅ **${id}**\n`);
       output.push('\n---\n');
     }
-    if (inProgressTasks.length > 0) {
-      output.push('## Tasks In Progress\n');
-      for (const task of inProgressTasks) {
-        output.push(`- 🔄 **${task.id}**: ${task.title}\n`);
-      }
+    if (notComplete.length > 0) {
+      output.push('## Tasks Not Complete\n');
+      for (const id of notComplete) output.push(`- ⏳ **${id}**\n`);
       output.push('\n---\n');
     }
-    if (pendingTasks.length > 0) {
-      output.push('## Pending Tasks\n');
-      for (const task of pendingTasks) {
-        output.push(`- ⏳ **${task.id}**: ${task.title}\n`);
-      }
-      output.push('\n---\n');
-    }
-    if (sessionTasks.length === 0) {
+    if (taskSectionTitles.length === 0) {
       output.push('## Tasks\n');
-      output.push('**No tasks found for this session.**\n');
-      output.push('**Suggestion:** Use `/plan-task [X.Y.Z] [description]` to create tasks for this session\n');
-      output.push('\n---\n');
-    }
-
-    const sessionTodo = allTodos.find(t => t.id === sessionTodoId);
-    if (sessionTodo) {
-      output.push('## Session Status\n');
-      output.push(`**Status:** ${sessionTodo.status}\n`);
-      output.push(`**Title:** ${sessionTodo.title}\n`);
-      if (sessionTodo.description) output.push(`**Description:** ${sessionTodo.description}\n`);
+      output.push('**No task sections found in session guide.**\n');
       output.push('\n---\n');
     }
   } catch (_error) {
     output.push('## Tasks\n');
-    output.push(`**WARNING: Could not load todos from todo management system**\n`);
+    output.push(`**WARNING: Could not read session guide**\n`);
     output.push(`**Error:** ${_error instanceof Error ? _error.message : String(_error)}\n`);
-    output.push(`**Suggestion:** Ensure todo files exist in \`${context.paths.getBasePath()}/todos/\`\n`);
     output.push('\n---\n');
   }
 

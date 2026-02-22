@@ -53,14 +53,6 @@ export class WorkflowPathResolver {
   }
 
   /**
-   * Get feature plan path (feature planning input used to generate workflow docs)
-   * @returns Path to feature plan: `.project-manager/features/{feature}/feature-plan.md`
-   */
-  getFeaturePlanPath(): string {
-    return `${this.basePath}/feature-plan.md`;
-  }
-
-  /**
    * Get feature README path (optional, when maintaining a README alongside the feature plan)
    * @returns Path to feature README: `.project-manager/features/{feature}/README.md`
    */

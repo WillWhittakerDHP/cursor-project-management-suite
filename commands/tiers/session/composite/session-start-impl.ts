@@ -18,6 +18,8 @@ import { CommandExecutionOptions, isPlanMode, resolveCommandExecutionMode } from
 import { deriveSessionDescription } from './session-end-impl';
 import { runTierPlan } from '../../shared/tier-plan';
 import { SESSION_CONFIG } from '../../configs/session';
+import { FEATURE_CONFIG } from '../../configs/feature';
+import { WorkflowId } from '../../../utils/id-utils';
 
 export async function sessionStartImpl(sessionId: string, description?: string, options?: CommandExecutionOptions): Promise<string> {
   // Mode gate is applied by generic tier-start; we only branch on plan vs execute for steps.
@@ -33,10 +35,9 @@ export async function sessionStartImpl(sessionId: string, description?: string, 
       ? description
       : await deriveSessionDescription(sessionId, context);
   
-  // Extract phase number from sessionId (sessionId is X.Y format, phase is X)
-  const phaseMatch = sessionId.match(/^(\d+)/);
-  const phase = phaseMatch ? phaseMatch[1] : '1';
-  
+  // Session ID is X.Y.Z (Feature.Phase.Session); parent phase is X.Y
+  const phase = WorkflowId.extractPhaseId(sessionId) ?? '1';
+
   output.push(`# Session ${sessionId} Start\n`);
   output.push(`**Date:** ${new Date().toISOString().split('T')[0]}\n`);
   output.push(`**Command:** \`/session-start ${sessionId}\`\n`);
@@ -57,17 +58,20 @@ export async function sessionStartImpl(sessionId: string, description?: string, 
   }
 
   if (isPlanMode(mode)) {
-    const featureBranch = `feature/${context.feature.name}`;
-    const phaseBranchName = `${context.feature.name}-phase-${phase}`;
-    const sessionBranchName = `${context.feature.name}-phase-${phase}-session-${sessionId}`;
+    const featureBranch = FEATURE_CONFIG.getBranchName(context, context.feature.name);
+    const phaseBranchName = SESSION_CONFIG.getParentBranchName(context, sessionId);
+    const sessionBranchName = SESSION_CONFIG.getBranchName(context, sessionId);
+    const featureBranchStr = featureBranch ?? `feature/${context.feature.name}`;
+    const phaseBranchStr = phaseBranchName ?? '';
+    const sessionBranchStr = sessionBranchName ?? '';
     const sessionGuidePath = context.paths.getSessionGuidePath(sessionId);
     const sessionHandoffPath = context.paths.getSessionHandoffPath(sessionId);
     const phaseGuidePath = context.paths.getPhaseGuidePath(phase);
     const planSteps = [
       'Server: `npm run server:refresh` (background)',
-      `Git: ensure phase branch exists: \`${phaseBranchName}\``,
-      `Git: create/switch session branch: \`${sessionBranchName}\``,
-      `Git: verify branch ancestry: \`${sessionBranchName}\` is based on \`${phaseBranchName}\` (and \`${phaseBranchName}\` is based on \`${featureBranch}\`)`,
+      `Git: ensure phase branch exists: \`${phaseBranchStr}\``,
+      `Git: create/switch session branch: \`${sessionBranchStr}\``,
+      `Git: verify branch ancestry: \`${sessionBranchStr}\` is based on \`${phaseBranchStr}\` (and \`${phaseBranchStr}\` is based on \`${featureBranchStr}\`)`,
       `Docs: read session guide: \`${sessionGuidePath}\``,
       `Docs: read session handoff: \`${sessionHandoffPath}\``,
       `Docs: (reference) phase guide: \`${phaseGuidePath}\``,
@@ -133,13 +137,16 @@ export async function sessionStartImpl(sessionId: string, description?: string, 
   // Step 1: Create session branch
   output.push('## Step 1: Creating Session Branch\n');
   try {
-    // Extract phase number from sessionId (sessionId is X.Y format, phase is X)
-    const phaseMatch = sessionId.match(/^(\d+)/);
-    const phase = phaseMatch ? phaseMatch[1] : '1';
-    
-    // Get current phase branch name
-    const phaseBranchName = `${context.feature.name}-phase-${phase}`;
-    const featureBranch = `feature/${context.feature.name}`;
+    // Session ID is X.Y.Z; parent phase is X.Y
+    const phase = WorkflowId.extractPhaseId(sessionId) ?? '1';
+
+    const phaseBranchName = SESSION_CONFIG.getParentBranchName(context, sessionId);
+    const sessionBranchName = SESSION_CONFIG.getBranchName(context, sessionId);
+    const featureBranch = FEATURE_CONFIG.getBranchName(context, context.feature.name);
+    if (!phaseBranchName || !sessionBranchName || !featureBranch) {
+      output.push('**❌ ERROR:** Could not resolve branch names from tier config.\n');
+      return output.join('\n');
+    }
     const currentBranch = await getCurrentBranch();
     
     // Check if phase branch exists
@@ -184,10 +191,7 @@ export async function sessionStartImpl(sessionId: string, description?: string, 
         output.push(`**Checked out:** ${phaseBranchName}\n`);
       }
     }
-    
-    // Create session branch: feature/{featureName}-phase-{phase}-session-{sessionId}
-    const sessionBranchName = `${context.feature.name}-phase-${phase}-session-${sessionId}`;
-    
+
     // Check if session branch already exists and verify it's based on phase branch
     if (await branchExists(sessionBranchName)) {
       const isSessionBasedOnPhase = await isBranchBasedOn(sessionBranchName, phaseBranchName);

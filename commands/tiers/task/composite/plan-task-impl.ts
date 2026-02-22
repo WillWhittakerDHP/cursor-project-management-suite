@@ -4,7 +4,6 @@
 
 import { resolvePlanningDescription } from '../../../planning/utils/resolve-planning-description';
 import { runPlanningWithChecks } from '../../../planning/utils/run-planning-pipeline';
-import { createPlanningTodo } from '../../../planning/utils/create-planning-todo';
 import { WorkflowCommandContext } from '../../../utils/command-context';
 import { WorkflowId } from '../../../utils/id-utils';
 import { resolveFeatureName, resolveFeatureId } from '../../../utils/feature-context';
@@ -95,21 +94,7 @@ export async function planTaskImpl(
     }
 
     output.push('\n---\n');
-    const todoResult = await createPlanningTodo({
-      tier: 'task',
-      identifier: taskId,
-      description: resolvedDescription,
-      feature,
-    });
-    if (!todoResult.success) {
-      output.push(...todoResult.outputLines);
-      throw todoResult.error;
-    }
-    output.push(...todoResult.outputLines);
   } catch (error) {
-    if (error instanceof Error && (error.message.includes('todo') || error.message.includes('BLOCKING') || error.message.includes('Todo'))) {
-      throw error;
-    }
     output.push('## Session Guide Not Found\n');
     output.push(`**ERROR: Session guide not found**\n`);
     output.push(`**Attempted:** ${sessionGuidePath}\n`);

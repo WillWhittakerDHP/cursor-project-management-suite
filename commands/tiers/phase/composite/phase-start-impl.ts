@@ -14,10 +14,9 @@ import { extractFilesFromPhaseGuide, gatherFileStatuses } from '../../../utils/c
 import { formatFileStatusList } from '../../../utils/context-templates';
 import { createBranch } from '../../../git/atomic/create-branch';
 import { validatePhase, formatPhaseValidation } from './phase';
-import { parsePhasePlan } from '../../../utils/planning-doc-parser';
 import { runTierPlan } from '../../shared/tier-plan';
 import { PHASE_CONFIG } from '../../configs/phase';
-import { generatePhaseGuideFromPlan, generatePhaseHandoffFromPlan } from '../../../utils/planning-doc-generator';
+import { FEATURE_CONFIG } from '../../configs/feature';
 import { CommandExecutionOptions, isPlanMode, resolveCommandExecutionMode } from '../../../utils/command-execution-mode';
 
 export async function phaseStartImpl(phaseId: string, options?: CommandExecutionOptions): Promise<string> {
@@ -49,11 +48,11 @@ export async function phaseStartImpl(phaseId: string, options?: CommandExecution
   }
 
   if (isPlanMode(mode)) {
+    const phaseBranchName = PHASE_CONFIG.getBranchName(context, phase);
     const planSteps = [
       'Git: ensure feature branch exists and is based on main/master',
-      `Git: create/switch phase branch \`${context.feature.name}-phase-${phase}\``,
-      `Docs: read \`${context.paths.getFeaturePlanPath()}\` (optional)`,
-      'Docs: generate phase guide/handoff from feature plan (if present and docs missing)',
+      `Git: create/switch phase branch \`${phaseBranchName ?? ''}\``,
+      `Docs: read feature guide Phases Breakdown, phase guide \`${context.paths.getPhaseGuidePath(phase)}\``,
       'Audit: run phase-start audit (non-blocking)',
     ];
     output.push(formatPlanModePreview(planSteps, { intro: 'This is a deterministic preview. No git commands or file writes will be executed.' }));
@@ -65,9 +64,12 @@ export async function phaseStartImpl(phaseId: string, options?: CommandExecution
   // Step 1: Create phase branch
   output.push('## Step 1: Creating Phase Branch\n');
   try {
-    // Get current feature branch (should be feature/{featureName})
     const currentBranch = await getCurrentBranch();
-    const featureBranch = currentBranch.startsWith('feature/') ? currentBranch : `feature/${context.feature.name}`;
+    const featureBranch = FEATURE_CONFIG.getBranchName(context, context.feature.name);
+    if (!featureBranch) {
+      output.push('**❌ ERROR:** Could not resolve feature branch name from tier config.\n');
+      return output.join('\n');
+    }
     
     // Check if feature branch exists
     if (!(await branchExists(featureBranch))) {
@@ -113,8 +115,11 @@ export async function phaseStartImpl(phaseId: string, options?: CommandExecution
       }
     }
     
-    // Create phase branch: feature/{featureName}-phase-{phase}
-    const phaseBranchName = `${context.feature.name}-phase-${phase}`;
+    const phaseBranchName = PHASE_CONFIG.getBranchName(context, phase);
+    if (!phaseBranchName) {
+      output.push('**❌ ERROR:** Could not resolve phase branch name from tier config.\n');
+      return output.join('\n');
+    }
     
     // Check if phase branch already exists and verify it's based on feature branch
     if (await branchExists(phaseBranchName)) {
@@ -172,106 +177,7 @@ export async function phaseStartImpl(phaseId: string, options?: CommandExecution
     return output.join('\n');
   }
   output.push('\n---\n');
-  
-  // Step 1.5: Generate workflow docs from phase plan in feature-plan.md if it exists
-  output.push('## Step 1.5: Generating Phase Workflow Documents\n');
-  try {
-    const featurePlanPath = context.paths.getFeaturePlanPath();
-    const featurePlanFullPath = join(PROJECT_ROOT, featurePlanPath);
-    
-    let featurePlanExists = false;
-    try {
-      await access(featurePlanFullPath);
-      featurePlanExists = true;
-    } catch (err) {
-      console.warn('Phase start: feature-plan.md not found or not accessible', featurePlanFullPath, err);
-      featurePlanExists = false;
-    }
-    
-    if (featurePlanExists) {
-      output.push(`**Found:** ${featurePlanPath}\n`);
-      
-      // Read feature-plan.md
-      const featurePlanContent = await readProjectFile(featurePlanPath);
-      
-      // Parse phase plan
-      const parsedPhase = parsePhasePlan(featurePlanContent, phase);
-      
-      if (parsedPhase) {
-        output.push(`**Parsed:** Phase ${phase} plan - "${parsedPhase.name}"\n`);
-        
-        // Check if phase workflow docs already exist
-        const guidePath = context.paths.getPhaseGuidePath(phase);
-        const handoffPath = context.paths.getPhaseHandoffPath(phase);
-        
-        let guideExists = false;
-        let handoffExists = false;
-        
-        try {
-          await access(join(PROJECT_ROOT, guidePath));
-          guideExists = true;
-        } catch (err) {
-          console.warn('Phase start: phase guide path not found', guidePath, err);
-        }
-        
-        try {
-          await access(join(PROJECT_ROOT, handoffPath));
-          handoffExists = true;
-        } catch (err) {
-          console.warn('Phase start: phase handoff path not found', handoffPath, err);
-        }
-        
-        if (guideExists || handoffExists) {
-          output.push(`**Note:** Some phase workflow documents already exist. Skipping generation.\n`);
-          output.push(`**Existing:** ${guideExists ? 'guide' : ''} ${handoffExists ? 'handoff' : ''}\n`);
-        } else {
-          // Load templates
-          const guideTemplate = await context.templates.loadTemplate('phase', 'guide');
-          const handoffTemplate = await context.templates.loadTemplate('phase', 'handoff');
-          
-          // Generate docs from plan
-          const guideContent = generatePhaseGuideFromPlan(parsedPhase, guideTemplate);
-          const handoffContent = generatePhaseHandoffFromPlan(parsedPhase, handoffTemplate);
-          
-          // Write generated docs
-          await writeProjectFile(guidePath, guideContent);
-          await writeProjectFile(handoffPath, handoffContent);
-          
-          output.push(`**Generated:** phase-${phase}-guide.md, phase-${phase}-handoff.md\n`);
-          output.push(`**Source:** feature-plan.md\n`);
-        }
-      } else {
-        output.push(`**Warning:** Phase ${phase} plan not found in feature-plan.md\n`);
-        output.push(`**Note:** Falling back to template-based creation if docs don't exist\n`);
-      }
-    } else {
-      output.push(`**Not found:** feature-plan.md\n`);
-      
-      // Check if phase workflow docs exist
-      const guidePath = context.paths.getPhaseGuidePath(phase);
-      let guideExists = false;
-      try {
-        await access(join(PROJECT_ROOT, guidePath));
-        guideExists = true;
-      } catch (err) {
-        console.warn('Phase start: phase guide path not found (no feature-plan)', guidePath, err);
-      }
-      
-      if (!guideExists) {
-        output.push(`**Note:** No feature-plan.md found and phase workflow docs don't exist.\n`);
-        output.push(`**Suggestion:** Create phase plan in feature-plan.md or use templates.\n`);
-      } else {
-        output.push(`**Note:** Phase workflow docs already exist. Using existing docs.\n`);
-      }
-    }
-  } catch (_error) {
-    output.push(`**WARNING:** Failed to generate phase workflow documents from feature-plan.md\n`);
-    output.push(`**Error:** ${_error instanceof Error ? _error.message : String(_error)}\n`);
-    output.push(`**Note:** Phase start continues - docs can be created manually later\n`);
-  }
-  
-  output.push('\n---\n');
-  
+
   // Try to load phase guide with explicit error handling
   const phaseGuidePath = context.paths.getPhaseGuidePath(phase);
   try {

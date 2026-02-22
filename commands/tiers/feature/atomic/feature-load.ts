@@ -1,56 +1,33 @@
 /**
  * Atomic Command: /feature-load [name]
- * Load feature context and documentation
- * 
+ * Load feature context and documentation (guide/log/handoff).
+ *
  * Tier: Feature (Tier 0 - Highest Level)
  * Operates on: Feature-level workflow (loads feature guide/log/handoff)
- * 
- * TODO MANAGEMENT INTEGRATION: When parsing planning docs to extract objectives,
- * this command should delegate to todo management utilities. See
- * Use todo commands from `.cursor/commands/todo/` for integration patterns.
- * Todo management utilities can parse planning docs more robustly than direct
- * extractMarkdownSection calls.
  */
 
-import { findTodoById } from '../../../utils/todo-io';
-import { aggregateDetails } from '../../../utils/todo-scoping';
 import { WorkflowCommandContext } from '../../../utils/command-context';
 import { MarkdownUtils } from '../../../utils/markdown-utils';
+import { FEATURE_CONFIG } from '../../configs/feature';
 
 export async function featureLoad(featureName: string): Promise<string> {
   const context = new WorkflowCommandContext(featureName);
   const output: string[] = [];
-  
+
   output.push(`# Feature ${featureName} Load\n`);
   output.push(`**Date:** ${new Date().toISOString().split('T')[0]}\n`);
-  
-  // Load feature todo status
+
   try {
-    const featureTodoId = `feature-${featureName}`;
-    const featureTodo = await findTodoById(featureName, featureTodoId);
-    
-    if (featureTodo) {
-      output.push('## Feature Todo Status\n');
-      output.push(`**Status:** ${featureTodo.status}\n`);
-      output.push(`**Title:** ${featureTodo.title}\n`);
-      if (featureTodo.description) {
-        output.push(`**Description:** ${featureTodo.description}\n`);
-      }
-      
-      // Get aggregated progress
-      try {
-        const aggregated = await aggregateDetails(featureName, featureTodo);
-        output.push(`**Progress:** ${aggregated.progress.completed}/${aggregated.progress.total} phases completed, ${aggregated.progress.inProgress} in progress, ${aggregated.progress.pending} pending\n`);
-      } catch (_error) {
-        // Aggregation failed, continue without it
-      }
-      
+    const status = await FEATURE_CONFIG.controlDoc.readStatus(context, featureName);
+    if (status !== null) {
+      output.push('## Feature Status (PROJECT_PLAN)\n');
+      output.push(`**Status:** ${status}\n`);
       output.push('\n---\n');
     }
   } catch (_error) {
-    // Todo not found or error loading, continue without it
+    // Status not found, continue without it
   }
-  
+
   // Load feature guide
   const featureGuidePath = context.paths.getFeatureGuidePath();
   try {

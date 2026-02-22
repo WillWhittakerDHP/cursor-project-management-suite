@@ -24,6 +24,8 @@ import { auditCodeQuality } from '../../../audit/atomic/audit-code-quality';
 import { buildTierEndOutcome, type TierEndOutcome } from '../../../utils/tier-outcome';
 import { resolveRunTests, buildPlanModeResult } from '../../../utils/tier-end-utils';
 import { isLastPhaseInFeature } from '../../../utils/phase-session-utils';
+import { PHASE_CONFIG } from '../../configs/phase';
+import { FEATURE_CONFIG } from '../../configs/feature';
 
 const FRONTEND_ROOT = 'client';
 
@@ -464,20 +466,26 @@ export async function phaseEndImpl(params: PhaseEndParams): Promise<PhaseEndResu
   // 6. Commits and pushes the feature branch
   try {
     const context = await WorkflowCommandContext.getCurrent();
-    const phaseBranchName = `${context.feature.name}-phase-${params.phaseId}`;
-    const featureBranchName = `feature/${context.feature.name}`;
-    
+    const phaseBranchName = PHASE_CONFIG.getBranchName(context, params.phaseId);
+    const featureBranchName = FEATURE_CONFIG.getBranchName(context, context.feature.name);
+    if (!phaseBranchName || !featureBranchName) {
+      steps.findSessionBranches = {
+        success: false,
+        output: 'Could not resolve phase or feature branch name from tier config.',
+      };
+      throw new Error('Cannot proceed: phase or feature branch name from config is null');
+    }
+
     // Step 4.1: Find all session branches for this phase
-    const sessionBranchPattern = `${context.feature.name}-phase-${params.phaseId}-session-*`;
+    const sessionBranchPattern = `${phaseBranchName}-session-*`;
     const listBranchesResult = await runCommand(`git branch --list ${sessionBranchPattern}`);
     const sessionBranches: string[] = [];
-    
+
     if (listBranchesResult.success && listBranchesResult.output) {
-      // Parse branch names from git branch output (removes leading * and whitespace)
       sessionBranches.push(...listBranchesResult.output
         .split('\n')
         .map(line => line.trim().replace(/^\*\s*/, ''))
-        .filter(branch => branch && branch.startsWith(`${context.feature.name}-phase-${params.phaseId}-session-`))
+        .filter((branch): branch is string => Boolean(branch && branch.startsWith(`${phaseBranchName}-session-`)))
       );
     }
     

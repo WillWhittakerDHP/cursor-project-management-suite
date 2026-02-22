@@ -40,6 +40,12 @@ export interface TierConfig {
     log: (ctx: WorkflowCommandContext, id: string) => string;
     handoff: (ctx: WorkflowCommandContext, id: string) => string;
   };
+  /** Canonical status document for this tier. readStatus returns normalized lowercase; writeStatus accepts same. */
+  controlDoc: {
+    path: (ctx: WorkflowCommandContext, id: string) => string;
+    readStatus: (ctx: WorkflowCommandContext, id: string) => Promise<string | null>;
+    writeStatus: (ctx: WorkflowCommandContext, id: string, newStatus: string) => Promise<void>;
+  };
   /** Update the tier log with a change-request entry. Phase uses read/write; session/task use appendLog. */
   updateLog: (
     context: WorkflowCommandContext,
@@ -52,6 +58,10 @@ export interface TierConfig {
     description: string,
     featureName?: string
   ) => Promise<string>;
+  /** This tier's git branch name; null if this tier has no branch (e.g. task). */
+  getBranchName: (ctx: WorkflowCommandContext, id: string) => string | null;
+  /** Parent tier's branch name; null if not applicable. Only session returns non-null (phase branch). */
+  getParentBranchName: (ctx: WorkflowCommandContext, id: string) => string | null;
   audit?: {
     start?: PipelineStepFunction;
     end?: PipelineStepFunction;

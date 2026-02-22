@@ -69,8 +69,6 @@ export * from './utils/tier-discriminator';
 export * from './utils/tier-navigation';
 export * from './utils/scope-and-summarize';
 export * from './utils/scope-and-change';
-export * from './utils/planning-doc-parser';
-export * from './utils/planning-doc-generator';
 export {
   runTier,
   type TierRunParams,
@@ -89,40 +87,6 @@ export * from './document/composite/read-handoff';
 export * from './document/composite/update-section';
 export * from './document/composite/create-from-template';
 
-// Todo tier (Cross-tier utilities)
-// Atomic I/O commands
-export * from './todo/atomic/find';
-export * from './todo/atomic/save';
-export * from './todo/atomic/get-all';
-// Atomic citation commands
-export * from './todo/atomic/create-citation';
-export * from './todo/atomic/create-citation-from-change';
-export * from './todo/atomic/lookup-citations';
-export * from './todo/atomic/review-citation';
-export * from './todo/atomic/dismiss-citation';
-export * from './todo/atomic/query-citations';
-// Atomic rollback commands
-export * from './todo/atomic/store-state';
-export * from './todo/atomic/get-states';
-export * from './todo/atomic/rollback';
-export * from './todo/atomic/rollback-fields';
-export * from './todo/atomic/get-rollback-history';
-// Atomic scoping commands
-export * from './todo/atomic/validate-scope';
-export * from './todo/atomic/detect-scope-creep';
-export * from './todo/atomic/assign-scope';
-export * from './todo/atomic/enforce-scope';
-// Atomic trigger commands
-export * from './todo/atomic/detect-triggers';
-export * from './todo/atomic/activate-trigger';
-export * from './todo/atomic/suppress-trigger';
-// Composite commands
-export * from './todo/composite/create-from-plain-language';
-export * from './todo/composite/create-citations-for-change';
-export * from './todo/composite/create-retroactive-todos-command';
-export * from './todo/composite/rollback-with-conflict-check';
-export * from './todo/composite/aggregate-details';
-
 // Planning tier (Cross-tier utilities)
 export * from './planning/atomic/parse-plain-language';
 export * from './planning/atomic/validate-planning';
@@ -139,7 +103,6 @@ export * from './planning/composite/plan-complete';
 export * from './planning/composite/plan-tier';
 export * from './planning/utils/resolve-planning-description';
 export { runPlanningWithChecks, type RunPlanningWithChecksParams } from './planning/utils/run-planning-pipeline';
-export * from './planning/utils/create-planning-todo';
 
 // Document operations (Cross-tier utilities)
 export * from './document/atomic/read-section';
@@ -217,13 +180,10 @@ export * from './testing/utils/test-config';
 export * from './audit/types';
 export * from './audit/utils';
 // Atomic audit commands
-export * from './audit/atomic/audit-checkpoints';
-export * from './audit/atomic/audit-comments';
 export * from './audit/atomic/audit-docs';
-export * from './audit/atomic/audit-planning';
 export * from './audit/atomic/audit-security';
-export * from './audit/atomic/audit-tests';
-export * from './audit/atomic/audit-todos';
+export * from './audit/atomic/audit-vue-architecture';
+export * from './audit/atomic/audit-code-quality';
 // Composite audit commands
 export * from './audit/composite/audit-feature-start';
 export * from './audit/composite/audit-feature';

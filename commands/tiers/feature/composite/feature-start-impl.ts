@@ -10,8 +10,6 @@ import { auditFeatureStart } from '../../../audit/composite/audit-feature-start'
 import { WorkflowCommandContext } from '../../../utils/command-context';
 import { extractFilePaths, gatherFileStatuses } from '../../../utils/context-gatherer';
 import { formatFileStatusList } from '../../../utils/context-templates';
-import { parseFeaturePlan } from '../../../utils/planning-doc-parser';
-import { generateFeatureGuideFromPlan, generateFeatureHandoffFromPlan, generateFeatureLogFromPlan } from '../../../utils/planning-doc-generator';
 import { access } from 'fs/promises';
 import { join } from 'path';
 import { CommandExecutionOptions, isPlanMode, resolveCommandExecutionMode } from '../../../utils/command-execution-mode';
@@ -21,39 +19,6 @@ import { runTierPlan } from '../../shared/tier-plan';
 import { FEATURE_CONFIG } from '../../configs/feature';
 
 const BLOCKED_STATUSES = ['complete', 'blocked'] as const;
-
-interface FeatureStatusFromPlan {
-  featureNumber: string;
-  featureName: string;
-  status: string;
-  directory: string;
-}
-
-function parseFeatureStatusFromProjectPlan(projectPlanContent: string, featureDir: string): FeatureStatusFromPlan | null {
-  const tableLines = projectPlanContent.split('\n').filter(line =>
-    line.startsWith('|') && !line.startsWith('|---') && !line.startsWith('| #')
-  );
-
-  for (const line of tableLines) {
-    const cells = line.split('|').map(c => c.trim()).filter(Boolean);
-    if (cells.length < 4) continue;
-
-    const dirCell = cells[3];
-    if (dirCell.includes(featureDir)) {
-      const rawStatus = cells[2]
-        .replace(/[✅⏳📋🔮❌]/gu, '')
-        .trim()
-        .toLowerCase();
-      return {
-        featureNumber: cells[0],
-        featureName: cells[1],
-        status: rawStatus,
-        directory: dirCell,
-      };
-    }
-  }
-  return null;
-}
 
 export async function featureStartImpl(featureId: string, options?: CommandExecutionOptions): Promise<string> {
   const mode = resolveCommandExecutionMode(options);
@@ -68,18 +33,14 @@ export async function featureStartImpl(featureId: string, options?: CommandExecu
   }
   output.push(`**Date:** ${new Date().toISOString().split('T')[0]}\n\n`);
 
-  // Step 0: Validate feature status from PROJECT_PLAN
   try {
-    const projectPlanContent = await readProjectFile('.project-manager/PROJECT_PLAN.md');
-    const featureStatus = parseFeatureStatusFromProjectPlan(projectPlanContent, normalizedFeatureName);
-
-    if (featureStatus) {
-      output.push(`**Feature #${featureStatus.featureNumber}:** ${featureStatus.featureName}\n`);
-      output.push(`**PROJECT_PLAN Status:** ${featureStatus.status}\n\n`);
-
-      if (BLOCKED_STATUSES.includes(featureStatus.status as typeof BLOCKED_STATUSES[number])) {
-        output.push(`**ERROR:** Cannot start feature with status "${featureStatus.status}".\n`);
-        if (featureStatus.status === 'complete') {
+    const context = new WorkflowCommandContext(normalizedFeatureName);
+    const currentStatus = await FEATURE_CONFIG.controlDoc.readStatus(context, featureId);
+    if (currentStatus !== null) {
+      output.push(`**PROJECT_PLAN Status:** ${currentStatus}\n\n`);
+      if (BLOCKED_STATUSES.includes(currentStatus as typeof BLOCKED_STATUSES[number])) {
+        output.push(`**ERROR:** Cannot start feature with status "${currentStatus}".\n`);
+        if (currentStatus === 'complete') {
           output.push('This feature is marked Complete in PROJECT_PLAN. All work is finished.\n');
         } else {
           output.push('This feature is Blocked. Resolve the blocker before starting.\n');
@@ -89,8 +50,8 @@ export async function featureStartImpl(featureId: string, options?: CommandExecu
       }
     }
   } catch (err) {
-    console.warn('Feature start: could not read PROJECT_PLAN.md for status validation', err);
-    output.push('**Note:** Could not read PROJECT_PLAN.md for status validation. Proceeding.\n\n');
+    console.warn('Feature start: could not read PROJECT_PLAN for status validation', err);
+    output.push('**Note:** Could not read PROJECT_PLAN for status validation. Proceeding.\n\n');
   }
 
   if (isPlanMode(mode)) {
@@ -99,7 +60,7 @@ export async function featureStartImpl(featureId: string, options?: CommandExecu
       'Git: `git checkout develop`',
       'Git: `git pull origin develop`',
       `Git: create/switch branch \`feature/${normalizedFeatureName}\``,
-      `Docs: read \`${context.paths.getFeaturePlanPath()}\``,
+      `Docs: read \`${context.paths.getFeatureGuidePath()}\``,
       'Docs: generate workflow docs from feature plan (if plan exists and docs missing)',
       'Workflow: load feature context',
       'Workflow: create initial checkpoint',
@@ -146,113 +107,7 @@ export async function featureStartImpl(featureId: string, options?: CommandExecu
   }
   
   output.push('\n---\n\n');
-  
-  // Step 1.5: Generate workflow docs from feature-plan.md if it exists
-  output.push('## Step 1.5: Generating Workflow Documents\n\n');
-  try {
-    const context = new WorkflowCommandContext(normalizedFeatureName);
-    const featurePlanPath = context.paths.getFeaturePlanPath();
-    const featurePlanFullPath = join(PROJECT_ROOT, featurePlanPath);
-    
-    let featurePlanExists = false;
-    try {
-      await access(featurePlanFullPath);
-      featurePlanExists = true;
-    } catch (err) {
-      console.warn('Feature start: feature-plan.md not found or not accessible', featurePlanFullPath, err);
-      featurePlanExists = false;
-    }
-    
-    if (featurePlanExists) {
-      output.push(`**Found:** ${featurePlanPath}\n`);
-      
-      // Read feature-plan.md
-      const featurePlanContent = await readProjectFile(featurePlanPath);
-      
-      // Parse feature plan
-      const parsedPlan = parseFeaturePlan(featurePlanContent, normalizedFeatureName);
-      output.push(`**Parsed:** Feature plan for "${parsedPlan.name}"\n`);
-      
-      // Check if workflow docs already exist
-      const guidePath = context.paths.getFeatureGuidePath();
-      const handoffPath = context.paths.getFeatureHandoffPath();
-      const logPath = context.paths.getFeatureLogPath();
-      
-      let guideExists = false;
-      let handoffExists = false;
-      let logExists = false;
-      
-      try {
-        await access(join(PROJECT_ROOT, guidePath));
-        guideExists = true;
-      } catch (err) {
-        console.warn('Feature start: feature guide path not found', guidePath, err);
-      }
-      
-      try {
-        await access(join(PROJECT_ROOT, handoffPath));
-        handoffExists = true;
-      } catch (err) {
-        console.warn('Feature start: feature handoff path not found', handoffPath, err);
-      }
-      
-      try {
-        await access(join(PROJECT_ROOT, logPath));
-        logExists = true;
-      } catch (err) {
-        console.warn('Feature start: feature log path not found', logPath, err);
-      }
-      
-      if (guideExists || handoffExists || logExists) {
-        output.push(`**Note:** Some workflow documents already exist. Skipping generation.\n`);
-        output.push(`**Existing:** ${guideExists ? 'guide' : ''} ${handoffExists ? 'handoff' : ''} ${logExists ? 'log' : ''}\n`);
-      } else {
-        // Load templates
-        const guideTemplate = await context.templates.loadTemplate('feature', 'guide');
-        const handoffTemplate = await context.templates.loadTemplate('feature', 'handoff');
-        const logTemplate = await context.templates.loadTemplate('feature', 'log');
-        
-        // Generate docs from plan
-        const guideContent = generateFeatureGuideFromPlan(parsedPlan, guideTemplate);
-        const handoffContent = generateFeatureHandoffFromPlan(parsedPlan, handoffTemplate);
-        const logContent = generateFeatureLogFromPlan(parsedPlan, logTemplate);
-        
-        // Write generated docs
-        await writeProjectFile(guidePath, guideContent);
-        await writeProjectFile(handoffPath, handoffContent);
-        await writeProjectFile(logPath, logContent);
-        
-        output.push(`**Generated:** feature-guide.md, feature-handoff.md, feature-log.md\n`);
-        output.push(`**Source:** feature-plan.md\n`);
-      }
-    } else {
-      output.push(`**Not found:** feature-plan.md\n`);
-      
-      // Check if workflow docs exist
-      const guidePath = context.paths.getFeatureGuidePath();
-      let guideExists = false;
-      try {
-        await access(join(PROJECT_ROOT, guidePath));
-        guideExists = true;
-      } catch (err) {
-        console.warn('Feature start: feature guide path not found (no feature-plan)', guidePath, err);
-      }
-      
-      if (!guideExists) {
-        output.push(`**Note:** No feature-plan.md found and workflow docs don't exist.\n`);
-        output.push(`**Suggestion:** Create feature-plan.md or use /plan-feature to create feature structure.\n`);
-      } else {
-        output.push(`**Note:** Workflow docs already exist. Using existing docs.\n`);
-      }
-    }
-  } catch (_error) {
-    output.push(`**WARNING:** Failed to generate workflow documents from feature-plan.md\n`);
-    output.push(`**Error:** ${_error instanceof Error ? _error.message : String(_error)}\n`);
-    output.push(`**Note:** Feature start continues - docs can be created manually later\n`);
-  }
-  
-  output.push('\n---\n\n');
-  
+
   // Step 2: Load feature context
   output.push('## Step 2: Loading Feature Context\n\n');
   try {

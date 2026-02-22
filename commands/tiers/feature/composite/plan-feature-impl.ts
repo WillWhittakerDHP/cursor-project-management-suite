@@ -6,7 +6,6 @@ import { featureCreate } from '../atomic/feature-create';
 import { featureResearch } from '../atomic/feature-research';
 import { resolvePlanningDescription } from '../../../planning/utils/resolve-planning-description';
 import { runPlanningWithChecks } from '../../../planning/utils/run-planning-pipeline';
-import { createPlanningTodo } from '../../../planning/utils/create-planning-todo';
 import { WorkflowCommandContext } from '../../../utils/command-context';
 import { resolveFeatureId } from '../../../utils/feature-context';
 
@@ -51,23 +50,7 @@ export async function planFeatureImpl(featureId: string, description?: string): 
     const createOutput = await featureCreate(featureName, resolvedDescription);
     output.push(createOutput);
     output.push('\n---\n\n');
-
-    const todoResult = await createPlanningTodo({
-      tier: 'feature',
-      identifier: featureId,
-      description: resolvedDescription,
-      feature: featureName,
-    });
-    if (!todoResult.success) {
-      output.push(...todoResult.outputLines);
-      throw todoResult.error;
-    }
-    output.push(...todoResult.outputLines);
-    output.push('\n---\n\n');
   } catch (_error) {
-    if (_error instanceof Error && (_error.message.includes('todo') || _error.message.includes('BLOCKING') || _error.message.includes('Todo'))) {
-      throw _error;
-    }
     output.push(`**ERROR:** Failed to create feature structure\n`);
     output.push(`**Error:** ${_error instanceof Error ? _error.message : String(_error)}\n`);
     output.push('\n---\n\n');

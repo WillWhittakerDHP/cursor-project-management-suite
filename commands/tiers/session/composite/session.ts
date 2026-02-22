@@ -5,6 +5,7 @@
 import { runTierStart } from '../../shared/tier-start';
 import { runTierEnd } from '../../shared/tier-end';
 import { runTierPlan } from '../../shared/tier-plan';
+import { runTierReopen } from '../../shared/tier-reopen';
 import { runTierCheckpoint } from '../../shared/tier-checkpoint';
 import { runTierComplete } from '../../shared/tier-complete';
 import { runTierValidate } from '../../shared/tier-validate';
@@ -76,9 +77,14 @@ export async function sessionEnd(params: SessionEndParams): Promise<SessionEndRe
 export async function planSession(
   sessionId: string,
   description?: string,
-  featureName?: string
+  featureName?: string,
+  planContent?: string
 ): Promise<string> {
-  return runTierPlan(SESSION_CONFIG, sessionId, description, featureName);
+  return runTierPlan(SESSION_CONFIG, sessionId, description, featureName, planContent);
+}
+
+export async function sessionReopen(sessionId: string, reason?: string) {
+  return runTierReopen(SESSION_CONFIG, { identifier: sessionId, reason });
 }
 
 export async function sessionCheckpoint(

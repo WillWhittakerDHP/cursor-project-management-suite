@@ -8,6 +8,7 @@ import { readFile } from 'fs/promises';
 import { WorkflowId } from '../../../utils/id-utils';
 import { WorkflowCommandContext } from '../../../utils/command-context';
 import { resolveFeatureName } from '../../../utils';
+import { SESSION_CONFIG } from '../../configs/session';
 
 export interface MarkSessionCompleteParams {
   sessionId: string;
@@ -31,17 +32,10 @@ export async function markSessionCompleteImpl(params: MarkSessionCompleteParams)
   const phaseLogPath = context.paths.getPhaseLogPath(phase);
 
   try {
-    const guideContent = await readProjectFile(phaseGuidePath);
+    await SESSION_CONFIG.controlDoc.writeStatus(context, params.sessionId, 'complete');
+    output.push(`✅ Updated phase guide: ${phaseGuidePath}`);
 
-  const sessionPattern = new RegExp(`(- \\[ \\]|### Session) (### Session )?${params.sessionId.replace(/\./g, '\\.')}:`, 'g');
-  const updatedGuideContent = guideContent.replace(sessionPattern, (match) => {
-    if (match.includes('- [ ]')) return match.replace('- [ ]', '- [x]');
-    return `- [x] ### Session ${params.sessionId}:`;
-  });
-
-  await writeProjectFile(phaseGuidePath, updatedGuideContent);
-  output.push(`✅ Updated phase guide: ${phaseGuidePath}`);
-
+  const guideContent = await readProjectFile(phaseGuidePath);
   let logContent = '';
   try {
     logContent = await readProjectFile(phaseLogPath);

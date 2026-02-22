@@ -54,19 +54,12 @@ export async function generateHandoff(params: GenerateHandoffParams): Promise<st
     });
     
     if (!statusInfo) {
-      output.push('**WARNING: Todo not found**\n');
-      output.push(`**Suggestion:** Create the todo first using planning commands\n`);
+      output.push('**WARNING: Status not found in control doc**\n');
+      output.push(`**Suggestion:** Ensure the tier exists (guide/PROJECT_PLAN) and has a status\n`);
       return output.join('\n');
     }
-    
-    // Get completed items
-    let completedItems: Array<{ id: string; title: string }> = [];
-    
-    if (statusInfo.children) {
-      completedItems = statusInfo.children
-        .filter(child => child.status === 'completed')
-        .map(child => ({ id: child.todoId, title: child.title }));
-    }
+
+    const completedItems: Array<{ id: string; title: string }> = [];
     
     // Generate handoff content
     const handoffContent: string[] = [];
@@ -122,12 +115,6 @@ export async function generateHandoff(params: GenerateHandoffParams): Promise<st
     }
     
     handoffContent.push('\n**What you need to start:**\n');
-    if (statusInfo.children && statusInfo.children.length > 0) {
-      const pending = statusInfo.children.filter(c => c.status === 'pending');
-      if (pending.length > 0) {
-        handoffContent.push(`- Review pending items: ${pending.map(c => c.todoId).join(', ')}\n`);
-      }
-    }
     if (params.nextIdentifier) {
       handoffContent.push(`- Begin ${params.tier === 'session' ? 'Session' : params.tier === 'phase' ? 'Phase' : 'Task'} ${params.nextIdentifier}\n`);
     }

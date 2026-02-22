@@ -30,6 +30,7 @@ import {
 import { CommandExecutionMode, isPlanMode, resolveCommandExecutionMode } from '../../../utils/command-execution-mode';
 import { auditCodeQuality } from '../../../audit/atomic/audit-code-quality';
 import { WorkflowId } from '../../../utils/id-utils';
+import { SESSION_CONFIG } from '../../configs/session';
 import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
 import { checkGitHubCLI, createPullRequest } from '../../../scripts/create-pr';
@@ -637,12 +638,12 @@ export async function sessionEndImpl(params: SessionEndParams): Promise<SessionE
     try {
       const context = await WorkflowCommandContext.getCurrent();
       const currentBranch = await getCurrentBranch();
-      
-      // Extract phase ID from sessionId (X.Y.Z → X.Y)
-      const phase = WorkflowId.extractPhaseId(params.sessionId) || '1';
-      
-      const sessionBranchName = `${context.feature.name}-phase-${phase}-session-${params.sessionId}`;
-      const phaseBranchName = `${context.feature.name}-phase-${phase}`;
+
+      const sessionBranchName = SESSION_CONFIG.getBranchName(context, params.sessionId);
+      const phaseBranchName = SESSION_CONFIG.getParentBranchName(context, params.sessionId);
+      if (!sessionBranchName || !phaseBranchName) {
+        steps.gitMerge = { success: false, output: 'Could not resolve session/phase branch names from config.' };
+      } else {
       
       // Only merge if we're on the session branch
       if (currentBranch === sessionBranchName || currentBranch.endsWith(`-session-${params.sessionId}`)) {
@@ -681,16 +682,17 @@ export async function sessionEndImpl(params: SessionEndParams): Promise<SessionE
           output: `Skipped merge - not on session branch (current: ${currentBranch})`,
         };
       }
+      }
     } catch (_error) {
-      const errorContext = await WorkflowCommandContext.getCurrent();
-      const errorPhase = WorkflowId.extractPhaseId(params.sessionId) || '1';
-      const errorSessionBranchName = `${errorContext.feature.name}-phase-${errorPhase}-session-${params.sessionId}`;
-      const errorPhaseBranchName = `${errorContext.feature.name}-phase-${errorPhase}`;
-      
+      const context = await WorkflowCommandContext.getCurrent();
+      const errorSessionBranchName = SESSION_CONFIG.getBranchName(context, params.sessionId);
+      const errorPhaseBranchName = SESSION_CONFIG.getParentBranchName(context, params.sessionId);
+      const errorMsg = errorSessionBranchName && errorPhaseBranchName
+        ? `You can merge manually with: git checkout ${errorPhaseBranchName} && git merge ${errorSessionBranchName}`
+        : 'Resolve branch names from tier config and merge manually.';
       steps.gitMerge = {
         success: false,
-        output: `Branch merge failed (non-critical): ${_error instanceof Error ? _error.message : String(_error)}\n` +
-          `You can merge manually with: git checkout ${errorPhaseBranchName} && git merge ${errorSessionBranchName}`,
+        output: `Branch merge failed (non-critical): ${_error instanceof Error ? _error.message : String(_error)}\n` + errorMsg,
       };
       // Don't fail entire session-end if merge fails
     }

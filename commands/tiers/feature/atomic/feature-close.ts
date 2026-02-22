@@ -10,6 +10,7 @@ import { readProjectFile, writeProjectFile, PROJECT_ROOT } from '../../../utils/
 import { join } from 'path';
 import { access } from 'fs/promises';
 import { WorkflowCommandContext } from '../../../utils/command-context';
+import { FEATURE_CONFIG } from '../../configs/feature';
 
 export async function featureClose(featureName: string): Promise<string> {
   const output: string[] = [];
@@ -84,6 +85,15 @@ export async function featureClose(featureName: string): Promise<string> {
     } catch (err) {
       console.warn('Feature close: feature handoff not found', featureHandoffPath, err);
       output.push(`**WARNING:** Feature handoff not found\n`);
+    }
+
+    try {
+      const id = context.paths.getFeatureName();
+      await FEATURE_CONFIG.controlDoc.writeStatus(context, id, 'complete');
+      output.push(`**PROJECT_PLAN Updated:** Status → Complete\n`);
+    } catch (err) {
+      console.warn('Feature close: PROJECT_PLAN update skipped', err);
+      output.push(`**WARNING:** Could not update PROJECT_PLAN.md\n`);
     }
     
     output.push(`\n# Feature ${featureName} Closed\n`);

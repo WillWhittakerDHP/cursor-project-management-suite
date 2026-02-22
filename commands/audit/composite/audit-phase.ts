@@ -7,12 +7,7 @@
  */
 
 import { TierAuditResult, AuditParams } from '../types';
-import { auditComments } from '../atomic/audit-comments';
-import { auditPlanning } from '../atomic/audit-planning';
-import { auditTodos } from '../atomic/audit-todos';
 import { auditSecurity } from '../atomic/audit-security';
-import { auditCheckpoints } from '../atomic/audit-checkpoints';
-import { auditTests } from '../atomic/audit-tests';
 import { auditDocs } from '../atomic/audit-docs';
 import { auditVueArchitecture } from '../atomic/audit-vue-architecture';
 import { auditCodeQuality } from '../atomic/audit-code-quality';
@@ -52,44 +47,13 @@ export async function auditPhase(params: AuditPhaseParams): Promise<{
   
   const results = [];
   const errors: string[] = [];
-  
-  // Run all 7 atomic audits
-  try {
-    results.push(await auditComments(auditParams));
-  } catch (_error) {
-    errors.push(`Comments audit failed: ${_error instanceof Error ? _error.message : String(_error)}`);
-  }
-  
-  try {
-    results.push(await auditPlanning(auditParams));
-  } catch (_error) {
-    errors.push(`Planning audit failed: ${_error instanceof Error ? _error.message : String(_error)}`);
-  }
-  
-  try {
-    results.push(await auditTodos(auditParams));
-  } catch (_error) {
-    errors.push(`Todos audit failed: ${_error instanceof Error ? _error.message : String(_error)}`);
-  }
-  
+
   try {
     results.push(await auditSecurity(auditParams));
   } catch (_error) {
     errors.push(`Security audit failed: ${_error instanceof Error ? _error.message : String(_error)}`);
   }
-  
-  try {
-    results.push(await auditCheckpoints(auditParams));
-  } catch (_error) {
-    errors.push(`Checkpoints audit failed: ${_error instanceof Error ? _error.message : String(_error)}`);
-  }
-  
-  try {
-    results.push(await auditTests(auditParams));
-  } catch (_error) {
-    errors.push(`Tests audit failed: ${_error instanceof Error ? _error.message : String(_error)}`);
-  }
-  
+
   try {
     results.push(await auditDocs(auditParams));
   } catch (_error) {

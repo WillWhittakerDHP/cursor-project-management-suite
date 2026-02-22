@@ -72,15 +72,9 @@ export async function validateWorkflow(params: ValidateWorkflowParams): Promise<
     
     if (!statusInfo) {
       result.valid = false;
-      result.errors.push(`Todo not found for ${params.tier}${params.identifier ? ` ${params.identifier}` : ''}`);
+      result.errors.push(`Status not found in control doc for ${params.tier}${params.identifier ? ` ${params.identifier}` : ''}`);
     } else {
-      result.info.push(`Todo found: ${statusInfo.todoId}`);
-      
-      // Check todo status is valid
-      const validStatuses = ['pending', 'in_progress', 'completed', 'cancelled', 'blocked'];
-      if (!validStatuses.includes(statusInfo.status)) {
-        result.warnings.push(`Todo status "${statusInfo.status}" is not a standard status`);
-      }
+      result.info.push(`Status: ${statusInfo.status} (${statusInfo.title})`);
     }
     
     // 2. Check documents exist
@@ -93,13 +87,6 @@ export async function validateWorkflow(params: ValidateWorkflowParams): Promise<
     const sectionChecks = await checkRequiredSections(context, params.tier, params.identifier);
     result.errors.push(...sectionChecks.errors);
     result.warnings.push(...sectionChecks.warnings);
-    
-    // 4. Check todo consistency
-    if (statusInfo) {
-      const consistencyChecks = await checkTodoConsistency(feature, statusInfo);
-      result.errors.push(...consistencyChecks.errors);
-      result.warnings.push(...consistencyChecks.warnings);
-    }
     
     // Update valid flag
     if (result.errors.length > 0) {
@@ -253,33 +240,6 @@ async function checkRequiredSections(
     }
   } catch (_error) {
     warnings.push(`Failed to check sections: ${_error instanceof Error ? _error.message : String(_error)}`);
-  }
-  
-  return { errors, warnings };
-}
-
-/**
- * Check todo consistency
- */
-async function checkTodoConsistency(
-  feature: string,
-  statusInfo: { todoId: string; status: string; children?: Array<{ status: string }> }
-): Promise<{ errors: string[]; warnings: string[] }> {
-  const errors: string[] = [];
-  const warnings: string[] = [];
-  
-  // Check if parent status is consistent with children
-  if (statusInfo.children && statusInfo.children.length > 0) {
-    const allCompleted = statusInfo.children.every(c => c.status === 'completed');
-    const someInProgress = statusInfo.children.some(c => c.status === 'in_progress');
-    
-    if (allCompleted && statusInfo.status !== 'completed') {
-      warnings.push(`All children completed but parent status is "${statusInfo.status}"`);
-    }
-    
-    if (someInProgress && statusInfo.status === 'completed') {
-      warnings.push(`Some children in progress but parent status is "completed"`);
-    }
   }
   
   return { errors, warnings };

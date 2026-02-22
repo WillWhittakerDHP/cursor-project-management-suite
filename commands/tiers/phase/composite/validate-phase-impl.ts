@@ -5,7 +5,7 @@
 import { WorkflowCommandContext } from '../../../utils/command-context';
 import { readProjectFile } from '../../../utils/utils';
 import { getCurrentBranch, runCommand } from '../../../utils/utils';
-import { MarkdownUtils } from '../../../utils/markdown-utils';
+import { PHASE_CONFIG } from '../../configs/phase';
 
 export interface ValidatePhaseResult {
   canStart: boolean;
@@ -19,9 +19,8 @@ export async function validatePhaseImpl(phase: string): Promise<ValidatePhaseRes
 
   try {
     const phaseGuidePath = context.paths.getPhaseGuidePath(phase);
-    let phaseGuideContent: string;
     try {
-      phaseGuideContent = await readProjectFile(phaseGuidePath);
+      await readProjectFile(phaseGuidePath);
     } catch (err) {
       console.warn('Validate phase: phase guide not found', phaseGuidePath, err);
       return {
@@ -34,12 +33,8 @@ export async function validatePhaseImpl(phase: string): Promise<ValidatePhaseRes
       };
     }
 
-    const statusSection = MarkdownUtils.extractSection(phaseGuideContent, 'Phase ' + phase);
-    if (statusSection) {
-      const statusMatch = statusSection.match(/\*\*Status:\*\*\s*(Not Started|Planning|In Progress|Partial|Blocked|Complete)/i);
-      if (statusMatch) {
-        const status = statusMatch[1].toLowerCase();
-
+    const status = await PHASE_CONFIG.controlDoc.readStatus(context, phase);
+    if (status !== null) {
         if (status === 'complete') {
           return {
             canStart: false,
@@ -64,10 +59,11 @@ export async function validatePhaseImpl(phase: string): Promise<ValidatePhaseRes
         }
 
         if (status === 'in progress') {
-          const phaseBranchName = `${context.feature.name}-phase-${phase}`;
+          const phaseBranchName = PHASE_CONFIG.getBranchName(context, phase);
           const currentBranch = await getCurrentBranch();
-
-          if (currentBranch === phaseBranchName || currentBranch.includes(`-phase-${phase}`)) {
+          if (!phaseBranchName) {
+            details.push('Could not resolve phase branch name from config.');
+          } else if (currentBranch === phaseBranchName || currentBranch.includes(`-phase-${phase}`)) {
             return {
               canStart: false,
               reason: 'Phase already started',
@@ -80,42 +76,38 @@ export async function validatePhaseImpl(phase: string): Promise<ValidatePhaseRes
             };
           }
         }
-      }
     }
 
     const phaseNum = parseInt(phase);
     if (phaseNum > 1) {
       const previousPhase = (phaseNum - 1).toString();
       try {
-        const previousPhaseGuidePath = context.paths.getPhaseGuidePath(previousPhase);
-        const previousPhaseGuideContent = await readProjectFile(previousPhaseGuidePath);
-        const previousStatusSection = MarkdownUtils.extractSection(previousPhaseGuideContent, 'Phase ' + previousPhase);
-
-        if (previousStatusSection) {
-          const previousStatusMatch = previousStatusSection.match(/\*\*Status:\*\*\s*(Not Started|Planning|In Progress|Partial|Blocked|Complete)/i);
-          if (previousStatusMatch) {
-            const previousStatus = previousStatusMatch[1].toLowerCase();
-
-            if (previousStatus !== 'complete') {
-              return {
-                canStart: false,
-                reason: 'Previous phase not completed',
-                details: [
-                  `Phase ${previousPhase} has status: ${previousStatusMatch[1]}`,
-                  `Phase ${phase} cannot be started until Phase ${previousPhase} is complete`,
-                  `Complete Phase ${previousPhase} first with /phase-end ${previousPhase}`,
-                ],
-              };
-            }
-          }
+        const previousStatus = await PHASE_CONFIG.controlDoc.readStatus(context, previousPhase);
+        if (previousStatus !== null && previousStatus !== 'complete') {
+          return {
+            canStart: false,
+            reason: 'Previous phase not completed',
+            details: [
+              `Phase ${previousPhase} has status: ${previousStatus}`,
+              `Phase ${phase} cannot be started until Phase ${previousPhase} is complete`,
+              `Complete Phase ${previousPhase} first with /phase-end ${previousPhase}`,
+            ],
+          };
         }
       } catch (err) {
-        console.warn('Validate phase: previous phase guide not found', previousPhase, err);
-        details.push(`Note: Previous phase guide (Phase ${previousPhase}) not found - assuming it's complete`);
+        console.warn('Validate phase: previous phase status check failed', previousPhase, err);
+        details.push(`Note: Previous phase (Phase ${previousPhase}) status could not be read - assuming complete`);
       }
     }
 
-    const phaseBranchName = `${context.feature.name}-phase-${phase}`;
+    const phaseBranchName = PHASE_CONFIG.getBranchName(context, phase);
+    if (!phaseBranchName) {
+      return {
+        canStart: false,
+        reason: 'Could not resolve phase branch name from config',
+        details: ['Phase tier config getBranchName returned null.'],
+      };
+    }
     const branchCheckResult = await runCommand(`git branch --list ${phaseBranchName}`);
     if (branchCheckResult.success && branchCheckResult.output.trim()) {
       return {

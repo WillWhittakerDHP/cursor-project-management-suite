@@ -336,7 +336,7 @@ export async function auditCodeQuality(_params: AuditParams): Promise<AuditResul
   // Check if client directory exists
   if (!existsSync(CLIENT_ROOT)) {
     return {
-      category: 'vue-architecture', // Reuse category for now
+      category: 'code-quality',
       status: 'pass',
       findings: [{
         type: 'info',
@@ -413,7 +413,7 @@ export async function auditCodeQuality(_params: AuditParams): Promise<AuditResul
   const status = errorCount > 0 ? 'fail' : warningCount > 0 ? 'warn' : 'pass';
 
   return {
-    category: 'vue-architecture', // Reuse category (or add 'code-quality' to types)
+    category: 'code-quality',
     status,
     score,
     findings,

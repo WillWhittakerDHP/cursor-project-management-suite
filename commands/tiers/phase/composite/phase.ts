@@ -50,9 +50,14 @@ export async function phaseEnd(params: PhaseEndParams): Promise<PhaseEndResult> 
 export async function planPhase(
   phaseId: string,
   description?: string,
-  featureId?: string
+  featureId?: string,
+  planContent?: string
 ): Promise<string> {
-  return runTierPlan(PHASE_CONFIG, phaseId, description, featureId);
+  return runTierPlan(PHASE_CONFIG, phaseId, description, featureId, planContent);
+}
+
+export async function phaseReopen(phaseId: string, reason?: string) {
+  return runTierReopen(PHASE_CONFIG, { identifier: phaseId, reason });
 }
 
 export async function phaseCheckpoint(

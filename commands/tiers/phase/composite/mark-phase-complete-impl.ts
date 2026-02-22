@@ -6,6 +6,7 @@ import { readProjectFile, writeProjectFile, PROJECT_ROOT, getCurrentDate } from 
 import { join } from 'path';
 import { readFile } from 'fs/promises';
 import { WorkflowCommandContext } from '../../../utils/command-context';
+import { PHASE_CONFIG } from '../../configs/phase';
 
 export interface MarkPhaseCompleteParams {
   phase: string;
@@ -21,11 +22,9 @@ export async function markPhaseCompleteImpl(params: MarkPhaseCompleteParams): Pr
   const handoffPath = context.paths.getFeatureHandoffPath();
 
   try {
+    await PHASE_CONFIG.controlDoc.writeStatus(context, params.phase, 'complete');
+
     let guideContent = await readProjectFile(phaseGuidePath);
-
-  const statusPattern = /(\*\*Status:\*\*)\s*(Not Started|Planning|In Progress|Partial|Blocked)/i;
-  guideContent = guideContent.replace(statusPattern, (_match, label) => `${label} Complete`);
-
   const successCriteriaPattern = /(- \[ \] All sessions completed)/g;
   guideContent = guideContent.replace(successCriteriaPattern, '- [x] All sessions completed');
 
@@ -78,7 +77,7 @@ export async function markPhaseCompleteImpl(params: MarkPhaseCompleteParams): Pr
   }
 
   logContent = logContent.replace(
-    /(\*\*Status:\*\*)\s*(Not Started|Planning|In Progress|Partial|Blocked)/i,
+    /(\*\*Status:\*\*)\s*(Not Started|Planning|In Progress|Partial|Blocked|Reopened)/i,
     (_match, label) => `${label} Complete`
   );
   if (!logContent.includes('**Completed:**')) {

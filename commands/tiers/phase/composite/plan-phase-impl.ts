@@ -4,15 +4,16 @@
 
 import { resolvePlanningDescription } from '../../../planning/utils/resolve-planning-description';
 import { runPlanningWithChecks } from '../../../planning/utils/run-planning-pipeline';
-import { createPlanningTodo } from '../../../planning/utils/create-planning-todo';
 import { WorkflowCommandContext } from '../../../utils/command-context';
 import { MarkdownUtils } from '../../../utils/markdown-utils';
 import { resolveFeatureName, resolveFeatureId } from '../../../utils/feature-context';
+import { appendChildToParentDoc } from '../../../utils/append-child-to-parent';
 
 export async function planPhaseImpl(
   phaseId: string,
   description?: string,
-  featureId?: string
+  featureId?: string,
+  planContent?: string
 ): Promise<string> {
   const feature = featureId != null && featureId.trim() !== ''
     ? await resolveFeatureId(featureId)
@@ -33,8 +34,21 @@ export async function planPhaseImpl(
   output.push(`**Description:** ${resolvedDescription}\n`);
   output.push('---\n');
 
+  const appendResult = await appendChildToParentDoc(
+    'feature',
+    feature,
+    phaseId,
+    resolvedDescription,
+    context
+  );
+  if (appendResult.success && !appendResult.alreadyExists) {
+    output.push(`**Registered:** Phase ${phaseId} added to feature plan/guide\n`);
+  }
+
   output.push('## Planning with Checks\n');
-  output.push('**Using planning abstraction for documentation and pattern reuse checks:**\n');
+  output.push(planContent
+    ? '**Critique mode:** Reviewing your plan for documentation and pattern reuse.\n'
+    : '**Using planning abstraction for documentation and pattern reuse checks:**\n');
   const phaseNum = Number(phase.split('.')[0]) || parseInt(phase, 10) || 1;
   const planningOutput = await runPlanningWithChecks({
     description: resolvedDescription,
@@ -44,9 +58,19 @@ export async function planPhaseImpl(
     docCheckType: 'migration',
   });
   output.push(planningOutput);
+  if (planContent) {
+    output.push('\n**Planning Review:** Suggestions above do not overwrite your authored plan.\n');
+  }
   output.push('\n---\n');
 
   const phaseGuidePath = context.paths.getPhaseGuidePath(phase);
+  if (planContent) {
+    await context.documents.writeGuide('phase', phase, planContent);
+    output.push('## Phase Guide\n');
+    output.push('**Created from your plan content.**\n');
+    output.push(`**File:** ${phaseGuidePath}\n`);
+    output.push('\n---\n');
+  }
   try {
     const phaseGuideContent = await context.readPhaseGuide(phase);
     const phaseSection = MarkdownUtils.extractSection(phaseGuideContent, `Phase ${phase}`);
@@ -72,19 +96,6 @@ export async function planPhaseImpl(
     output.push(`**Error Details:** ${_error instanceof Error ? _error.message : String(_error)}\n`);
     output.push('\n---\n');
   }
-
-  const todoResult = await createPlanningTodo({
-    tier: 'phase',
-    identifier: phase,
-    description: resolvedDescription,
-    feature,
-  });
-  if (!todoResult.success) {
-    output.push(...todoResult.outputLines);
-    throw todoResult.error;
-  }
-  output.push(...todoResult.outputLines);
-  output.push('\n---\n');
 
   output.push('## Test Strategy\n');
   output.push('**Document test requirements for this phase:**\n');

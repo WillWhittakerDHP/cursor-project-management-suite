@@ -16,7 +16,8 @@ export async function runTierPlan(
   config: TierConfig,
   identifier: string,
   description?: string,
-  featureName?: string
+  featureName?: string,
+  planContent?: string
 ): Promise<string> {
   const gate = modeGateText('plan', `plan-${config.name}`);
 
@@ -26,10 +27,10 @@ export async function runTierPlan(
       result = await planFeatureImpl(identifier, description);
       break;
     case 'phase':
-      result = await planPhaseImpl(identifier, description, featureName);
+      result = await planPhaseImpl(identifier, description, featureName, planContent);
       break;
     case 'session':
-      result = await planSessionImpl(identifier, description, featureName);
+      result = await planSessionImpl(identifier, description, featureName, planContent);
       break;
     case 'task':
       result = await planTaskImpl(identifier, description, featureName);

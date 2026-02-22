@@ -1,17 +1,19 @@
 /**
  * Atomic Command: /status-get [tier] [identifier]
- * Get status for specific tier
- * 
+ * Get status for specific tier from control docs (PROJECT_PLAN, phase guide, session checkbox, session guide).
+ *
  * Tier: Cross-tier utility
  * Operates on: Status queries across all tiers
  */
 
 import { WorkflowCommandContext } from '../../utils/command-context';
 import { WorkflowId } from '../../utils/id-utils';
-import { getAllTodos } from '../../utils/todo-io';
-import { aggregateDetails } from '../../utils/todo-scoping';
 import { DocumentTier } from '../../utils/document-manager';
 import { resolveFeatureName } from '../../utils';
+import { FEATURE_CONFIG } from '../../tiers/configs/feature';
+import { PHASE_CONFIG } from '../../tiers/configs/phase';
+import { SESSION_CONFIG } from '../../tiers/configs/session';
+import { TASK_CONFIG } from '../../tiers/configs/task';
 
 export type StatusTier = DocumentTier | 'task';
 
@@ -24,119 +26,77 @@ export interface GetStatusParams {
 export interface StatusInfo {
   tier: StatusTier;
   identifier?: string;
-  todoId: string;
   status: string;
   title: string;
   description?: string;
-  progress?: {
-    completed: number;
-    total: number;
-    inProgress: number;
-    pending: number;
-  };
-  children?: StatusInfo[];
+}
+
+function getConfig(tier: StatusTier) {
+  switch (tier) {
+    case 'feature': return FEATURE_CONFIG;
+    case 'phase': return PHASE_CONFIG;
+    case 'session': return SESSION_CONFIG;
+    case 'task': return TASK_CONFIG;
+    default: return null;
+  }
+}
+
+function resolveId(tier: StatusTier, params: GetStatusParams, featureName: string): string | null {
+  if (tier === 'feature') return params.identifier ?? featureName;
+  if (tier === 'phase' || tier === 'session' || tier === 'task') return params.identifier ?? null;
+  return null;
 }
 
 /**
- * Get status for specific tier
- * 
+ * Get status for specific tier from control doc
+ *
  * @param params Get status parameters
- * @returns Status information
+ * @returns Status information or null if not found
  */
 export async function getStatus(params: GetStatusParams): Promise<StatusInfo | null> {
   const featureName = await resolveFeatureName(params.featureName);
   const context = new WorkflowCommandContext(featureName);
-  
-  // Validate identifier
+
   if ((params.tier === 'phase' || params.tier === 'session' || params.tier === 'task') && !params.identifier) {
     return null;
   }
-  
+
   if (params.tier === 'session' && params.identifier && !WorkflowId.isValidSessionId(params.identifier)) {
     return null;
   }
-  
+
   if (params.tier === 'task' && params.identifier && !WorkflowId.isValidTaskId(params.identifier)) {
     return null;
   }
-  
+
+  const config = getConfig(params.tier);
+  if (!config) return null;
+
+  const id = resolveId(params.tier, params, featureName);
+  if (id === null && params.tier !== 'feature') return null;
+  const effectiveId = id ?? featureName;
+
   try {
-    const feature = context.feature.name;
-    const allTodos = await getAllTodos(feature);
-    
-    let todoId: string;
-    
-    switch (params.tier) {
-      case 'feature':
-        todoId = `feature-${featureName}`;
-        break;
-      case 'phase':
-        todoId = `phase-${params.identifier}`;
-        break;
-      case 'session':
-        todoId = `session-${params.identifier}`;
-        break;
-      case 'task':
-        todoId = `task-${params.identifier}`;
-        break;
-    }
-    
-    const todo = allTodos.find(t => t.id === todoId);
-    
-    if (!todo) {
-      return null;
-    }
-    
-    // Aggregate progress for feature/phase/session
-    let progress: StatusInfo['progress'] | undefined;
-    let children: StatusInfo['children'] | undefined;
-    
-    if (params.tier === 'feature' || params.tier === 'phase' || params.tier === 'session') {
-      const aggregated = await aggregateDetails(feature, todo);
-      progress = {
-        completed: aggregated.progress.completed,
-        total: aggregated.progress.total,
-        inProgress: aggregated.progress.inProgress,
-        pending: aggregated.progress.pending
-      };
-      
-      // Get child statuses
-      const childTodos = allTodos.filter(t => t.parentId === todoId);
-      children = await Promise.all(
-        childTodos.map(async (childTodo) => {
-          const childParams: GetStatusParams = {
-            tier: childTodo.tier as StatusTier,
-            identifier: childTodo.tier === 'phase' ? childTodo.id.replace('phase-', '') :
-                       childTodo.tier === 'session' ? childTodo.id.replace('session-', '') :
-                       childTodo.tier === 'task' ? childTodo.id.replace('task-', '') :
-                       undefined,
-            featureName
-          };
-          return await getStatus(childParams) || {
-            tier: childTodo.tier as StatusTier,
-            identifier: childParams.identifier,
-            todoId: childTodo.id,
-            status: childTodo.status,
-            title: childTodo.title,
-            description: childTodo.description
-          };
-        })
-      );
-    }
-    
+    const status = await config.controlDoc.readStatus(context, effectiveId);
+    if (status === null) return null;
+
+    const title = params.tier === 'feature'
+      ? featureName
+      : params.tier === 'phase'
+        ? `Phase ${effectiveId}`
+        : params.tier === 'session'
+          ? `Session ${effectiveId}`
+          : `Task ${effectiveId}`;
+
     return {
       tier: params.tier,
       identifier: params.identifier,
-      todoId: todo.id,
-      status: todo.status,
-      title: todo.title,
-      description: todo.description,
-      progress,
-      children
+      status,
+      title,
+      description: undefined,
     };
   } catch (err) {
-    console.warn('Get status: failed to get todo status', err);
+    console.warn('Get status: failed to read control doc status', err);
     return null;
   }
 }
-

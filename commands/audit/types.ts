@@ -4,15 +4,11 @@
  * Shared types for all audit commands
  */
 
-export type AuditCategory = 
-  | 'comments'
-  | 'planning'
-  | 'todos'
+export type AuditCategory =
   | 'security'
-  | 'checkpoints'
-  | 'tests'
-  | 'docs'
-  | 'vue-architecture';
+  | 'code-quality'
+  | 'vue-architecture'
+  | 'docs';
 
 export type AuditStatus = 'pass' | 'warn' | 'fail';
 

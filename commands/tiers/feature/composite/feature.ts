@@ -5,6 +5,7 @@
 import { runTierStart } from '../../shared/tier-start';
 import { runTierEnd } from '../../shared/tier-end';
 import { runTierPlan } from '../../shared/tier-plan';
+import { runTierReopen } from '../../shared/tier-reopen';
 import { FEATURE_CONFIG } from '../../configs/feature';
 import type { CommandExecutionOptions } from '../../../utils/command-execution-mode';
 import type { FeatureEndParams, FeatureEndResult } from './feature-end-impl';
@@ -30,6 +31,10 @@ export async function featureEnd(params: FeatureEndParams): Promise<FeatureEndRe
 
 export async function planFeature(featureId: string, description?: string): Promise<string> {
   return runTierPlan(FEATURE_CONFIG, featureId, description);
+}
+
+export async function featureReopen(featureId: string, reason?: string) {
+  return runTierReopen(FEATURE_CONFIG, { identifier: featureId, reason });
 }
 
 /**

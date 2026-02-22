@@ -4,17 +4,16 @@
 
 import { resolvePlanningDescription } from '../../../planning/utils/resolve-planning-description';
 import { runPlanningWithChecks } from '../../../planning/utils/run-planning-pipeline';
-import { createPlanningTodo } from '../../../planning/utils/create-planning-todo';
-import { createFromPlainLanguageProgrammatic } from '../../../todo/composite/create-from-plain-language';
-import { findTodoById } from '../../../utils/todo-io';
 import { WorkflowCommandContext } from '../../../utils/command-context';
 import { WorkflowId } from '../../../utils/id-utils';
 import { resolveFeatureName } from '../../../utils';
+import { appendChildToParentDoc } from '../../../utils/append-child-to-parent';
 
 export async function planSessionImpl(
   sessionId: string,
   description?: string,
-  featureName?: string
+  featureName?: string,
+  planContent?: string
 ): Promise<string> {
   const feature = await resolveFeatureName(featureName);
   const context = new WorkflowCommandContext(feature);
@@ -35,9 +34,24 @@ export async function planSessionImpl(
   output.push(`**Description:** ${resolvedDescription}\n`);
   output.push('---\n');
 
-  output.push('## Planning with Checks\n');
-  output.push('**Using planning abstraction for documentation and pattern reuse checks:**\n');
   const parsed = WorkflowId.parseSessionId(sessionId);
+  if (parsed) {
+    const appendResult = await appendChildToParentDoc(
+      'phase',
+      parsed.phaseId,
+      sessionId,
+      resolvedDescription,
+      context
+    );
+    if (appendResult.success && !appendResult.alreadyExists) {
+      output.push(`**Registered:** Session ${sessionId} added to phase ${parsed.phaseId} guide\n`);
+    }
+  }
+
+  output.push('## Planning with Checks\n');
+  output.push(planContent
+    ? '**Critique mode:** Reviewing your plan for documentation and pattern reuse.\n'
+    : '**Using planning abstraction for documentation and pattern reuse checks:**\n');
   const phaseNum = parsed ? Number(parsed.feature) : undefined;
   const planningOutput = await runPlanningWithChecks({
     description: resolvedDescription,
@@ -48,36 +62,43 @@ export async function planSessionImpl(
     docCheckType: 'component',
   });
   output.push(planningOutput);
+  if (planContent) {
+    output.push('\n**Planning Review:** Suggestions above do not overwrite your authored plan.\n');
+  }
   output.push('\n---\n');
 
   const sessionGuidePath = context.paths.getSessionGuidePath(sessionId);
-  let sessionGuideTemplate = '';
-  try {
-    sessionGuideTemplate = await context.templates.loadTemplate('session', 'guide');
-    sessionGuideTemplate = context.templates.render(sessionGuideTemplate, {
-      SESSION_ID: sessionId,
-      DESCRIPTION: resolvedDescription,
-      DATE: new Date().toISOString().split('T')[0],
-    });
-  } catch (_error) {
-    const templatePath = context.paths.getTemplatePath('session', 'guide');
-    throw new Error(
-      `ERROR: Session guide template not found\n` +
-        `Attempted: ${templatePath}\n` +
-        `Expected: Session guide template file\n` +
-        `Suggestion: Create template at ${templatePath}\n` +
-        `Tier: Session (Tier 2 - Medium-Level)\n` +
-        `Error: ${_error instanceof Error ? _error.message : String(_error)}\n` +
-        `Action Required: Create the session guide template file before proceeding.`
-    );
-  }
-  if (!sessionGuideTemplate) {
-    throw new Error(`Session guide template is empty after loading from ${context.paths.getTemplatePath('session', 'guide')}`);
+  let sessionGuideTemplate: string;
+  if (planContent) {
+    sessionGuideTemplate = planContent;
+  } else {
+    try {
+      sessionGuideTemplate = await context.templates.loadTemplate('session', 'guide');
+      sessionGuideTemplate = context.templates.render(sessionGuideTemplate, {
+        SESSION_ID: sessionId,
+        DESCRIPTION: resolvedDescription,
+        DATE: new Date().toISOString().split('T')[0],
+      });
+    } catch (_error) {
+      const templatePath = context.paths.getTemplatePath('session', 'guide');
+      throw new Error(
+        `ERROR: Session guide template not found\n` +
+          `Attempted: ${templatePath}\n` +
+          `Expected: Session guide template file\n` +
+          `Suggestion: Create template at ${templatePath}\n` +
+          `Tier: Session (Tier 2 - Medium-Level)\n` +
+          `Error: ${_error instanceof Error ? _error.message : String(_error)}\n` +
+          `Action Required: Create the session guide template file before proceeding.`
+      );
+    }
+    if (!sessionGuideTemplate) {
+      throw new Error(`Session guide template is empty after loading from ${context.paths.getTemplatePath('session', 'guide')}`);
+    }
   }
 
-  output.push('## Session Guide Template\n');
+  output.push('## Session Guide\n');
   output.push('**Created:** `' + sessionGuidePath + '`\n');
-  output.push('**Template:** Based on `.cursor/commands/tiers/session/templates/session-guide.md`\n');
+  output.push(planContent ? '**Source:** Your authored plan content\n' : '**Template:** Based on `.cursor/commands/tiers/session/templates/session-guide.md`\n');
   output.push('```markdown\n');
   output.push(sessionGuideTemplate);
   output.push('```\n');
@@ -86,57 +107,7 @@ export async function planSessionImpl(
     await context.documents.writeGuide('session', sessionId, sessionGuideTemplate);
     output.push('\n**Session guide file created successfully.**\n');
     output.push('\n---\n');
-
-    const todoResult = await createPlanningTodo({
-      tier: 'session',
-      identifier: sessionId,
-      description: resolvedDescription,
-      feature,
-    });
-    if (!todoResult.success) {
-      output.push(...todoResult.outputLines);
-      throw todoResult.error;
-    }
-    output.push(...todoResult.outputLines);
-
-    const taskMatches = sessionGuideTemplate.match(/#### Task ([\d.]+):\s*(.+?)(?=\n|$)/g);
-    if (taskMatches && taskMatches.length > 0) {
-      output.push(`\n**Found ${taskMatches.length} task(s) in guide. Creating task todos...**\n`);
-      const currentPhase = parsed ? Number(parsed.feature) : undefined;
-      for (const match of taskMatches) {
-        const taskMatch = match.match(/#### Task ([\d.]+):\s*(.+?)(?=\n|$)/);
-        if (taskMatch) {
-          const taskId = taskMatch[1];
-          const taskTitle = taskMatch[2].trim();
-          const taskTodoResult = await createFromPlainLanguageProgrammatic(
-            feature,
-            `Task ${taskId}: ${taskTitle}`,
-            { currentPhase, currentSession: sessionId }
-          );
-          if (!taskTodoResult.success || !taskTodoResult.todo) {
-            const taskErrorMessages: string[] = [];
-            taskErrorMessages.push(`❌ **ERROR: Task todo creation failed for ${taskId} (BLOCKING)**\n`);
-            if (taskTodoResult.errors?.length) {
-              taskErrorMessages.push('**Errors:**\n');
-              for (const err of taskTodoResult.errors) {
-                taskErrorMessages.push(`- ${err.type}${err.field ? ` (${err.field})` : ''}: ${err.message}\n`);
-              }
-            }
-            taskErrorMessages.push(`\n**Session planning cannot continue without task todos. Please fix the errors above and retry.**\n`);
-            throw new Error(taskErrorMessages.join(''));
-          }
-          const verifiedTaskTodo = await findTodoById(feature, taskTodoResult.todo.id);
-          if (!verifiedTaskTodo) {
-            throw new Error(`❌ **ERROR: Task todo verification failed**\nTodo ${taskTodoResult.todo.id} was created but cannot be found. This indicates a critical issue with the todo system.\n`);
-          }
-          output.push(`  ✅ Task todo created and verified: ${taskTodoResult.todo.id}\n`);
-        }
-      }
-    }
   } catch (error) {
-    if (error instanceof Error && (error.message.includes('todo') || error.message.includes('BLOCKING') || error.message.includes('Todo'))) {
-      throw error;
-    }
     output.push('\n**ERROR: Could not create session guide file automatically**\n');
     output.push(`**Attempted:** ${sessionGuidePath}\n`);
     output.push(`**Expected:** Session guide file for session ${sessionId}\n`);

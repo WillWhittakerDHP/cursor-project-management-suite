@@ -167,6 +167,12 @@ Adjacent-tier transitions use **tierUp**, **tierAt**, and **tierDown** (see `.cu
 
 **Next step at end:** Do not infer from step text; always use `outcome.nextAction`.
 
+**Tier reopen:** Use `/phase-reopen`, `/feature-reopen`, or `/session-reopen` when a completed tier needs additional child work (e.g. add session 4.1.4 to completed phase 4.1). The implementation flips status from Complete to Reopened, ensures the branch, and logs the reopen. After the command returns, the **agent** must use **AskQuestion**: "Is there a plan you want to build this tier around?" with options e.g. "Yes — I have a plan file" / "No — I'll plan from scratch" / "No — just a quick fix". If the user selects "Yes" and provides a file reference (e.g. `@myplan.plan.md`), the agent reads that file and passes its content as `planContent` to subsequent `planSession` / `planPhase` calls so the user's authored plan is used as the guide content and planning checks run in critique mode.
+
+**Auto-registration of children:** When planning a new child tier (e.g. `/plan-session 4.1.4`), the plan-* impl calls `appendChildToParentDoc` so the child is registered in the parent doc (e.g. session 4.1.4 added to phase-4.1-guide.md) if not already present. This is idempotent and allows cascade and discovery to work after a reopen.
+
+**Plan content and critique mode:** `planSession` and `planPhase` accept an optional `planContent` argument (e.g. from a user's `*.plan.md` file). When provided, that content is used as the guide instead of the template; planning checks still run and their output is presented as "Planning Review" (critique) without overwriting the user's content.
+
 ---
 
 ## Status taxonomy
@@ -181,6 +187,7 @@ All tiers (feature, phase, session, task) use the same status values. Statuses d
 | `Partial` | Some work done, paused/deferred | Yes (resume) | Yes |
 | `Blocked` | Cannot proceed due to dependency | No (show blocker reason) | No |
 | `Complete` | All work finished, no remaining items | No (error: already complete) | No |
+| `Reopened` | Previously completed, additional work needed | Yes | Yes |
 
 **Rules:**
 - `Functionally Complete` is **not a valid status**. Use `Partial` (remaining work exists) or `Complete` (truly done).
@@ -189,13 +196,30 @@ All tiers (feature, phase, session, task) use the same status values. Statuses d
 - The agent must check the feature's status in PROJECT_PLAN before calling `featureStart`. If `Complete`, error and stop. If `Blocked`, show the reason and stop. Otherwise, proceed.
 - Phase and session validators already enforce status checks (`validate-phase-impl.ts`, `validate-session-impl.ts`). Feature-level validation follows the same pattern.
 
-**Where statuses live:**
+**Where statuses live (controlDoc as authority):**
+
+Each tier config defines a `controlDoc` (path, readStatus, writeStatus). Status is read from and written to these documents — no separate todo/JSON system.
+
 - **Features:** `#` column status in `.project-manager/PROJECT_PLAN.md` feature summary table
 - **Phases:** `**Status:**` field in phase guide documents
-- **Sessions:** `**Status:**` field in session guide/log documents
-- **Tasks/Todos:** `status` field in todo system (`pending` / `in_progress` / `completed` / `cancelled` / `blocked`)
+- **Sessions:** Checkbox `- [x] ### Session X.Y.Z:` in phase guide
+- **Tasks:** `**Status:**` field in session guide task sections
 
-> **Todo status mapping:** The todo system uses lowercase equivalents: `pending` = Not Started, `in_progress` = In Progress, `completed` = Complete, `cancelled` = N/A, `blocked` = Blocked. No mapping needed for `Partial` or `Planning` — these are doc-level statuses only.
+**Checkpoint commands:** `/feature-checkpoint`, `/phase-checkpoint`, `/session-checkpoint`, `/create-checkpoint` read progress from controlDoc (guides) and write to logs — they do not use a todo system.
+
+---
+
+## Tier Reopen
+
+When a tier (feature, phase, or session) is **Complete** but needs additional child work (e.g. adding session 4.1.4 to phase 4.1):
+
+1. **Invoke reopen:** Resolve the slash command (`phase-reopen`, `feature-reopen`, or `session-reopen`) from the command-to-entry-point table and call the export with the tier identifier (and optional reason). The implementation validates the tier is Complete, flips status to **Reopened** in the guide/log, ensures the branch, and appends a reopen log entry.
+2. **AskQuestion (agent):** After the command returns, use AskQuestion: "Is there a plan you want to build this tier around?" Options: **Yes — I have a plan file** (user provides e.g. `@myplan.plan.md`), **No — I'll plan from scratch**, **No — just a quick fix**.
+3. **If Yes with plan file:** Read the referenced `*.plan.md` file and pass its content as `planContent` when calling `planSession` or `planPhase` for each new child. The plan command seeds the child guide from that content and runs planning checks in **critique mode** (suggestions appended as Planning Review, not overwriting the plan).
+4. **If No (plan from scratch):** Use existing plan-* commands with no planContent; templates and cascade work as usual.
+5. **If quick fix:** No planning; user makes changes and runs the tier-end command when done.
+
+Reopened tiers are **startable** (same as In Progress). When the new work is done, run the tier-end command; mark-phase-complete (and equivalent) will set status back to Complete.
 
 ---
 
@@ -214,4 +238,4 @@ All tiers (feature, phase, session, task) use the same status values. Statuses d
 
 **Rule for context step:** Derive [title/description/next] from [doc paths]; do not ask the user.
 
-**Planning commands:** No plan-* command requires a description. `/plan-phase`, `/plan-session`, `/plan-feature`, and `/plan-task` all accept identifier-only; description is derived in shared utils (`resolve-planning-description.ts`, `run-planning-pipeline.ts`, `create-planning-todo.ts`).
+**Planning commands:** No plan-* command requires a description. `/plan-phase`, `/plan-session`, `/plan-feature`, and `/plan-task` all accept identifier-only; description is derived in shared utils (`resolve-planning-description.ts`, `run-planning-pipeline.ts`).

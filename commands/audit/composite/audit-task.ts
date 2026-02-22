@@ -1,17 +1,13 @@
 /**
  * Composite Command: /audit-task [task-id] [feature-name]
- * Run selected audits for task tier (excludes planning and docs)
- * 
+ * Run selected audits for task tier (security, vue-architecture)
+ *
  * Tier: Task (Tier 3 - Low-Level)
  * Operates on: Complete task audit
  */
 
 import { TierAuditResult, AuditParams } from '../types';
-import { auditComments } from '../atomic/audit-comments';
-import { auditTodos } from '../atomic/audit-todos';
 import { auditSecurity } from '../atomic/audit-security';
-import { auditCheckpoints } from '../atomic/audit-checkpoints';
-import { auditTests } from '../atomic/audit-tests';
 import { auditVueArchitecture } from '../atomic/audit-vue-architecture';
 import { WorkflowCommandContext } from '../../utils/command-context';
 import { resolveFeatureName } from '../../utils';
@@ -49,36 +45,11 @@ export async function auditTask(params: AuditTaskParams): Promise<{
   
   const results = [];
   const errors: string[] = [];
-  
-  // Run 5 atomic audits (exclude planning and docs)
-  try {
-    results.push(await auditComments(auditParams));
-  } catch (_error) {
-    errors.push(`Comments audit failed: ${_error instanceof Error ? _error.message : String(_error)}`);
-  }
-  
-  try {
-    results.push(await auditTodos(auditParams));
-  } catch (_error) {
-    errors.push(`Todos audit failed: ${_error instanceof Error ? _error.message : String(_error)}`);
-  }
-  
+
   try {
     results.push(await auditSecurity(auditParams));
   } catch (_error) {
     errors.push(`Security audit failed: ${_error instanceof Error ? _error.message : String(_error)}`);
-  }
-  
-  try {
-    results.push(await auditCheckpoints(auditParams));
-  } catch (_error) {
-    errors.push(`Checkpoints audit failed: ${_error instanceof Error ? _error.message : String(_error)}`);
-  }
-  
-  try {
-    results.push(await auditTests(auditParams));
-  } catch (_error) {
-    errors.push(`Tests audit failed: ${_error instanceof Error ? _error.message : String(_error)}`);
   }
 
   try {
@@ -117,7 +88,7 @@ export async function auditTask(params: AuditTaskParams): Promise<{
   outputLines.push(`**Overall Status:** ${overallStatus.toUpperCase()}`);
   outputLines.push(`**Report:** ${auditResult.reportPath || reportPath}`);
   outputLines.push('');
-  outputLines.push('*Note: Task audits exclude planning and docs (tasks use session-level docs)*');
+  outputLines.push('*Note: Task audits run security and vue-architecture only.*');
   outputLines.push('');
 
   // External signals import (no execution, only capture already-emitted artifacts)

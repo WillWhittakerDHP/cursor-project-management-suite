@@ -6,6 +6,8 @@ import { WorkflowCommandContext } from '../../../utils/command-context';
 import { readProjectFile } from '../../../utils/utils';
 import { getCurrentBranch, runCommand } from '../../../utils/utils';
 import { WorkflowId } from '../../../utils/id-utils';
+import { SESSION_CONFIG } from '../../configs/session';
+import { PHASE_CONFIG } from '../../configs/phase';
 
 export interface ValidateSessionResult {
   canStart: boolean;
@@ -33,9 +35,8 @@ export async function validateSessionImpl(sessionId: string): Promise<ValidateSe
 
   try {
     const phaseGuidePath = context.paths.getPhaseGuidePath(phase);
-    let phaseGuideContent: string;
     try {
-      phaseGuideContent = await readProjectFile(phaseGuidePath);
+      await readProjectFile(phaseGuidePath);
     } catch (err) {
       console.warn('Validate session: validation check failed', err);
       return {
@@ -48,8 +49,8 @@ export async function validateSessionImpl(sessionId: string): Promise<ValidateSe
       };
     }
 
-    const sessionCheckboxPattern = new RegExp(`-\\s*\\[x\\]\\s*(###\\s*)?Session\\s+${sessionId.replace(/\./g, '\\.')}`, 'i');
-    if (sessionCheckboxPattern.test(phaseGuideContent)) {
+    const sessionStatus = await SESSION_CONFIG.controlDoc.readStatus(context, sessionId);
+    if (sessionStatus === 'complete') {
       return {
         canStart: false,
         reason: 'Session already completed',
@@ -61,7 +62,14 @@ export async function validateSessionImpl(sessionId: string): Promise<ValidateSe
       };
     }
 
-    const sessionBranchName = `${context.feature.name}-phase-${phase}-session-${sessionId}`;
+    const sessionBranchName = SESSION_CONFIG.getBranchName(context, sessionId);
+    if (!sessionBranchName) {
+      return {
+        canStart: false,
+        reason: 'Could not resolve session branch name from config',
+        details: ['Session tier config getBranchName returned null.'],
+      };
+    }
     const branchCheckResult = await runCommand(`git branch --list ${sessionBranchName}`);
     const currentBranch = await getCurrentBranch();
 
@@ -89,9 +97,8 @@ export async function validateSessionImpl(sessionId: string): Promise<ValidateSe
 
     if (sessionNum > 1) {
       const previousSessionId = `${phase}.${sessionNum - 1}`;
-      const previousSessionCheckboxPattern = new RegExp(`-\\s*\\[x\\]\\s*(###\\s*)?Session\\s+${previousSessionId.replace(/\./g, '\\.')}`, 'i');
-
-      if (!previousSessionCheckboxPattern.test(phaseGuideContent)) {
+      const previousSessionStatus = await SESSION_CONFIG.controlDoc.readStatus(context, previousSessionId);
+      if (previousSessionStatus !== 'complete') {
         return {
           canStart: false,
           reason: 'Previous session not completed',
@@ -104,9 +111,8 @@ export async function validateSessionImpl(sessionId: string): Promise<ValidateSe
       }
     }
 
-    const statusSection = phaseGuideContent.match(/## Phase [\d.]+[\s\S]*?\*\*Status:\*\*\s*(Not Started|Planning|In Progress|Partial|Blocked|Complete)/i);
-    if (statusSection) {
-      const phaseStatus = statusSection[1].toLowerCase();
+    const phaseStatus = await PHASE_CONFIG.controlDoc.readStatus(context, phase);
+    if (phaseStatus !== null) {
       if (phaseStatus === 'complete') {
         return {
           canStart: false,
