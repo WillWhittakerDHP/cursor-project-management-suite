@@ -6,7 +6,9 @@ import { runTierStart } from '../../shared/tier-start';
 import { runTierEnd } from '../../shared/tier-end';
 import { runTierPlan } from '../../shared/tier-plan';
 import { runTierChange } from '../../shared/tier-change';
+import { runTierValidate } from '../../shared/tier-validate';
 import { TASK_CONFIG } from '../../configs/task';
+import type { ValidateTaskResult } from './validate-task-impl';
 import type { CommandExecutionOptions } from '../../../utils/command-execution-mode';
 import type { TaskEndParams } from './task-end-impl';
 import type { ChangeRequest, ChangeScope } from '../../../utils/utils';
@@ -42,16 +44,36 @@ export interface MarkTaskCompleteParams {
   featureId?: string;
 }
 
+export async function validateTask(taskId: string): Promise<ValidateTaskResult> {
+  return runTierValidate(TASK_CONFIG, taskId);
+}
+
+export function formatTaskValidation(result: ValidateTaskResult, taskId: string): string {
+  const output: string[] = [];
+  output.push(`# Task ${taskId} Validation\n`);
+  if (result.canStart) {
+    output.push('✅ **Status:** Ready to start\n');
+  } else {
+    output.push(`❌ **Status:** Cannot start - ${result.reason}\n`);
+  }
+  output.push('## Details\n');
+  result.details.forEach(detail => output.push(`- ${detail}`));
+  return output.join('\n');
+}
+
 export async function taskStart(
   taskId: string,
   featureId?: string,
   options?: CommandExecutionOptions
-): Promise<string> {
+): Promise<TierStartResult> {
   return runTierStart(TASK_CONFIG, { taskId, featureId }, options);
 }
 
-export async function taskEnd(params: TaskEndParams): Promise<{ success: boolean; output: string }> {
-  return runTierEnd(TASK_CONFIG, params) as Promise<{ success: boolean; output: string }>;
+export async function taskEnd(paramsOrId: TaskEndParams | string): Promise<TierEndResult> {
+  const params: TaskEndParams = typeof paramsOrId === 'string'
+    ? { taskId: paramsOrId }
+    : paramsOrId;
+  return runTierEnd(TASK_CONFIG, params);
 }
 
 export async function planTask(

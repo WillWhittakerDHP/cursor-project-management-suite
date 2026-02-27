@@ -66,11 +66,14 @@ export async function sessionStart(
   sessionId: string,
   description?: string,
   options?: CommandExecutionOptions
-): Promise<string> {
+): Promise<TierStartResult> {
   return runTierStart(SESSION_CONFIG, { sessionId, description }, options);
 }
 
-export async function sessionEnd(params: SessionEndParams): Promise<SessionEndResult> {
+export async function sessionEnd(paramsOrId: SessionEndParams | string): Promise<SessionEndResult> {
+  const params: SessionEndParams = typeof paramsOrId === 'string'
+    ? { sessionId: paramsOrId, runTests: false }
+    : paramsOrId;
   return runTierEnd(SESSION_CONFIG, params) as Promise<SessionEndResult>;
 }
 

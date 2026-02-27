@@ -5,6 +5,7 @@
 import { runTierStart } from '../../shared/tier-start';
 import { runTierEnd } from '../../shared/tier-end';
 import { runTierPlan } from '../../shared/tier-plan';
+import { runTierReopen } from '../../shared/tier-reopen';
 import { runTierCheckpoint } from '../../shared/tier-checkpoint';
 import { runTierComplete } from '../../shared/tier-complete';
 import { runTierValidate } from '../../shared/tier-validate';
@@ -39,12 +40,18 @@ export interface PhaseChangeRequestResult {
 export async function phaseStart(
   phaseId: string,
   options?: CommandExecutionOptions
-): Promise<string> {
+): Promise<TierStartResult> {
   return runTierStart(PHASE_CONFIG, { phaseId }, options);
 }
 
-export async function phaseEnd(params: PhaseEndParams): Promise<PhaseEndResult> {
-  return runTierEnd(PHASE_CONFIG, params) as Promise<PhaseEndResult>;
+export async function phaseEnd(paramsOrId: PhaseEndParams | string): Promise<PhaseEndResult> {
+  if (typeof paramsOrId === 'string') {
+    throw new Error(
+      `phaseEnd requires a params object with completedSessions. ` +
+      `Use: phaseEnd({ phaseId: '${paramsOrId}', completedSessions: [...] })`
+    );
+  }
+  return runTierEnd(PHASE_CONFIG, paramsOrId) as Promise<PhaseEndResult>;
 }
 
 export async function planPhase(

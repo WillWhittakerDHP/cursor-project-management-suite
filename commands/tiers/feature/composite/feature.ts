@@ -13,7 +13,7 @@ import { readProjectFile, writeProjectFile, PROJECT_ROOT } from '../../../utils/
 import { join } from 'path';
 import { access } from 'fs/promises';
 import { featureCheckpoint } from '../atomic/feature-checkpoint';
-import { spawn } from 'child_process';
+
 import { WorkflowCommandContext } from '../../../utils/command-context';
 
 export type { FeatureEndParams, FeatureEndResult };
@@ -21,12 +21,18 @@ export type { FeatureEndParams, FeatureEndResult };
 export async function featureStart(
   featureId: string,
   options?: CommandExecutionOptions
-): Promise<string> {
+): Promise<TierStartResult> {
   return runTierStart(FEATURE_CONFIG, { featureId }, options);
 }
 
-export async function featureEnd(params: FeatureEndParams): Promise<FeatureEndResult> {
-  return runTierEnd(FEATURE_CONFIG, params) as Promise<FeatureEndResult>;
+export async function featureEnd(paramsOrId: FeatureEndParams | string): Promise<FeatureEndResult> {
+  if (typeof paramsOrId === 'string') {
+    throw new Error(
+      `featureEnd requires a params object with completedPhases. ` +
+      `Use: featureEnd({ featureId: '${paramsOrId}', completedPhases: [...] })`
+    );
+  }
+  return runTierEnd(FEATURE_CONFIG, paramsOrId) as Promise<FeatureEndResult>;
 }
 
 export async function planFeature(featureId: string, description?: string): Promise<string> {
@@ -41,12 +47,6 @@ export async function featureReopen(featureId: string, reason?: string) {
  * Feature-change: document feature pivot and create checkpoint.
  */
 export async function featureChange(featureName: string, newFeatureName: string, reason: string): Promise<string> {
-  spawn('npm', ['run', 'server:refresh'], {
-    cwd: process.cwd(),
-    stdio: 'ignore',
-    detached: true,
-  }).unref();
-
   const output: string[] = [];
   output.push(`# Feature Change: ${featureName} → ${newFeatureName}\n`);
   output.push(`**Date:** ${new Date().toISOString().split('T')[0]}\n`);
