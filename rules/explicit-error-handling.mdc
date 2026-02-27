@@ -1,5 +1,0 @@
----
-alwaysApply: true
----
-
-Handle errors safely with explicit logging. Do not create silent fallbacks or filters that hide errors. Log errors explicitly and let them propagate appropriately.

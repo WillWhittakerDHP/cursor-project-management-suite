@@ -1,5 +1,0 @@
----
-alwaysApply: true
----
-
-During refactors, do not introduce unnecessary fallbacks, filtering, new types, or new properties unless specifically directed. Always look for current property names and types.

@@ -1,0 +1,11 @@
+---
+alwaysApply: true
+---
+
+Function governance (inventory → governance → audit):
+
+**Thresholds:** Max nesting 3 levels; max branches 8 per function; long branchy functions under 50 lines (or extract). Exported and boundary functions: explicit return types. Prefer named utilities for transformations; avoid deep nesting in UI-facing code. Route handlers and permissible contexts may be allowlisted; otherwise stay under thresholds. No silent fallback or error swallowing.
+
+**Audit:** Session-tier runs function-complexity; function-governance baseline (100 − P0×3 − P1×1 from function-complexity-audit.json) is stored and compared at session start/end.
+
+See: .project-manager/FUNCTION_AUTHORING_PLAYBOOK.md for thresholds, extract vs allowlist, and audit mapping.

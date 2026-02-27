@@ -1,0 +1,15 @@
+---
+alwaysApply: true
+---
+
+Component governance (inventory → governance → audit):
+
+**Boundaries:** Components stay thin: template + minimal script; heavy logic in composables or named utilities. Prop API: bounded count (≤8) or grouped config object. Emit: bounded event count or grouped payloads; avoid emit relay chains where provide/inject or composable is clearer. Slots: shallow where possible. Template: avoid deep v-if/v-for; extract sub-components or computed for complex expressions.
+
+**Thresholds:** Prop count ≤8, emit ≤8, coupling ≤5; template directive depth ≤3; template size ≤200 lines (or extract). Component-logic Tier1 hotspots (watch, async/await, map/reduce, DOM) warrant extraction unless allowlisted. Check component-logic and component-health reports before adding allowlist entries; prefer extraction over allowlisting.
+
+**Reusability:** When similar code appears 2+ times with same structure, create generic/reusable components or utilities after pattern is clear. Don't genericize prematurely. See: client/src/admin/components/generic/ for examples.
+
+**Audit:** Session-tier runs component-logic and component-health; component-governance baseline is stored and compared at session start/end.
+
+See: .project-manager/COMPONENT_AUTHORING_PLAYBOOK.md for decision tree, thresholds, and allowlist location (audit-global-config).

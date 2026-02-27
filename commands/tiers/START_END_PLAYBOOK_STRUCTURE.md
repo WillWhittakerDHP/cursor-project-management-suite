@@ -267,12 +267,12 @@ All mode logic lives in one file: `.cursor/commands/utils/command-execution-mode
 
 Session-tier type governance is enforced via cursor rules, a reference playbook, and the existing baseline comparison pipeline.
 
-- **Cursor rules (always-applied):** `.cursor/rules/vue-reactivity-boundary-contracts.mdc` (Ref/ComputedRef boundaries, InjectionKey, null/undefined at API and component boundaries) and `.cursor/rules/type-creation-placement.mdc` (when/where to create types, check type-constant-inventory before adding types).
+- **Cursor rules (always-applied):** `.cursor/rules/type-governance.mdc` (inventory, Ref/ComputedRef boundaries, InjectionKey, null/undefined, type placement; session-tier type-escape and type-constant-inventory).
 - **Reference playbook:** `.project-manager/TYPE_AUTHORING_PLAYBOOK.md` — decision trees (create vs reuse vs inline), Vue reactivity boundary table, null/undefined policy, assertion policy, placement, Definition of Done, common mistakes, and audit rule mapping.
 - **Baseline comparison:** Type governance deltas are tracked through the existing session baseline. Session-start stores a `type-constant-inventory` score (derived from `client/.audit-reports/type-constant-inventory-audit.json`); session-end includes the same category in end scores. The audit report and comparison output show type-constant-inventory alongside other session categories (e.g. tier-quality, docs, vue-architecture).
 - **Session-end checklist:** Immediately before the session end audit, the workflow emits a soft type-governance self-check (decision tree, no new escape hatches, Ref/ComputedRef boundaries). Enforcement remains automated via type-escape and type-constant-inventory audits in `audit:tier-session`.
 
-When creating or updating session guides (e.g. under `.project-manager/features/.../sessions/*-guide.md`), agents should follow the type-creation-placement rule and the playbook for any new or changed types referenced in the session.
+When creating or updating session guides (e.g. under `.project-manager/features/.../sessions/*-guide.md`), agents should follow the type-governance rule and the playbook for any new or changed types referenced in the session.
 
 ---
 
@@ -280,12 +280,12 @@ When creating or updating session guides (e.g. under `.project-manager/features/
 
 Session-tier composable and function governance is enforced via cursor rules, a reference playbook, and the existing baseline comparison pipeline.
 
-- **Cursor rules (always-applied):** `.cursor/rules/composable-contract-boundaries.mdc` (flat contracts, action-based mutation, Ref/ComputedRef boundaries, InjectionKey) and `.cursor/rules/function-boundary-governance.mdc` (complexity thresholds, explicit return types, no silent error swallowing).
+- **Cursor rules (always-applied):** `.cursor/rules/composable-governance.mdc` (flat contracts, action-based mutation, Ref/ComputedRef boundaries, InjectionKey, no branch-heavy logic in composables; session-tier composable-health and composables-logic).
 - **Reference playbook:** `.project-manager/COMPOSABLE_AUTHORING_PLAYBOOK.md` — decision tree (flat vs split vs facade), composable contract table, mutation and injection boundary policy, function governance thresholds, Definition of Done, common mistakes, and audit rule mapping.
 - **Baseline comparison:** Composable governance deltas are tracked through the existing session baseline. Session-start stores a `composable-governance` score (derived from composable-health and function-complexity audit JSON); session-end includes the same category in end scores. The audit report and comparison output show composable-governance alongside other session categories.
 - **Session-end checklist:** Immediately before the session end audit, the workflow emits a soft composable-governance self-check (flat contract, action-based mutation, no Ref|ComputedRef unions, explicit return types). Enforcement remains automated via composable-health, composables-logic, and function-complexity audits in `audit:tier-session`.
 
-When creating or updating session guides or implementing session work, agents should follow the composable-contract-boundaries and function-boundary-governance rules and the playbook for flat, test-friendly composable contracts and action-based mutation.
+When creating or updating session guides or implementing session work, agents should follow the composable-governance rule and the playbook for flat, test-friendly composable contracts and action-based mutation.
 
 ---
 
@@ -293,7 +293,7 @@ When creating or updating session guides or implementing session work, agents sh
 
 Session-tier function governance is enforced via cursor rules, a reference playbook, and the baseline comparison pipeline.
 
-- **Cursor rules (always-applied):** `.cursor/rules/function-boundary-governance.mdc` (complexity, return types, no silent errors) and `.cursor/rules/function-complexity-thresholds.mdc` (nesting, branches, length, extract vs allowlist).
+- **Cursor rules (always-applied):** `.cursor/rules/function-governance.mdc` (thresholds, explicit return types, no silent errors; session-tier function-complexity and function-governance baseline).
 - **Reference playbook:** `.project-manager/FUNCTION_AUTHORING_PLAYBOOK.md` — thresholds table, decision tree (extract vs keep vs allowlist), return type and error-handling policy, Definition of Done, anti-patterns, audit rule mapping, and baseline score formula.
 - **Baseline comparison:** Function-governance score is stored at session-start and compared at session-end. The score is derived from `function-complexity-audit.json` only (100 − P0×3 − P1×1, cap 0–100). The audit report and comparison output show `function-governance` as a dedicated category.
 - **Session-end checklist:** Immediately before the session end audit, the workflow emits a function-governance self-check (complexity thresholds, explicit return types, no silent error swallowing, heavy logic extracted to named utilities).
@@ -306,7 +306,7 @@ When creating or updating session guides or implementing session work, agents sh
 
 Session-tier component governance is enforced via cursor rules, a reference playbook, and the baseline comparison pipeline.
 
-- **Cursor rules (always-applied):** `.cursor/rules/component-boundary-contracts.mdc` (props/emit/slots boundaries, thin components, logic-out) and `.cursor/rules/component-health-thresholds.mdc` (prop/emit/coupling/template thresholds, Tier1 extraction vs allowlist).
+- **Cursor rules (always-applied):** `.cursor/rules/component-governance.mdc` (boundaries, thresholds, reusability; session-tier component-logic and component-health, component-governance baseline).
 - **Reference playbook:** `.project-manager/COMPONENT_AUTHORING_PLAYBOOK.md` — thresholds table, decision tree (extract vs keep vs allowlist), boundary policy, Definition of Done, anti-patterns, audit rule mapping, and baseline score formula.
 - **Baseline comparison:** Component-governance score is stored at session-start and compared at session-end. The score is derived from `component-health-audit.json` only (100 − P0×3 − P1×1, cap 0–100). The audit report and comparison output show `component-governance` as a dedicated category.
 - **Session-end checklist:** Immediately before the session end audit, the workflow emits a component-governance self-check (prop/emit/coupling/template thresholds, thin components, no new Tier1 hotspots without extraction/allowlist, template depth and expression limits).

@@ -1,5 +1,0 @@
----
-alwaysApply: true
----
-
-Include explicit return types in function definitions to avoid type casting: function DoAThing(): ReturnType<Generic> { ... } instead of function DoAThing() { ... return aThing as ReturnType<Generic> }

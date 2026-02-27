@@ -1,5 +1,0 @@
----
-alwaysApply: true
----
-
-Use functional approaches (map, reduce, filter) over mutations. Avoid forEach for transformations; use map instead. Use for...of only when you need early returns or side effects, not for transformations. Avoid mutating arrays/objects in loops.

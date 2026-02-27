@@ -1,0 +1,11 @@
+---
+alwaysApply: true
+---
+
+Composable governance (inventory → governance → audit):
+
+**Governance:** Exported composables require explicit return types. Public contracts should be flat for unit testing. Mutation via explicit actions (setX/updateX/toggleX), not writable leakage. Read-only boundaries use `ComputedRef<T>`; mutable internal state uses `Ref<T>`; `WritableComputedRef<T>` only for intentional getter+setter. Never expose `Ref<T> | ComputedRef<T>` unions at public boundaries. Use typed `InjectionKey<ContextType>`, not untyped string/symbol. Keep branch-heavy or deeply nested logic out of UI-facing composables; split orchestration/state/mutation when complexity thresholds are crossed.
+
+**Audit:** Session-tier runs composable-health and composables-logic; composable-governance baseline is stored and compared at session start/end.
+
+See: .project-manager/COMPOSABLE_AUTHORING_PLAYBOOK.md for full table, mutation/injection policy, and audit mapping.

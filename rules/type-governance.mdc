@@ -1,0 +1,17 @@
+---
+alwaysApply: true
+---
+
+Type governance (inventory → governance → audit):
+
+**Inventory:** Check `type-constant-inventory-audit.md` before creating a new type. Session-tier runs type-escape and type-constant-inventory; baseline compares type-constant-inventory score.
+
+**Boundaries:**
+- Consumer reads only → return `ComputedRef<T>`; reads + writes → `Ref<T>`; from useQuery/useMutation → `ComputedRef<T>`
+- Never return `Ref<T> | ComputedRef<T>` at boundaries
+- Use typed `InjectionKey<ContextType>`, never untyped `Symbol()`
+- API responses: `T | null`; optional props: `T | undefined`; explicit empty: `T | null`; avoid mixing null and undefined for the same boundary semantic
+
+**Placement:** Shared type → `client/src/types/<domain>/`; composable contract → co-locate by domain; single-file-only → inline in `<script setup>`. Prefer descriptive generic names and type guards over assertion workarounds.
+
+See: .project-manager/TYPE_AUTHORING_PLAYBOOK.md for decision tree, full table, and audit mapping.

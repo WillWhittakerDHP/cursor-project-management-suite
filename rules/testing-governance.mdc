@@ -1,0 +1,15 @@
+---
+alwaysApply: false
+---
+
+TEMPORARILY DISABLED: Test files are excluded from linting/type-checking until Phase 3.0 of BETA_LAUNCH_CHECKLIST.md. Re-enable alwaysApply: true when that phase begins.
+
+**Size and scope:** Use fine-grained unit tests for pure functions, utilities, and business logic. Use integration tests for context coordination, component integration, and user workflows. See: frontend-root/src/booking/__tests__/utils/feeCalculation.test.ts (unit), frontend-root/src/admin/tests/integration/contextIntegration.test.tsx (integration).
+
+**Headers:** Every test file must begin with a descriptive header comment (what it covers, how it works, what it validates, dependencies). See: frontend-root/src/admin/tests/activePartsStateCalculator.test.ts for format.
+
+**Immutability:** Tests are immutable once they pass, lint, and function correctly. Only modify when the feature changes, the test has a bug, or refactoring requires updates. Never modify tests to make failing code pass — fix the code instead.
+
+**Script and tooling:** Tests run in watch mode during development using npm run start:dev:testing. Use standard start:dev for development without test watching.
+
+**Exceptions:** Test files may use fallbacks and type assertions for test setup. Migration scripts may use more permissive patterns. When fixing legacy code, prefer gradual improvement over strict adherence.

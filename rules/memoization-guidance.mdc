@@ -1,5 +1,0 @@
----
-alwaysApply: true
----
-
-Memoize components and computed values when they receive object/array props that change reference frequently, or when they perform expensive computations. Use Vue.js computed() and v-memo strategically. Vue automatically memoizes computed properties - only optimize when profiling shows performance issues.
