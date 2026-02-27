@@ -138,6 +138,12 @@ export async function taskStartImpl(
       return lines.join('\n');
     },
 
+    async getTaskFilePaths(): Promise<string[]> {
+      const taskSectionContent = ctx.readResult?.guide ?? await readTaskSection(taskId, context, sessionId);
+      if (!taskSectionContent) return [];
+      return extractFilePaths(taskSectionContent);
+    },
+
     async afterBranch() {
       const taskName = await deriveTaskDescription(taskId, context);
       await updateTierScope('task', { id: taskId, name: taskName });

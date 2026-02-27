@@ -32,6 +32,10 @@ export interface EnsureTierBranchResult {
   messages: string[];
   finalBranch: string;
   chain: BranchChainLink[];
+  /** When true, checkout was blocked by uncommitted changes that need user decision. */
+  blockedByUncommitted?: boolean;
+  /** File paths that blocked checkout (non-.cursor files needing user decision). */
+  uncommittedFiles?: string[];
 }
 
 export interface MergeTierBranchResult {
@@ -57,6 +61,94 @@ const ROOT_BRANCH_NAMES = ['develop', 'main', 'master'];
 
 function isRootBranch(branchName: string): boolean {
   return ROOT_BRANCH_NAMES.includes(branchName);
+}
+
+// ─── Pre-checkout uncommitted-changes resolver ───────────────────────
+
+interface UncommittedResolution {
+  clean: boolean;
+  autoCommitted: boolean;
+  /** Non-auto-committable files (need user decision). */
+  blockingFiles: string[];
+  message: string;
+}
+
+const AUTO_COMMIT_PREFIXES = ['.cursor/', '.cursor'];
+
+function isAutoCommittable(filePath: string): boolean {
+  return AUTO_COMMIT_PREFIXES.some(p => filePath === p || filePath.startsWith(p + '/'));
+}
+
+/**
+ * Check for uncommitted changes and resolve them before checkout:
+ * - No changes → clean
+ * - Only .cursor changes → auto-commit silently
+ * - Other files present → return unresolved with the blocking file list
+ */
+async function resolveUncommittedBeforeCheckout(): Promise<UncommittedResolution> {
+  const status = await runCommand('git status --porcelain');
+  if (!status.success || !status.output.trim()) {
+    return { clean: true, autoCommitted: false, blockingFiles: [], message: '' };
+  }
+
+  const lines = status.output.trim().split('\n').filter(l => l.length > 0);
+  const changedFiles = lines.map(l => l.slice(3).trim());
+
+  const autoFiles = changedFiles.filter(isAutoCommittable);
+  const blockingFiles = changedFiles.filter(f => !isAutoCommittable(f));
+
+  if (autoFiles.length > 0 && blockingFiles.length === 0) {
+    const addResult = await runCommand('git add .cursor');
+    if (!addResult.success) {
+      return {
+        clean: false,
+        autoCommitted: false,
+        blockingFiles: autoFiles,
+        message: `Failed to stage .cursor changes: ${addResult.error || addResult.output}`,
+      };
+    }
+    const commitResult = await runCommand(
+      'git commit -m "chore: auto-commit .cursor changes before branch switch"'
+    );
+    if (!commitResult.success) {
+      return {
+        clean: false,
+        autoCommitted: false,
+        blockingFiles: autoFiles,
+        message: `Failed to auto-commit .cursor changes: ${commitResult.error || commitResult.output}`,
+      };
+    }
+    return { clean: true, autoCommitted: true, blockingFiles: [], message: 'Auto-committed .cursor changes.' };
+  }
+
+  if (autoFiles.length > 0 && blockingFiles.length > 0) {
+    const addResult = await runCommand('git add .cursor');
+    if (addResult.success) {
+      const commitResult = await runCommand(
+        'git commit -m "chore: auto-commit .cursor changes before branch switch"'
+      );
+      if (commitResult.success) {
+        const recheck = await runCommand('git status --porcelain');
+        const remaining = (recheck.output ?? '').trim().split('\n').filter(l => l.length > 0);
+        if (remaining.length === 0) {
+          return { clean: true, autoCommitted: true, blockingFiles: [], message: 'Auto-committed .cursor changes.' };
+        }
+        return {
+          clean: false,
+          autoCommitted: true,
+          blockingFiles: remaining.map(l => l.slice(3).trim()),
+          message: 'Auto-committed .cursor changes. Remaining uncommitted files need attention.',
+        };
+      }
+    }
+  }
+
+  return {
+    clean: false,
+    autoCommitted: false,
+    blockingFiles,
+    message: `Uncommitted changes in: ${blockingFiles.join(', ')}`,
+  };
 }
 
 /**
@@ -200,7 +292,27 @@ export async function ensureTierBranch(
   const createIfMissing = options?.createIfMissing ?? true;
   const pullRoot = options?.pullRoot ?? false;
 
-  // Step 0: Feature coherence
+  // Step 0a: Resolve uncommitted changes before any checkout
+  const uncommitted = await resolveUncommittedBeforeCheckout();
+  if (uncommitted.autoCommitted) {
+    messages.push(uncommitted.message);
+  }
+  if (!uncommitted.clean) {
+    return {
+      success: false,
+      messages: [
+        ...messages,
+        uncommitted.message,
+        'Branch checkout blocked by uncommitted changes.',
+      ],
+      finalBranch: await getCurrentBranch(),
+      chain: [],
+      blockedByUncommitted: true,
+      uncommittedFiles: uncommitted.blockingFiles,
+    };
+  }
+
+  // Step 0b: Feature coherence
   const coherence = await checkScopeCoherence(context);
   if (!coherence.coherent) {
     return {

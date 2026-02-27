@@ -18,7 +18,37 @@ export async function validatePhaseImpl(phase: string): Promise<ValidatePhaseRes
   const context = await WorkflowCommandContext.getCurrent();
 
   try {
+    let featureGuideContent = '';
+    try {
+      featureGuideContent = await context.readFeatureGuide();
+    } catch {
+      featureGuideContent = '';
+    }
+    const escapedPhase = phase.replace(/\./g, '\\.');
+    const phaseIsListedInFeatureGuide = featureGuideContent !== ''
+      && new RegExp(`\\bPhase\\s+${escapedPhase}(?::|\\b)`, 'i').test(featureGuideContent);
+
     const phaseGuidePath = context.paths.getPhaseGuidePath(phase);
+    const phaseLogPath = context.paths.getPhaseLogPath(phase);
+    const phaseHandoffPath = context.paths.getPhaseHandoffPath(phase);
+    const [hasPhaseGuideFile, hasPhaseLogFile, hasPhaseHandoffFile] = await Promise.all([
+      readProjectFile(phaseGuidePath).then(() => true).catch(() => false),
+      readProjectFile(phaseLogPath).then(() => true).catch(() => false),
+      readProjectFile(phaseHandoffPath).then(() => true).catch(() => false),
+    ]);
+
+    if (!phaseIsListedInFeatureGuide && !hasPhaseGuideFile && !hasPhaseLogFile && !hasPhaseHandoffFile) {
+      return {
+        canStart: false,
+        reason: 'Phase is not documented',
+        details: [
+          `Phase ${phase} is not listed in feature guide`,
+          `No phase guide/log/handoff exists for ${phase}`,
+          `Add Phase ${phase} to feature docs before starting it`,
+        ],
+      };
+    }
+
     try {
       await readProjectFile(phaseGuidePath);
     } catch (err) {

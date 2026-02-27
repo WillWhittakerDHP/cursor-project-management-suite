@@ -1,6 +1,6 @@
 /**
  * Shared tier start workflow: single orchestrator + reusable step contract.
- * Tier impls supply hooks; this module runs validate → branch → read → gather → audit → plan → cascade.
+ * Tier impls supply hooks; this module runs validate → branch → read → gather → governance → extras → audit → plan → cascade.
  */
 
 import type { TierConfig } from './types';
@@ -19,6 +19,7 @@ import {
   stepReadStartContext,
   stepFillDirectChildren,
   stepGatherContext,
+  stepGovernanceContext,
   stepRunExtras,
   stepStartAudit,
   stepRunTierPlan,
@@ -91,12 +92,14 @@ export interface TierStartWorkflowHooks {
   runStartAudit?: boolean;
   /** Optional output appended after the plan step (e.g. task "Implementation Orders"). */
   getTrailingOutput?(ctx: TierStartWorkflowContext): Promise<string>;
+  /** Optional: file paths the task will touch (used for file-scoped governance at task tier). */
+  getTaskFilePaths?(ctx: TierStartWorkflowContext): Promise<string[]>;
 }
 
 export type { TierStartResult, CascadeInfo };
 
 /**
- * Run the shared start workflow: validate → branch → read → gather → audit → plan → cascade.
+ * Run the shared start workflow: validate → branch → read → gather → governance → extras → audit → plan → cascade.
  * Tier impls supply hooks; step modules in tier-start-steps.ts run the pipeline.
  */
 export async function runTierStartWorkflow(
@@ -121,6 +124,7 @@ export async function runTierStartWorkflow(
   await stepReadStartContext(ctx, hooks);
   await stepFillDirectChildren(ctx, hooks);
   await stepGatherContext(ctx, hooks);
+  await stepGovernanceContext(ctx, hooks);
   await stepRunExtras(ctx, hooks);
   await stepStartAudit(ctx, hooks);
   await stepRunTierPlan(ctx, hooks);

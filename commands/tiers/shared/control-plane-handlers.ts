@@ -102,3 +102,26 @@ export function handleReopenOk(outcome: ControlPlaneOutcome): ControlPlaneDecisi
     questionKey: QUESTION_KEYS.REOPEN_OPTIONS,
   };
 }
+
+/**
+ * uncommitted_changes_blocking: AskQuestion commit / stash.
+ * Agent should:
+ *   "Commit" → git add -A && git commit -m "chore: commit changes before branch switch" → re-invoke command
+ *   "Skip"   → git stash --include-untracked → re-invoke command (agent should git stash pop after command completes)
+ */
+export function handleUncommittedChanges(
+  outcome: ControlPlaneOutcome,
+  ctx: ControlPlaneContext
+): ControlPlaneDecision {
+  return {
+    stop: true,
+    requiredMode: 'plan',
+    message: outcome.deliverables ?? outcome.nextAction,
+    questionKey: QUESTION_KEYS.UNCOMMITTED_CHANGES,
+    nextInvoke: {
+      tier: ctx.tier,
+      action: ctx.action,
+      params: ctx.originalParams,
+    },
+  };
+}

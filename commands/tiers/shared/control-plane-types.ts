@@ -68,6 +68,7 @@ export const REASON_CODE = {
   TASK_COMPLETE: 'task_complete',
   UNHANDLED_ERROR: 'unhandled_error',
   REOPEN_OK: 'reopen_ok',
+  UNCOMMITTED_CHANGES_BLOCKING: 'uncommitted_changes_blocking',
 } as const;
 
 /** Question template keys used by the agent to render AskQuestion. */
@@ -78,4 +79,5 @@ export const QUESTION_KEYS = {
   VERIFICATION_OPTIONS: 'verification_options',
   FAILURE_OPTIONS: 'failure_options',
   REOPEN_OPTIONS: 'reopen_options',
+  UNCOMMITTED_CHANGES: 'uncommitted_changes',
 } as const;

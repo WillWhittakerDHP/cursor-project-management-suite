@@ -12,6 +12,7 @@ import { resolveCommandExecutionMode, isPlanMode } from '../../utils/command-exe
 import { runTierPlan } from './tier-plan';
 import { buildCascadeDown } from '../../utils/tier-cascade';
 import { runStartAuditForTier } from '../../audit/run-start-audit-for-tier';
+import { buildGovernanceContext } from '../../audit/governance-context';
 import { fillDirectChildrenInParentGuide } from './fill-direct-children';
 
 /** Early-exit result from a step; null means continue. */
@@ -95,6 +96,19 @@ export async function stepEnsureStartBranch(
     ctx.output.push(msg);
   }
   if (!branchResult.success) {
+    if (branchResult.blockedByUncommitted) {
+      const fileList = (branchResult.uncommittedFiles ?? []).map(f => `- \`${f}\``).join('\n');
+      return {
+        success: true,
+        output: ctx.output.join('\n\n'),
+        outcome: {
+          status: 'blocked',
+          reasonCode: 'uncommitted_changes_blocking',
+          nextAction: 'Uncommitted changes must be resolved before switching branches.',
+          deliverables: `**Uncommitted files blocking checkout:**\n${fileList}\n\nCommit these changes, or skip (stash) to proceed without committing.`,
+        },
+      };
+    }
     return {
       success: false,
       output: ctx.output.join('\n\n'),
@@ -157,6 +171,22 @@ export async function stepGatherContext(
   if (!hooks.gatherContext) return;
   const gathered = await hooks.gatherContext(ctx);
   if (gathered) ctx.output.push(gathered);
+}
+
+/** Inject tier-appropriate governance context (findings, thresholds, inventory). */
+export async function stepGovernanceContext(
+  ctx: TierStartWorkflowContext,
+  hooks: TierStartWorkflowHooks
+): Promise<void> {
+  const taskFiles = hooks.getTaskFilePaths
+    ? await hooks.getTaskFilePaths(ctx)
+    : undefined;
+
+  const governance = await buildGovernanceContext({
+    tier: ctx.config.name,
+    taskFiles,
+  });
+  if (governance) ctx.output.push(governance);
 }
 
 /** Tier-specific extras (e.g. feature load, server refresh) — optional. */

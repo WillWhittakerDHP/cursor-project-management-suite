@@ -19,6 +19,7 @@ import {
   handleMissingOutcome,
   handleSuccessWithOptionalCascade,
   handleReopenOk,
+  handleUncommittedChanges,
 } from './control-plane-handlers';
 
 /**
@@ -51,6 +52,8 @@ export function routeByOutcome(
       return handleTaskComplete(outcome);
     case REASON_CODE.REOPEN_OK:
       return handleReopenOk(outcome);
+    case REASON_CODE.UNCOMMITTED_CHANGES_BLOCKING:
+      return handleUncommittedChanges(outcome, ctx);
     default:
       return handleSuccessWithOptionalCascade(outcome);
   }

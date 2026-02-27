@@ -35,8 +35,9 @@ export async function validateSessionImpl(sessionId: string): Promise<ValidateSe
 
   try {
     const phaseGuidePath = context.paths.getPhaseGuidePath(phase);
+    let phaseGuideContent = '';
     try {
-      await readProjectFile(phaseGuidePath);
+      phaseGuideContent = await readProjectFile(phaseGuidePath);
     } catch (err) {
       console.warn('Validate session: validation check failed', err);
       return {
@@ -47,6 +48,27 @@ export async function validateSessionImpl(sessionId: string): Promise<ValidateSe
           `Create the phase guide first using /phase-plan ${phase}`,
         ],
       };
+    }
+
+    const escapedSessionId = sessionId.replace(/\./g, '\\.');
+    const sessionIsListedInPhaseGuide = new RegExp(`\\bSession\\s+${escapedSessionId}(?::|\\b)`, 'i').test(phaseGuideContent);
+    if (!sessionIsListedInPhaseGuide) {
+      const [hasSessionGuide, hasSessionLog, hasSessionHandoff] = await Promise.all([
+        readProjectFile(context.paths.getSessionGuidePath(sessionId)).then(() => true).catch(() => false),
+        readProjectFile(context.paths.getSessionLogPath(sessionId)).then(() => true).catch(() => false),
+        readProjectFile(context.paths.getSessionHandoffPath(sessionId)).then(() => true).catch(() => false),
+      ]);
+      if (!hasSessionGuide && !hasSessionLog && !hasSessionHandoff) {
+        return {
+          canStart: false,
+          reason: 'Session is not documented',
+          details: [
+            `Session ${sessionId} is not listed in phase ${phase} guide`,
+            `No session guide/log/handoff exists for ${sessionId}`,
+            `Add Session ${sessionId} to phase ${phase} guide before starting it`,
+          ],
+        };
+      }
     }
 
     const sessionStatus = await SESSION_CONFIG.controlDoc.readStatus(context, sessionId);
