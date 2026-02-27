@@ -63,6 +63,7 @@ export interface ControlPlaneDecision {
 /** Known reasonCodes that have explicit behavioral rules in the playbook. */
 export const REASON_CODE = {
   PLAN_MODE: 'plan_mode',
+  CONTEXT_GATHERING: 'context_gathering',
   PENDING_PUSH_CONFIRMATION: 'pending_push_confirmation',
   VERIFICATION_WORK_SUGGESTED: 'verification_work_suggested',
   TASK_COMPLETE: 'task_complete',
@@ -74,6 +75,7 @@ export const REASON_CODE = {
 /** Question template keys used by the agent to render AskQuestion. */
 export const QUESTION_KEYS = {
   APPROVE_EXECUTE: 'approve_execute',
+  CONTEXT_GATHERING: 'context_gathering',
   CASCADE: 'cascade',
   PUSH_CONFIRMATION: 'push_confirmation',
   VERIFICATION_OPTIONS: 'verification_options',

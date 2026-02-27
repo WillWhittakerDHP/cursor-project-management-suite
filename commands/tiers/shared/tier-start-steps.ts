@@ -4,7 +4,7 @@
  * and tier-supplied hooks. The orchestrator runs these in order; steps that can exit early return a result.
  */
 
-import type { TierStartWorkflowContext, TierStartWorkflowHooks, TierStartReadResult } from './tier-start-workflow';
+import type { TierStartWorkflowContext, TierStartWorkflowHooks, TierStartReadResult, ContextQuestion } from './tier-start-workflow';
 import type { TierStartResult, CascadeInfo } from '../../utils/tier-outcome';
 import type { CannotStartTier } from '../../utils/tier-start-utils';
 import { formatBranchHierarchy, formatPlanModePreview, formatCannotStart } from '../../utils/tier-start-utils';
@@ -14,6 +14,7 @@ import { buildCascadeDown } from '../../utils/tier-cascade';
 import { runStartAuditForTier } from '../../audit/run-start-audit-for-tier';
 import { buildGovernanceContext } from '../../audit/governance-context';
 import { fillDirectChildrenInParentGuide } from './fill-direct-children';
+import { writeProjectFile } from '../../utils/utils';
 
 /** Early-exit result from a step; null means continue. */
 export type StepExitResult = TierStartResult | null;
@@ -187,6 +188,101 @@ export async function stepGovernanceContext(
     taskFiles,
   });
   if (governance) ctx.output.push(governance);
+}
+
+/** Build planning doc path for task or session (sessions dir). */
+function getPlanningDocPath(ctx: TierStartWorkflowContext): string {
+  const base = ctx.context.paths.getBasePath();
+  const tier = ctx.config.name;
+  const id = ctx.identifier;
+  if (tier === 'task') {
+    return `${base}/sessions/task-${id}-planning.md`;
+  }
+  return `${base}/sessions/session-${id}-planning.md`;
+}
+
+/** Build initial planning doc markdown (Loaded Context, Goal, Files, Approach, Checkpoint, Decisions Made, Open Questions). */
+function buildPlanningDocContent(
+  ctx: TierStartWorkflowContext,
+  questions: ContextQuestion[]
+): string {
+  const tier = ctx.config.name;
+  const title = ctx.resolvedDescription ?? ctx.resolvedId;
+  const governanceSummary =
+    ctx.output.length > 0
+      ? 'Governance context has been loaded. Review the workflow output above for P0/P1 findings and inventory.'
+      : 'No governance output yet.';
+  const openQuestionsBlock =
+    questions.length > 0
+      ? questions.map((q, i) => `${i + 1}. ${q.question}${q.context ? ` (${q.context})` : ''}`).join('\n')
+      : 'None yet.';
+
+  return `# Planning: ${tier} ${ctx.resolvedId} -- ${title}
+
+## Loaded Context
+- **Session/scope:** ${ctx.resolvedId}
+- **Governance highlights:** ${governanceSummary}
+- **Related code:** See inventory in workflow output if present.
+
+## Goal
+[To be refined during discussion]
+
+## Files
+[To be refined during discussion]
+
+## Approach
+[To be refined during discussion]
+
+## Checkpoint
+[To be refined during discussion]
+
+## Decisions Made
+[Populated as conversation progresses]
+
+## Open Questions
+${openQuestionsBlock}
+`;
+}
+
+/**
+ * Context gathering Q&A step. If contextGatheringComplete or hook missing or no questions, returns null.
+ * Otherwise writes planning doc, sets ctx.planningDocPath, and returns early exit with reasonCode context_gathering.
+ */
+export async function stepContextGathering(
+  ctx: TierStartWorkflowContext,
+  hooks: TierStartWorkflowHooks
+): Promise<StepExitResult> {
+  if (ctx.options?.contextGatheringComplete) return null;
+  if (!hooks.getContextQuestions) return null;
+
+  const questions = await hooks.getContextQuestions(ctx);
+  if (!questions.length) return null;
+
+  const planningDocPath = getPlanningDocPath(ctx);
+  const content = buildPlanningDocContent(ctx, questions);
+  await writeProjectFile(planningDocPath, content);
+  ctx.planningDocPath = planningDocPath;
+
+  const messageLines: string[] = [
+    `Planning document created: \`${planningDocPath}\``,
+    '',
+    '**Open questions (refine in the doc, then continue):**',
+    ...questions.map((q, i) => `${i + 1}. ${q.question}${q.context ? ` — ${q.context}` : ''}`),
+    '',
+    "When satisfied, choose: **I'm satisfied with our plan and ready to begin**",
+  ];
+  const deliverables = messageLines.join('\n');
+
+  return {
+    success: true,
+    output: ctx.output.join('\n\n'),
+    outcome: {
+      status: 'plan',
+      reasonCode: 'context_gathering',
+      nextAction: 'Context gathering: answer questions and update the planning doc, then re-invoke with contextGatheringComplete.',
+      deliverables,
+    },
+  };
 }
 
 /** Tier-specific extras (e.g. feature load, server refresh) — optional. */

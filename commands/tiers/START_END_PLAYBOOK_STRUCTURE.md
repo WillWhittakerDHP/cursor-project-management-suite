@@ -42,23 +42,40 @@ All tier start/end commands (feature-start, feature-end, phase-start, phase-end,
 
 ### Handle result
 
-Start and end commands return a structured result with `result.outcome` (and for start commands, `result.output`). Use `result.outcome` for all routing; do not infer from step text or prose.
+Start and end commands return a structured result with `result.outcome`, `result.output`, and `result.controlPlaneDecision`. Use `result.outcome` for routing and `result.controlPlaneDecision` for user-facing presentation; do not infer behavior from step text or prose.
 
-- **Start commands** return `TierStartResult`: `{ success, output, outcome, modeGate? }`. Use `outcome.reasonCode` and `outcome.cascade` as below.
-- **End commands** return a result with `outcome`: `{ status, reasonCode, nextAction, cascade? }`.
+- **Start commands** return `TierStartResultWithControlPlane`: `{ success, output, outcome, modeGate?, controlPlaneDecision }`.
+- **End commands** return a result with `outcome` and `controlPlaneDecision`: `{ success, output, outcome, controlPlaneDecision }`.
+
+### Control-plane decision (user-facing presentation)
+
+Every start/end/reopen command returns a `controlPlaneDecision` object that tells the agent **what to show the user** and **what to ask**:
+
+| Field | Purpose |
+|-------|---------|
+| `message` | **User-facing content** — deliverables, checklists, file lists, or error context. Show this to the user. |
+| `questionKey` | Identifies the AskQuestion template (see per-reasonCode rules below). |
+| `requiredMode` | Mode the agent must switch to before presenting (`'plan'` or `'agent'`). |
+| `stop` | If `true`, stop and wait for user response before proceeding. |
+| `nextInvoke` | On approval, re-invoke this command (tier, action, params with `{ mode: 'execute' }`). |
+| `cascadeCommand` | Exact command string to run on cascade confirmation. |
+
+**Critical rule:** `controlPlaneDecision.message` is the **user-facing content**. `result.output` is **agent context** (workflow steps, branch info, audit details) — read it for your own understanding, but present `controlPlaneDecision.message` to the user. Do not dump `result.output` verbatim to the user; it contains internal workflow steps they do not need to see.
 
 **Mode switching at transitions:** Each routing case below involves a mode transition. The agent MUST switch to the correct mode before performing the action: Plan mode for AskQuestion and CreatePlan; Agent mode for command execution and file writes. After the user answers an AskQuestion, switch back to Agent mode if the next step is to execute (run command, write files).
 
-Routing:
+Routing (use `outcome.reasonCode`):
 
 - If `outcome.reasonCode === 'plan_mode'`: see **Per-reasonCode behavioral rules → `plan_mode`** below.
+- If `outcome.reasonCode === 'context_gathering'`: see **Per-reasonCode behavioral rules → `context_gathering`** below.
 - If `outcome.reasonCode === 'pending_push_confirmation'`: see **Per-reasonCode behavioral rules → `pending_push_confirmation`** below.
 - If `outcome.reasonCode === 'verification_work_suggested'`: see **Per-reasonCode behavioral rules → `verification_work_suggested`** below.
+- If `outcome.reasonCode === 'uncommitted_changes_blocking'`: see **Per-reasonCode behavioral rules → `uncommitted_changes_blocking`** below.
 - **If `outcome.cascade` is present (start or end):** You MUST run **Cascade confirmation** first. Do not skip to `nextAction` or infer the next step (e.g. do not assume "session roll-up" when the cascade is to the next task). Cascade direction: `outcome.cascade.direction === 'across'` → next step is the **next tier at same level** (e.g. next task via `outcome.cascade.command`, typically `/task-start <nextTaskId>`); `'up'` → next step is **parent tier end** (e.g. `/session-end <sessionId>`). See **Per-reasonCode behavioral rules → Cascade confirmation** below.
-- If success and no push/cascade pending: show steps/output; then use `outcome.nextAction`.
+- If success and no push/cascade pending: show `controlPlaneDecision.message`; then use `outcome.nextAction`.
 - **If not success (HARD STOP):**
   1. **Switch to Plan mode (Ask mode) immediately.** The `enforceModeSwitch` block prepended to the output will say "STOP — Command Failed" when `success` is false; follow it.
-  2. Show `outcome.nextAction` to the user **verbatim**. Do not paraphrase or expand.
+  2. Show `controlPlaneDecision.message` to the user. Do not paraphrase or expand.
   3. Use **AskQuestion**: "How would you like to proceed?" with options: "Retry the command" / "Investigate the issue" / "Skip and continue manually".
   4. **Do NOT cascade.** Do not offer to start the next task, session, phase, or feature. Do not check `outcome.cascade` — on failure, cascade is never present and must never be improvised.
   5. **Do NOT improvise next steps.** Do not read session guides to find the next task. Do not offer to run a different command. Do not create documents the command was supposed to create.
@@ -69,7 +86,7 @@ Routing:
 If the command throws, exits with non-zero code, or the result has no `outcome` (e.g. `outcome` is `undefined`):
 
 1. **Switch to Plan mode (Ask mode) immediately.**
-2. Report the error output to the user **verbatim**.
+2. Report `controlPlaneDecision.message` (or the raw error output if no decision was produced) to the user **verbatim**.
 3. **STOP immediately.** Do NOT:
    - Manually create documents the command was supposed to create (guides, logs, handoffs)
    - Reconstruct the command's expected output by reading templates or impl files
@@ -85,7 +102,8 @@ If the command throws, exits with non-zero code, or the result has no `outcome` 
 
 ### Outcome rule
 
-- Always use `result.outcome.nextAction` for what to do or tell the user next.
+- **User-facing content:** Always present `controlPlaneDecision.message` to the user — this is the deliverables, checklists, or error context they need to see.
+- **Agent next step:** Use `result.outcome.nextAction` for what to do next (routing hint for the agent).
 - For push and cascade confirmation sequences, see the per-reasonCode behavioral rules below.
 
 ### Failure mode enforcement (code + playbook)
@@ -117,11 +135,35 @@ These rules tell the agent what to do for each `reasonCode` returned by commands
 
 ### `plan_mode` (start commands, default mode)
 
-The plan preview includes **what we're building** (session/phase/feature plan: tasks, goals, scope) and **what would run** (workflow: branch, docs, audit). The user is approving both. Present the plan content summary first when present, then the workflow steps.
+The user is approving what we're about to build. `controlPlaneDecision.message` contains the **deliverables** — the concrete tasks, goals, files, and acceptance criteria the user needs to see. `result.output` contains agent context (branch hierarchy, workflow steps, audit data) — read it for your own understanding but do not show it verbatim.
 
-1. Show `result.output` (the plan preview).
-2. **Switch to Plan mode** (Ask mode). Use **AskQuestion**: "Approve this plan and execute?" Options: "Yes — execute" / "No — revise".
-3. On "Yes": **switch to Agent mode**, then re-invoke the same command with **`{ mode: 'execute' }`**. You must call the composite directly (e.g. `sessionStart(sessionId, undefined, { mode: 'execute' })`) so the third argument is passed; do not re-run a script or slash command that only accepts the identifier, or the second run will still be plan mode and execute will never run.
+1. **Switch to Plan mode** (Ask mode).
+2. **Present `controlPlaneDecision.message`** to the user — this is the deliverables summary (e.g. task list for a session, goal/files/approach for a task, phase list for a feature). Show it as formatted text, not as a code block or raw JSON.
+3. Use **AskQuestion**: "Approve this plan and execute?" Options: "Yes — execute" / "No — revise".
+4. On "Yes": **switch to Agent mode**, then re-invoke the same command with **`{ mode: 'execute' }`** using `controlPlaneDecision.nextInvoke` (tier, action, params). You must call the composite directly (e.g. `sessionStart(sessionId, undefined, { mode: 'execute' })`) so the third argument is passed; do not re-run a script or slash command that only accepts the identifier, or the second run will still be plan mode and execute will never run.
+
+### `context_gathering` (start commands, task and session tiers)
+
+The command loaded context and governance data, created a planning document, and generated initial questions. The agent now conducts an iterative planning conversation with the user, updating the planning document in-place.
+
+1. **Switch to Plan mode.**
+2. **Present `controlPlaneDecision.message`** (initial questions + planning doc path).
+3. **Open the planning doc in the editor** so the user can watch it being built.
+4. Begin the iterative Q&A loop:
+   a. Ask the context questions from the message.
+   b. After each user answer, **update the planning doc IN-PLACE:**
+      - Move answered items from "Open Questions" to "Decisions Made"
+      - Refine Goal, Files, Approach, Checkpoint based on answers
+      - Add follow-up questions to "Open Questions" if new gaps appear
+   c. Use **AskQuestion** with the remaining/new questions **plus** always include: **"I'm satisfied with our plan and ready to begin"**
+   d. Repeat until the user selects "satisfied".
+5. On **"I'm satisfied"**:
+   a. Switch to Agent mode.
+   b. Read the refined Goal, Files, Approach, Checkpoint from the planning doc.
+   c. Write them into the session guide task section (replacing placeholders).
+   d. Re-invoke the original command with **`{ mode: 'execute', contextGatheringComplete: true }`** using `controlPlaneDecision.nextInvoke`.
+
+**Anti-pattern:** Do not skip the planning doc. Do not ask all questions at once without updating the doc. The doc IS the artifact — the user watches it being built and the final version feeds into the session guide.
 
 ### `pending_push_confirmation` (end commands)
 
@@ -132,16 +174,26 @@ The plan preview includes **what we're building** (session/phase/feature plan: t
 
 ### `verification_work_suggested` (end commands)
 
-Suggested manual verification for this tier. The checklist is for **verifying what we built** (product behavior, UX, correctness), not for verifying that documentation was created. When the output includes a "What to verify (what we built)" section, present that as the main checklist; treat any "Artifacts / docs" section as secondary. Do not use "test" in playbook wording for this flow.
+Suggested manual verification for this tier. The checklist is for **verifying what we built** (product behavior, UX, correctness), not for verifying that documentation was created. Do not use "test" in playbook wording for this flow.
 
 1. Switch to Plan mode.
-2. **Always present the verification checklist as a fixed, bulleted list** from `result.steps.verificationCheck.output`. Show it verbatim. Present "What to verify (what we built)" first when present; then "Artifacts / docs" if present. Do not ask whether to add a validation step or whether the list is appropriate.
+2. **Always present `controlPlaneDecision.message` as the verification checklist.** This contains the deliverables-based checklist (what to verify, what we built, artifacts/docs). Show it as a formatted, bulleted list — not as a code block or raw JSON. Present "What to verify (what we built)" first when present; then "Artifacts / docs" if present. Do not ask whether to add a validation step or whether the list is appropriate.
 3. Use **AskQuestion** only to choose how to proceed: "Suggested verification/fix work for this tier. How do you want to proceed?" Options:
    - **"Add follow-up task"** (session-end), **"Add follow-up session"** (phase-end), or **"Add follow-up phase"** (feature-end): use existing planning + start with context; pass the checklist as the scope/description for the new task, session, or phase (e.g. `/plan-task [sessionId]` with description derived from the checklist, then cascade to task-start; or plan-session / plan-phase for next session or phase with that scope, then session-start or phase-start). After the user completes that work, they run the same tier-end again; they may pass `continuePastVerification: true` to skip this prompt and run audits.
    - **"I'll do it manually; continue tier-end"**: switch to Agent mode, re-invoke the same tier-end command with `continuePastVerification: true` so the workflow continues past the verification step and runs audits.
    - **"Skip; continue tier-end"**: same as above — re-invoke with `continuePastVerification: true`.
 
 **Anti-pattern:** Do not ask "Should I add a task to add a validation step?" or similar. The checklist is the fixed list of verification todos; show it, then offer the three options only.
+
+### `uncommitted_changes_blocking` (start/end/reopen commands)
+
+The command detected uncommitted non-`.cursor` files that would be overwritten by a branch checkout. (Changes in the `.cursor` directory are auto-committed silently.) `controlPlaneDecision.message` contains the list of blocking files.
+
+1. Switch to Plan mode.
+2. **Present `controlPlaneDecision.message`** to the user — this lists the uncommitted files blocking checkout.
+3. Use **AskQuestion**: "Uncommitted changes are blocking the branch switch. How do you want to proceed?" Options: "Commit changes" / "Skip (stash and continue)".
+4. On "Commit changes": switch to Agent mode, run `git add -A && git commit -m "chore: commit changes before branch switch"`, then re-invoke the original command using `controlPlaneDecision.nextInvoke`.
+5. On "Skip": switch to Agent mode, run `git stash --include-untracked`, then re-invoke the original command using `controlPlaneDecision.nextInvoke`. After the command completes, run `git stash pop` to restore the stashed changes.
 
 ### Cascade confirmation (start and end commands)
 
@@ -243,7 +295,7 @@ All mode logic lives in one file: `.cursor/commands/utils/command-execution-mode
 
 **Shared workflow only.** All tier **start** commands use a single orchestrator and reusable step modules. The workflow is defined in:
 
-- **Orchestrator:** `.cursor/commands/tiers/shared/tier-start-workflow.ts` — `runTierStartWorkflow(ctx, hooks)` runs the pipeline: validate → branch (optional) → read context → gather context → extras → start audit → tier plan → trailing output (optional) → cascade.
+- **Orchestrator:** `.cursor/commands/tiers/shared/tier-start-workflow.ts` — `runTierStartWorkflow(ctx, hooks)` runs the pipeline: validate → branch (optional) → ensure child docs → read context → gather context → governance → context gathering (optional Q&A; task/session) → extras → start audit → tier plan → fill direct children → trailing output (optional) → cascade.
 - **Step modules:** `.cursor/commands/tiers/shared/tier-start-steps.ts` — Reusable steps (e.g. `stepValidateStart`, `stepEnsureStartBranch`, `stepReadStartContext`, `stepStartAudit`, `stepRunTierPlan`, `stepBuildStartCascade`) use shared primitives (`formatBranchHierarchy`, `ensureTierBranch`, `runTierPlan`, `buildCascadeDown`, `runStartAuditForTier`).
 - **Start audit entry point:** `.cursor/commands/audit/run-start-audit-for-tier.ts` — `runStartAuditForTier({ tier, identifier, featureName })` dispatches to feature/phase/session start audits; task has no start audit.
 

@@ -1,6 +1,6 @@
 /**
  * Shared tier start workflow: single orchestrator + reusable step contract.
- * Tier impls supply hooks; this module runs validate → branch → read → gather → governance → extras → audit → plan → cascade.
+ * Tier impls supply hooks; this module runs validate → branch → childDocs → read → gather → governance → extras → audit → plan → fillChildren → cascade.
  */
 
 import type { TierConfig } from './types';
@@ -20,6 +20,7 @@ import {
   stepFillDirectChildren,
   stepGatherContext,
   stepGovernanceContext,
+  stepContextGathering,
   stepRunExtras,
   stepStartAudit,
   stepRunTierPlan,
@@ -39,6 +40,15 @@ export interface TierStartWorkflowContext {
   resolvedDescription?: string;
   /** Set by read-context step; used by plan step. */
   readResult?: TierStartReadResult;
+  /** Set by stepContextGathering; path to the living planning doc for iterative Q&A. */
+  planningDocPath?: string;
+}
+
+/** Single context question for iterative planning Q&A. */
+export interface ContextQuestion {
+  category: 'governance' | 'scope' | 'approach' | 'files' | 'dependencies';
+  question: string;
+  context?: string;
 }
 
 /** Result of validation step. */
@@ -94,12 +104,14 @@ export interface TierStartWorkflowHooks {
   getTrailingOutput?(ctx: TierStartWorkflowContext): Promise<string>;
   /** Optional: file paths the task will touch (used for file-scoped governance at task tier). */
   getTaskFilePaths?(ctx: TierStartWorkflowContext): Promise<string[]>;
+  /** Optional: generate context-aware questions for iterative planning Q&A. Empty array skips context-gathering step. */
+  getContextQuestions?(ctx: TierStartWorkflowContext): Promise<ContextQuestion[]>;
 }
 
 export type { TierStartResult, CascadeInfo };
 
 /**
- * Run the shared start workflow: validate → branch → read → gather → governance → extras → audit → plan → cascade.
+ * Run the shared start workflow: validate → branch → childDocs → read → gather → governance → extras → audit → plan → fillChildren → cascade.
  * Tier impls supply hooks; step modules in tier-start-steps.ts run the pipeline.
  */
 export async function runTierStartWorkflow(
@@ -122,12 +134,14 @@ export async function runTierStartWorkflow(
 
   await stepEnsureChildDocs(ctx, hooks);
   await stepReadStartContext(ctx, hooks);
-  await stepFillDirectChildren(ctx, hooks);
   await stepGatherContext(ctx, hooks);
   await stepGovernanceContext(ctx, hooks);
+  const contextGatheringExit = await stepContextGathering(ctx, hooks);
+  if (contextGatheringExit) return contextGatheringExit;
   await stepRunExtras(ctx, hooks);
   await stepStartAudit(ctx, hooks);
   await stepRunTierPlan(ctx, hooks);
+  await stepFillDirectChildren(ctx, hooks);
   if (hooks.getTrailingOutput) {
     const trailing = await hooks.getTrailingOutput(ctx);
     if (trailing) ctx.output.push(trailing);

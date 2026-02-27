@@ -12,6 +12,7 @@ import type {
 import { REASON_CODE } from './control-plane-types';
 import {
   handlePlanMode,
+  handleContextGathering,
   handlePendingPushConfirmation,
   handleVerificationWorkSuggested,
   handleTaskComplete,
@@ -44,6 +45,8 @@ export function routeByOutcome(
   switch (outcome.reasonCode) {
     case REASON_CODE.PLAN_MODE:
       return handlePlanMode(outcome, ctx);
+    case REASON_CODE.CONTEXT_GATHERING:
+      return handleContextGathering(outcome, ctx);
     case REASON_CODE.PENDING_PUSH_CONFIRMATION:
       return handlePendingPushConfirmation(outcome);
     case REASON_CODE.VERIFICATION_WORK_SUGGESTED:

@@ -21,6 +21,7 @@ import type {
   TierStartWorkflowHooks,
   TierStartValidationResult,
   TierStartReadResult,
+  ContextQuestion,
 } from '../../shared/tier-start-workflow';
 import { runTierStartWorkflow } from '../../shared/tier-start-workflow';
 
@@ -209,6 +210,39 @@ export async function sessionStartImpl(
         // non-blocking
       }
       return '';
+    },
+
+    async getContextQuestions(): Promise<ContextQuestion[]> {
+      const guide = ctx.readResult?.guide ?? '';
+      const outputText = ctx.output.join('\n');
+      const hasGovernance = /\bP0\b|\bP1\b|governance|violation|inventory/i.test(outputText);
+      const hasTaskBreakdown = /(?:####|###)\s*Task\s+\d+/i.test(guide);
+      const questions: ContextQuestion[] = [];
+      if (hasTaskBreakdown) {
+        questions.push({
+          category: 'scope',
+          question: 'Does the task breakdown look right, or do you want to adjust tasks for this session?',
+          context: 'Session guide already lists tasks.',
+        });
+      }
+      questions.push({
+        category: 'scope',
+        question: 'Is the session scope clear, or does it need refinement before we start?',
+        context: 'Session scope affects task ordering and deliverables.',
+      });
+      questions.push({
+        category: 'approach',
+        question: 'Any design decisions already made (e.g. patterns, components to reuse)?',
+        context: 'Helps align implementation with existing decisions.',
+      });
+      if (hasGovernance) {
+        questions.push({
+          category: 'governance',
+          question: 'Are governance findings relevant to this session scope? Address now or defer?',
+          context: 'Governance output may include P0/P1 or inventory.',
+        });
+      }
+      return questions;
     },
 
     async runExtras(): Promise<string> {

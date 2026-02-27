@@ -8,6 +8,7 @@ import { WorkflowCommandContext } from '../../../utils/command-context';
 import { WorkflowId } from '../../../utils/id-utils';
 import { resolveFeatureName } from '../../../utils';
 import { appendChildToParentDoc } from '../../../utils/append-child-to-parent';
+import { readProjectFile } from '../../../utils/utils';
 
 export async function planSessionImpl(
   sessionId: string,
@@ -68,57 +69,70 @@ export async function planSessionImpl(
   output.push('\n---\n');
 
   const sessionGuidePath = context.paths.getSessionGuidePath(sessionId);
-  let sessionGuideTemplate: string;
-  if (planContent) {
-    sessionGuideTemplate = planContent;
-  } else {
-    try {
-      sessionGuideTemplate = await context.templates.loadTemplate('session', 'guide');
-      sessionGuideTemplate = context.templates.render(sessionGuideTemplate, {
-        SESSION_ID: sessionId,
-        DESCRIPTION: resolvedDescription,
-        DATE: new Date().toISOString().split('T')[0],
-      });
-    } catch (_error) {
-      const templatePath = context.paths.getTemplatePath('session', 'guide');
-      throw new Error(
-        `ERROR: Session guide template not found\n` +
-          `Attempted: ${templatePath}\n` +
-          `Expected: Session guide template file\n` +
-          `Suggestion: Create template at ${templatePath}\n` +
-          `Tier: Session (Tier 2 - Medium-Level)\n` +
-          `Error: ${_error instanceof Error ? _error.message : String(_error)}\n` +
-          `Action Required: Create the session guide template file before proceeding.`
-      );
-    }
-    if (!sessionGuideTemplate) {
-      throw new Error(`Session guide template is empty after loading from ${context.paths.getTemplatePath('session', 'guide')}`);
-    }
-  }
 
-  output.push('## Session Guide\n');
-  output.push('**Created:** `' + sessionGuidePath + '`\n');
-  output.push(planContent ? '**Source:** Your authored plan content\n' : '**Template:** Based on `.cursor/commands/tiers/session/templates/session-guide.md`\n');
-  output.push('```markdown\n');
-  output.push(sessionGuideTemplate);
-  output.push('```\n');
-
+  let existingGuide: string | null = null;
   try {
-    await context.documents.writeGuide('session', sessionId, sessionGuideTemplate);
-    output.push('\n**Session guide file created successfully.**\n');
+    existingGuide = await readProjectFile(sessionGuidePath);
+  } catch { /* guide does not exist yet */ }
+
+  let sessionGuideContent: string;
+  if (existingGuide && !planContent) {
+    sessionGuideContent = existingGuide;
+    output.push('## Session Guide\n');
+    output.push('**Exists:** `' + sessionGuidePath + '` (not overwritten)\n');
     output.push('\n---\n');
-  } catch (error) {
-    output.push('\n**ERROR: Could not create session guide file automatically**\n');
-    output.push(`**Attempted:** ${sessionGuidePath}\n`);
-    output.push(`**Expected:** Session guide file for session ${sessionId}\n`);
-    output.push(`**Suggestion:** Create it manually using \`.cursor/commands/tiers/session/templates/session-guide.md\` as a template\n`);
-    output.push(`**Tier:** Session (Tier 2 - Medium-Level)\n`);
-    output.push(`**Error Details:** ${error instanceof Error ? error.message : String(error)}\n`);
+  } else {
+    if (planContent) {
+      sessionGuideContent = planContent;
+    } else {
+      try {
+        sessionGuideContent = await context.templates.loadTemplate('session', 'guide');
+        sessionGuideContent = context.templates.render(sessionGuideContent, {
+          SESSION_ID: sessionId,
+          DESCRIPTION: resolvedDescription,
+          DATE: new Date().toISOString().split('T')[0],
+        });
+      } catch (_error) {
+        const templatePath = context.paths.getTemplatePath('session', 'guide');
+        throw new Error(
+          `ERROR: Session guide template not found\n` +
+            `Attempted: ${templatePath}\n` +
+            `Expected: Session guide template file\n` +
+            `Suggestion: Create template at ${templatePath}\n` +
+            `Tier: Session (Tier 2 - Medium-Level)\n` +
+            `Error: ${_error instanceof Error ? _error.message : String(_error)}\n` +
+            `Action Required: Create the session guide template file before proceeding.`
+        );
+      }
+      if (!sessionGuideContent) {
+        throw new Error(`Session guide template is empty after loading from ${context.paths.getTemplatePath('session', 'guide')}`);
+      }
+    }
+
+    output.push('## Session Guide\n');
+    output.push('**Created:** `' + sessionGuidePath + '`\n');
+    output.push(planContent ? '**Source:** Your authored plan content\n' : '**Template:** Based on `.cursor/commands/tiers/session/templates/session-guide.md`\n');
+    output.push('```markdown\n');
+    output.push(sessionGuideContent);
+    output.push('```\n');
+
+    try {
+      await context.documents.writeGuide('session', sessionId, sessionGuideContent);
+      output.push('\n**Session guide file created successfully.**\n');
+      output.push('\n---\n');
+    } catch (error) {
+      output.push('\n**ERROR: Could not create session guide file automatically**\n');
+      output.push(`**Attempted:** ${sessionGuidePath}\n`);
+      output.push(`**Expected:** Session guide file for session ${sessionId}\n`);
+      output.push(`**Suggestion:** Create it manually using \`.cursor/commands/tiers/session/templates/session-guide.md\` as a template\n`);
+      output.push(`**Tier:** Session (Tier 2 - Medium-Level)\n`);
+      output.push(`**Error Details:** ${error instanceof Error ? error.message : String(error)}\n`);
+    }
   }
 
   output.push('\n## Decomposition (Session → Tasks)\n');
   try {
-    const guideContent = sessionGuideTemplate || (await context.readSessionGuide(sessionId).catch(() => ''));
+    const guideContent = sessionGuideContent || (await context.readSessionGuide(sessionId).catch(() => ''));
     const taskMatches = guideContent.matchAll(/(?:####|###)\s+Task\s+(\d+\.\d+\.\d+\.\d+):/g);
     const taskIds: string[] = [];
     for (const m of taskMatches) {

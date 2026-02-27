@@ -18,6 +18,7 @@ import type {
   TierStartWorkflowHooks,
   TierStartValidationResult,
   TierStartReadResult,
+  ContextQuestion,
 } from '../../shared/tier-start-workflow';
 import { runTierStartWorkflow } from '../../shared/tier-start-workflow';
 
@@ -142,6 +143,47 @@ export async function taskStartImpl(
       const taskSectionContent = ctx.readResult?.guide ?? await readTaskSection(taskId, context, sessionId);
       if (!taskSectionContent) return [];
       return extractFilePaths(taskSectionContent);
+    },
+
+    async getContextQuestions(): Promise<ContextQuestion[]> {
+      const guide = ctx.readResult?.guide ?? '';
+      const goal = extractField('Goal', guide).trim();
+      const files = extractField('Files', guide).trim();
+      const approach = extractField('Approach', guide).trim();
+      const outputText = ctx.output.join('\n');
+      const hasP0P1 = /\bP0\b|\bP1\b|violation/i.test(outputText);
+      const hasInventory = /inventory|composable|utility.*match/i.test(outputText);
+      const placeholderLike = (s: string) =>
+        !s || /TBD|to be refined|see above|\.\.\.|placeholder/i.test(s) || s.length < 3;
+      const questions: ContextQuestion[] = [];
+      if (placeholderLike(goal)) {
+        questions.push({ category: 'scope', question: 'What is the specific goal for this task?', context: 'Task goal is missing or placeholder.' });
+      }
+      if (placeholderLike(files)) {
+        questions.push({ category: 'files', question: 'Which files will this task touch?', context: 'Files are not yet specified.' });
+      }
+      if (placeholderLike(approach)) {
+        questions.push({
+          category: 'approach',
+          question: 'Any implementation preference or approach (e.g. reuse existing component, new composable)?',
+          context: 'Approach is vague or missing.',
+        });
+      }
+      if (hasP0P1) {
+        questions.push({
+          category: 'governance',
+          question: 'Address P0/P1 governance findings in task files now, or defer?',
+          context: 'Governance output reported findings.',
+        });
+      }
+      if (hasInventory) {
+        questions.push({
+          category: 'dependencies',
+          question: 'Reuse existing composables or utilities from the inventory?',
+          context: 'Related code was mentioned in governance/inventory.',
+        });
+      }
+      return questions;
     },
 
     async afterBranch() {

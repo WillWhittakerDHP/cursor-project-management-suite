@@ -42,6 +42,26 @@ export function handlePlanMode(outcome: ControlPlaneOutcome, ctx: ControlPlaneCo
   };
 }
 
+/** context_gathering: show questions + planning doc path; nextInvoke = same command with contextGatheringComplete: true. */
+export function handleContextGathering(outcome: ControlPlaneOutcome, ctx: ControlPlaneContext): ControlPlaneDecision {
+  const params = {
+    ...(typeof ctx.originalParams === 'object' && ctx.originalParams !== null ? ctx.originalParams : {}),
+    contextGatheringComplete: true,
+    mode: 'execute',
+  } as Record<string, unknown>;
+  return {
+    stop: true,
+    requiredMode: 'plan',
+    message: outcome.deliverables ?? outcome.nextAction,
+    questionKey: QUESTION_KEYS.CONTEXT_GATHERING,
+    nextInvoke: {
+      tier: ctx.tier,
+      action: ctx.action,
+      params,
+    },
+  };
+}
+
 /** pending_push_confirmation: AskQuestion push/skip; then cascade if present. */
 export function handlePendingPushConfirmation(outcome: ControlPlaneOutcome): ControlPlaneDecision {
   return {

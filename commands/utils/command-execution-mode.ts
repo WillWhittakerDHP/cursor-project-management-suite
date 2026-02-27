@@ -21,6 +21,8 @@ export type CursorMode = 'plan' | 'agent';
 
 export interface CommandExecutionOptions {
   mode?: CommandExecutionMode;
+  /** When true, skip the context-gathering Q&A step and continue to plan/fill/cascade (set after user is satisfied). */
+  contextGatheringComplete?: boolean;
 }
 
 /**

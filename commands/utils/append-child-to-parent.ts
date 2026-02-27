@@ -110,7 +110,14 @@ export async function appendChildToParentDoc(
       if (content.includes(taskHeading)) {
         return { success: true, parentDocPath: guidePath, alreadyExists: true, output: [] };
       }
-      const newEntry = `#### Task ${childId}: ${childDescription}`;
+      const newEntry = [
+        `- [ ] #### Task ${childId}: ${childDescription}`,
+        '**Goal:** [Fill in]',
+        '**Files:**',
+        '- [Files to work with]',
+        '**Approach:** [Fill in]',
+        '**Checkpoint:** [What needs to be verified]',
+      ].join('\n');
       content = content + '\n\n' + newEntry;
       await writeProjectFile(guidePath, content);
       output.push(`Appended Task ${childId} to ${guidePath}`);
