@@ -1,16 +1,14 @@
 /**
  * Composite Command: /audit-phase [phase] [feature-name]
- * Run all audits for phase tier
- * 
+ * Run tier-optimized audits for phase (typecheck, type-similarity, duplication, unused-code, pattern-detection, import-graph, file-cohesion, deprecation, api-contract, data-flow)
+ *
  * Tier: Phase (Tier 1 - High-Level)
- * Operates on: Complete phase audit
+ * Operates on: Complete phase audit (full scan)
  */
 
-import { TierAuditResult, AuditParams } from '../types';
-import { auditSecurity } from '../atomic/audit-security';
-import { auditDocs } from '../atomic/audit-docs';
-import { auditVueArchitecture } from '../atomic/audit-vue-architecture';
-import { auditCodeQuality } from '../atomic/audit-code-quality';
+import { TierAuditResult, AuditParams, AutofixResult } from '../types';
+import { auditTierQuality } from '../atomic/audit-tier-quality';
+import { runTierAutofix } from '../autofix/run-tier-autofix';
 import { WorkflowCommandContext } from '../../utils/command-context';
 import { resolveFeatureName } from '../../utils';
 import { writeAuditReport, calculateOverallStatus, getRelativePath, loadBaselineScore, compareBaselineToEnd } from '../utils';
@@ -33,45 +31,38 @@ export async function auditPhase(params: AuditPhaseParams): Promise<{
   reportPath: string;
   fullReportPath?: string; // Full path for file opening
   output: string;
+  autofixResult?: AutofixResult;
 }> {
   const featureName = await resolveFeatureName(params.featureName);
   const context = new WorkflowCommandContext(featureName);
-  
+
   const auditParams: AuditParams = {
     tier: 'phase',
     identifier: params.phase,
     featureName,
     modifiedFiles: params.modifiedFiles,
-    testResults: params.testResults
+    testResults: params.testResults,
   };
-  
+
   const results = [];
   const errors: string[] = [];
+  let tierQualityResult;
 
   try {
-    results.push(await auditSecurity(auditParams));
+    tierQualityResult = await auditTierQuality({ ...auditParams, tier: 'phase' });
+    results.push(tierQualityResult);
   } catch (_error) {
-    errors.push(`Security audit failed: ${_error instanceof Error ? _error.message : String(_error)}`);
+    errors.push(`Phase tier quality audit failed: ${_error instanceof Error ? _error.message : String(_error)}`);
   }
 
-  try {
-    results.push(await auditDocs(auditParams));
-  } catch (_error) {
-    errors.push(`Docs audit failed: ${_error instanceof Error ? _error.message : String(_error)}`);
+  let autofixResult: AutofixResult | undefined;
+  if (tierQualityResult) {
+    autofixResult = await runTierAutofix('phase', tierQualityResult, {
+      maxCascadeDepth: 2,
+      featureName,
+    });
   }
 
-  try {
-    results.push(await auditVueArchitecture(auditParams));
-  } catch (_error) {
-    errors.push(`Vue architecture audit failed: ${_error instanceof Error ? _error.message : String(_error)}`);
-  }
-
-  try {
-    results.push(await auditCodeQuality(auditParams));
-  } catch (_error) {
-    errors.push(`Code quality audit failed: ${_error instanceof Error ? _error.message : String(_error)}`);
-  }
-  
   // Create audit result
   const overallStatus = calculateOverallStatus(results);
   const timestamp = new Date().toISOString();
@@ -179,7 +170,21 @@ export async function auditPhase(params: AuditPhaseParams): Promise<{
     }
     outputLines.push(`- ${emoji} **${result.category}**: ${result.status} ${scoreText}`);
   }
-  
+
+  if (autofixResult) {
+    outputLines.push('');
+    outputLines.push('## Autofix');
+    outputLines.push('');
+    outputLines.push(autofixResult.summary);
+    if (autofixResult.agentFixEntries.length > 0) {
+      outputLines.push('');
+      outputLines.push('**Agent directives:**');
+      for (const e of autofixResult.agentFixEntries) {
+        if (e.agentDirective) outputLines.push(`- ${e.agentDirective}`);
+      }
+    }
+  }
+
   // Add review prompt
   outputLines.push('');
   outputLines.push('---');
@@ -205,7 +210,8 @@ export async function auditPhase(params: AuditPhaseParams): Promise<{
     auditResult,
     reportPath: auditResult.reportPath || reportPath,
     fullReportPath: reportPath,
-    output: outputLines.join('\n')
+    output: outputLines.join('\n'),
+    autofixResult,
   };
 }
 

@@ -1,15 +1,14 @@
 /**
  * Composite Command: /audit-feature [feature-name]
- * Run all audits for feature tier
- * 
+ * Run tier-optimized audits for feature (test, coverage-risk-crossref, bundle-size-budget, api-versioning, dep-freshness, security, meta)
+ *
  * Tier: Feature (Tier 0 - Highest Level)
- * Operates on: Complete feature audit
+ * Operates on: Complete feature audit (ship gates)
  */
 
-import { TierAuditResult, AuditParams } from '../types';
-import { auditSecurity } from '../atomic/audit-security';
-import { auditDocs } from '../atomic/audit-docs';
-import { auditVueArchitecture } from '../atomic/audit-vue-architecture';
+import { TierAuditResult, AuditParams, AutofixResult } from '../types';
+import { auditTierQuality } from '../atomic/audit-tier-quality';
+import { runTierAutofix } from '../autofix/run-tier-autofix';
 import { WorkflowCommandContext } from '../../utils/command-context';
 import { writeAuditReport, calculateOverallStatus, getRelativePath, loadBaselineScore, compareBaselineToEnd } from '../utils';
 import { importExternalAudits } from '../external/import-external-audits';
@@ -30,38 +29,37 @@ export async function auditFeature(params: AuditFeatureParams): Promise<{
   reportPath: string;
   fullReportPath?: string; // Full path for file opening
   output: string;
+  autofixResult?: AutofixResult;
 }> {
   const context = new WorkflowCommandContext(params.featureName);
-  
+
   const auditParams: AuditParams = {
     tier: 'feature',
     identifier: params.featureName,
     featureName: params.featureName,
     modifiedFiles: params.modifiedFiles,
-    testResults: params.testResults
+    testResults: params.testResults,
   };
-  
+
   const results = [];
   const errors: string[] = [];
+  let tierQualityResult;
 
   try {
-    results.push(await auditSecurity(auditParams));
+    tierQualityResult = await auditTierQuality({ ...auditParams, tier: 'feature' });
+    results.push(tierQualityResult);
   } catch (_error) {
-    errors.push(`Security audit failed: ${_error instanceof Error ? _error.message : String(_error)}`);
+    errors.push(`Feature tier quality audit failed: ${_error instanceof Error ? _error.message : String(_error)}`);
   }
 
-  try {
-    results.push(await auditDocs(auditParams));
-  } catch (_error) {
-    errors.push(`Docs audit failed: ${_error instanceof Error ? _error.message : String(_error)}`);
+  let autofixResult: AutofixResult | undefined;
+  if (tierQualityResult) {
+    autofixResult = await runTierAutofix('feature', tierQualityResult, {
+      maxCascadeDepth: 3,
+      featureName: params.featureName,
+    });
   }
 
-  try {
-    results.push(await auditVueArchitecture(auditParams));
-  } catch (_error) {
-    errors.push(`Vue architecture audit failed: ${_error instanceof Error ? _error.message : String(_error)}`);
-  }
-  
   // Create audit result
   const overallStatus = calculateOverallStatus(results);
   const timestamp = new Date().toISOString();
@@ -169,7 +167,21 @@ export async function auditFeature(params: AuditFeatureParams): Promise<{
     }
     outputLines.push(`- ${emoji} **${result.category}**: ${result.status} ${scoreText}`);
   }
-  
+
+  if (autofixResult) {
+    outputLines.push('');
+    outputLines.push('## Autofix');
+    outputLines.push('');
+    outputLines.push(autofixResult.summary);
+    if (autofixResult.agentFixEntries.length > 0) {
+      outputLines.push('');
+      outputLines.push('**Agent directives:**');
+      for (const e of autofixResult.agentFixEntries) {
+        if (e.agentDirective) outputLines.push(`- ${e.agentDirective}`);
+      }
+    }
+  }
+
   // Add review prompt
   outputLines.push('');
   outputLines.push('---');
@@ -187,15 +199,16 @@ export async function auditFeature(params: AuditFeatureParams): Promise<{
   outputLines.push('- What workflow refinements do the audits suggest?');
   outputLines.push('');
   outputLines.push('*The audit report file should be open in your editor. Let\'s review it together to refine the workflow command tool.*');
-  
+
   const success = errors.length === 0 && overallStatus !== 'fail';
-  
+
   return {
     success,
     auditResult,
     reportPath: auditResult.reportPath || reportPath,
     fullReportPath: reportPath,
-    output: outputLines.join('\n')
+    output: outputLines.join('\n'),
+    autofixResult,
   };
 }
 

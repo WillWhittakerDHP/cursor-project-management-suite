@@ -1,18 +1,19 @@
 /**
  * Composite Command: /audit-session [session-id] [feature-name]
- * Run all audits for session tier
- * 
+ * Run tier-optimized audits for session (component/composables logic, function-complexity, constants-consolidation, todo-aging, docs, vue-architecture)
+ *
  * Tier: Session (Tier 2 - Medium-Level)
- * Operates on: Complete session audit
+ * Operates on: Complete session audit (--changed-only for npm audits)
  */
 
-import { TierAuditResult, AuditParams } from '../types';
-import { auditSecurity } from '../atomic/audit-security';
+import { TierAuditResult, AuditParams, AutofixResult } from '../types';
+import { auditTierQuality } from '../atomic/audit-tier-quality';
+import { runTierAutofix } from '../autofix/run-tier-autofix';
 import { auditDocs } from '../atomic/audit-docs';
 import { auditVueArchitecture } from '../atomic/audit-vue-architecture';
 import { WorkflowCommandContext } from '../../utils/command-context';
 import { resolveFeatureName } from '../../utils';
-import { writeAuditReport, calculateOverallStatus, getRelativePath, loadBaselineScore, compareBaselineToEnd } from '../utils';
+import { writeAuditReport, calculateOverallStatus, getRelativePath, loadBaselineScore, compareBaselineToEnd, getTypeConstantInventoryScore, getComposableGovernanceScore, getFunctionGovernanceScore, getComponentGovernanceScore } from '../utils';
 import { importExternalAudits } from '../external/import-external-audits';
 
 export interface AuditSessionParams {
@@ -32,6 +33,7 @@ export async function auditSession(params: AuditSessionParams): Promise<{
   reportPath: string;
   fullReportPath?: string; // Full path for file opening
   output: string;
+  autofixResult?: AutofixResult;
 }> {
   const featureName = await resolveFeatureName(params.featureName);
   const context = new WorkflowCommandContext(featureName);
@@ -46,11 +48,21 @@ export async function auditSession(params: AuditSessionParams): Promise<{
   
   const results = [];
   const errors: string[] = [];
+  let tierQualityResult;
 
   try {
-    results.push(await auditSecurity(auditParams));
+    tierQualityResult = await auditTierQuality({ ...auditParams, tier: 'session' });
+    results.push(tierQualityResult);
   } catch (_error) {
-    errors.push(`Security audit failed: ${_error instanceof Error ? _error.message : String(_error)}`);
+    errors.push(`Session tier quality audit failed: ${_error instanceof Error ? _error.message : String(_error)}`);
+  }
+
+  let autofixResult: AutofixResult | undefined;
+  if (tierQualityResult) {
+    autofixResult = await runTierAutofix('session', tierQualityResult, {
+      maxCascadeDepth: 1,
+      featureName,
+    });
   }
 
   try {
@@ -64,7 +76,7 @@ export async function auditSession(params: AuditSessionParams): Promise<{
   } catch (_error) {
     errors.push(`Vue architecture audit failed: ${_error instanceof Error ? _error.message : String(_error)}`);
   }
-  
+
   // Create audit result
   const overallStatus = calculateOverallStatus(results);
   const timestamp = new Date().toISOString();
@@ -79,7 +91,7 @@ export async function auditSession(params: AuditSessionParams): Promise<{
     featureName
   };
   
-  // Load baseline scores and compare
+  // Load baseline scores and compare (includes type-constant-inventory from JSON)
   let baselineComparison;
   try {
     const baseline = await loadBaselineScore('session', params.sessionId, featureName);
@@ -89,6 +101,22 @@ export async function auditSession(params: AuditSessionParams): Promise<{
         if (result.score !== undefined) {
           endScores[result.category] = result.score;
         }
+      }
+      const typeInventoryScore = await getTypeConstantInventoryScore();
+      if (typeInventoryScore !== undefined) {
+        endScores['type-constant-inventory'] = typeInventoryScore;
+      }
+      const composableGovernanceScore = await getComposableGovernanceScore();
+      if (composableGovernanceScore !== undefined) {
+        endScores['composable-governance'] = composableGovernanceScore;
+      }
+      const functionGovernanceScore = await getFunctionGovernanceScore();
+      if (functionGovernanceScore !== undefined) {
+        endScores['function-governance'] = functionGovernanceScore;
+      }
+      const componentGovernanceScore = await getComponentGovernanceScore();
+      if (componentGovernanceScore !== undefined) {
+        endScores['component-governance'] = componentGovernanceScore;
       }
       baselineComparison = compareBaselineToEnd(baseline, endScores);
     }
@@ -172,7 +200,21 @@ export async function auditSession(params: AuditSessionParams): Promise<{
     }
     outputLines.push(`- ${emoji} **${result.category}**: ${result.status} ${scoreText}`);
   }
-  
+
+  if (autofixResult) {
+    outputLines.push('');
+    outputLines.push('## Autofix');
+    outputLines.push('');
+    outputLines.push(autofixResult.summary);
+    if (autofixResult.agentFixEntries.length > 0) {
+      outputLines.push('');
+      outputLines.push('**Agent directives:**');
+      for (const e of autofixResult.agentFixEntries) {
+        if (e.agentDirective) outputLines.push(`- ${e.agentDirective}`);
+      }
+    }
+  }
+
   // Add review prompt
   outputLines.push('');
   outputLines.push('---');
@@ -198,7 +240,8 @@ export async function auditSession(params: AuditSessionParams): Promise<{
     auditResult,
     reportPath: auditResult.reportPath || reportPath,
     output: outputLines.join('\n'),
-    fullReportPath: reportPath // Include full path for file opening
+    fullReportPath: reportPath,
+    autofixResult,
   };
 }
 

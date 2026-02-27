@@ -284,6 +284,130 @@ export function getRelativePath(absolutePath: string): string {
   return absolutePath.replace(PROJECT_ROOT + '/', '');
 }
 
+const FRONTEND_ROOT = 'client';
+
+/**
+ * Derive a 0-100 score from type-constant-inventory-audit.json for baseline comparison.
+ * Returns undefined if the file is missing or unreadable.
+ */
+export async function getTypeConstantInventoryScore(): Promise<number | undefined> {
+  const jsonPath = join(PROJECT_ROOT, FRONTEND_ROOT, '.audit-reports', 'type-constant-inventory-audit.json');
+  if (!existsSync(jsonPath)) return undefined;
+  try {
+    const content = await readFile(jsonPath, 'utf-8');
+    const data = JSON.parse(content) as {
+      summary?: {
+        classificationIssues?: {
+          mixedTypeConstantFiles?: number;
+          inlineTypesInComposables?: number;
+          configsWithLogic?: number;
+          duplicateTypeNames?: number;
+          cleanupCandidates?: number;
+        };
+      };
+    };
+    const issues = data.summary?.classificationIssues ?? {};
+    let score = 100;
+    score -= (issues.mixedTypeConstantFiles ?? 0) * 2;
+    score -= (issues.inlineTypesInComposables ?? 0) * 1;
+    score -= (issues.duplicateTypeNames ?? 0) * 5;
+    score -= (issues.configsWithLogic ?? 0) * 2;
+    score -= (issues.cleanupCandidates ?? 0) * 3;
+    if (score < 0) score = 0;
+    return score;
+  } catch (_error) {
+    return undefined;
+  }
+}
+
+/**
+ * Derive a 0-100 composable-governance score for baseline comparison.
+ * Formula (deterministic, from stable JSON counts):
+ * - Start 100. Subtract: composable-health findings (missing-return-type 5, oversized-return 2,
+ *   excessive-composable-imports 2, untyped-provide 2) and function-complexity P0 file count * 3.
+ * - Cap to [0, 100]. Documented in COMPOSABLE_AUTHORING_PLAYBOOK.md.
+ */
+export async function getComposableGovernanceScore(): Promise<number | undefined> {
+  let score = 100;
+  const reportsDir = join(PROJECT_ROOT, FRONTEND_ROOT, '.audit-reports');
+
+  try {
+    const composablePath = join(reportsDir, 'composable-health-audit.json');
+    if (existsSync(composablePath)) {
+      const content = await readFile(composablePath, 'utf-8');
+      const data = JSON.parse(content) as { findings?: Array<{ ruleId?: string }> };
+      const findings = data.findings ?? [];
+      for (const f of findings) {
+        const id = f.ruleId ?? '';
+        if (id === 'missing-return-type') score -= 5;
+        else if (id === 'oversized-return') score -= 2;
+        else if (id === 'excessive-composable-imports') score -= 2;
+        else if (id === 'untyped-provide') score -= 2;
+      }
+    }
+
+    const funcPath = join(reportsDir, 'function-complexity-audit.json');
+    if (existsSync(funcPath)) {
+      const content = await readFile(funcPath, 'utf-8');
+      const data = JSON.parse(content) as { files?: Array<{ priority?: string }> };
+      const files = data.files ?? [];
+      const p0Count = files.filter((f) => f.priority === 'P0').length;
+      score -= p0Count * 3;
+    }
+
+    if (score < 0) score = 0;
+    return score;
+  } catch (_error) {
+    return undefined;
+  }
+}
+
+/**
+ * Derive a 0-100 function-governance score for baseline comparison.
+ * Formula (deterministic): start 100; subtract P0 file count × 3 and P1 file count × 1
+ * from function-complexity-audit.json files[].priority; cap to [0, 100].
+ * Documented in FUNCTION_AUTHORING_PLAYBOOK.md.
+ */
+export async function getFunctionGovernanceScore(): Promise<number | undefined> {
+  const jsonPath = join(PROJECT_ROOT, FRONTEND_ROOT, '.audit-reports', 'function-complexity-audit.json');
+  if (!existsSync(jsonPath)) return undefined;
+  try {
+    const content = await readFile(jsonPath, 'utf-8');
+    const data = JSON.parse(content) as { files?: Array<{ priority?: string }> };
+    const files = data.files ?? [];
+    const p0Count = files.filter((f) => f.priority === 'P0').length;
+    const p1Count = files.filter((f) => f.priority === 'P1').length;
+    let score = 100 - p0Count * 3 - p1Count * 1;
+    if (score < 0) score = 0;
+    return score;
+  } catch (_error) {
+    return undefined;
+  }
+}
+
+/**
+ * Derive a 0-100 component-governance score for baseline comparison.
+ * Formula (deterministic): start 100; subtract P0 file count × 3 and P1 file count × 1
+ * from component-health-audit.json files[].priority; cap to [0, 100].
+ * Documented in COMPONENT_AUTHORING_PLAYBOOK.md.
+ */
+export async function getComponentGovernanceScore(): Promise<number | undefined> {
+  const jsonPath = join(PROJECT_ROOT, FRONTEND_ROOT, '.audit-reports', 'component-health-audit.json');
+  if (!existsSync(jsonPath)) return undefined;
+  try {
+    const content = await readFile(jsonPath, 'utf-8');
+    const data = JSON.parse(content) as { files?: Array<{ priority?: string }> };
+    const files = data.files ?? [];
+    const p0Count = files.filter((f) => f.priority === 'P0').length;
+    const p1Count = files.filter((f) => f.priority === 'P1').length;
+    let score = 100 - p0Count * 3 - p1Count * 1;
+    if (score < 0) score = 0;
+    return score;
+  } catch (_error) {
+    return undefined;
+  }
+}
+
 /**
  * Store baseline scores for comparison
  */

@@ -1,0 +1,1268 @@
+# Phase Start Audit: 3.6
+
+**Purpose:** Baseline quality assessment before phase work begins
+**Feature:** calendar-appointment-availability
+**Tier:** phase
+**Identifier:** 3.6
+**Timestamp:** 2026-02-22T22:15:39.612Z
+**Overall Status:** ❌ FAIL
+
+---
+
+## Summary
+
+- **Pass:** 0
+- **Warn:** 1
+- **Fail:** 4
+
+**Baseline Score:** 40/100
+
+---
+
+## Comments Audit
+
+**Status:** ⚠️ WARN
+**Baseline Score:** 75/100
+
+Audited 719 file(s). 495 file(s) with issues. 13588 total suggestions.
+
+### Findings
+
+- ℹ️ **INFO**: Detected 719 file(s) via fallback detection (session logs/git history)
+  - Location: File detection
+  - Suggestion: For more accurate results, provide modified files explicitly
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/.audit-reports/AUDIT_EXECUTION_ORDER.md
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/.audit-reports/api-contract-audit.json
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (3.8%) - consider adding more comments
+  - Location: client/.audit-reports/api-versioning-audit-summary.md
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/.audit-reports/api-versioning-audit.json
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/.audit-reports/api-versioning-audit.md
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/.audit-reports/audit-global-config.json
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/.audit-reports/audit-meta-report-previous.json
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/.audit-reports/audit-meta-report.json
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (2.7%) - consider adding more comments
+  - Location: client/.audit-reports/audit-meta-report.md
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/.audit-reports/branded-id-audit.json
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/.audit-reports/branded-id-audit.md
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/.audit-reports/bundle-size-budget-audit.json
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/.audit-reports/component-logic-audit.json
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.4%) - consider adding more comments
+  - Location: client/.audit-reports/component-logic-audit.md
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/.audit-reports/composables-logic-audit.json
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.1%) - consider adding more comments
+  - Location: client/.audit-reports/composables-logic-audit.md
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/.audit-reports/constants-consolidation-audit.json
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ℹ️ **INFO**: High comment density (50.0%) - may indicate over-commenting
+  - Location: client/.audit-reports/coverage-risk-crossref-audit.md
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/.audit-reports/css-audit.json
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (1.3%) - consider adding more comments
+  - Location: client/.audit-reports/css-audit.md
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/.audit-reports/data-flow-audit.json
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/.audit-reports/dep-freshness-audit.json
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/.audit-reports/deprecation-audit.json
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (1.0%) - consider adding more comments
+  - Location: client/.audit-reports/duplication-audit-summary.md
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/.audit-reports/duplication-audit.json
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.5%) - consider adding more comments
+  - Location: client/.audit-reports/duplication-audit.md
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/.audit-reports/error-handling-audit.json
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (3.9%) - consider adding more comments
+  - Location: client/.audit-reports/error-handling-audit.md
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/.audit-reports/file-cohesion-audit.json
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (2.5%) - consider adding more comments
+  - Location: client/.audit-reports/file-cohesion-audit.md
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/.audit-reports/function-complexity-audit.json
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (1.9%) - consider adding more comments
+  - Location: client/.audit-reports/function-complexity-audit.md
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/.audit-reports/hardcoding-audit.json
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.6%) - consider adding more comments
+  - Location: client/.audit-reports/hardcoding-audit.md
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/.audit-reports/naming-convention-audit.json
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (2.2%) - consider adding more comments
+  - Location: client/.audit-reports/naming-convention-audit.md
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/.audit-reports/pattern-detection-audit.json
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.9%) - consider adding more comments
+  - Location: client/.audit-reports/pattern-detection-audit.md
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/.audit-reports/pre-typecheck-meta-report-previous.json
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/.audit-reports/pre-typecheck-meta-report.json
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/.audit-reports/security-audit.json
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/.audit-reports/test-audit.json
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (3.8%) - consider adding more comments
+  - Location: client/.audit-reports/test-audit.md
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/.audit-reports/todo-aging-audit.json
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (3.4%) - consider adding more comments
+  - Location: client/.audit-reports/todo-aging-audit.md
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/.audit-reports/type-similarity-audit.json
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/.audit-reports/type-similarity-audit.md
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.5%) - consider adding more comments
+  - Location: client/.scripts/audit-summary-renderers.mjs
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ℹ️ **INFO**: High comment density (55.2%) - may indicate over-commenting
+  - Location: client/.scripts/shared-audit-utils.mjs
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (41.6%) - may indicate over-commenting
+  - Location: client/.scripts/type-similarity-audit.mjs
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ⚠️ **WARNING**: Low comment density (2.6%) - consider adding more comments
+  - Location: client/auto-imports.d.ts
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/package-lock.json
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/package.json
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/src/@core/components/AppBarSearch.vue
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/src/@core/components/ProductDescriptionEditor.vue
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/src/@core/components/TiptapEditor.vue
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (1.8%) - consider adding more comments
+  - Location: client/src/@core/libs/chartjs/components/LineChart.ts
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.9%) - consider adding more comments
+  - Location: client/src/@layouts/components/HorizontalNavGroup.vue
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (2.0%) - consider adding more comments
+  - Location: client/src/@layouts/components/HorizontalNavLayout.vue
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.5%) - consider adding more comments
+  - Location: client/src/@layouts/components/VerticalNav.vue
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (3.6%) - consider adding more comments
+  - Location: client/src/@layouts/components/VerticalNavGroup.vue
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (1.7%) - consider adding more comments
+  - Location: client/src/@layouts/components/VerticalNavLayout.vue
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (3.9%) - consider adding more comments
+  - Location: client/src/components/admin/MetadataEditModal.vue
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (4.3%) - consider adding more comments
+  - Location: client/src/components/admin/dev/ApiDevPanel.scss
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ℹ️ **INFO**: High comment density (133.3%) - may indicate over-commenting
+  - Location: client/src/components/admin/dev/devPanelTypes.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/src/components/admin/generic/EntityCardContent.vue
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/src/components/admin/generic/EntityCardFeePreview.vue
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (2.7%) - consider adding more comments
+  - Location: client/src/components/admin/generic/StatusButton.scss
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ℹ️ **INFO**: High comment density (161.5%) - may indicate over-commenting
+  - Location: client/src/components/admin/generic/entityCardConstants.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (157.1%) - may indicate over-commenting
+  - Location: client/src/components/admin/generic/fields/fieldTypes.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ⚠️ **WARNING**: Low comment density (3.8%) - consider adding more comments
+  - Location: client/src/components/admin/metadata/AdminPrimitiveMetadataEditor.vue
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/src/components/beta/BetaFeedbackDashboard.vue
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/src/components/beta/BetaFeedbackDetailModal.vue
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/src/components/beta/BetaFeedbackModal.vue
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (3.4%) - consider adding more comments
+  - Location: client/src/components/booking/BookingWizard.scss
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (3.0%) - consider adding more comments
+  - Location: client/src/components/booking/DifferentialGraph.scss
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (1.3%) - consider adding more comments
+  - Location: client/src/components/booking/MoveablePartsModal.vue
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (1.2%) - consider adding more comments
+  - Location: client/src/components/booking/SelectionCard.scss
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/src/components/booking/steps/AvailabilityCalendarSection.scss
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (2.5%) - consider adding more comments
+  - Location: client/src/components/booking/steps/AvailabilityStep.vue
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (4.1%) - consider adding more comments
+  - Location: client/src/components/booking/steps/ConfirmationStep.vue
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ℹ️ **INFO**: High comment density (72.7%) - may indicate over-commenting
+  - Location: client/src/components/booking/types/selectionCardTypes.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/src/composables/__tests__/useEntity.test.ts
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.7%) - consider adding more comments
+  - Location: client/src/composables/__tests__/useFieldContext.test.ts
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/src/composables/__tests__/useFieldValue.test.ts
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ℹ️ **INFO**: High comment density (62.5%) - may indicate over-commenting
+  - Location: client/src/composables/admin/tables/useTableModelHelpers.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (65.5%) - may indicate over-commenting
+  - Location: client/src/composables/admin/useAttendeeQuickSelect.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (115.0%) - may indicate over-commenting
+  - Location: client/src/composables/admin/useBlockInstanceForm.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ⚠️ **WARNING**: Low comment density (4.6%) - consider adding more comments
+  - Location: client/src/composables/admin/useBufferSettings.ts
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (2.6%) - consider adding more comments
+  - Location: client/src/composables/admin/useBusinessRuleForm.ts
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ℹ️ **INFO**: High comment density (55.9%) - may indicate over-commenting
+  - Location: client/src/composables/admin/useCalendarEntries.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ⚠️ **WARNING**: Low comment density (1.8%) - consider adding more comments
+  - Location: client/src/composables/admin/useCapacitySettings.ts
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (4.2%) - consider adding more comments
+  - Location: client/src/composables/admin/useDifferentialPerspectives.ts
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ℹ️ **INFO**: High comment density (50.0%) - may indicate over-commenting
+  - Location: client/src/composables/admin/useDragAndDrop.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (66.7%) - may indicate over-commenting
+  - Location: client/src/composables/admin/useEntityCardLayout.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (102.2%) - may indicate over-commenting
+  - Location: client/src/composables/admin/useEntityCardSaveState.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (62.5%) - may indicate over-commenting
+  - Location: client/src/composables/admin/useEntityCardStoreSync.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (55.4%) - may indicate over-commenting
+  - Location: client/src/composables/admin/useEntityDragHandlers.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (133.3%) - may indicate over-commenting
+  - Location: client/src/composables/admin/useEntityFormRedirectOptions.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (57.5%) - may indicate over-commenting
+  - Location: client/src/composables/admin/useEntityGrouping.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (135.6%) - may indicate over-commenting
+  - Location: client/src/composables/admin/useEntityList.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (52.2%) - may indicate over-commenting
+  - Location: client/src/composables/admin/useEntityMetadata.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (100.0%) - may indicate over-commenting
+  - Location: client/src/composables/admin/useEntityTabState.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (83.7%) - may indicate over-commenting
+  - Location: client/src/composables/admin/useFieldComponent.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (41.9%) - may indicate over-commenting
+  - Location: client/src/composables/admin/useFieldContextMetadataEntity.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (83.3%) - may indicate over-commenting
+  - Location: client/src/composables/admin/useFieldInputSetup.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (103.7%) - may indicate over-commenting
+  - Location: client/src/composables/admin/useFieldLocation.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (70.5%) - may indicate over-commenting
+  - Location: client/src/composables/admin/useFormElementPatching.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (76.7%) - may indicate over-commenting
+  - Location: client/src/composables/admin/useInstanceBulkEdit.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (80.0%) - may indicate over-commenting
+  - Location: client/src/composables/admin/useInstanceComposableOptions.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (44.2%) - may indicate over-commenting
+  - Location: client/src/composables/admin/useInstanceDragAndDrop.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (42.2%) - may indicate over-commenting
+  - Location: client/src/composables/admin/useInstanceFiltering.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (72.0%) - may indicate over-commenting
+  - Location: client/src/composables/admin/useInstanceGrouping.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (60.6%) - may indicate over-commenting
+  - Location: client/src/composables/admin/useMetadataCache.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (58.0%) - may indicate over-commenting
+  - Location: client/src/composables/admin/usePartInstanceBulkEdit.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (115.0%) - may indicate over-commenting
+  - Location: client/src/composables/admin/usePartInstanceForm.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (79.2%) - may indicate over-commenting
+  - Location: client/src/composables/admin/usePartsCollectionField.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (77.0%) - may indicate over-commenting
+  - Location: client/src/composables/admin/useRelationshipCollectionField.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (48.0%) - may indicate over-commenting
+  - Location: client/src/composables/admin/useSelectConfig.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (50.0%) - may indicate over-commenting
+  - Location: client/src/composables/admin/useSelectDomTargets.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (59.2%) - may indicate over-commenting
+  - Location: client/src/composables/admin/useSelectFieldValue.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (42.7%) - may indicate over-commenting
+  - Location: client/src/composables/admin/useSelectHandlers.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (45.9%) - may indicate over-commenting
+  - Location: client/src/composables/admin/useSelectLabelResolution.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (57.6%) - may indicate over-commenting
+  - Location: client/src/composables/admin/useShapeDisplayNames.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (61.9%) - may indicate over-commenting
+  - Location: client/src/composables/admin/useStatusButtonHandlers.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/src/composables/booking/__tests__/useAppointmentDataCollection.test.ts
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/src/composables/booking/__tests__/useWizardNavigation.test.ts
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ℹ️ **INFO**: High comment density (69.4%) - may indicate over-commenting
+  - Location: client/src/composables/booking/selectionCard/useSelectionCardComponent.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (40.5%) - may indicate over-commenting
+  - Location: client/src/composables/booking/selectionCard/useSelectionCardStyles.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (85.7%) - may indicate over-commenting
+  - Location: client/src/composables/booking/useAvailabilityDefaults.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (46.9%) - may indicate over-commenting
+  - Location: client/src/composables/booking/useAvailabilityDevPanel.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (46.6%) - may indicate over-commenting
+  - Location: client/src/composables/booking/useAvailabilityLogic.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ⚠️ **WARNING**: Low comment density (2.2%) - consider adding more comments
+  - Location: client/src/composables/booking/useAvailabilityOrchestrator.ts
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ℹ️ **INFO**: High comment density (68.2%) - may indicate over-commenting
+  - Location: client/src/composables/booking/useAvailabilityStepData.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (66.2%) - may indicate over-commenting
+  - Location: client/src/composables/booking/useAvailabilityUI.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (41.7%) - may indicate over-commenting
+  - Location: client/src/composables/booking/useAvailabilityValidation.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (84.6%) - may indicate over-commenting
+  - Location: client/src/composables/booking/useDateRangeDecider.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (48.9%) - may indicate over-commenting
+  - Location: client/src/composables/booking/useDependentInstances.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (58.3%) - may indicate over-commenting
+  - Location: client/src/composables/booking/useInstanceComponents.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (83.3%) - may indicate over-commenting
+  - Location: client/src/composables/booking/useInstanceComponentsList.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (164.0%) - may indicate over-commenting
+  - Location: client/src/composables/booking/useInstanceDescriptions.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (55.3%) - may indicate over-commenting
+  - Location: client/src/composables/booking/usePricingCascadeInstances.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (76.6%) - may indicate over-commenting
+  - Location: client/src/composables/booking/usePropertyFormState.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (60.0%) - may indicate over-commenting
+  - Location: client/src/composables/booking/usePropertyFormWatchers.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (75.8%) - may indicate over-commenting
+  - Location: client/src/composables/booking/useSelectionCardGroupConfig.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (47.7%) - may indicate over-commenting
+  - Location: client/src/composables/booking/useWizardDisplay.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (58.9%) - may indicate over-commenting
+  - Location: client/src/composables/booking/useWizardNavigation.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (86.4%) - may indicate over-commenting
+  - Location: client/src/composables/booking/useWizardValidation.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/src/composables/componentEntity/useComponentEntityDomain.ts
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (4.5%) - consider adding more comments
+  - Location: client/src/composables/entityCrud/useEntityCrudMutations.ts
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (4.1%) - consider adding more comments
+  - Location: client/src/composables/entityCrud/useEntityCrudMutationsCreate.ts
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (3.8%) - consider adding more comments
+  - Location: client/src/composables/entityCrud/useEntityCrudMutationsUpdate.ts
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ℹ️ **INFO**: High comment density (52.9%) - may indicate over-commenting
+  - Location: client/src/composables/entityCrud/useSharedMutationHandlers.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ⚠️ **WARNING**: Low comment density (0.7%) - consider adding more comments
+  - Location: client/src/composables/fieldContext/useFieldContextActions.ts
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ℹ️ **INFO**: High comment density (66.4%) - may indicate over-commenting
+  - Location: client/src/composables/useAdmin.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (46.9%) - may indicate over-commenting
+  - Location: client/src/composables/useAdminConfig.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (40.3%) - may indicate over-commenting
+  - Location: client/src/composables/useBooking.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (115.4%) - may indicate over-commenting
+  - Location: client/src/composables/useBusiness.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (44.4%) - may indicate over-commenting
+  - Location: client/src/composables/useComponentDistribution.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (82.7%) - may indicate over-commenting
+  - Location: client/src/composables/useEntityForm.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (112.0%) - may indicate over-commenting
+  - Location: client/src/composables/useFieldValue.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (65.0%) - may indicate over-commenting
+  - Location: client/src/composables/useGlobal.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (91.3%) - may indicate over-commenting
+  - Location: client/src/composables/useLayoutLoading.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (95.7%) - may indicate over-commenting
+  - Location: client/src/composables/useLocalTime.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (52.0%) - may indicate over-commenting
+  - Location: client/src/composables/usePartInstanceData.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (61.0%) - may indicate over-commenting
+  - Location: client/src/configs/adminConfig.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (80.2%) - may indicate over-commenting
+  - Location: client/src/configs/availabilitySettings.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ⚠️ **WARNING**: Low comment density (3.5%) - consider adding more comments
+  - Location: client/src/configs/businessControlsTabStrings.ts
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ℹ️ **INFO**: High comment density (185.7%) - may indicate over-commenting
+  - Location: client/src/configs/eventPerspectiveLabels.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ⚠️ **WARNING**: Low comment density (1.7%) - consider adding more comments
+  - Location: client/src/configs/field/display/selectableDisplayConfig.ts
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: REFERENCE comment missing See: reference
+  - Location: client/src/constants/fieldMetadata.ts:87
+  - Suggestion: Add See: reference to REFERENCE comment
+- ℹ️ **INFO**: High comment density (105.9%) - may indicate over-commenting
+  - Location: client/src/constants/fieldMetadata.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ⚠️ **WARNING**: Low comment density (1.2%) - consider adding more comments
+  - Location: client/src/layouts/components/NavSearchBar.vue
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ℹ️ **INFO**: High comment density (56.7%) - may indicate over-commenting
+  - Location: client/src/services/calendarApiService.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (46.7%) - may indicate over-commenting
+  - Location: client/src/services/mapsApiService.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (118.2%) - may indicate over-commenting
+  - Location: client/src/shims/vue-i18n.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (46.7%) - may indicate over-commenting
+  - Location: client/src/types/admin/AdminEntity.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (148.1%) - may indicate over-commenting
+  - Location: client/src/types/appointment.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (750.0%) - may indicate over-commenting
+  - Location: client/src/types/availability.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (50.0%) - may indicate over-commenting
+  - Location: client/src/types/availabilitySettingsParams.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (100.0%) - may indicate over-commenting
+  - Location: client/src/types/availabilityStepParams.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (41.2%) - may indicate over-commenting
+  - Location: client/src/types/component.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (333.3%) - may indicate over-commenting
+  - Location: client/src/types/datetime.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ⚠️ **WARNING**: Low comment density (5.0%) - consider adding more comments
+  - Location: client/src/types/entities.ts
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/src/types/entity/formDataEnums.ts
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ℹ️ **INFO**: High comment density (125.0%) - may indicate over-commenting
+  - Location: client/src/types/entity/selectOptions.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (157.1%) - may indicate over-commenting
+  - Location: client/src/types/googleCalendar.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (114.3%) - may indicate over-commenting
+  - Location: client/src/types/metadataEditorProps.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (64.1%) - may indicate over-commenting
+  - Location: client/src/types/propertyForm.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (71.9%) - may indicate over-commenting
+  - Location: client/src/types/relationships.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (650.0%) - may indicate over-commenting
+  - Location: client/src/types/userTypes.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (115.1%) - may indicate over-commenting
+  - Location: client/src/types/wizard.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (87.5%) - may indicate over-commenting
+  - Location: client/src/types/wizardDevOptions.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/src/utils/__tests__/annotationUtils.test.ts
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/src/utils/__tests__/dependencyCleanup.test.ts
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/src/utils/__tests__/factories/globalDataFactory.ts
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/src/utils/__tests__/factories/relationshipFactory.ts
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ℹ️ **INFO**: High comment density (44.4%) - may indicate over-commenting
+  - Location: client/src/utils/api/betaFeedbackApi.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (66.7%) - may indicate over-commenting
+  - Location: client/src/utils/api/propertyMappingsApi.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (77.1%) - may indicate over-commenting
+  - Location: client/src/utils/booking/PartFinal.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ⚠️ **WARNING**: Low comment density (4.1%) - consider adding more comments
+  - Location: client/src/utils/booking/__tests__/confirmationStepData.test.ts
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (2.7%) - consider adding more comments
+  - Location: client/src/utils/booking/appointmentDataBuilders.ts
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ℹ️ **INFO**: High comment density (96.6%) - may indicate over-commenting
+  - Location: client/src/utils/booking/dateRangeValidation.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (50.5%) - may indicate over-commenting
+  - Location: client/src/utils/booking/partFinalizer.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (120.8%) - may indicate over-commenting
+  - Location: client/src/utils/booking/partsTotals.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (86.2%) - may indicate over-commenting
+  - Location: client/src/utils/booking/pricingCascadeResolver.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (46.0%) - may indicate over-commenting
+  - Location: client/src/utils/booking/slotGenerationValidation.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (72.2%) - may indicate over-commenting
+  - Location: client/src/utils/booking/slotTimeUtils.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (75.4%) - may indicate over-commenting
+  - Location: client/src/utils/booking/timeSlotMatching.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (178.6%) - may indicate over-commenting
+  - Location: client/src/utils/booking/timeSlotTypes.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (85.7%) - may indicate over-commenting
+  - Location: client/src/utils/collections/appendIfMissingById.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (50.0%) - may indicate over-commenting
+  - Location: client/src/utils/collections/arrayDiff.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (100.0%) - may indicate over-commenting
+  - Location: client/src/utils/collections/findById.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (117.6%) - may indicate over-commenting
+  - Location: client/src/utils/debug/windowDebug.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (109.5%) - may indicate over-commenting
+  - Location: client/src/utils/dev/formatDevPanelData.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (41.3%) - may indicate over-commenting
+  - Location: client/src/utils/differentialScheduling.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (155.6%) - may indicate over-commenting
+  - Location: client/src/utils/entities/entityFieldAccess.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (100.0%) - may indicate over-commenting
+  - Location: client/src/utils/entities/entityFieldPatch.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (42.1%) - may indicate over-commenting
+  - Location: client/src/utils/errors/axiosErrorUtils.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (74.5%) - may indicate over-commenting
+  - Location: client/src/utils/eventAttendeeUtils.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (87.5%) - may indicate over-commenting
+  - Location: client/src/utils/forms/fieldComponentDispatcher.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (44.7%) - may indicate over-commenting
+  - Location: client/src/utils/forms/fieldLocationDispatcher.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (117.4%) - may indicate over-commenting
+  - Location: client/src/utils/forms/fieldSorting.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ⚠️ **WARNING**: Low comment density (1.0%) - consider adding more comments
+  - Location: client/src/utils/forms/formElementPatching.ts
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ℹ️ **INFO**: High comment density (56.7%) - may indicate over-commenting
+  - Location: client/src/utils/forms/getFieldKeys.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (63.2%) - may indicate over-commenting
+  - Location: client/src/utils/safeDefaults.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/src/utils/time/timeFormatting.ts
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ℹ️ **INFO**: High comment density (106.7%) - may indicate over-commenting
+  - Location: client/src/utils/transformers/entityTransformers.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (87.2%) - may indicate over-commenting
+  - Location: client/src/utils/transformers/fetchToBusinessTransformer.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (53.3%) - may indicate over-commenting
+  - Location: client/src/utils/transformers/fetchToGlobalTransformer.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (52.0%) - may indicate over-commenting
+  - Location: client/src/utils/transformers/transformerCollections.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (44.8%) - may indicate over-commenting
+  - Location: client/src/utils/transformers/transformerPrimitives.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/src/views/admin/entities/PartInstanceList.vue
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/src/views/admin/entities/PartShapeForm.vue
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/src/views/admin/entities/PartShapeList.vue
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.3%) - consider adding more comments
+  - Location: client/src/views/admin/tabs/BusinessControlsTab.vue
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/src/views/admin/tabs/BusinessRulesTab.vue
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/src/views/admin/tabs/PropertyMappingsTab.vue
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/src/views/admin/tabs/RuleFormDialog.vue
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.7%) - consider adding more comments
+  - Location: client/src/views/admin/tabs/components/AppointmentsCreateForm.vue
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/src/views/admin/tabs/components/AppointmentsTable.vue
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/src/views/admin/tabs/components/CapacityConstraintsPanel.vue
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.5%) - consider adding more comments
+  - Location: client/src/views/admin/tabs/components/FeeCalibrationPanel.vue
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/src/views/admin/tabs/components/GridConfigPanel.vue
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: client/src/views/admin/tabs/components/RangeConstraintsPanel.vue
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ℹ️ **INFO**: High comment density (68.4%) - may indicate over-commenting
+  - Location: client/src/views/booking/BookingWizardView.vue
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: server/package-lock.json
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (0.0%) - consider adding more comments
+  - Location: server/package.json
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ℹ️ **INFO**: High comment density (50.0%) - may indicate over-commenting
+  - Location: server/src/app.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (56.7%) - may indicate over-commenting
+  - Location: server/src/config/brightMlsFoundationMapping.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ⚠️ **WARNING**: Low comment density (4.7%) - consider adding more comments
+  - Location: server/src/db/models/beta/beta_feedback.ts
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ⚠️ **WARNING**: Low comment density (4.4%) - consider adding more comments
+  - Location: server/src/db/models/index.ts
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ℹ️ **INFO**: High comment density (243.8%) - may indicate over-commenting
+  - Location: server/src/middlewares/security.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (44.4%) - may indicate over-commenting
+  - Location: server/src/routes/external/oauthCallbackRouter.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (41.9%) - may indicate over-commenting
+  - Location: server/src/routes/helpers/createCrudRouter.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (61.1%) - may indicate over-commenting
+  - Location: server/src/routes/helpers/crudRouterTypes.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (70.6%) - may indicate over-commenting
+  - Location: server/src/routes/helpers/dataController.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (183.3%) - may indicate over-commenting
+  - Location: server/src/routes/helpers/requestHelpers.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (73.9%) - may indicate over-commenting
+  - Location: server/src/routes/helpers/routerValidators.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (80.0%) - may indicate over-commenting
+  - Location: server/src/routes/internal/admin-metadata/adminMetadataErrorHandler.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (56.3%) - may indicate over-commenting
+  - Location: server/src/routes/internal/admin-metadata/adminMetadataHelpers.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (74.6%) - may indicate over-commenting
+  - Location: server/src/routes/internal/admin-metadata/adminMetadataValidators.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (80.0%) - may indicate over-commenting
+  - Location: server/src/routes/internal/admin-primitive-metadata/adminPrimitiveMetadataErrorHandler.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (69.0%) - may indicate over-commenting
+  - Location: server/src/routes/internal/admin-primitive-metadata/adminPrimitiveMetadataHelpers.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (74.6%) - may indicate over-commenting
+  - Location: server/src/routes/internal/admin-primitive-metadata/adminPrimitiveMetadataValidators.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (80.0%) - may indicate over-commenting
+  - Location: server/src/routes/internal/admin-relationship-metadata/adminRelationshipMetadataErrorHandler.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (177.8%) - may indicate over-commenting
+  - Location: server/src/routes/internal/admin-relationship-metadata/adminRelationshipMetadataHelpers.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (74.5%) - may indicate over-commenting
+  - Location: server/src/routes/internal/admin-relationship-metadata/adminRelationshipMetadataValidators.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (77.8%) - may indicate over-commenting
+  - Location: server/src/routes/internal/appointment-fees/appointmentFeeConstants.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (50.0%) - may indicate over-commenting
+  - Location: server/src/routes/internal/appointment-fees/appointmentFeeCrudRouter.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (140.0%) - may indicate over-commenting
+  - Location: server/src/routes/internal/appointment-fees/appointmentFeeRouter.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (128.6%) - may indicate over-commenting
+  - Location: server/src/routes/internal/appointments/appointmentConstants.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (43.9%) - may indicate over-commenting
+  - Location: server/src/routes/internal/appointments/appointmentHelpers.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (66.7%) - may indicate over-commenting
+  - Location: server/src/routes/internal/availabilityValidators.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (58.3%) - may indicate over-commenting
+  - Location: server/src/routes/internal/beta-feedback/betaFeedbackErrorHandler.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (64.1%) - may indicate over-commenting
+  - Location: server/src/routes/internal/businessRulesValidators.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (56.4%) - may indicate over-commenting
+  - Location: server/src/routes/internal/entities/entityBulkRouter.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (74.4%) - may indicate over-commenting
+  - Location: server/src/routes/internal/entities/entityErrorHandler.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (42.3%) - may indicate over-commenting
+  - Location: server/src/routes/internal/entities/entityHelpers.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (118.8%) - may indicate over-commenting
+  - Location: server/src/routes/internal/entities/entitySanitizers.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (96.5%) - may indicate over-commenting
+  - Location: server/src/routes/internal/properties/propertyConstants.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (74.2%) - may indicate over-commenting
+  - Location: server/src/routes/internal/properties/propertyHelpers.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (40.1%) - may indicate over-commenting
+  - Location: server/src/routes/internal/properties/propertyTypesRouter.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (77.4%) - may indicate over-commenting
+  - Location: server/src/routes/internal/relationships/relationshipErrorHandler.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (43.8%) - may indicate over-commenting
+  - Location: server/src/routes/internal/relationships/relationshipHelpers.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (143.8%) - may indicate over-commenting
+  - Location: server/src/routes/internal/relationships/relationshipValidators.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (50.5%) - may indicate over-commenting
+  - Location: server/src/scripts/helpers/calendarParsingHelpers.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (106.9%) - may indicate over-commenting
+  - Location: server/src/services/addressGeocodingCache.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (41.2%) - may indicate over-commenting
+  - Location: server/src/services/brightMls/brightMlsAuth.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (95.4%) - may indicate over-commenting
+  - Location: server/src/services/calendarEventsCache.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (56.3%) - may indicate over-commenting
+  - Location: server/src/services/google/calendar/calendarTypes.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (73.9%) - may indicate over-commenting
+  - Location: server/src/services/google/maps/mapsErrorHandler.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (41.9%) - may indicate over-commenting
+  - Location: server/src/services/google/maps/mapsTypes.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (60.3%) - may indicate over-commenting
+  - Location: server/src/services/invites/inviteContextBuilder.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (54.7%) - may indicate over-commenting
+  - Location: server/src/services/invites/templateResolver.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (56.7%) - may indicate over-commenting
+  - Location: server/src/services/rateLimiter.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ⚠️ **WARNING**: Low comment density (4.8%) - consider adding more comments
+  - Location: server/src/test/setup/seedTestData.ts
+  - Suggestion: Add comments for complex logic, architectural patterns, and framework transitions
+- ℹ️ **INFO**: High comment density (50.0%) - may indicate over-commenting
+  - Location: server/src/types/brightMls.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (166.7%) - may indicate over-commenting
+  - Location: server/src/utils/arrayNormalize.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (62.4%) - may indicate over-commenting
+  - Location: server/src/utils/availabilities/availabiltiesDbUtils.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (175.0%) - may indicate over-commenting
+  - Location: server/src/utils/envHelpers.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (63.2%) - may indicate over-commenting
+  - Location: server/src/utils/safeDefaults.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (56.5%) - may indicate over-commenting
+  - Location: server/src/utils/userTypeMapping.ts
+  - Suggestion: Review comments - some may be redundant or unnecessary
+- ℹ️ **INFO**: High comment density (183.3%) - may indicate over-commenting
+  - Location: server/tsconfig.json
+  - Suggestion: Review comments - some may be redundant or unnecessary
+
+### Recommendations
+
+- Review 495 file(s) with comment issues
+- Use /comment-review [file] to get specific suggestions
+- Add STRUCTURED comments for complex logic and architectural patterns
+- Add REFERENCE comments when reusing established patterns
+
+---
+
+## Security Audit
+
+**Status:** ❌ FAIL
+**Baseline Score:** 0/100
+
+Security audit failed. 37 error(s), 10 warning(s).
+
+### Findings
+
+- ❌ **ERROR**: 1. Dependency Vulnerabilities: **Dependency vulnerabilities detected**
+  - Location: 1. Dependency Vulnerabilities
+  - Suggestion: Review security guidelines and fix security issues
+- ❌ **ERROR**: 1. Dependency Vulnerabilities: -  **@eslint/config-array@unknown**
+  - Location: 1. Dependency Vulnerabilities
+  - Suggestion: Review security guidelines and fix security issues
+- ❌ **ERROR**: 1. Dependency Vulnerabilities: -  **@eslint/eslintrc@unknown**
+  - Location: 1. Dependency Vulnerabilities
+  - Suggestion: Review security guidelines and fix security issues
+- ❌ **ERROR**: 1. Dependency Vulnerabilities: -  **@jest/core@unknown**
+  - Location: 1. Dependency Vulnerabilities
+  - Suggestion: Review security guidelines and fix security issues
+- ❌ **ERROR**: 1. Dependency Vulnerabilities: -  **@jest/expect@unknown**
+  - Location: 1. Dependency Vulnerabilities
+  - Suggestion: Review security guidelines and fix security issues
+- ❌ **ERROR**: 1. Dependency Vulnerabilities: -  **@jest/globals@unknown**
+  - Location: 1. Dependency Vulnerabilities
+  - Suggestion: Review security guidelines and fix security issues
+- ❌ **ERROR**: 1. Dependency Vulnerabilities: -  **@jest/reporters@unknown**
+  - Location: 1. Dependency Vulnerabilities
+  - Suggestion: Review security guidelines and fix security issues
+- ❌ **ERROR**: 1. Dependency Vulnerabilities: -  **@jest/transform@unknown**
+  - Location: 1. Dependency Vulnerabilities
+  - Suggestion: Review security guidelines and fix security issues
+- ❌ **ERROR**: 1. Dependency Vulnerabilities: -  **@typescript-eslint/eslint-plugin@unknown**
+  - Location: 1. Dependency Vulnerabilities
+  - Suggestion: Review security guidelines and fix security issues
+- ❌ **ERROR**: 1. Dependency Vulnerabilities: -  **@typescript-eslint/parser@unknown**
+  - Location: 1. Dependency Vulnerabilities
+  - Suggestion: Review security guidelines and fix security issues
+- ❌ **ERROR**: 1. Dependency Vulnerabilities: -  **@typescript-eslint/type-utils@unknown**
+  - Location: 1. Dependency Vulnerabilities
+  - Suggestion: Review security guidelines and fix security issues
+- ❌ **ERROR**: 1. Dependency Vulnerabilities: -  **@typescript-eslint/typescript-estree@unknown**
+  - Location: 1. Dependency Vulnerabilities
+  - Suggestion: Review security guidelines and fix security issues
+- ❌ **ERROR**: 1. Dependency Vulnerabilities: -  **@typescript-eslint/utils@unknown**
+  - Location: 1. Dependency Vulnerabilities
+  - Suggestion: Review security guidelines and fix security issues
+- ❌ **ERROR**: 1. Dependency Vulnerabilities: -  **babel-jest@unknown**
+  - Location: 1. Dependency Vulnerabilities
+  - Suggestion: Review security guidelines and fix security issues
+- ❌ **ERROR**: 1. Dependency Vulnerabilities: -  **babel-plugin-istanbul@unknown**
+  - Location: 1. Dependency Vulnerabilities
+  - Suggestion: Review security guidelines and fix security issues
+- ❌ **ERROR**: 1. Dependency Vulnerabilities: -  **create-jest@unknown**
+  - Location: 1. Dependency Vulnerabilities
+  - Suggestion: Review security guidelines and fix security issues
+- ❌ **ERROR**: 1. Dependency Vulnerabilities: -  **editorconfig@unknown**
+  - Location: 1. Dependency Vulnerabilities
+  - Suggestion: Review security guidelines and fix security issues
+- ❌ **ERROR**: 1. Dependency Vulnerabilities: -  **eslint@unknown**
+  - Location: 1. Dependency Vulnerabilities
+  - Suggestion: Review security guidelines and fix security issues
+- ❌ **ERROR**: 1. Dependency Vulnerabilities: -  **gaxios@unknown**
+  - Location: 1. Dependency Vulnerabilities
+  - Suggestion: Review security guidelines and fix security issues
+- ❌ **ERROR**: 1. Dependency Vulnerabilities: -  **glob@unknown**
+  - Location: 1. Dependency Vulnerabilities
+  - Suggestion: Review security guidelines and fix security issues
+- ❌ **ERROR**: 1. Dependency Vulnerabilities: -  **jest@unknown**
+  - Location: 1. Dependency Vulnerabilities
+  - Suggestion: Review security guidelines and fix security issues
+- ❌ **ERROR**: 1. Dependency Vulnerabilities: -  **jest-circus@unknown**
+  - Location: 1. Dependency Vulnerabilities
+  - Suggestion: Review security guidelines and fix security issues
+- ❌ **ERROR**: 1. Dependency Vulnerabilities: -  **jest-cli@unknown**
+  - Location: 1. Dependency Vulnerabilities
+  - Suggestion: Review security guidelines and fix security issues
+- ❌ **ERROR**: 1. Dependency Vulnerabilities: -  **jest-config@unknown**
+  - Location: 1. Dependency Vulnerabilities
+  - Suggestion: Review security guidelines and fix security issues
+- ❌ **ERROR**: 1. Dependency Vulnerabilities: -  **jest-resolve-dependencies@unknown**
+  - Location: 1. Dependency Vulnerabilities
+  - Suggestion: Review security guidelines and fix security issues
+- ❌ **ERROR**: 1. Dependency Vulnerabilities: -  **jest-runner@unknown**
+  - Location: 1. Dependency Vulnerabilities
+  - Suggestion: Review security guidelines and fix security issues
+- ❌ **ERROR**: 1. Dependency Vulnerabilities: -  **jest-runtime@unknown**
+  - Location: 1. Dependency Vulnerabilities
+  - Suggestion: Review security guidelines and fix security issues
+- ❌ **ERROR**: 1. Dependency Vulnerabilities: -  **jest-snapshot@unknown**
+  - Location: 1. Dependency Vulnerabilities
+  - Suggestion: Review security guidelines and fix security issues
+- ❌ **ERROR**: 1. Dependency Vulnerabilities: -  **js-beautify@unknown**
+  - Location: 1. Dependency Vulnerabilities
+  - Suggestion: Review security guidelines and fix security issues
+- ❌ **ERROR**: 1. Dependency Vulnerabilities: -  **minimatch@unknown**
+  - Location: 1. Dependency Vulnerabilities
+  - Suggestion: Review security guidelines and fix security issues
+- ❌ **ERROR**: 1. Dependency Vulnerabilities: -  **nodemon@unknown**
+  - Location: 1. Dependency Vulnerabilities
+  - Suggestion: Review security guidelines and fix security issues
+- ❌ **ERROR**: 1. Dependency Vulnerabilities: -  **rimraf@unknown**
+  - Location: 1. Dependency Vulnerabilities
+  - Suggestion: Review security guidelines and fix security issues
+- ❌ **ERROR**: 1. Dependency Vulnerabilities: -  **sequelize-cli@unknown**
+  - Location: 1. Dependency Vulnerabilities
+  - Suggestion: Review security guidelines and fix security issues
+- ❌ **ERROR**: 1. Dependency Vulnerabilities: -  **test-exclude@unknown**
+  - Location: 1. Dependency Vulnerabilities
+  - Suggestion: Review security guidelines and fix security issues
+- ❌ **ERROR**: 1. Dependency Vulnerabilities: -  **ts-jest@unknown**
+  - Location: 1. Dependency Vulnerabilities
+  - Suggestion: Review security guidelines and fix security issues
+- ⚠️ **WARNING**: 1. Dependency Vulnerabilities: -  **@babel/helpers@unknown**
+  - Location: 1. Dependency Vulnerabilities
+  - Suggestion: Review security best practices
+- ⚠️ **WARNING**: 1. Dependency Vulnerabilities: -  **ajv@unknown**
+  - Location: 1. Dependency Vulnerabilities
+  - Suggestion: Review security best practices
+- ⚠️ **WARNING**: 1. Dependency Vulnerabilities: -  **js-yaml@unknown**
+  - Location: 1. Dependency Vulnerabilities
+  - Suggestion: Review security best practices
+- ⚠️ **WARNING**: 3. Security Configuration: -  **server/src/middlewares/errorHandler.ts**
+  - Location: 3. Security Configuration
+  - Suggestion: Review security best practices
+- ⚠️ **WARNING**: 3. Security Configuration: -  **server/src/routes/external/oauthCallbackRouter.ts**
+  - Location: 3. Security Configuration
+  - Suggestion: Review security best practices
+- ⚠️ **WARNING**: 3. Security Configuration: -  **server/src/routes/internal/relationships/relationshipCrudRouter.ts**
+  - Location: 3. Security Configuration
+  - Suggestion: Review security best practices
+- ⚠️ **WARNING**: 3. Security Configuration: -  **app configuration**
+  - Location: 3. Security Configuration
+  - Suggestion: Review security best practices
+- ⚠️ **WARNING**: 3. Security Configuration: -  **session configuration**
+  - Location: 3. Security Configuration
+  - Suggestion: Review security best practices
+- ⚠️ **WARNING**: 3. Security Configuration: -  **session configuration**
+  - Location: 3. Security Configuration
+  - Suggestion: Review security best practices
+- ⚠️ **WARNING**: 5. Authentication Patterns: -  **package.json**
+  - Location: 5. Authentication Patterns
+  - Suggestion: Review security best practices
+- ❌ **ERROR**: 6. IDOR Vulnerabilities: **1 security check(s) found issues**
+  - Location: 6. IDOR Vulnerabilities
+  - Suggestion: Review security guidelines and fix security issues
+- ❌ **ERROR**: 6. IDOR Vulnerabilities: | Dependencies |  Issues Found |
+  - Location: 6. IDOR Vulnerabilities
+  - Suggestion: Review security guidelines and fix security issues
+
+### Recommendations
+
+- Fix 37 security error(s) immediately
+- Review SECURITY_GUIDELINES.md for best practices
+- Address 10 security warning(s)
+- Ensure all API endpoints have proper authentication
+- Validate all user inputs on server side
+
+---
+
+## Planning Audit
+
+**Status:** ❌ FAIL
+**Baseline Score:** 58/100
+
+Planning document partially meets quality standards. 4 missing section(s).
+
+### Findings
+
+- ⚠️ **WARNING**: Missing or incomplete section: Overview
+  - Location: .project-manager/features/calendar-appointment-availability/phases/phase-3.6-guide.md
+  - Suggestion: Add or complete Overview section in planning document
+- ⚠️ **WARNING**: Missing or incomplete section: Objectives
+  - Location: .project-manager/features/calendar-appointment-availability/phases/phase-3.6-guide.md
+  - Suggestion: Add or complete Objectives section in planning document
+- ⚠️ **WARNING**: Missing or incomplete section: Tasks
+  - Location: .project-manager/features/calendar-appointment-availability/phases/phase-3.6-guide.md
+  - Suggestion: Add or complete Tasks section in planning document
+- ⚠️ **WARNING**: Missing or incomplete section: Success Criteria
+  - Location: .project-manager/features/calendar-appointment-availability/phases/phase-3.6-guide.md
+  - Suggestion: Add or complete Success Criteria section in planning document
+- ℹ️ **INFO**: No alternatives considered section found
+  - Location: .project-manager/features/calendar-appointment-availability/phases/phase-3.6-guide.md
+  - Suggestion: Consider documenting alternatives for major architectural decisions
+
+### Recommendations
+
+- Add missing sections: Overview, Objectives, Tasks, Success Criteria
+- Planning document needs significant improvement
+
+---
+
+## Docs Audit
+
+**Status:** ❌ FAIL
+**Baseline Score:** 65/100
+
+1/3 documents exist. 5 issue(s) found.
+
+### Findings
+
+- ⚠️ **WARNING**: Guide missing or incomplete section: Overview
+  - Location: .project-manager/features/calendar-appointment-availability/phases/phase-3.6-guide.md
+  - Suggestion: Add or complete Overview section in guide
+- ⚠️ **WARNING**: Guide missing or incomplete section: Objectives
+  - Location: .project-manager/features/calendar-appointment-availability/phases/phase-3.6-guide.md
+  - Suggestion: Add or complete Objectives section in guide
+- ⚠️ **WARNING**: Guide missing or incomplete section: Tasks
+  - Location: .project-manager/features/calendar-appointment-availability/phases/phase-3.6-guide.md
+  - Suggestion: Add or complete Tasks section in guide
+- ⚠️ **WARNING**: Log document not found for phase 3.6
+  - Location: phase log
+  - Suggestion: Create log document to track progress
+- ⚠️ **WARNING**: Handover document not found for phase 3.6
+  - Location: phase handoff
+  - Suggestion: Create handover document for transition context
+
+### Recommendations
+
+- Create log document
+- Create handover document
+
+---
+
+## Vue-architecture Audit
+
+**Status:** ❌ FAIL
+**Baseline Score:** 0/100
+
+Scanned 149 .vue file(s); found 4 error(s), 14 warning(s).
+
+### Findings
+
+- ⚠️ **WARNING**: Component script is large (211 non-empty lines). This often indicates logic creep.
+  - Location: client/src/@core/components/TheCustomizer.vue
+  - Suggestion: Move domain rules/orchestration into composables; keep only UI state and event wiring.
+- ❌ **ERROR**: Component script references a network/fetch client. Data fetching should be moved into composables/stores/services.
+  - Location: client/src/components/admin/dev/ApiDevPanel.vue
+  - Suggestion: Extract to a composable (use*Query) or store/service and keep component as wiring + UI behavior.
+- ⚠️ **WARNING**: Component script is large (411 non-empty lines). This often indicates logic creep.
+  - Location: client/src/components/admin/generic/EntityCard.vue
+  - Suggestion: Move domain rules/orchestration into composables; keep only UI state and event wiring.
+- ⚠️ **WARNING**: Component script is large (196 non-empty lines). This often indicates logic creep.
+  - Location: client/src/components/admin/generic/EntityCardSubPanels.vue
+  - Suggestion: Move domain rules/orchestration into composables; keep only UI state and event wiring.
+- ⚠️ **WARNING**: Component script is large (187 non-empty lines). This often indicates logic creep.
+  - Location: client/src/components/admin/generic/fields/FieldRenderer.vue
+  - Suggestion: Move domain rules/orchestration into composables; keep only UI state and event wiring.
+- ⚠️ **WARNING**: Component script is large (207 non-empty lines). This often indicates logic creep.
+  - Location: client/src/components/admin/generic/fields/SelectInputs.vue
+  - Suggestion: Move domain rules/orchestration into composables; keep only UI state and event wiring.
+- ⚠️ **WARNING**: Component script is large (215 non-empty lines). This often indicates logic creep.
+  - Location: client/src/components/admin/metadata/AdminPrimitiveMetadataEditor.vue
+  - Suggestion: Move domain rules/orchestration into composables; keep only UI state and event wiring.
+- ❌ **ERROR**: Component script references a network/fetch client. Data fetching should be moved into composables/stores/services.
+  - Location: client/src/components/booking/BookingWizard.vue
+  - Suggestion: Extract to a composable (use*Query) or store/service and keep component as wiring + UI behavior.
+- ⚠️ **WARNING**: Component script is large (235 non-empty lines). This often indicates logic creep.
+  - Location: client/src/components/booking/BookingWizard.vue
+  - Suggestion: Move domain rules/orchestration into composables; keep only UI state and event wiring.
+- ⚠️ **WARNING**: Component script is large (257 non-empty lines). This often indicates logic creep.
+  - Location: client/src/components/booking/dev/DevPanelsContainer.vue
+  - Suggestion: Move domain rules/orchestration into composables; keep only UI state and event wiring.
+- ❌ **ERROR**: Component script references a network/fetch client. Data fetching should be moved into composables/stores/services.
+  - Location: client/src/components/booking/steps/PropertyDetailsStep.vue
+  - Suggestion: Extract to a composable (use*Query) or store/service and keep component as wiring + UI behavior.
+- ❌ **ERROR**: Component script references a network/fetch client. Data fetching should be moved into composables/stores/services.
+  - Location: client/src/components/common/AddressAutocomplete.vue
+  - Suggestion: Extract to a composable (use*Query) or store/service and keep component as wiring + UI behavior.
+- ⚠️ **WARNING**: Component script is large (271 non-empty lines). This often indicates logic creep.
+  - Location: client/src/components/common/AddressAutocomplete.vue
+  - Suggestion: Move domain rules/orchestration into composables; keep only UI state and event wiring.
+- ⚠️ **WARNING**: Component script is large (388 non-empty lines). This often indicates logic creep.
+  - Location: client/src/views/admin/tabs/InstancesTab.vue
+  - Suggestion: Move domain rules/orchestration into composables; keep only UI state and event wiring.
+- ⚠️ **WARNING**: Component defines many local functions (10). Consider extracting reusable/domain logic into composables.
+  - Location: client/src/views/admin/tabs/InstancesTab.vue
+  - Suggestion: If functions implement business rules or shared transforms, move them into composables/utilities.
+- ⚠️ **WARNING**: Component script is large (377 non-empty lines). This often indicates logic creep.
+  - Location: client/src/views/admin/tabs/ShapesTab.vue
+  - Suggestion: Move domain rules/orchestration into composables; keep only UI state and event wiring.
+- ⚠️ **WARNING**: Component defines many local functions (18). Consider extracting reusable/domain logic into composables.
+  - Location: client/src/views/admin/tabs/ShapesTab.vue
+  - Suggestion: If functions implement business rules or shared transforms, move them into composables/utilities.
+- ⚠️ **WARNING**: Component defines many local functions (9). Consider extracting reusable/domain logic into composables.
+  - Location: client/src/views/admin/tabs/components/AppointmentsTable.vue
+  - Suggestion: If functions implement business rules or shared transforms, move them into composables/utilities.
+
+### Recommendations
+
+- Review `.project-manager/patterns/vue-architecture-contract.md` and move domain logic out of components.
+- Review `.project-manager/patterns/composable-taxonomy.md` and standardize composable naming/return shapes.
+
+---
+
+## Overall Recommendations
+
+- Review 495 file(s) with comment issues
+- Use /comment-review [file] to get specific suggestions
+- Add STRUCTURED comments for complex logic and architectural patterns
+- Add REFERENCE comments when reusing established patterns
+- Fix 37 security error(s) immediately
+- Review SECURITY_GUIDELINES.md for best practices
+- Address 10 security warning(s)
+- Ensure all API endpoints have proper authentication
+- Validate all user inputs on server side
+- Add missing sections: Overview, Objectives, Tasks, Success Criteria
+- Planning document needs significant improvement
+- Create log document
+- Create handover document
+- Review `.project-manager/patterns/vue-architecture-contract.md` and move domain logic out of components.
+- Review `.project-manager/patterns/composable-taxonomy.md` and standardize composable naming/return shapes.

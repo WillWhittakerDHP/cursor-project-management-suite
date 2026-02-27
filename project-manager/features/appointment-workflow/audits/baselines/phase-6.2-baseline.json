@@ -1,0 +1,11 @@
+{
+  "tier": "phase",
+  "identifier": "6.2",
+  "featureName": "appointment-workflow",
+  "timestamp": "2026-02-23T19:08:09.300Z",
+  "scores": {
+    "security": 0,
+    "docs": 75,
+    "vue-architecture": 0
+  }
+}

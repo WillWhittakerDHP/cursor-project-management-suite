@@ -18,4 +18,15 @@ export { FileCache } from './file-cache';
 export { WorkflowCommandContext } from './command-context';
 export { updateCurrentFeature } from './update-current-feature';
 export type { UpdateCurrentFeatureResult } from './update-current-feature';
+export {
+  readTierScope,
+  writeTierScope,
+  updateTierScope,
+  clearTierScope,
+  resolveTierId,
+  resolveTierName,
+  formatScopeDisplay,
+  formatScopeCommitPrefix,
+} from './tier-scope';
+export type { TierScope, TierScopeEntry, UpdateScopeResult } from './tier-scope';
 

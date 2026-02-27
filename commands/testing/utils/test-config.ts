@@ -53,8 +53,8 @@ export interface TestConfig {
 const isNonInteractive = process.env.CI === 'true' || 
                          process.env.CURSOR_NON_INTERACTIVE === 'true';
 
-// Master switch: tests default to OFF until TEST_ENABLED=true
-const testsEnabled = process.env.TEST_ENABLED === 'true';
+// Master switch: tests on when TEST_ENABLED=true or APP_STAGE=staging
+const testsEnabled = process.env.TEST_ENABLED === 'true' || process.env.APP_STAGE === 'staging';
 
 // Load from environment variables with defaults
 // When testsEnabled is false, all sub-features also default to false.

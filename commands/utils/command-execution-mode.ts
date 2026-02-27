@@ -25,11 +25,13 @@ export interface CommandExecutionOptions {
 
 /**
  * Resolve the execution mode from options.
- * Default is 'execute' for backward compatibility — existing call sites
- * expect side effects unless the caller explicitly requests 'plan'.
+ * defaultMode: used when options.mode is not set (e.g. 'plan' for tier-start, 'execute' for tier-end).
  */
-export function resolveCommandExecutionMode(options?: CommandExecutionOptions): CommandExecutionMode {
-  return options?.mode ?? 'execute';
+export function resolveCommandExecutionMode(
+  options?: CommandExecutionOptions,
+  defaultMode: CommandExecutionMode = 'execute'
+): CommandExecutionMode {
+  return options?.mode ?? defaultMode;
 }
 
 export function isPlanMode(mode: CommandExecutionMode): boolean {
@@ -55,4 +57,47 @@ export function modeGateText(cursorMode: CursorMode, commandName?: string): stri
     return `**Mode gate:** Ensure Plan mode (Ask mode) before running${cmd} so CreatePlan and AskQuestion are available.`;
   }
   return `**Mode gate:** Ensure Agent mode before executing changes${cmd}.`;
+}
+
+/**
+ * Block returned by enforceModeSwitch for prepending to command output.
+ * States the required Cursor mode and workflow reminder.
+ */
+export interface ModeEnforcementBlock {
+  requiredMode: CursorMode;
+  text: string;
+}
+
+/**
+ * Produces a short mode-enforcement header for prepending to command output.
+ * States the required Cursor mode and result status only. All behavioral rules
+ * (what tools to use, when to cascade, how to handle failures) live in the
+ * playbook: START_END_PLAYBOOK_STRUCTURE.md. Code must not duplicate them here.
+ *
+ * @param requiredMode - 'plan' or 'agent'
+ * @param commandName - e.g. 'session-start', 'phase-end'
+ * @param reason - 'normal' (default) or 'failure' — changes the header label
+ */
+export function enforceModeSwitch(
+  requiredMode: CursorMode,
+  commandName: string,
+  reason: 'normal' | 'failure' = 'normal'
+): ModeEnforcementBlock {
+  const cmd = `\`/${commandName}\``;
+  if (requiredMode === 'plan' && reason === 'failure') {
+    return {
+      requiredMode: 'plan',
+      text: `## STOP — ${cmd} Failed — Plan (Ask) Mode Required\n\nSee playbook routing: "If not success (HARD STOP)".`,
+    };
+  }
+  if (requiredMode === 'plan') {
+    return {
+      requiredMode: 'plan',
+      text: `## Mode: Plan (Ask) — ${cmd}\n\nSee playbook routing for this \`reasonCode\`.`,
+    };
+  }
+  return {
+    requiredMode: 'agent',
+    text: `## Mode: Agent — ${cmd}\n\nSee playbook routing for this \`reasonCode\`.`,
+  };
 }

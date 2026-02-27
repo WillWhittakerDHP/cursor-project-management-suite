@@ -12,8 +12,8 @@
 import { WorkflowPathResolver } from './path-resolver';
 import { readFile, readdir } from 'fs/promises';
 import { join } from 'path';
-import { access } from 'fs/promises';
 import { execSync } from 'child_process';
+import { readTierScope, resolveTierId } from './tier-scope';
 
 /**
  * FeatureContext class
@@ -45,30 +45,20 @@ export class FeatureContext {
 
   /**
    * Get current feature context
-   * 
+   *
    * Detection order:
-   * 1. Check `.project-manager/.current-feature` config file
+   * 1. Read `.project-manager/.tier-scope` (feature.id)
    * 2. Fall back to git branch name (removes common prefixes)
-   * 
+   *
    * Throws error if detection fails - no fallback to 'vue-migration'
-   * 
+   *
    * @returns FeatureContext instance
    * @throws Error if feature cannot be detected
    */
   static async getCurrent(): Promise<FeatureContext> {
-    const PROJECT_ROOT = process.cwd();
-    const configPath = join(PROJECT_ROOT, '.project-manager/.current-feature');
-
-    // Try config file first
-    try {
-      await access(configPath);
-      const content = await readFile(configPath, 'utf-8');
-      const featureName = content.trim();
-      if (featureName) {
-        return new FeatureContext(featureName);
-      }
-    } catch (_error) {
-      // Config file doesn't exist or is empty - continue to git branch detection
+    const scope = await readTierScope();
+    if (scope.feature?.id) {
+      return new FeatureContext(scope.feature.id);
     }
 
     // Fall back to git branch detection
@@ -91,16 +81,16 @@ export class FeatureContext {
         `Could not auto-detect feature from git branch.\n` +
         `Error: ${_error instanceof Error ? _error.message : String(_error)}\n\n` +
         `Available features: ${availableFeatures.length > 0 ? availableFeatures.join(', ') : 'none found'}\n` +
-        `Please specify feature name explicitly or set .project-manager/.current-feature config file.`
+        `Please specify feature name explicitly or set .project-manager/.tier-scope config file.`
       );
     }
 
     // If we get here, detection failed - throw error
     const availableFeatures = await FeatureContext.listAvailableFeatures();
     throw new Error(
-      `Could not auto-detect feature. No config file found and git branch detection failed.\n\n` +
+      `Could not auto-detect feature. No scope in .tier-scope and git branch detection failed.\n\n` +
       `Available features: ${availableFeatures.length > 0 ? availableFeatures.join(', ') : 'none found'}\n` +
-      `Please specify feature name explicitly or set .project-manager/.current-feature config file.`
+      `Please specify feature name explicitly or set .project-manager/.tier-scope (e.g. run /feature-start).`
     );
   }
 
@@ -126,7 +116,7 @@ export class FeatureContext {
 
 /**
  * Resolve feature name: use override if provided, otherwise current context
- * (.project-manager/.current-feature or git branch). Use this instead of any
+ * (.project-manager/.tier-scope or git branch). Use this instead of any
  * hardcoded default feature name.
  *
  * @param override Explicit feature name (e.g. from command args)
@@ -134,8 +124,8 @@ export class FeatureContext {
  * @throws Error if no override and current context cannot be detected
  */
 export async function resolveFeatureName(override?: string): Promise<string> {
-  const trimmed = override?.trim();
-  if (trimmed) return trimmed;
+  const id = await resolveTierId('feature', override);
+  if (id) return id;
   const context = await FeatureContext.getCurrent();
   return context.name;
 }
@@ -144,13 +134,14 @@ const PROJECT_PLAN_PATH = '.project-manager/PROJECT_PLAN.md';
 const FEATURE_SUMMARY_HEADER = '| # | Feature | Status | Directory | Key Dates |';
 
 /**
- * Resolve numeric feature ID to feature name (directory name) from PROJECT_PLAN.md.
- * Reads the Feature Summary table, finds the row where the # column matches featureId,
- * and returns the directory name from the Directory column (e.g. "17" -> "admin-ui-overhaul").
+ * Resolve feature ID to feature name (directory name). Accepts either:
+ * - Numeric string (e.g. "3", "17") → looked up in PROJECT_PLAN.md # column.
+ * - Feature directory name (e.g. "appointment-workflow") → returned as-is when it appears
+ *   in PROJECT_PLAN Directory column or in .project-manager/features/ (e.g. from .tier-scope feature.id).
  *
- * @param featureId Numeric string (e.g. "3", "17") matching the # column in PROJECT_PLAN.md
+ * @param featureId Numeric # or feature directory name
  * @returns Feature name (directory name under .project-manager/features/)
- * @throws Error if PROJECT_PLAN.md cannot be read or no matching feature row is found
+ * @throws Error if PROJECT_PLAN.md cannot be read or no matching feature is found
  */
 export async function resolveFeatureId(featureId: string): Promise<string> {
   const trimmed = featureId.trim();
@@ -175,20 +166,21 @@ export async function resolveFeatureId(featureId: string): Promise<string> {
   const tableEnd = afterHeader.indexOf('\n\n');
   const tableBody = tableEnd === -1 ? afterHeader : afterHeader.slice(0, tableEnd);
   const rows = tableBody.split('\n').filter((line) => line.startsWith('|') && line.includes('|'));
+  const isNumericId = /^\d+$/.test(trimmed);
   for (const row of rows) {
     const cells = row.split('|').map((c) => c.trim()).filter(Boolean);
     if (cells.length < 4) continue;
     const numCell = cells[0];
     const dirCell = cells[3];
-    if (numCell !== trimmed) continue;
     const dirMatch = dirCell.match(/`?features\/([^/`]+)\/?`?/);
     const name = dirMatch ? dirMatch[1] : dirCell.replace(/^`|`$/g, '').replace(/^features\/|\/$/g, '').trim();
-    if (name && name !== '—' && !name.startsWith('—')) {
-      return name;
-    }
-    throw new Error(
-      `resolveFeatureId: feature #${trimmed} has no feature directory in ${PROJECT_PLAN_PATH} (Directory column: "${dirCell}")`
-    );
+    if (!name || name === '—' || name.startsWith('—')) continue;
+    if (isNumericId && numCell === trimmed) return name;
+    if (!isNumericId && name === trimmed) return name;
+  }
+  if (!isNumericId) {
+    const available = await FeatureContext.listAvailableFeatures();
+    if (available.includes(trimmed)) return trimmed;
   }
   throw new Error(
     `resolveFeatureId: no feature found with # = "${trimmed}" in ${PROJECT_PLAN_PATH} Feature Summary table`

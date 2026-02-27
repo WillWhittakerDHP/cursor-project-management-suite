@@ -84,5 +84,5 @@ export const PHASE_CONFIG: TierConfig = {
   },
   replanCommand: undefined, // Set by tier-change when planPhase is passed
   getBranchName: (ctx, id) => `${ctx.feature.name}-phase-${id}`,
-  getParentBranchName: () => null,
+  getParentBranchName: (ctx, _id) => `feature/${ctx.feature.name}`,
 };

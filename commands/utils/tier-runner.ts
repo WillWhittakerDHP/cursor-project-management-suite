@@ -28,6 +28,8 @@ import {
   taskEnd,
   type TaskEndParams,
 } from '../tiers/task/composite/task';
+import type { TierStartResult } from './tier-outcome';
+import type { TierEndResult } from '../tiers/shared/tier-end';
 
 /** Params for feature-start. */
 export interface FeatureStartParams {
@@ -66,19 +68,13 @@ export type TierRunParams =
   | TaskStartParams
   | TaskEndParams;
 
-/** Task-end returns { success, output } (no steps/outcome). */
-export interface TaskEndResult {
-  success: boolean;
-  output: string;
-}
-
-/** Union of all return types: start commands return string; end commands return result objects. */
+/** Union of all return types: start commands return TierStartResult; end commands return result objects with outcome. */
 export type TierRunResult =
-  | string
+  | TierStartResult
   | FeatureEndResult
   | PhaseEndResult
   | SessionEndResult
-  | TaskEndResult;
+  | TierEndResult;
 
 function assertFeatureStartParams(params: TierRunParams): asserts params is FeatureStartParams {
   if (params == null || typeof (params as FeatureStartParams).featureId !== 'string') {

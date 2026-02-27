@@ -58,6 +58,6 @@ export function buildPlanModeResult(
     steps: {
       plan: { success: true, output: planSteps.join('\n') },
     },
-    outcome: buildTierEndOutcome('completed', 'plan', nextAction),
+    outcome: buildTierEndOutcome('completed', 'plan_mode', nextAction),
   };
 }

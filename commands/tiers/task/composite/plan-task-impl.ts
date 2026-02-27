@@ -62,22 +62,39 @@ export async function planTaskImpl(
   try {
     let sessionGuideContent = await context.readSessionGuide(sessionId);
     const escapedTaskId = taskId.replace(/\./g, '\\.');
-    const taskSectionPattern = new RegExp(`### Task ${escapedTaskId}:.*?(?=### Task|$)`, 's');
+    const taskSectionPattern = new RegExp(`(?:- \\[[ x]\\])?\\s*(?:####|###) Task ${escapedTaskId}:.*?(?=(?:- \\[|#### Task|### Task|## |$))`, 's');
     const taskSectionMatch = sessionGuideContent.match(taskSectionPattern);
+    const taskSection = taskSectionMatch ? taskSectionMatch[0] : '';
+
+    const extractField = (name: string): string => {
+      const re = new RegExp(`\\*\\*${name}:\\*\\*\\s*([\\s\\S]*?)(?=\\n\\*\\*|\\n\\n|$)`, 'i');
+      const m = taskSection.match(re);
+      return m ? m[1].trim() : '';
+    };
+    const goal = extractField('Goal');
+    const files = extractField('Files');
+    const approach = extractField('Approach');
+    const checkpoint = extractField('Checkpoint');
+    const needsFill = /\[Fill in\]|\[Files to work with\]|\[What needs to be verified\]/i.test(taskSection)
+      || !goal || !approach || !checkpoint;
 
     if (taskSectionMatch) {
       output.push('## Task Section Found\n');
-      output.push('**Updating task section in session guide...**\n');
-      const updatedTaskSection = `### Task ${taskId}: ${resolvedDescription}
-**Goal:** [Fill in task goal]
-**Files:** 
-- [Files to work with]
-**Approach:** [Fill in approach]
-**Checkpoint:** [What needs to be verified]
-`;
-      sessionGuideContent = sessionGuideContent.replace(taskSectionPattern, updatedTaskSection + '\n\n');
-      await context.documents.writeGuide('session', sessionId, sessionGuideContent);
-      output.push('**Task section updated in session guide.**\n');
+      if (needsFill) {
+        output.push('**Implementation plan fields need to be filled in.**\n');
+        output.push('Fill in **Goal**, **Files**, **Approach**, and **Checkpoint** in the session guide for this task. Then run `/task-start ' + taskId + '` to begin implementation.\n');
+      } else {
+        output.push('## Implementation Plan\n');
+        output.push('This is the plan task-start will use as marching orders for coding:\n\n');
+        output.push('**Goal:** ' + goal + '\n\n');
+        output.push('**Files:**\n' + (files || '(none specified)') + '\n\n');
+        output.push('**Approach:** ' + approach + '\n\n');
+        output.push('**Checkpoint:** ' + checkpoint + '\n\n');
+        output.push('Run `/task-start ' + taskId + '` to begin implementation.\n');
+      }
+      if (!needsFill) {
+        output.push('\n---\n');
+      }
     } else {
       output.push('## Task Section Not Found\n');
       output.push('**Adding new task section to session guide...**\n');
@@ -90,7 +107,7 @@ export async function planTaskImpl(
 `;
       sessionGuideContent += newTaskSection;
       await context.documents.writeGuide('session', sessionId, sessionGuideContent);
-      output.push('**New task section added to session guide.**\n');
+      output.push('**New task section added to session guide.** Fill in goal, files, approach, and checkpoint, then run `/task-start ' + taskId + '`.\n');
     }
 
     output.push('\n---\n');

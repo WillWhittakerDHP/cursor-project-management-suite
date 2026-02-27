@@ -143,8 +143,19 @@ export * from './handoff/composite/handoff-complete';
 export * from './comments/atomic/format-comment';
 export * from './comments/atomic/add-comment';
 export * from './comments/atomic/review-file';
-export { phaseCommentCleanup, type CommentCleanupParams as PhaseCommentCleanupParams, type CommentCleanupResult as PhaseCommentCleanupResult } from './comments/atomic/phase-comment-cleanup';
-export { featureCommentCleanup, type CommentCleanupParams as FeatureCommentCleanupParams, type CommentCleanupResult as FeatureCommentCleanupResult } from './comments/atomic/feature-comment-cleanup';
+export {
+  commentCleanup,
+  featureCommentCleanup,
+  phaseCommentCleanup,
+  FEATURE_CLEANUP_CONFIG,
+  PHASE_CLEANUP_CONFIG,
+  type CleanupConfig,
+  type CommentCleanupResult,
+  type CommentCleanupParams as FeatureCommentCleanupParams,
+  type CommentCleanupParams as PhaseCommentCleanupParams,
+  type CommentCleanupResult as FeatureCommentCleanupResult,
+  type CommentCleanupResult as PhaseCommentCleanupResult,
+} from './comments/commentCleanup';
 export * from './comments/composite/add-comments-batch';
 export * from './comments/composite/review-and-add';
 

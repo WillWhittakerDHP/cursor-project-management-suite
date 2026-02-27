@@ -17,6 +17,8 @@ All tier start/end commands (feature-start, feature-end, phase-start, phase-end,
 
 **Invocation:** From repo root, run the export via the project's TS runner. Example: `npx tsx -e "import('<path>').then(m => m.<export>(...)).then(r => console.log(JSON.stringify(r)))"`. Use the path and export name from the table above.
 
+**No one-off runner scripts:** Do not create ad hoc tier wrappers like `run-task-start-*.ts`, `run-task-end-*.ts`, or `run-session-end-*.ts` (and similar `run-*-start/end-*.ts` files). Invoke composite exports directly with inline `tsx -e` imports so all tiers follow the same entrypoint pattern.
+
 ---
 
 ## Required sections (every playbook)
@@ -32,7 +34,7 @@ Before loading context or calling the implementation, search the codebase for **
 ### Context
 
 - User supplies only the identifier (F/P/S/T: feature number or name, phase number, session X.Y, task X.Y.Z). The agent never asks the user for a title or description.
-- Where to get feature/phase/session/task (e.g. `.current-feature`, command args).
+- Where to get feature/phase/session/task (e.g. `.project-manager/.tier-scope`, command args).
 - Context loading and derivation supply titles/descriptions/next identifiers from existing docs (see "Identifier-only input and context-derived titles" below).
 
 ### Optional prompts
@@ -48,15 +50,128 @@ Before loading context or calling the implementation, search the codebase for **
 
 ### Handle result
 
-- If success and `outcome.reasonCode === 'pending_push_confirmation'`: use the **AskQuestion** tool to confirm push (see "Push confirmation (AskQuestion)" below); then follow the outcome based on the user's choice.
-- If success and no push pending: show steps/output; then use `outcome.nextAction`.
-- If not success: show `outcome.nextAction` and stop.
-- Do not infer next step from step text.
+Start and end commands return a structured result with `result.outcome` (and for start commands, `result.output`). Use `result.outcome` for all routing; do not infer from step text or prose.
+
+- **Start commands** return `TierStartResult`: `{ success, output, outcome, modeGate? }`. Use `outcome.reasonCode` and `outcome.cascade` as below.
+- **End commands** return a result with `outcome`: `{ status, reasonCode, nextAction, cascade? }`.
+
+**Mode switching at transitions:** Each routing case below involves a mode transition. The agent MUST switch to the correct mode before performing the action: Plan mode for AskQuestion calls, Agent mode for command execution and file writes.
+
+Routing:
+
+- If `outcome.reasonCode === 'plan_mode'`: see **Per-reasonCode behavioral rules → `plan_mode`** below.
+- If `outcome.reasonCode === 'pending_push_confirmation'`: see **Per-reasonCode behavioral rules → `pending_push_confirmation`** below.
+- If `outcome.cascade` is present (start or end): see **Per-reasonCode behavioral rules → Cascade confirmation** below.
+- If success and no push/cascade pending: show steps/output; then use `outcome.nextAction`.
+- **If not success (HARD STOP):**
+  1. **Switch to Plan mode (Ask mode) immediately.** The `enforceModeSwitch` block prepended to the output will say "STOP — Command Failed" when `success` is false; follow it.
+  2. Show `outcome.nextAction` to the user **verbatim**. Do not paraphrase or expand.
+  3. Use **AskQuestion**: "How would you like to proceed?" with options: "Retry the command" / "Investigate the issue" / "Skip and continue manually".
+  4. **Do NOT cascade.** Do not offer to start the next task, session, phase, or feature. Do not check `outcome.cascade` — on failure, cascade is never present and must never be improvised.
+  5. **Do NOT improvise next steps.** Do not read session guides to find the next task. Do not offer to run a different command. Do not create documents the command was supposed to create.
+  6. **Wait for the user's response** to AskQuestion before taking any action.
+
+### On command crash or missing outcome
+
+If the command throws, exits with non-zero code, or the result has no `outcome` (e.g. `outcome` is `undefined`):
+
+1. **Switch to Plan mode (Ask mode) immediately.**
+2. Report the error output to the user **verbatim**.
+3. **STOP immediately.** Do NOT:
+   - Manually create documents the command was supposed to create (guides, logs, handoffs)
+   - Reconstruct the command's expected output by reading templates or impl files
+   - Improvise a session-start/end response by assembling pieces from the codebase
+   - Create TODO lists or plans based on what the command "would have done"
+   - Offer to cascade to the next tier (start next task, end next session, etc.)
+   - Stay in Agent mode and continue executing
+4. Use **AskQuestion**: "The command crashed. How would you like to proceed?" with options: "Retry" / "Investigate" / "Skip".
+5. The user must fix the underlying issue (missing files, broken impl, etc.) and re-run the command.
+6. If the error message suggests a specific fix (e.g. "file not found"), you may point that out, but do NOT apply the fix and silently re-run.
+
+**Why this rule exists:** When commands fail, the agent has historically read template files and impl code, then manually recreated the command's expected output — producing documents and plans that bypass the command's validation, audit, and cascade logic. The agent has also stayed in Agent mode after failures and offered to cascade to the next tier, compounding the problem. Both behaviors create invisible inconsistencies across sessions.
 
 ### Outcome rule
 
 - Always use `result.outcome.nextAction` for what to do or tell the user next.
-- When push confirmation is pending, use AskQuestion first; then execute push or skip and show the next step.
+- For push and cascade confirmation sequences, see the per-reasonCode behavioral rules below.
+
+### Failure mode enforcement (code + playbook)
+
+The `enforceModeSwitch` function in `command-execution-mode.ts` accepts a `reason` parameter (`'normal'` | `'failure'`). All three dispatchers (`tier-start.ts`, `tier-end.ts`, `tier-reopen.ts`) pass `reason: 'failure'` when `result.success === false`. This causes the prepended block to say **"STOP — [command] Failed — Plan (Ask) Mode Required"** and reference this playbook.
+
+The code header is a **short mode declaration** only. All behavioral rules (what to do on failure, how to use AskQuestion, when not to cascade) live here in this playbook — not in the code. The code returns structured data (`status`, `reasonCode`, `nextAction`, `cascade`); the playbook tells the agent how to handle each case.
+
+---
+
+## Code vs. playbook responsibility
+
+| In code (`.ts` files) | In playbook (this document) |
+|---|---|
+| Structured data: `status`, `reasonCode`, `cascade`, identifiers | Behavioral rules: mode switching, AskQuestion usage, stop conditions |
+| Status messages: "Tests passed", "Branch created", "Task X complete" | Workflow scripts: approval sequences, cascade confirmation, failure handling |
+| Short routing hints in `nextAction`: "Push pending. Then cascade if present." | How to handle each `reasonCode`: step-by-step agent behavior |
+| Mode header: "Mode: Agent — /task-end" (one line) | What "Agent mode" means: write files, run git, switch to Plan for confirmations |
+
+**Anti-pattern:** Code must NOT contain agent behavioral instructions like "Switch to Plan mode", "Use AskQuestion", "Do NOT cascade", "BEGIN IMPLEMENTATION — The agent should now write code". These belong exclusively in the playbook. Code returns *what happened* and *what's next* (data); the playbook says *how to handle it* (behavior).
+
+---
+
+## Per-reasonCode behavioral rules
+
+These rules tell the agent what to do for each `reasonCode` returned by commands. The code returns the `reasonCode`; the playbook defines the behavior.
+
+**Failure reasonCodes:** Any `reasonCode` not listed below (e.g. `lint_or_typecheck_failed`, `test_failed`, `test_code_error`, `test_goal_validation_failed`, `vue_architecture_gate_failed`, etc.) indicates a failure. All failure reasonCodes follow the **"If not success (HARD STOP)"** rule in the Routing section above.
+
+### `plan_mode` (start commands, default mode)
+
+1. Show `result.output` (the plan preview).
+2. Switch to Plan mode. Use **AskQuestion**: "Approve this plan and execute?" Options: "Yes — execute" / "No — revise".
+3. On "Yes": switch to Agent mode, re-invoke the same command with `{ mode: 'execute' }`.
+
+### `pending_push_confirmation` (end commands)
+
+1. Switch to Plan mode. Use **AskQuestion**: "All checks passed. Proceed with push to remote?" Options: "Yes — push to remote" / "No — skip push".
+2. On "Yes": switch to Agent mode, run `git push`. Then check `outcome.cascade`.
+3. On "No": skip push. Then check `outcome.cascade`.
+4. If `outcome.cascade` is present: run **cascade confirmation** (see below).
+
+### Cascade confirmation (start and end commands)
+
+When `outcome.cascade` is present:
+
+1. Switch to Plan mode. Use **AskQuestion**: "Cascade to [outcome.cascade.tier] [outcome.cascade.identifier]?" Options: "Yes — [outcome.cascade.command]" / "No — stop here".
+2. On "Yes": switch to Agent mode, invoke `outcome.cascade.command`.
+3. On "No": show `outcome.nextAction` and stop.
+
+### `task_complete` (task-end)
+
+- If `outcome.cascade` is present: run **cascade confirmation** above.
+- If no cascade: task is done. Show `outcome.nextAction`.
+
+### Task-start success (after execute mode)
+
+After task-start succeeds, the output contains **Implementation Orders** with task details (Goal, Files, Approach, Checkpoint) and the end command. The agent:
+
+1. Begins implementing the task (write code, modify files).
+2. Works through the implementation orders.
+3. When complete, runs the `/task-end` command shown in the output.
+
+### Session-start success (after execute mode)
+
+After session-start succeeds, the output contains task planning data (first task details, compact prompt). The agent:
+
+1. Reviews the session context and first task details.
+2. If `outcome.cascade` is present: run **cascade confirmation** to start the first task.
+3. If no cascade: show the compact prompt.
+
+### Reopen success
+
+After a reopen succeeds, the output shows the next step (plan child tier or make changes). The agent:
+
+1. Switch to Plan mode. Use **AskQuestion**: "Is there a plan you want to build this tier around?" Options: "Yes — I have a plan file" / "No — plan from scratch" / "No — just a quick fix".
+2. On "Yes" with plan file: switch to Agent mode, read the file, pass as `planContent` to the plan command.
+3. On "No — plan from scratch": switch to Agent mode, run the plan command without `planContent`.
+4. On "No — quick fix": switch to Agent mode, make changes, run tier-end when done.
 
 ---
 
@@ -69,7 +184,15 @@ When the procedure says "call implementation", the agent:
 3. Invocation method: e.g. `npx tsx -e "import('<path-to-composite>').then(m => m.<exportedFn>({ ... })).then(r => console.log(JSON.stringify(r)))"` or the project's standard way to run a TS export and capture the return value. Path and export name come from the table.
 4. Captures the return value and proceeds to "Handle result" per the procedure.
 
-**Session-start and phase-start (plan then execute):** These commands default to **plan** mode so Ask mode can use AskQuestion. First invocation: no options (or `mode: 'plan'`) — user sees the plan and can answer prompts. When the user has approved and the agent is in **Agent mode**, invoke again with **`{ mode: 'execute' }`** so the command runs the steps (branch creation, server refresh, etc.). Example: `sessionStart(sessionId, description, { mode: 'execute' })`.
+### Canonical inline examples (no temp scripts)
+
+- Feature start: `npx tsx -e "import('./.cursor/commands/tiers/feature/composite/feature.ts').then(m => m.featureStart('6')).then(r => console.log(r))"`
+- Phase start: `npx tsx -e "import('./.cursor/commands/tiers/phase/composite/phase.ts').then(m => m.phaseStart('6.2')).then(r => console.log(r))"`
+- Session start (plan preview; default is plan): `npx tsx -e "import('./.cursor/commands/tiers/session/composite/session.ts').then(m => m.sessionStart('6.2.1')).then(r => console.log(JSON.stringify(r)))"`
+- Session start (execute after approval): `npx tsx -e "import('./.cursor/commands/tiers/session/composite/session.ts').then(m => m.sessionStart('6.2.1', undefined, { mode: 'execute' })).then(r => console.log(JSON.stringify(r)))"`
+- Task start: `npx tsx -e "import('./.cursor/commands/tiers/task/composite/task.ts').then(m => m.taskStart('6.2.1.4')).then(r => console.log(JSON.stringify(r)))"`
+
+**Session-start and phase-start (plan then execute):** Start commands default to **plan** mode. First invocation: no options — user sees the plan. When the user has approved and the agent is in **Agent mode**, invoke again with **`{ mode: 'execute' }`** so the command runs the steps (branch creation, scope update, etc.). Example: `sessionStart(sessionId, description, { mode: 'execute' })`.
 
 ---
 
@@ -90,41 +213,131 @@ All mode logic lives in one file: `.cursor/commands/utils/command-execution-mode
 
 | Generic dispatcher | Gate mode | How gate is delivered |
 |---|---|---|
-| `tier-start.ts` → `runTierStart` | Derived from `options.mode` (default plan) | Prepended to result string |
+| `tier-start.ts` → `runTierStart` | Derived from `options.mode` (default plan) | `modeGate` field on result object |
 | `tier-end.ts` → `runTierEnd` | Derived from `params.mode` (default execute) | `modeGate` field on result object |
 | `tier-plan.ts` → `runTierPlan` | Always `plan` | Prepended to result string |
 | `tier-change.ts` → `runTierChange` | Always `plan` | Prepended to `output` field in result |
 
 ### Rules
 
-- **CreatePlan and AskQuestion** are used in **Plan mode** (Ask mode). Research, context loading, and generating the plan happen in this mode.
-- **Execute/build** (branch creation, server refresh, file writes, merges, etc.) happen in **Agent mode**, after the user has approved and the command is invoked with `{ mode: 'execute' }`.
-- The gate text comes from `modeGateText(cursorMode, commandName)` in `command-execution-mode.ts`.
-- Tier-specific impls do not call `modeGateText` or produce mode messages — the generic dispatchers handle that.
+- **Mode switching is mandatory, not advisory.** Plan mode (Ask mode) is required for AskQuestion and CreatePlan. Agent mode is required for file writes, git operations, and command execution. Before each action, verify the mode matches. The `enforceModeSwitch` header at the top of every command output states the required mode; the per-reasonCode rules below define the behavioral workflow.
+- **Execute/build** (branch creation, scope update, file writes, merges, etc.) happen in **Agent mode**, after the user has approved and the command is invoked with `{ mode: 'execute' }`.
+- The mode header comes from `enforceModeSwitch(requiredMode, commandName)` in `command-execution-mode.ts`. It is a **short declaration** only (e.g. "Mode: Agent — /task-end"); all behavioral rules live in this playbook.
+- Tier-specific impls do not call `modeGateText` or produce mode messages — the generic dispatchers handle that. Impls return **data only** in `nextAction` strings (e.g. "Push pending. Then cascade if present.") — no behavioral scripts.
 
 ---
 
-## Shared outcome contract (end commands)
+## Start workflow architecture (dry-out guardrails)
 
-All end commands (session-end, phase-end, feature-end, task-end) return (or are wrapped to return) a common shape for agent follow-up:
+**Shared workflow only.** All tier **start** commands use a single orchestrator and reusable step modules. The workflow is defined in:
 
-- `{ status, reasonCode, nextAction }` where:
-  - `status`: e.g. `'completed' | 'blocked_needs_input' | 'blocked_fix_required' | 'failed'`
-  - `reasonCode`: short code (e.g. `'pending_push_confirmation'`, `'plan'`)
-  - `nextAction`: single string the agent shows or follows next
+- **Orchestrator:** `.cursor/commands/tiers/shared/tier-start-workflow.ts` — `runTierStartWorkflow(ctx, hooks)` runs the pipeline: validate → branch (optional) → read context → gather context → extras → start audit → tier plan → trailing output (optional) → cascade.
+- **Step modules:** `.cursor/commands/tiers/shared/tier-start-steps.ts` — Reusable steps (e.g. `stepValidateStart`, `stepEnsureStartBranch`, `stepReadStartContext`, `stepStartAudit`, `stepRunTierPlan`, `stepBuildStartCascade`) use shared primitives (`formatBranchHierarchy`, `ensureTierBranch`, `runTierPlan`, `buildCascadeDown`, `runStartAuditForTier`).
+- **Start audit entry point:** `.cursor/commands/audit/run-start-audit-for-tier.ts` — `runStartAuditForTier({ tier, identifier, featureName })` dispatches to feature/phase/session start audits; task has no start audit.
+
+**Impls are tier adapters only.** Each `*-start-impl.ts` (feature, phase, session, task) must:
+
+- Build a `TierStartWorkflowContext` and a `TierStartWorkflowHooks` object (tier-specific: validation, branch options, read/gather, optional audit, cascade child id, compact prompt).
+- Call `runTierStartWorkflow(ctx, hooks)` and return its result.
+- **Not** re-implement or inline the workflow sequence (no copying validate → branch → read → audit → plan → cascade into the impl). Any new step that belongs in the start pipeline belongs in the orchestrator or step modules, not in a single tier impl.
+
+**Anti-regression:** When adding or changing start behavior, add or change it in the shared workflow or step modules and/or in the hooks contract; do not re-inline workflow steps into `feature-start-impl.ts`, `phase-start-impl.ts`, `session-start-impl.ts`, or `task-start-impl.ts`.
+
+---
+
+## End workflow architecture (dry-out guardrails)
+
+**Shared workflow only.** All tier **end** commands use a single orchestrator and reusable step modules. The workflow is defined in:
+
+- **Orchestrator:** `.cursor/commands/tiers/shared/tier-end-workflow.ts` — `runTierEndWorkflow(ctx, hooks)` runs the pipeline: plan exit → resolve runTests → preWork → test goal validation → runTests → midWork → comment cleanup → readme cleanup → git → end audit → clear scope → build cascade.
+- **Step modules:** `.cursor/commands/tiers/shared/tier-end-steps.ts` — Reusable steps (e.g. `stepPlanModeExit`, `stepResolveRunTests`, `stepTierPreWork`, `stepTestGoalValidation`, `stepRunTests`, `stepTierMidWork`, `stepCommentCleanup`, `stepReadmeCleanup`, `stepTierGit`, `stepEndAudit`, `stepClearScope`, `stepBuildEndCascade`) use shared primitives and tier-supplied hooks.
+- **End audit entry point:** `.cursor/commands/audit/run-end-audit-for-tier.ts` — `runEndAuditForTier({ tier, identifier, params, featureName })` dispatches to `auditFeature`, `auditCodeQuality` (phase/session), or `auditTask`.
+
+**Impls are tier adapters only.** Each `*-end-impl.ts` (feature, phase, session, task) must:
+
+- Build a `TierEndWorkflowContext` and a `TierEndWorkflowHooks` object (tier-specific: plan steps, preWork, midWork, git, tests, comment cleanup, audit, cascade, success outcome).
+- Call `runTierEndWorkflow(ctx, hooks)` and map the result to the tier’s existing return type (e.g. `FeatureEndResult`, `PhaseEndResult`, `SessionEndResult`, or task’s `{ success, output, outcome }`).
+- **Not** re-implement or inline the workflow sequence. Any new step that belongs in the end pipeline belongs in the orchestrator or step modules, not in a single tier impl.
+
+**Anti-regression:** When adding or changing end behavior, add or change it in the shared workflow or step modules and/or in the hooks contract; do not re-inline workflow steps into `feature-end-impl.ts`, `phase-end-impl.ts`, `session-end-impl.ts`, or `task-end-impl.ts`.
+
+---
+
+## Type governance (session tier)
+
+Session-tier type governance is enforced via cursor rules, a reference playbook, and the existing baseline comparison pipeline.
+
+- **Cursor rules (always-applied):** `.cursor/rules/vue-reactivity-boundary-contracts.mdc` (Ref/ComputedRef boundaries, InjectionKey, null/undefined at API and component boundaries) and `.cursor/rules/type-creation-placement.mdc` (when/where to create types, check type-constant-inventory before adding types).
+- **Reference playbook:** `.project-manager/TYPE_AUTHORING_PLAYBOOK.md` — decision trees (create vs reuse vs inline), Vue reactivity boundary table, null/undefined policy, assertion policy, placement, Definition of Done, common mistakes, and audit rule mapping.
+- **Baseline comparison:** Type governance deltas are tracked through the existing session baseline. Session-start stores a `type-constant-inventory` score (derived from `client/.audit-reports/type-constant-inventory-audit.json`); session-end includes the same category in end scores. The audit report and comparison output show type-constant-inventory alongside other session categories (e.g. tier-quality, docs, vue-architecture).
+- **Session-end checklist:** Immediately before the session end audit, the workflow emits a soft type-governance self-check (decision tree, no new escape hatches, Ref/ComputedRef boundaries). Enforcement remains automated via type-escape and type-constant-inventory audits in `audit:tier-session`.
+
+When creating or updating session guides (e.g. under `.project-manager/features/.../sessions/*-guide.md`), agents should follow the type-creation-placement rule and the playbook for any new or changed types referenced in the session.
+
+---
+
+## Composable governance (session tier)
+
+Session-tier composable and function governance is enforced via cursor rules, a reference playbook, and the existing baseline comparison pipeline.
+
+- **Cursor rules (always-applied):** `.cursor/rules/composable-contract-boundaries.mdc` (flat contracts, action-based mutation, Ref/ComputedRef boundaries, InjectionKey) and `.cursor/rules/function-boundary-governance.mdc` (complexity thresholds, explicit return types, no silent error swallowing).
+- **Reference playbook:** `.project-manager/COMPOSABLE_AUTHORING_PLAYBOOK.md` — decision tree (flat vs split vs facade), composable contract table, mutation and injection boundary policy, function governance thresholds, Definition of Done, common mistakes, and audit rule mapping.
+- **Baseline comparison:** Composable governance deltas are tracked through the existing session baseline. Session-start stores a `composable-governance` score (derived from composable-health and function-complexity audit JSON); session-end includes the same category in end scores. The audit report and comparison output show composable-governance alongside other session categories.
+- **Session-end checklist:** Immediately before the session end audit, the workflow emits a soft composable-governance self-check (flat contract, action-based mutation, no Ref|ComputedRef unions, explicit return types). Enforcement remains automated via composable-health, composables-logic, and function-complexity audits in `audit:tier-session`.
+
+When creating or updating session guides or implementing session work, agents should follow the composable-contract-boundaries and function-boundary-governance rules and the playbook for flat, test-friendly composable contracts and action-based mutation.
+
+---
+
+## Function governance (session tier)
+
+Session-tier function governance is enforced via cursor rules, a reference playbook, and the baseline comparison pipeline.
+
+- **Cursor rules (always-applied):** `.cursor/rules/function-boundary-governance.mdc` (complexity, return types, no silent errors) and `.cursor/rules/function-complexity-thresholds.mdc` (nesting, branches, length, extract vs allowlist).
+- **Reference playbook:** `.project-manager/FUNCTION_AUTHORING_PLAYBOOK.md` — thresholds table, decision tree (extract vs keep vs allowlist), return type and error-handling policy, Definition of Done, anti-patterns, audit rule mapping, and baseline score formula.
+- **Baseline comparison:** Function-governance score is stored at session-start and compared at session-end. The score is derived from `function-complexity-audit.json` only (100 − P0×3 − P1×1, cap 0–100). The audit report and comparison output show `function-governance` as a dedicated category.
+- **Session-end checklist:** Immediately before the session end audit, the workflow emits a function-governance self-check (complexity thresholds, explicit return types, no silent error swallowing, heavy logic extracted to named utilities).
+
+When creating or updating session guides or implementing session work, agents should follow function governance when adding or changing functions (see the playbook and rules above).
+
+---
+
+## Component governance (session tier)
+
+Session-tier component governance is enforced via cursor rules, a reference playbook, and the baseline comparison pipeline.
+
+- **Cursor rules (always-applied):** `.cursor/rules/component-boundary-contracts.mdc` (props/emit/slots boundaries, thin components, logic-out) and `.cursor/rules/component-health-thresholds.mdc` (prop/emit/coupling/template thresholds, Tier1 extraction vs allowlist).
+- **Reference playbook:** `.project-manager/COMPONENT_AUTHORING_PLAYBOOK.md` — thresholds table, decision tree (extract vs keep vs allowlist), boundary policy, Definition of Done, anti-patterns, audit rule mapping, and baseline score formula.
+- **Baseline comparison:** Component-governance score is stored at session-start and compared at session-end. The score is derived from `component-health-audit.json` only (100 − P0×3 − P1×1, cap 0–100). The audit report and comparison output show `component-governance` as a dedicated category.
+- **Session-end checklist:** Immediately before the session end audit, the workflow emits a component-governance self-check (prop/emit/coupling/template thresholds, thin components, no new Tier1 hotspots without extraction/allowlist, template depth and expression limits).
+
+When creating or updating session guides or implementing session work, agents should follow component governance when adding or changing Vue components (see the playbook and rules above).
+
+---
+
+## Reopen workflow architecture (dry-out guardrails)
+
+**Shared workflow only.** Tier **reopen** (feature, phase, session) uses a single orchestrator and reusable step modules. Task reopen is not supported. The workflow is defined in:
+
+- **Orchestrator:** `.cursor/commands/tiers/shared/tier-reopen-workflow.ts` — `runTierReopenWorkflow(ctx, hooks)` runs: validate → writeReopenedStatus → updateGuideAndLog (hook) → ensureBranch (hook) → updateScope → appendNextAction → return TierReopenResult.
+- **Step modules:** `.cursor/commands/tiers/shared/tier-reopen-steps.ts` — Reusable steps (`stepValidateReopen`, `stepWriteReopenedStatus`, `stepUpdateGuideAndLog`, `stepEnsureBranch`, `stepUpdateScope`, `stepAppendNextAction`) and helpers (`flipCompleteToReopened`, `formatReopenEntry`).
+
+**Impls are tier adapters only.** Each `*-reopen-impl.ts` (feature, phase, session) must build context and hooks and call `runTierReopenWorkflow(ctx, hooks)`. Do not re-inline reopen steps into `.cursor/commands/tiers/shared/tier-reopen.ts` or the three impl files.
+
+---
+
+## Shared outcome contract (start and end commands)
+
+Start commands return **TierStartResult**: `{ success, output, outcome, modeGate? }`. End commands return a result with **outcome**: `{ status, reasonCode, nextAction, cascade? }`. Both use the same outcome shape for routing:
+
+- `status`: e.g. `'completed' | 'blocked_needs_input' | 'blocked_fix_required' | 'failed'` (or for start: `'plan'`)
+- `reasonCode`: short code (e.g. `'pending_push_confirmation'`, `'plan_mode'`)
+- `nextAction`: single string the agent shows or follows next
+- `cascade?`: when present, **CascadeInfo** `{ direction, tier, identifier, command }` — the command is derived generically from `tierUp`/`tierDown` (no tier-specific names in the contract)
 
 Use `result.outcome.nextAction` for the next step; do not infer from `result.steps` or prose.
 
-**Push confirmation (AskQuestion):** When `outcome.reasonCode === 'pending_push_confirmation'`, the agent must use the **AskQuestion** tool to get explicit user confirmation before pushing:
-
-1. Show the relevant step output (e.g. `steps.gitReady.output` or the end command’s summary) so the user sees what will be pushed.
-2. Call AskQuestion with:
-   - **Prompt:** e.g. "All checks passed. Proceed with push to remote?"
-   - **Options:** "Yes — push to remote" / "No — skip push (you can push manually later)"
-3. If the user selects "Yes — push": run `git push` (or the push step indicated by the command), then show the follow-up from `outcome.nextAction` (e.g. next session or phase-end).
-4. If the user selects "No": do not push; show the follow-up from `outcome.nextAction` (e.g. "To start next session run /session-start X.Y.Z" or "Run /phase-end N to complete the phase").
-
-This matches the cascade confirmation pattern used for tier-start: use AskQuestion so the user gets a clear yes/no in the UI instead of a prose prompt in the output.
+**Push confirmation and cascade:** For the step-by-step agent behavior when `outcome.reasonCode === 'pending_push_confirmation'` or when `outcome.cascade` is present, see the **Per-reasonCode behavioral rules** section (`pending_push_confirmation` and **Cascade confirmation**). No tier-specific names in cascade — use `outcome.cascade.tier` and `outcome.cascade.command` only.
 
 ---
 
@@ -149,29 +362,78 @@ Each tier has a strict dotted-number ID format. No "or" conditions — reject ID
 
 ---
 
+## Tier scope config (.tier-scope)
+
+The file `.project-manager/.tier-scope` is the single source of truth for the current feature, phase, session, and task. It replaces the legacy `.current-feature` file.
+
+**File format:** Dotted keys per tier; each tier has `id` (hierarchical identifier for commands/branches) and `name` (human-readable for display/commits).
+
+```
+feature.id=calendar-appointment-availability
+feature.name=Calendar Appointment Availability
+phase.id=3.6
+phase.name=Google Calendar Sync
+session.id=3.6.2
+session.name=Slot Calculation Refactor
+task.id=3.6.2.1
+task.name=Update Time Slot Composable
+```
+
+**Lifecycle:**
+- **Start commands** write scope after successful branch/setup: feature-start writes `feature`, phase-start writes `phase` (and clears session/task), session-start writes `session` (and clears task), task-start writes `task`.
+- **End commands** clear scope: feature-end calls `clearTierScope()`; phase-end, session-end, and task-end call `updateTierScope(tier, null)` for their tier (clearing that tier and all children).
+- **Tier reopen** writes scope when reopening a tier (derives name from parent guide, then `updateTierScope(tier, { id, name })`).
+
+**Naming rule (parents name children):** The naming event happens during **parent planning**. `appendChildToParentDoc` (used by plan-feature, plan-phase, plan-session) writes entries like `### Phase 3.6: Google Calendar Sync` into the parent's guide. When the **child** tier starts, it derives its name from the parent guide via `derivePhaseDescription`, `deriveSessionDescription`, or `deriveTaskDescription` and writes `{ id, name }` to scope.
+
+**Hierarchy clearing:** When a tier is updated, all child tiers are cleared (e.g. updating `phase` clears `session` and `task`). When a tier is set to `null` at end, that tier and its children are cleared.
+
+**Display and commits:** Use `formatScopeDisplay(scope)` for command output. Use `formatScopeCommitPrefix(scope, tier)` for commit messages (e.g. `[3.6.2: Slot Calculation Refactor] completion`). Branch names continue to use numbers only (e.g. `-phase-3.6-session-3.6.2`).
+
+**Backward compatibility:** `FeatureContext.getCurrent()` and `resolveFeatureName()` read from `.tier-scope` (feature.id). On first read, if `.tier-scope` is missing but `.current-feature` exists, it is migrated and the legacy file is removed.
+
+---
+
 ## Tier navigation
 
 Adjacent-tier transitions use **tierUp**, **tierAt**, and **tierDown** (see `.cursor/commands/utils/tier-navigation.ts`).
 
 - **tierAt(tier, identifier)** — Current tier context (identity). Use for "we are here" and prompts.
-- **tierUp(tier)** — Parent tier: task→session, session→phase, phase→feature, feature→null. Use when there is no next unit at the current tier: the next step is to run the **tier-up end** (e.g. after last task in session, suggest `/session-end`; after last session in phase, suggest `/phase-end`; after last phase, suggest `/feature-end`).
+- **tierUp(tier)** — Parent tier: task→session, session→phase, phase→feature, feature→null. Use when there is no next unit at the current tier: the next step is to run the **parent tier end** (the command is derived from `tierUp(config.name)` — no hardcoded tier names).
 - **tierDown(tier)** — Child tier: feature→phase, phase→session, session→task, task→null. Use after a tier start for **cascade** (see below).
 
 **Identifier naming:** All tier identifiers use the `{tier}Id` pattern: `featureId`, `phaseId`, `sessionId`, `taskId`. Feature identifiers are numeric (e.g. `"3"`) and resolved to the feature name from PROJECT_PLAN.md via `resolveFeatureId`.
 
 **Start includes plan:** Each start impl runs `runTierPlan` for the same tier internally after setup (validation, branch, context). No separate `/plan-phase`, `/plan-session`, etc. is required before start.
 
-**Cascade confirmation:** Start output ends with a **Cascade:** line that gives the child tier and ID (e.g. "Run `/phase-start 1` after confirmation"). The agent should use the **AskQuestion** tool to ask the user: "Plan complete for [tier] [id]. Cascade to [child tier] [child id]?" with options "Yes — start [child tier] [child id]" / "No — stop here". If the user confirms, the agent calls the appropriate start for the child tier. If declined, stop; the user can start the child tier manually later.
+**Cascade (structured):** Start and end commands return `outcome.cascade` when the agent should offer to cascade. The child tier (for start) or parent/next tier (for end) is derived from `tierDown(config.name)` or `tierUp(config.name)` — never hardcoded. The agent uses AskQuestion with `outcome.cascade.tier`, `outcome.cascade.identifier`, and `outcome.cascade.command`; on confirmation, invokes `outcome.cascade.command`.
 
-**Tier-up at end:** When there is no next item at the current tier, use `outcome.nextAction` (which already reflects tier-up end when applicable). Auto tier-up (running parent end when last at tier) is deferred; currently "suggest" only.
+**Tier-up at end:** When there is no next item at the current tier, `outcome.cascade` (if present) points to the parent tier end command. Use the cascade confirmation flow above. Auto tier-up (running parent end when last at tier) is deferred; currently "suggest" only.
 
 **Next step at end:** Do not infer from step text; always use `outcome.nextAction`.
 
-**Tier reopen:** Use `/phase-reopen`, `/feature-reopen`, or `/session-reopen` when a completed tier needs additional child work (e.g. add session 4.1.4 to completed phase 4.1). The implementation flips status from Complete to Reopened, ensures the branch, and logs the reopen. After the command returns, the **agent** must use **AskQuestion**: "Is there a plan you want to build this tier around?" with options e.g. "Yes — I have a plan file" / "No — I'll plan from scratch" / "No — just a quick fix". If the user selects "Yes" and provides a file reference (e.g. `@myplan.plan.md`), the agent reads that file and passes its content as `planContent` to subsequent `planSession` / `planPhase` calls so the user's authored plan is used as the guide content and planning checks run in critique mode.
+**Tier reopen:** Use `/phase-reopen`, `/feature-reopen`, or `/session-reopen` when a completed tier needs additional child work (e.g. add session 4.1.4 to completed phase 4.1). The implementation flips status from Complete to Reopened, ensures the branch, and logs the reopen. For agent behavior after the command returns, see **Per-reasonCode behavioral rules > Reopen success**.
 
 **Auto-registration of children:** When planning a new child tier (e.g. `/plan-session 4.1.4`), the plan-* impl calls `appendChildToParentDoc` so the child is registered in the parent doc (e.g. session 4.1.4 added to phase-4.1-guide.md) if not already present. This is idempotent and allows cascade and discovery to work after a reopen.
 
 **Plan content and critique mode:** `planSession` and `planPhase` accept an optional `planContent` argument (e.g. from a user's `*.plan.md` file). When provided, that content is used as the guide instead of the template; planning checks still run and their output is presented as "Planning Review" (critique) without overwriting the user's content.
+
+---
+
+## Tier responsibility model
+
+**Planning vs implementation:** Only **task-start** triggers coding. All higher tiers are planning-only:
+
+- **Feature-start** — Plan: decompose feature into phases. No code changes.
+- **Phase-start** — Plan: decompose phase into sessions. No code changes.
+- **Session-start** — Plan: decompose session into tasks, then cascade to task-start. No code changes.
+- **Task-start** — **Implementation:** Load task plan from session guide and begin coding. Output includes task details (Goal, Files, Approach, Checkpoint) and the end command; the agent writes code until the task is done, then runs task-end.
+
+**Automatic cascade flow:** Session-start returns `outcome.cascade` pointing to the first task (child tier from `tierDown('session')`). The agent uses AskQuestion, then invokes `outcome.cascade.command`. Task-end returns `outcome.cascade` either to the next task (across) or to the parent tier end (up, via `tierUp('task')`) when all tasks complete. Flow: session-start → (confirm cascade) → task-start → code → task-end → (confirm cascade) → task-start next or parent tier end → …
+
+**Task-end cascade:** When task-end completes, it sets `outcome.cascade`: if a next task exists, `buildCascadeAcross('task', nextTaskId)`; if all tasks complete, `buildCascadeUp('task', sessionId)`. The agent uses AskQuestion and then invokes `outcome.cascade.command` (generic; no tier-specific names in the contract).
+
+**ControlDoc handoff:** Every end command must write the tier status to the control doc (phase guide for sessions, session guide for tasks, etc.) so the next start's validator can read it. Session-end writes the session checkbox in the phase guide; task-end writes task status in the session guide and calls `TASK_CONFIG.controlDoc.writeStatus`. This allows sequential gating: task-start validates that the previous task is complete before allowing the next.
 
 ---
 
@@ -214,10 +476,7 @@ Each tier config defines a `controlDoc` (path, readStatus, writeStatus). Status 
 When a tier (feature, phase, or session) is **Complete** but needs additional child work (e.g. adding session 4.1.4 to phase 4.1):
 
 1. **Invoke reopen:** Resolve the slash command (`phase-reopen`, `feature-reopen`, or `session-reopen`) from the command-to-entry-point table and call the export with the tier identifier (and optional reason). The implementation validates the tier is Complete, flips status to **Reopened** in the guide/log, ensures the branch, and appends a reopen log entry.
-2. **AskQuestion (agent):** After the command returns, use AskQuestion: "Is there a plan you want to build this tier around?" Options: **Yes — I have a plan file** (user provides e.g. `@myplan.plan.md`), **No — I'll plan from scratch**, **No — just a quick fix**.
-3. **If Yes with plan file:** Read the referenced `*.plan.md` file and pass its content as `planContent` when calling `planSession` or `planPhase` for each new child. The plan command seeds the child guide from that content and runs planning checks in **critique mode** (suggestions appended as Planning Review, not overwriting the plan).
-4. **If No (plan from scratch):** Use existing plan-* commands with no planContent; templates and cascade work as usual.
-5. **If quick fix:** No planning; user makes changes and runs the tier-end command when done.
+2. **Agent behavior after reopen:** See **Per-reasonCode behavioral rules > Reopen success** for the AskQuestion flow, plan content handling, and quick fix path.
 
 Reopened tiers are **startable** (same as In Progress). When the new work is done, run the tier-end command; mark-phase-complete (and equivalent) will set status back to Complete.
 
@@ -233,7 +492,7 @@ Reopened tiers are **startable** (same as In Progress). When the new work is don
 - **Phase:** Title/description from phase guide (Phase Name, Description). Next phase from feature guide phase list if needed. phase-start does not take a title parameter.
 - **Feature:** The start/end API uses **featureId** (string). Resolve to feature name via `resolveFeatureId(featureId)` (reads PROJECT_PLAN.md; `featureId` is the `#` column value, e.g. `"3"`). Then call `featureStart(featureId, options)`. No user-supplied title.
   - **Numeric identifier (e.g. `3`):** Pass as featureId; `resolveFeatureId("3")` returns the feature directory name from PROJECT_PLAN. Do not use directory listing or index; PROJECT_PLAN is the only source for resolution.
-  - **Identifier omitted:** If `.project-manager/.current-feature` exists, use its contents as the feature name for context; for the API, a numeric featureId is required (from PROJECT_PLAN `#` column). Otherwise treat as error (do not infer from directories).
+  - **Identifier omitted:** If `.project-manager/.tier-scope` has `feature.id` set, use it as the feature name for context; for the API, a numeric featureId is required (from PROJECT_PLAN `#` column). Otherwise treat as error (do not infer from directories).
 - **Task:** Title/description from session guide task list or handoff; next task from session guide order. task-start does not take a description parameter; task context is loaded from session guide/handoff.
 
 **Rule for context step:** Derive [title/description/next] from [doc paths]; do not ask the user.

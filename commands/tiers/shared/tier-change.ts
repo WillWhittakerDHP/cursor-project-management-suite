@@ -16,7 +16,7 @@ import {
 } from '../../utils/utils';
 import { assessChangeScope, type ScopeAssessment } from '../../utils/assess-change-scope';
 import { modeGateText } from '../../utils/command-execution-mode';
-import { spawn } from 'child_process';
+
 
 export interface TierChangeParams {
   identifier: string;
@@ -49,12 +49,6 @@ export async function runTierChange(
   options?: RunTierChangeOptions
 ): Promise<TierChangeResult> {
   const gate = modeGateText('plan', `${config.name}-change`);
-
-  spawn('npm', ['run', 'server:refresh'], {
-    cwd: process.cwd(),
-    stdio: 'ignore',
-    detached: true,
-  }).unref();
 
   const resolved = await resolveFeatureName(featureName);
   const context = new WorkflowCommandContext(resolved);

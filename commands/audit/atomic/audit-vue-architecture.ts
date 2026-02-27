@@ -79,7 +79,8 @@ function scanVueComponentScript(file: string, script: string): AuditFinding[] {
   const findings: AuditFinding[] = [];
 
   // Hard failures: data fetching directly in components.
-  const fetchLike = /\b(fetch|axios|ky|graphql|urql|apollo)\b/i;
+  // Match fetch( browser API and library imports/usages; avoid matching function names containing "fetch".
+  const fetchLike = /\bfetch\s*\(|(?:import|from)\s+.*\b(axios|ky)\b|\b(axios|ky|graphql|urql|apollo)\s*[.(]/i;
   if (fetchLike.test(script)) {
     findings.push({
       type: 'error',

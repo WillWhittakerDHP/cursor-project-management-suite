@@ -122,5 +122,5 @@ export const FEATURE_CONFIG: TierConfig = {
   },
   replanCommand: undefined,
   getBranchName: (_ctx, id) => `feature/${id}`,
-  getParentBranchName: () => null,
+  getParentBranchName: () => 'develop',
 };

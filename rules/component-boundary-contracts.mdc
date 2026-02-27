@@ -1,0 +1,13 @@
+---
+alwaysApply: true
+---
+
+Component boundary contracts:
+- Components stay thin: template + minimal script; heavy logic in composables or named utilities
+- Prop API: prefer bounded count (e.g. ≤8) or grouped config object; avoid prop explosion
+- Emit surface: bounded event count or grouped payloads; avoid emit relay chains where provide/inject or composable is clearer
+- Slots: shallow slot usage where possible; avoid deep slot wrappers without reason
+- Template: avoid deep v-if/v-for nesting; extract sub-components or computed for complex expressions
+- Check component-logic and component-health reports before adding allowlist entries; prefer extraction over allowlisting
+
+See: .project-manager/COMPONENT_AUTHORING_PLAYBOOK.md for decision tree, thresholds, and extract vs allowlist.

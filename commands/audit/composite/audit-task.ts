@@ -6,9 +6,9 @@
  * Operates on: Complete task audit
  */
 
-import { TierAuditResult, AuditParams } from '../types';
-import { auditSecurity } from '../atomic/audit-security';
-import { auditVueArchitecture } from '../atomic/audit-vue-architecture';
+import { TierAuditResult, AuditParams, AutofixResult } from '../types';
+import { auditTierQuality } from '../atomic/audit-tier-quality';
+import { runTierAutofix } from '../autofix/run-tier-autofix';
 import { WorkflowCommandContext } from '../../utils/command-context';
 import { resolveFeatureName } from '../../utils';
 import { writeAuditReport, calculateOverallStatus, getRelativePath } from '../utils';
@@ -31,6 +31,7 @@ export async function auditTask(params: AuditTaskParams): Promise<{
   reportPath: string;
   fullReportPath?: string; // Full path for file opening
   output: string;
+  autofixResult?: AutofixResult;
 }> {
   const featureName = await resolveFeatureName(params.featureName);
   const context = new WorkflowCommandContext(featureName);
@@ -46,18 +47,23 @@ export async function auditTask(params: AuditTaskParams): Promise<{
   const results = [];
   const errors: string[] = [];
 
+  let tierQualityResult;
   try {
-    results.push(await auditSecurity(auditParams));
+    tierQualityResult = await auditTierQuality({ ...auditParams, tier: 'task' });
+    results.push(tierQualityResult);
   } catch (_error) {
-    errors.push(`Security audit failed: ${_error instanceof Error ? _error.message : String(_error)}`);
+    errors.push(`Task tier quality audit failed: ${_error instanceof Error ? _error.message : String(_error)}`);
   }
 
-  try {
-    results.push(await auditVueArchitecture(auditParams));
-  } catch (_error) {
-    errors.push(`Vue architecture audit failed: ${_error instanceof Error ? _error.message : String(_error)}`);
+  let autofixResult: AutofixResult | undefined;
+  if (tierQualityResult) {
+    autofixResult = await runTierAutofix('task', tierQualityResult, {
+      maxCascadeDepth: 0,
+      featureName,
+    });
+    // Summary appended below
   }
-  
+
   // Create audit result
   const overallStatus = calculateOverallStatus(results);
   const timestamp = new Date().toISOString();
@@ -88,7 +94,7 @@ export async function auditTask(params: AuditTaskParams): Promise<{
   outputLines.push(`**Overall Status:** ${overallStatus.toUpperCase()}`);
   outputLines.push(`**Report:** ${auditResult.reportPath || reportPath}`);
   outputLines.push('');
-  outputLines.push('*Note: Task audits run security and vue-architecture only.*');
+  outputLines.push('*Note: Task audits run tier-task group (typecheck, loop-mutations, hardcoding, error-handling, naming-convention, security) with --changed-only.*');
   outputLines.push('');
 
   // External signals import (no execution, only capture already-emitted artifacts)
@@ -127,7 +133,21 @@ export async function auditTask(params: AuditTaskParams): Promise<{
     const emoji = result.status === 'pass' ? '✅' : result.status === 'warn' ? '⚠️' : '❌';
     outputLines.push(`- ${emoji} **${result.category}**: ${result.status} ${result.score !== undefined ? `(${result.score}/100)` : ''}`);
   }
-  
+
+  if (autofixResult) {
+    outputLines.push('');
+    outputLines.push('## Autofix');
+    outputLines.push('');
+    outputLines.push(autofixResult.summary);
+    if (autofixResult.agentFixEntries.length > 0) {
+      outputLines.push('');
+      outputLines.push('**Agent directives:**');
+      for (const e of autofixResult.agentFixEntries) {
+        if (e.agentDirective) outputLines.push(`- ${e.agentDirective}`);
+      }
+    }
+  }
+
   // Add review prompt
   outputLines.push('');
   outputLines.push('---');
@@ -153,7 +173,8 @@ export async function auditTask(params: AuditTaskParams): Promise<{
     auditResult,
     reportPath: auditResult.reportPath || reportPath,
     fullReportPath: reportPath,
-    output: outputLines.join('\n')
+    output: outputLines.join('\n'),
+    autofixResult,
   };
 }
 

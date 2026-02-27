@@ -1,0 +1,2357 @@
+{
+  "tier": "phase",
+  "identifier": "3.6",
+  "overallStatus": "fail",
+  "results": [
+    {
+      "category": "comments",
+      "status": "warn",
+      "score": 75,
+      "findings": [
+        {
+          "type": "info",
+          "message": "Detected 719 file(s) via fallback detection (session logs/git history)",
+          "location": "File detection",
+          "suggestion": "For more accurate results, provide modified files explicitly"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/.audit-reports/AUDIT_EXECUTION_ORDER.md",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/.audit-reports/api-contract-audit.json",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (3.8%) - consider adding more comments",
+          "location": "client/.audit-reports/api-versioning-audit-summary.md",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/.audit-reports/api-versioning-audit.json",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/.audit-reports/api-versioning-audit.md",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/.audit-reports/audit-global-config.json",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/.audit-reports/audit-meta-report-previous.json",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/.audit-reports/audit-meta-report.json",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (2.7%) - consider adding more comments",
+          "location": "client/.audit-reports/audit-meta-report.md",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/.audit-reports/branded-id-audit.json",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/.audit-reports/branded-id-audit.md",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/.audit-reports/bundle-size-budget-audit.json",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/.audit-reports/component-logic-audit.json",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.4%) - consider adding more comments",
+          "location": "client/.audit-reports/component-logic-audit.md",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/.audit-reports/composables-logic-audit.json",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.1%) - consider adding more comments",
+          "location": "client/.audit-reports/composables-logic-audit.md",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/.audit-reports/constants-consolidation-audit.json",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (50.0%) - may indicate over-commenting",
+          "location": "client/.audit-reports/coverage-risk-crossref-audit.md",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/.audit-reports/css-audit.json",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (1.3%) - consider adding more comments",
+          "location": "client/.audit-reports/css-audit.md",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/.audit-reports/data-flow-audit.json",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/.audit-reports/dep-freshness-audit.json",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/.audit-reports/deprecation-audit.json",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (1.0%) - consider adding more comments",
+          "location": "client/.audit-reports/duplication-audit-summary.md",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/.audit-reports/duplication-audit.json",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.5%) - consider adding more comments",
+          "location": "client/.audit-reports/duplication-audit.md",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/.audit-reports/error-handling-audit.json",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (3.9%) - consider adding more comments",
+          "location": "client/.audit-reports/error-handling-audit.md",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/.audit-reports/file-cohesion-audit.json",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (2.5%) - consider adding more comments",
+          "location": "client/.audit-reports/file-cohesion-audit.md",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/.audit-reports/function-complexity-audit.json",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (1.9%) - consider adding more comments",
+          "location": "client/.audit-reports/function-complexity-audit.md",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/.audit-reports/hardcoding-audit.json",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.6%) - consider adding more comments",
+          "location": "client/.audit-reports/hardcoding-audit.md",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/.audit-reports/naming-convention-audit.json",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (2.2%) - consider adding more comments",
+          "location": "client/.audit-reports/naming-convention-audit.md",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/.audit-reports/pattern-detection-audit.json",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.9%) - consider adding more comments",
+          "location": "client/.audit-reports/pattern-detection-audit.md",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/.audit-reports/pre-typecheck-meta-report-previous.json",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/.audit-reports/pre-typecheck-meta-report.json",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/.audit-reports/security-audit.json",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/.audit-reports/test-audit.json",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (3.8%) - consider adding more comments",
+          "location": "client/.audit-reports/test-audit.md",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/.audit-reports/todo-aging-audit.json",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (3.4%) - consider adding more comments",
+          "location": "client/.audit-reports/todo-aging-audit.md",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/.audit-reports/type-similarity-audit.json",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/.audit-reports/type-similarity-audit.md",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.5%) - consider adding more comments",
+          "location": "client/.scripts/audit-summary-renderers.mjs",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (55.2%) - may indicate over-commenting",
+          "location": "client/.scripts/shared-audit-utils.mjs",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (41.6%) - may indicate over-commenting",
+          "location": "client/.scripts/type-similarity-audit.mjs",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (2.6%) - consider adding more comments",
+          "location": "client/auto-imports.d.ts",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/package-lock.json",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/package.json",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/src/@core/components/AppBarSearch.vue",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/src/@core/components/ProductDescriptionEditor.vue",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/src/@core/components/TiptapEditor.vue",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (1.8%) - consider adding more comments",
+          "location": "client/src/@core/libs/chartjs/components/LineChart.ts",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.9%) - consider adding more comments",
+          "location": "client/src/@layouts/components/HorizontalNavGroup.vue",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (2.0%) - consider adding more comments",
+          "location": "client/src/@layouts/components/HorizontalNavLayout.vue",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.5%) - consider adding more comments",
+          "location": "client/src/@layouts/components/VerticalNav.vue",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (3.6%) - consider adding more comments",
+          "location": "client/src/@layouts/components/VerticalNavGroup.vue",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (1.7%) - consider adding more comments",
+          "location": "client/src/@layouts/components/VerticalNavLayout.vue",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (3.9%) - consider adding more comments",
+          "location": "client/src/components/admin/MetadataEditModal.vue",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (4.3%) - consider adding more comments",
+          "location": "client/src/components/admin/dev/ApiDevPanel.scss",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (133.3%) - may indicate over-commenting",
+          "location": "client/src/components/admin/dev/devPanelTypes.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/src/components/admin/generic/EntityCardContent.vue",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/src/components/admin/generic/EntityCardFeePreview.vue",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (2.7%) - consider adding more comments",
+          "location": "client/src/components/admin/generic/StatusButton.scss",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (161.5%) - may indicate over-commenting",
+          "location": "client/src/components/admin/generic/entityCardConstants.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (157.1%) - may indicate over-commenting",
+          "location": "client/src/components/admin/generic/fields/fieldTypes.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (3.8%) - consider adding more comments",
+          "location": "client/src/components/admin/metadata/AdminPrimitiveMetadataEditor.vue",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/src/components/beta/BetaFeedbackDashboard.vue",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/src/components/beta/BetaFeedbackDetailModal.vue",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/src/components/beta/BetaFeedbackModal.vue",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (3.4%) - consider adding more comments",
+          "location": "client/src/components/booking/BookingWizard.scss",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (3.0%) - consider adding more comments",
+          "location": "client/src/components/booking/DifferentialGraph.scss",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (1.3%) - consider adding more comments",
+          "location": "client/src/components/booking/MoveablePartsModal.vue",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (1.2%) - consider adding more comments",
+          "location": "client/src/components/booking/SelectionCard.scss",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/src/components/booking/steps/AvailabilityCalendarSection.scss",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (2.5%) - consider adding more comments",
+          "location": "client/src/components/booking/steps/AvailabilityStep.vue",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (4.1%) - consider adding more comments",
+          "location": "client/src/components/booking/steps/ConfirmationStep.vue",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (72.7%) - may indicate over-commenting",
+          "location": "client/src/components/booking/types/selectionCardTypes.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/src/composables/__tests__/useEntity.test.ts",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.7%) - consider adding more comments",
+          "location": "client/src/composables/__tests__/useFieldContext.test.ts",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/src/composables/__tests__/useFieldValue.test.ts",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (62.5%) - may indicate over-commenting",
+          "location": "client/src/composables/admin/tables/useTableModelHelpers.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (65.5%) - may indicate over-commenting",
+          "location": "client/src/composables/admin/useAttendeeQuickSelect.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (115.0%) - may indicate over-commenting",
+          "location": "client/src/composables/admin/useBlockInstanceForm.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (4.6%) - consider adding more comments",
+          "location": "client/src/composables/admin/useBufferSettings.ts",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (2.6%) - consider adding more comments",
+          "location": "client/src/composables/admin/useBusinessRuleForm.ts",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (55.9%) - may indicate over-commenting",
+          "location": "client/src/composables/admin/useCalendarEntries.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (1.8%) - consider adding more comments",
+          "location": "client/src/composables/admin/useCapacitySettings.ts",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (4.2%) - consider adding more comments",
+          "location": "client/src/composables/admin/useDifferentialPerspectives.ts",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (50.0%) - may indicate over-commenting",
+          "location": "client/src/composables/admin/useDragAndDrop.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (66.7%) - may indicate over-commenting",
+          "location": "client/src/composables/admin/useEntityCardLayout.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (102.2%) - may indicate over-commenting",
+          "location": "client/src/composables/admin/useEntityCardSaveState.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (62.5%) - may indicate over-commenting",
+          "location": "client/src/composables/admin/useEntityCardStoreSync.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (55.4%) - may indicate over-commenting",
+          "location": "client/src/composables/admin/useEntityDragHandlers.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (133.3%) - may indicate over-commenting",
+          "location": "client/src/composables/admin/useEntityFormRedirectOptions.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (57.5%) - may indicate over-commenting",
+          "location": "client/src/composables/admin/useEntityGrouping.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (135.6%) - may indicate over-commenting",
+          "location": "client/src/composables/admin/useEntityList.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (52.2%) - may indicate over-commenting",
+          "location": "client/src/composables/admin/useEntityMetadata.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (100.0%) - may indicate over-commenting",
+          "location": "client/src/composables/admin/useEntityTabState.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (83.7%) - may indicate over-commenting",
+          "location": "client/src/composables/admin/useFieldComponent.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (41.9%) - may indicate over-commenting",
+          "location": "client/src/composables/admin/useFieldContextMetadataEntity.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (83.3%) - may indicate over-commenting",
+          "location": "client/src/composables/admin/useFieldInputSetup.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (103.7%) - may indicate over-commenting",
+          "location": "client/src/composables/admin/useFieldLocation.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (70.5%) - may indicate over-commenting",
+          "location": "client/src/composables/admin/useFormElementPatching.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (76.7%) - may indicate over-commenting",
+          "location": "client/src/composables/admin/useInstanceBulkEdit.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (80.0%) - may indicate over-commenting",
+          "location": "client/src/composables/admin/useInstanceComposableOptions.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (44.2%) - may indicate over-commenting",
+          "location": "client/src/composables/admin/useInstanceDragAndDrop.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (42.2%) - may indicate over-commenting",
+          "location": "client/src/composables/admin/useInstanceFiltering.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (72.0%) - may indicate over-commenting",
+          "location": "client/src/composables/admin/useInstanceGrouping.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (60.6%) - may indicate over-commenting",
+          "location": "client/src/composables/admin/useMetadataCache.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (58.0%) - may indicate over-commenting",
+          "location": "client/src/composables/admin/usePartInstanceBulkEdit.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (115.0%) - may indicate over-commenting",
+          "location": "client/src/composables/admin/usePartInstanceForm.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (79.2%) - may indicate over-commenting",
+          "location": "client/src/composables/admin/usePartsCollectionField.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (77.0%) - may indicate over-commenting",
+          "location": "client/src/composables/admin/useRelationshipCollectionField.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (48.0%) - may indicate over-commenting",
+          "location": "client/src/composables/admin/useSelectConfig.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (50.0%) - may indicate over-commenting",
+          "location": "client/src/composables/admin/useSelectDomTargets.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (59.2%) - may indicate over-commenting",
+          "location": "client/src/composables/admin/useSelectFieldValue.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (42.7%) - may indicate over-commenting",
+          "location": "client/src/composables/admin/useSelectHandlers.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (45.9%) - may indicate over-commenting",
+          "location": "client/src/composables/admin/useSelectLabelResolution.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (57.6%) - may indicate over-commenting",
+          "location": "client/src/composables/admin/useShapeDisplayNames.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (61.9%) - may indicate over-commenting",
+          "location": "client/src/composables/admin/useStatusButtonHandlers.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/src/composables/booking/__tests__/useAppointmentDataCollection.test.ts",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/src/composables/booking/__tests__/useWizardNavigation.test.ts",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (69.4%) - may indicate over-commenting",
+          "location": "client/src/composables/booking/selectionCard/useSelectionCardComponent.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (40.5%) - may indicate over-commenting",
+          "location": "client/src/composables/booking/selectionCard/useSelectionCardStyles.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (85.7%) - may indicate over-commenting",
+          "location": "client/src/composables/booking/useAvailabilityDefaults.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (46.9%) - may indicate over-commenting",
+          "location": "client/src/composables/booking/useAvailabilityDevPanel.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (46.6%) - may indicate over-commenting",
+          "location": "client/src/composables/booking/useAvailabilityLogic.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (2.2%) - consider adding more comments",
+          "location": "client/src/composables/booking/useAvailabilityOrchestrator.ts",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (68.2%) - may indicate over-commenting",
+          "location": "client/src/composables/booking/useAvailabilityStepData.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (66.2%) - may indicate over-commenting",
+          "location": "client/src/composables/booking/useAvailabilityUI.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (41.7%) - may indicate over-commenting",
+          "location": "client/src/composables/booking/useAvailabilityValidation.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (84.6%) - may indicate over-commenting",
+          "location": "client/src/composables/booking/useDateRangeDecider.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (48.9%) - may indicate over-commenting",
+          "location": "client/src/composables/booking/useDependentInstances.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (58.3%) - may indicate over-commenting",
+          "location": "client/src/composables/booking/useInstanceComponents.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (83.3%) - may indicate over-commenting",
+          "location": "client/src/composables/booking/useInstanceComponentsList.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (164.0%) - may indicate over-commenting",
+          "location": "client/src/composables/booking/useInstanceDescriptions.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (55.3%) - may indicate over-commenting",
+          "location": "client/src/composables/booking/usePricingCascadeInstances.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (76.6%) - may indicate over-commenting",
+          "location": "client/src/composables/booking/usePropertyFormState.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (60.0%) - may indicate over-commenting",
+          "location": "client/src/composables/booking/usePropertyFormWatchers.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (75.8%) - may indicate over-commenting",
+          "location": "client/src/composables/booking/useSelectionCardGroupConfig.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (47.7%) - may indicate over-commenting",
+          "location": "client/src/composables/booking/useWizardDisplay.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (58.9%) - may indicate over-commenting",
+          "location": "client/src/composables/booking/useWizardNavigation.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (86.4%) - may indicate over-commenting",
+          "location": "client/src/composables/booking/useWizardValidation.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/src/composables/componentEntity/useComponentEntityDomain.ts",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (4.5%) - consider adding more comments",
+          "location": "client/src/composables/entityCrud/useEntityCrudMutations.ts",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (4.1%) - consider adding more comments",
+          "location": "client/src/composables/entityCrud/useEntityCrudMutationsCreate.ts",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (3.8%) - consider adding more comments",
+          "location": "client/src/composables/entityCrud/useEntityCrudMutationsUpdate.ts",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (52.9%) - may indicate over-commenting",
+          "location": "client/src/composables/entityCrud/useSharedMutationHandlers.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.7%) - consider adding more comments",
+          "location": "client/src/composables/fieldContext/useFieldContextActions.ts",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (66.4%) - may indicate over-commenting",
+          "location": "client/src/composables/useAdmin.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (46.9%) - may indicate over-commenting",
+          "location": "client/src/composables/useAdminConfig.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (40.3%) - may indicate over-commenting",
+          "location": "client/src/composables/useBooking.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (115.4%) - may indicate over-commenting",
+          "location": "client/src/composables/useBusiness.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (44.4%) - may indicate over-commenting",
+          "location": "client/src/composables/useComponentDistribution.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (82.7%) - may indicate over-commenting",
+          "location": "client/src/composables/useEntityForm.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (112.0%) - may indicate over-commenting",
+          "location": "client/src/composables/useFieldValue.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (65.0%) - may indicate over-commenting",
+          "location": "client/src/composables/useGlobal.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (91.3%) - may indicate over-commenting",
+          "location": "client/src/composables/useLayoutLoading.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (95.7%) - may indicate over-commenting",
+          "location": "client/src/composables/useLocalTime.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (52.0%) - may indicate over-commenting",
+          "location": "client/src/composables/usePartInstanceData.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (61.0%) - may indicate over-commenting",
+          "location": "client/src/configs/adminConfig.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (80.2%) - may indicate over-commenting",
+          "location": "client/src/configs/availabilitySettings.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (3.5%) - consider adding more comments",
+          "location": "client/src/configs/businessControlsTabStrings.ts",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (185.7%) - may indicate over-commenting",
+          "location": "client/src/configs/eventPerspectiveLabels.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (1.7%) - consider adding more comments",
+          "location": "client/src/configs/field/display/selectableDisplayConfig.ts",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "REFERENCE comment missing See: reference",
+          "location": "client/src/constants/fieldMetadata.ts:87",
+          "suggestion": "Add See: reference to REFERENCE comment"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (105.9%) - may indicate over-commenting",
+          "location": "client/src/constants/fieldMetadata.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (1.2%) - consider adding more comments",
+          "location": "client/src/layouts/components/NavSearchBar.vue",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (56.7%) - may indicate over-commenting",
+          "location": "client/src/services/calendarApiService.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (46.7%) - may indicate over-commenting",
+          "location": "client/src/services/mapsApiService.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (118.2%) - may indicate over-commenting",
+          "location": "client/src/shims/vue-i18n.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (46.7%) - may indicate over-commenting",
+          "location": "client/src/types/admin/AdminEntity.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (148.1%) - may indicate over-commenting",
+          "location": "client/src/types/appointment.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (750.0%) - may indicate over-commenting",
+          "location": "client/src/types/availability.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (50.0%) - may indicate over-commenting",
+          "location": "client/src/types/availabilitySettingsParams.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (100.0%) - may indicate over-commenting",
+          "location": "client/src/types/availabilityStepParams.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (41.2%) - may indicate over-commenting",
+          "location": "client/src/types/component.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (333.3%) - may indicate over-commenting",
+          "location": "client/src/types/datetime.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (5.0%) - consider adding more comments",
+          "location": "client/src/types/entities.ts",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/src/types/entity/formDataEnums.ts",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (125.0%) - may indicate over-commenting",
+          "location": "client/src/types/entity/selectOptions.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (157.1%) - may indicate over-commenting",
+          "location": "client/src/types/googleCalendar.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (114.3%) - may indicate over-commenting",
+          "location": "client/src/types/metadataEditorProps.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (64.1%) - may indicate over-commenting",
+          "location": "client/src/types/propertyForm.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (71.9%) - may indicate over-commenting",
+          "location": "client/src/types/relationships.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (650.0%) - may indicate over-commenting",
+          "location": "client/src/types/userTypes.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (115.1%) - may indicate over-commenting",
+          "location": "client/src/types/wizard.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (87.5%) - may indicate over-commenting",
+          "location": "client/src/types/wizardDevOptions.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/src/utils/__tests__/annotationUtils.test.ts",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/src/utils/__tests__/dependencyCleanup.test.ts",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/src/utils/__tests__/factories/globalDataFactory.ts",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/src/utils/__tests__/factories/relationshipFactory.ts",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (44.4%) - may indicate over-commenting",
+          "location": "client/src/utils/api/betaFeedbackApi.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (66.7%) - may indicate over-commenting",
+          "location": "client/src/utils/api/propertyMappingsApi.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (77.1%) - may indicate over-commenting",
+          "location": "client/src/utils/booking/PartFinal.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (4.1%) - consider adding more comments",
+          "location": "client/src/utils/booking/__tests__/confirmationStepData.test.ts",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (2.7%) - consider adding more comments",
+          "location": "client/src/utils/booking/appointmentDataBuilders.ts",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (96.6%) - may indicate over-commenting",
+          "location": "client/src/utils/booking/dateRangeValidation.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (50.5%) - may indicate over-commenting",
+          "location": "client/src/utils/booking/partFinalizer.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (120.8%) - may indicate over-commenting",
+          "location": "client/src/utils/booking/partsTotals.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (86.2%) - may indicate over-commenting",
+          "location": "client/src/utils/booking/pricingCascadeResolver.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (46.0%) - may indicate over-commenting",
+          "location": "client/src/utils/booking/slotGenerationValidation.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (72.2%) - may indicate over-commenting",
+          "location": "client/src/utils/booking/slotTimeUtils.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (75.4%) - may indicate over-commenting",
+          "location": "client/src/utils/booking/timeSlotMatching.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (178.6%) - may indicate over-commenting",
+          "location": "client/src/utils/booking/timeSlotTypes.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (85.7%) - may indicate over-commenting",
+          "location": "client/src/utils/collections/appendIfMissingById.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (50.0%) - may indicate over-commenting",
+          "location": "client/src/utils/collections/arrayDiff.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (100.0%) - may indicate over-commenting",
+          "location": "client/src/utils/collections/findById.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (117.6%) - may indicate over-commenting",
+          "location": "client/src/utils/debug/windowDebug.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (109.5%) - may indicate over-commenting",
+          "location": "client/src/utils/dev/formatDevPanelData.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (41.3%) - may indicate over-commenting",
+          "location": "client/src/utils/differentialScheduling.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (155.6%) - may indicate over-commenting",
+          "location": "client/src/utils/entities/entityFieldAccess.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (100.0%) - may indicate over-commenting",
+          "location": "client/src/utils/entities/entityFieldPatch.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (42.1%) - may indicate over-commenting",
+          "location": "client/src/utils/errors/axiosErrorUtils.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (74.5%) - may indicate over-commenting",
+          "location": "client/src/utils/eventAttendeeUtils.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (87.5%) - may indicate over-commenting",
+          "location": "client/src/utils/forms/fieldComponentDispatcher.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (44.7%) - may indicate over-commenting",
+          "location": "client/src/utils/forms/fieldLocationDispatcher.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (117.4%) - may indicate over-commenting",
+          "location": "client/src/utils/forms/fieldSorting.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (1.0%) - consider adding more comments",
+          "location": "client/src/utils/forms/formElementPatching.ts",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (56.7%) - may indicate over-commenting",
+          "location": "client/src/utils/forms/getFieldKeys.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (63.2%) - may indicate over-commenting",
+          "location": "client/src/utils/safeDefaults.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/src/utils/time/timeFormatting.ts",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (106.7%) - may indicate over-commenting",
+          "location": "client/src/utils/transformers/entityTransformers.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (87.2%) - may indicate over-commenting",
+          "location": "client/src/utils/transformers/fetchToBusinessTransformer.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (53.3%) - may indicate over-commenting",
+          "location": "client/src/utils/transformers/fetchToGlobalTransformer.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (52.0%) - may indicate over-commenting",
+          "location": "client/src/utils/transformers/transformerCollections.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (44.8%) - may indicate over-commenting",
+          "location": "client/src/utils/transformers/transformerPrimitives.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/src/views/admin/entities/PartInstanceList.vue",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/src/views/admin/entities/PartShapeForm.vue",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/src/views/admin/entities/PartShapeList.vue",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.3%) - consider adding more comments",
+          "location": "client/src/views/admin/tabs/BusinessControlsTab.vue",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/src/views/admin/tabs/BusinessRulesTab.vue",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/src/views/admin/tabs/PropertyMappingsTab.vue",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/src/views/admin/tabs/RuleFormDialog.vue",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.7%) - consider adding more comments",
+          "location": "client/src/views/admin/tabs/components/AppointmentsCreateForm.vue",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/src/views/admin/tabs/components/AppointmentsTable.vue",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/src/views/admin/tabs/components/CapacityConstraintsPanel.vue",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.5%) - consider adding more comments",
+          "location": "client/src/views/admin/tabs/components/FeeCalibrationPanel.vue",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/src/views/admin/tabs/components/GridConfigPanel.vue",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "client/src/views/admin/tabs/components/RangeConstraintsPanel.vue",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (68.4%) - may indicate over-commenting",
+          "location": "client/src/views/booking/BookingWizardView.vue",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "server/package-lock.json",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (0.0%) - consider adding more comments",
+          "location": "server/package.json",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (50.0%) - may indicate over-commenting",
+          "location": "server/src/app.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (56.7%) - may indicate over-commenting",
+          "location": "server/src/config/brightMlsFoundationMapping.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (4.7%) - consider adding more comments",
+          "location": "server/src/db/models/beta/beta_feedback.ts",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (4.4%) - consider adding more comments",
+          "location": "server/src/db/models/index.ts",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (243.8%) - may indicate over-commenting",
+          "location": "server/src/middlewares/security.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (44.4%) - may indicate over-commenting",
+          "location": "server/src/routes/external/oauthCallbackRouter.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (41.9%) - may indicate over-commenting",
+          "location": "server/src/routes/helpers/createCrudRouter.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (61.1%) - may indicate over-commenting",
+          "location": "server/src/routes/helpers/crudRouterTypes.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (70.6%) - may indicate over-commenting",
+          "location": "server/src/routes/helpers/dataController.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (183.3%) - may indicate over-commenting",
+          "location": "server/src/routes/helpers/requestHelpers.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (73.9%) - may indicate over-commenting",
+          "location": "server/src/routes/helpers/routerValidators.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (80.0%) - may indicate over-commenting",
+          "location": "server/src/routes/internal/admin-metadata/adminMetadataErrorHandler.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (56.3%) - may indicate over-commenting",
+          "location": "server/src/routes/internal/admin-metadata/adminMetadataHelpers.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (74.6%) - may indicate over-commenting",
+          "location": "server/src/routes/internal/admin-metadata/adminMetadataValidators.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (80.0%) - may indicate over-commenting",
+          "location": "server/src/routes/internal/admin-primitive-metadata/adminPrimitiveMetadataErrorHandler.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (69.0%) - may indicate over-commenting",
+          "location": "server/src/routes/internal/admin-primitive-metadata/adminPrimitiveMetadataHelpers.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (74.6%) - may indicate over-commenting",
+          "location": "server/src/routes/internal/admin-primitive-metadata/adminPrimitiveMetadataValidators.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (80.0%) - may indicate over-commenting",
+          "location": "server/src/routes/internal/admin-relationship-metadata/adminRelationshipMetadataErrorHandler.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (177.8%) - may indicate over-commenting",
+          "location": "server/src/routes/internal/admin-relationship-metadata/adminRelationshipMetadataHelpers.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (74.5%) - may indicate over-commenting",
+          "location": "server/src/routes/internal/admin-relationship-metadata/adminRelationshipMetadataValidators.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (77.8%) - may indicate over-commenting",
+          "location": "server/src/routes/internal/appointment-fees/appointmentFeeConstants.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (50.0%) - may indicate over-commenting",
+          "location": "server/src/routes/internal/appointment-fees/appointmentFeeCrudRouter.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (140.0%) - may indicate over-commenting",
+          "location": "server/src/routes/internal/appointment-fees/appointmentFeeRouter.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (128.6%) - may indicate over-commenting",
+          "location": "server/src/routes/internal/appointments/appointmentConstants.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (43.9%) - may indicate over-commenting",
+          "location": "server/src/routes/internal/appointments/appointmentHelpers.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (66.7%) - may indicate over-commenting",
+          "location": "server/src/routes/internal/availabilityValidators.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (58.3%) - may indicate over-commenting",
+          "location": "server/src/routes/internal/beta-feedback/betaFeedbackErrorHandler.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (64.1%) - may indicate over-commenting",
+          "location": "server/src/routes/internal/businessRulesValidators.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (56.4%) - may indicate over-commenting",
+          "location": "server/src/routes/internal/entities/entityBulkRouter.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (74.4%) - may indicate over-commenting",
+          "location": "server/src/routes/internal/entities/entityErrorHandler.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (42.3%) - may indicate over-commenting",
+          "location": "server/src/routes/internal/entities/entityHelpers.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (118.8%) - may indicate over-commenting",
+          "location": "server/src/routes/internal/entities/entitySanitizers.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (96.5%) - may indicate over-commenting",
+          "location": "server/src/routes/internal/properties/propertyConstants.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (74.2%) - may indicate over-commenting",
+          "location": "server/src/routes/internal/properties/propertyHelpers.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (40.1%) - may indicate over-commenting",
+          "location": "server/src/routes/internal/properties/propertyTypesRouter.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (77.4%) - may indicate over-commenting",
+          "location": "server/src/routes/internal/relationships/relationshipErrorHandler.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (43.8%) - may indicate over-commenting",
+          "location": "server/src/routes/internal/relationships/relationshipHelpers.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (143.8%) - may indicate over-commenting",
+          "location": "server/src/routes/internal/relationships/relationshipValidators.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (50.5%) - may indicate over-commenting",
+          "location": "server/src/scripts/helpers/calendarParsingHelpers.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (106.9%) - may indicate over-commenting",
+          "location": "server/src/services/addressGeocodingCache.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (41.2%) - may indicate over-commenting",
+          "location": "server/src/services/brightMls/brightMlsAuth.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (95.4%) - may indicate over-commenting",
+          "location": "server/src/services/calendarEventsCache.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (56.3%) - may indicate over-commenting",
+          "location": "server/src/services/google/calendar/calendarTypes.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (73.9%) - may indicate over-commenting",
+          "location": "server/src/services/google/maps/mapsErrorHandler.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (41.9%) - may indicate over-commenting",
+          "location": "server/src/services/google/maps/mapsTypes.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (60.3%) - may indicate over-commenting",
+          "location": "server/src/services/invites/inviteContextBuilder.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (54.7%) - may indicate over-commenting",
+          "location": "server/src/services/invites/templateResolver.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (56.7%) - may indicate over-commenting",
+          "location": "server/src/services/rateLimiter.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "warning",
+          "message": "Low comment density (4.8%) - consider adding more comments",
+          "location": "server/src/test/setup/seedTestData.ts",
+          "suggestion": "Add comments for complex logic, architectural patterns, and framework transitions"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (50.0%) - may indicate over-commenting",
+          "location": "server/src/types/brightMls.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (166.7%) - may indicate over-commenting",
+          "location": "server/src/utils/arrayNormalize.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (62.4%) - may indicate over-commenting",
+          "location": "server/src/utils/availabilities/availabiltiesDbUtils.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (175.0%) - may indicate over-commenting",
+          "location": "server/src/utils/envHelpers.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (63.2%) - may indicate over-commenting",
+          "location": "server/src/utils/safeDefaults.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (56.5%) - may indicate over-commenting",
+          "location": "server/src/utils/userTypeMapping.ts",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        },
+        {
+          "type": "info",
+          "message": "High comment density (183.3%) - may indicate over-commenting",
+          "location": "server/tsconfig.json",
+          "suggestion": "Review comments - some may be redundant or unnecessary"
+        }
+      ],
+      "recommendations": [
+        "Review 495 file(s) with comment issues",
+        "Use /comment-review [file] to get specific suggestions",
+        "Add STRUCTURED comments for complex logic and architectural patterns",
+        "Add REFERENCE comments when reusing established patterns"
+      ],
+      "summary": "Audited 719 file(s). 495 file(s) with issues. 13588 total suggestions."
+    },
+    {
+      "category": "security",
+      "status": "fail",
+      "score": 0,
+      "findings": [
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: **Dependency vulnerabilities detected**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **@eslint/config-array@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **@eslint/eslintrc@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **@jest/core@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **@jest/expect@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **@jest/globals@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **@jest/reporters@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **@jest/transform@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **@typescript-eslint/eslint-plugin@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **@typescript-eslint/parser@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **@typescript-eslint/type-utils@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **@typescript-eslint/typescript-estree@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **@typescript-eslint/utils@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **babel-jest@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **babel-plugin-istanbul@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **create-jest@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **editorconfig@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **eslint@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **gaxios@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **glob@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **jest@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **jest-circus@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **jest-cli@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **jest-config@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **jest-resolve-dependencies@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **jest-runner@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **jest-runtime@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **jest-snapshot@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **js-beautify@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **minimatch@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **nodemon@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **rimraf@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **sequelize-cli@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **test-exclude@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **ts-jest@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "warning",
+          "message": "1. Dependency Vulnerabilities: -  **@babel/helpers@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security best practices"
+        },
+        {
+          "type": "warning",
+          "message": "1. Dependency Vulnerabilities: -  **ajv@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security best practices"
+        },
+        {
+          "type": "warning",
+          "message": "1. Dependency Vulnerabilities: -  **js-yaml@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security best practices"
+        },
+        {
+          "type": "warning",
+          "message": "3. Security Configuration: -  **server/src/middlewares/errorHandler.ts**",
+          "location": "3. Security Configuration",
+          "suggestion": "Review security best practices"
+        },
+        {
+          "type": "warning",
+          "message": "3. Security Configuration: -  **server/src/routes/external/oauthCallbackRouter.ts**",
+          "location": "3. Security Configuration",
+          "suggestion": "Review security best practices"
+        },
+        {
+          "type": "warning",
+          "message": "3. Security Configuration: -  **server/src/routes/internal/relationships/relationshipCrudRouter.ts**",
+          "location": "3. Security Configuration",
+          "suggestion": "Review security best practices"
+        },
+        {
+          "type": "warning",
+          "message": "3. Security Configuration: -  **app configuration**",
+          "location": "3. Security Configuration",
+          "suggestion": "Review security best practices"
+        },
+        {
+          "type": "warning",
+          "message": "3. Security Configuration: -  **session configuration**",
+          "location": "3. Security Configuration",
+          "suggestion": "Review security best practices"
+        },
+        {
+          "type": "warning",
+          "message": "3. Security Configuration: -  **session configuration**",
+          "location": "3. Security Configuration",
+          "suggestion": "Review security best practices"
+        },
+        {
+          "type": "warning",
+          "message": "5. Authentication Patterns: -  **package.json**",
+          "location": "5. Authentication Patterns",
+          "suggestion": "Review security best practices"
+        },
+        {
+          "type": "error",
+          "message": "6. IDOR Vulnerabilities: **1 security check(s) found issues**",
+          "location": "6. IDOR Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "6. IDOR Vulnerabilities: | Dependencies |  Issues Found |",
+          "location": "6. IDOR Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        }
+      ],
+      "recommendations": [
+        "Fix 37 security error(s) immediately",
+        "Review SECURITY_GUIDELINES.md for best practices",
+        "Address 10 security warning(s)",
+        "Ensure all API endpoints have proper authentication",
+        "Validate all user inputs on server side"
+      ],
+      "summary": "Security audit failed. 37 error(s), 10 warning(s)."
+    },
+    {
+      "category": "planning",
+      "status": "fail",
+      "score": 58,
+      "findings": [
+        {
+          "type": "warning",
+          "message": "Missing or incomplete section: Overview",
+          "location": ".project-manager/features/calendar-appointment-availability/phases/phase-3.6-guide.md",
+          "suggestion": "Add or complete Overview section in planning document"
+        },
+        {
+          "type": "warning",
+          "message": "Missing or incomplete section: Objectives",
+          "location": ".project-manager/features/calendar-appointment-availability/phases/phase-3.6-guide.md",
+          "suggestion": "Add or complete Objectives section in planning document"
+        },
+        {
+          "type": "warning",
+          "message": "Missing or incomplete section: Tasks",
+          "location": ".project-manager/features/calendar-appointment-availability/phases/phase-3.6-guide.md",
+          "suggestion": "Add or complete Tasks section in planning document"
+        },
+        {
+          "type": "warning",
+          "message": "Missing or incomplete section: Success Criteria",
+          "location": ".project-manager/features/calendar-appointment-availability/phases/phase-3.6-guide.md",
+          "suggestion": "Add or complete Success Criteria section in planning document"
+        },
+        {
+          "type": "info",
+          "message": "No alternatives considered section found",
+          "location": ".project-manager/features/calendar-appointment-availability/phases/phase-3.6-guide.md",
+          "suggestion": "Consider documenting alternatives for major architectural decisions"
+        }
+      ],
+      "recommendations": [
+        "Add missing sections: Overview, Objectives, Tasks, Success Criteria",
+        "Planning document needs significant improvement"
+      ],
+      "summary": "Planning document partially meets quality standards. 4 missing section(s)."
+    },
+    {
+      "category": "docs",
+      "status": "fail",
+      "score": 65,
+      "findings": [
+        {
+          "type": "warning",
+          "message": "Guide missing or incomplete section: Overview",
+          "location": ".project-manager/features/calendar-appointment-availability/phases/phase-3.6-guide.md",
+          "suggestion": "Add or complete Overview section in guide"
+        },
+        {
+          "type": "warning",
+          "message": "Guide missing or incomplete section: Objectives",
+          "location": ".project-manager/features/calendar-appointment-availability/phases/phase-3.6-guide.md",
+          "suggestion": "Add or complete Objectives section in guide"
+        },
+        {
+          "type": "warning",
+          "message": "Guide missing or incomplete section: Tasks",
+          "location": ".project-manager/features/calendar-appointment-availability/phases/phase-3.6-guide.md",
+          "suggestion": "Add or complete Tasks section in guide"
+        },
+        {
+          "type": "warning",
+          "message": "Log document not found for phase 3.6",
+          "location": "phase log",
+          "suggestion": "Create log document to track progress"
+        },
+        {
+          "type": "warning",
+          "message": "Handover document not found for phase 3.6",
+          "location": "phase handoff",
+          "suggestion": "Create handover document for transition context"
+        }
+      ],
+      "recommendations": [
+        "Create log document",
+        "Create handover document"
+      ],
+      "summary": "1/3 documents exist. 5 issue(s) found."
+    },
+    {
+      "category": "vue-architecture",
+      "status": "fail",
+      "score": 0,
+      "findings": [
+        {
+          "type": "warning",
+          "message": "Component script is large (211 non-empty lines). This often indicates logic creep.",
+          "location": "client/src/@core/components/TheCustomizer.vue",
+          "suggestion": "Move domain rules/orchestration into composables; keep only UI state and event wiring."
+        },
+        {
+          "type": "error",
+          "message": "Component script references a network/fetch client. Data fetching should be moved into composables/stores/services.",
+          "location": "client/src/components/admin/dev/ApiDevPanel.vue",
+          "suggestion": "Extract to a composable (use*Query) or store/service and keep component as wiring + UI behavior."
+        },
+        {
+          "type": "warning",
+          "message": "Component script is large (411 non-empty lines). This often indicates logic creep.",
+          "location": "client/src/components/admin/generic/EntityCard.vue",
+          "suggestion": "Move domain rules/orchestration into composables; keep only UI state and event wiring."
+        },
+        {
+          "type": "warning",
+          "message": "Component script is large (196 non-empty lines). This often indicates logic creep.",
+          "location": "client/src/components/admin/generic/EntityCardSubPanels.vue",
+          "suggestion": "Move domain rules/orchestration into composables; keep only UI state and event wiring."
+        },
+        {
+          "type": "warning",
+          "message": "Component script is large (187 non-empty lines). This often indicates logic creep.",
+          "location": "client/src/components/admin/generic/fields/FieldRenderer.vue",
+          "suggestion": "Move domain rules/orchestration into composables; keep only UI state and event wiring."
+        },
+        {
+          "type": "warning",
+          "message": "Component script is large (207 non-empty lines). This often indicates logic creep.",
+          "location": "client/src/components/admin/generic/fields/SelectInputs.vue",
+          "suggestion": "Move domain rules/orchestration into composables; keep only UI state and event wiring."
+        },
+        {
+          "type": "warning",
+          "message": "Component script is large (215 non-empty lines). This often indicates logic creep.",
+          "location": "client/src/components/admin/metadata/AdminPrimitiveMetadataEditor.vue",
+          "suggestion": "Move domain rules/orchestration into composables; keep only UI state and event wiring."
+        },
+        {
+          "type": "error",
+          "message": "Component script references a network/fetch client. Data fetching should be moved into composables/stores/services.",
+          "location": "client/src/components/booking/BookingWizard.vue",
+          "suggestion": "Extract to a composable (use*Query) or store/service and keep component as wiring + UI behavior."
+        },
+        {
+          "type": "warning",
+          "message": "Component script is large (235 non-empty lines). This often indicates logic creep.",
+          "location": "client/src/components/booking/BookingWizard.vue",
+          "suggestion": "Move domain rules/orchestration into composables; keep only UI state and event wiring."
+        },
+        {
+          "type": "warning",
+          "message": "Component script is large (257 non-empty lines). This often indicates logic creep.",
+          "location": "client/src/components/booking/dev/DevPanelsContainer.vue",
+          "suggestion": "Move domain rules/orchestration into composables; keep only UI state and event wiring."
+        },
+        {
+          "type": "error",
+          "message": "Component script references a network/fetch client. Data fetching should be moved into composables/stores/services.",
+          "location": "client/src/components/booking/steps/PropertyDetailsStep.vue",
+          "suggestion": "Extract to a composable (use*Query) or store/service and keep component as wiring + UI behavior."
+        },
+        {
+          "type": "error",
+          "message": "Component script references a network/fetch client. Data fetching should be moved into composables/stores/services.",
+          "location": "client/src/components/common/AddressAutocomplete.vue",
+          "suggestion": "Extract to a composable (use*Query) or store/service and keep component as wiring + UI behavior."
+        },
+        {
+          "type": "warning",
+          "message": "Component script is large (271 non-empty lines). This often indicates logic creep.",
+          "location": "client/src/components/common/AddressAutocomplete.vue",
+          "suggestion": "Move domain rules/orchestration into composables; keep only UI state and event wiring."
+        },
+        {
+          "type": "warning",
+          "message": "Component script is large (388 non-empty lines). This often indicates logic creep.",
+          "location": "client/src/views/admin/tabs/InstancesTab.vue",
+          "suggestion": "Move domain rules/orchestration into composables; keep only UI state and event wiring."
+        },
+        {
+          "type": "warning",
+          "message": "Component defines many local functions (10). Consider extracting reusable/domain logic into composables.",
+          "location": "client/src/views/admin/tabs/InstancesTab.vue",
+          "suggestion": "If functions implement business rules or shared transforms, move them into composables/utilities."
+        },
+        {
+          "type": "warning",
+          "message": "Component script is large (377 non-empty lines). This often indicates logic creep.",
+          "location": "client/src/views/admin/tabs/ShapesTab.vue",
+          "suggestion": "Move domain rules/orchestration into composables; keep only UI state and event wiring."
+        },
+        {
+          "type": "warning",
+          "message": "Component defines many local functions (18). Consider extracting reusable/domain logic into composables.",
+          "location": "client/src/views/admin/tabs/ShapesTab.vue",
+          "suggestion": "If functions implement business rules or shared transforms, move them into composables/utilities."
+        },
+        {
+          "type": "warning",
+          "message": "Component defines many local functions (9). Consider extracting reusable/domain logic into composables.",
+          "location": "client/src/views/admin/tabs/components/AppointmentsTable.vue",
+          "suggestion": "If functions implement business rules or shared transforms, move them into composables/utilities."
+        }
+      ],
+      "recommendations": [
+        "Review `.project-manager/patterns/vue-architecture-contract.md` and move domain logic out of components.",
+        "Review `.project-manager/patterns/composable-taxonomy.md` and standardize composable naming/return shapes."
+      ],
+      "summary": "Scanned 149 .vue file(s); found 4 error(s), 14 warning(s)."
+    }
+  ],
+  "timestamp": "2026-02-22T22:15:39.612Z",
+  "reportPath": "",
+  "featureName": "calendar-appointment-availability",
+  "auditType": "start",
+  "baselineComparison": []
+}

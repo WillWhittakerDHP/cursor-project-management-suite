@@ -42,7 +42,7 @@ interface PartTypeEntity { id: string; name: string; }
 **Good Example:**
 ```typescript
 // ✅ Generic base with runtime config (see: frontend-root/src/global/types/globalEntityTypes.ts)
-interface BaseGlobalEntity<GE extends GlobalEntityKey> {
+interface GlobalEntityBase<GE extends GlobalEntityKey> {
   id: GlobalEntityId;
   entityKey: GE;
   name: string;

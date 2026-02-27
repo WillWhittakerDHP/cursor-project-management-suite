@@ -8,6 +8,8 @@ import { WorkflowCommandContext } from '../../../utils/command-context';
 import { MarkdownUtils } from '../../../utils/markdown-utils';
 import { resolveFeatureName, resolveFeatureId } from '../../../utils/feature-context';
 import { appendChildToParentDoc } from '../../../utils/append-child-to-parent';
+import { readProjectFile } from '../../../utils/utils';
+import { WorkflowId } from '../../../utils/id-utils';
 
 export async function planPhaseImpl(
   phaseId: string,
@@ -96,6 +98,52 @@ export async function planPhaseImpl(
     output.push(`**Error Details:** ${_error instanceof Error ? _error.message : String(_error)}\n`);
     output.push('\n---\n');
   }
+
+  output.push('## Decomposition (Phase → Sessions)\n');
+  try {
+    const phaseGuidePath = context.paths.getPhaseGuidePath(phase);
+    let guideContent = '';
+    try {
+      guideContent = await readProjectFile(phaseGuidePath);
+    } catch {
+      guideContent = '';
+    }
+    const sessionMatches = guideContent.matchAll(/Session\s+(\d+\.\d+\.\d+):/g);
+    const existingSessions: string[] = [];
+    for (const m of sessionMatches) {
+      if (WorkflowId.isValidSessionId(m[1])) existingSessions.push(m[1]);
+    }
+    if (existingSessions.length === 0) {
+      const firstSessionId = phaseId.includes('.') ? `${phaseId}.1` : null;
+      if (firstSessionId && WorkflowId.isValidSessionId(firstSessionId)) {
+        const appendResult = await appendChildToParentDoc(
+          'phase',
+          phaseId,
+          firstSessionId,
+          resolvedDescription.slice(0, 200) || `Session ${firstSessionId}`,
+          context
+        );
+        if (appendResult.success && !appendResult.alreadyExists) {
+          output.push(`**Scaffolded:** Session ${firstSessionId} added to phase guide.\n`);
+          output.push('Refine session descriptions in the phase guide, then run `/session-start ' + firstSessionId + '` to plan the first session.\n');
+        } else if (appendResult.alreadyExists) {
+          output.push('**Sessions** already present in phase guide.\n');
+        } else {
+          output.push(`**Note:** ${appendResult.output.join(' ')}\n`);
+        }
+      } else {
+        output.push(`**Note:** Could not derive valid session ID for phase ${phaseId}. Add sessions manually to the phase guide.\n`);
+      }
+    } else {
+      output.push(`**Sessions** already listed (${existingSessions.length}): ${existingSessions.join(', ')}. Review and refine as needed.\n`);
+    }
+    const firstSessionIdNext = phaseId.includes('.') ? `${phaseId}.1` : 'X.Y.Z';
+    output.push('\n**Next:** Run `/session-start ' + firstSessionIdNext + '` to begin planning the first session.\n');
+  } catch (_error) {
+    output.push(`**Warning:** Decomposition step failed: ${_error instanceof Error ? _error.message : String(_error)}\n`);
+    output.push('You can add sessions manually to the phase guide, then run `/session-start [X.Y.Z]`.\n');
+  }
+  output.push('\n---\n');
 
   output.push('## Test Strategy\n');
   output.push('**Document test requirements for this phase:**\n');

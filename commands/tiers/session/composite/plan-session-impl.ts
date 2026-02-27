@@ -116,6 +116,34 @@ export async function planSessionImpl(
     output.push(`**Error Details:** ${error instanceof Error ? error.message : String(error)}\n`);
   }
 
+  output.push('\n## Decomposition (Session → Tasks)\n');
+  try {
+    const guideContent = sessionGuideTemplate || (await context.readSessionGuide(sessionId).catch(() => ''));
+    const taskMatches = guideContent.matchAll(/(?:####|###)\s+Task\s+(\d+\.\d+\.\d+\.\d+):/g);
+    const taskIds: string[] = [];
+    for (const m of taskMatches) {
+      if (WorkflowId.parseTaskId(m[1])) taskIds.push(m[1]);
+    }
+    if (taskIds.length === 0) {
+      const firstTaskId = `${sessionId}.1`;
+      const appendResult = await appendChildToParentDoc(
+        'session',
+        sessionId,
+        firstTaskId,
+        resolvedDescription.slice(0, 150) || `Task 1`,
+        context
+      );
+      if (appendResult.success && !appendResult.alreadyExists) {
+        output.push(`**Scaffolded:** Task ${firstTaskId} added to session guide.\n`);
+      }
+    }
+    const tasksList = taskIds.length > 0 ? taskIds : ([`${sessionId}.1`] as string[]);
+    output.push(`**Tasks:** ${tasksList.join(', ')}\n`);
+    output.push('Refine goal, files, approach, and checkpoint for each task in the session guide before session-start cascades to task-start.\n');
+    output.push('\n**Next:** Run `/session-start ' + sessionId + '`; after confirmation, cascade to `/task-start ' + (tasksList[0] || `${sessionId}.1`) + '`.\n');
+  } catch (_error) {
+    output.push(`**Warning:** Decomposition step failed: ${_error instanceof Error ? _error.message : String(_error)}\n`);
+  }
   output.push('\n---\n');
   output.push('## Test Strategy\n');
   output.push('**Document test requirements for this session:**\n');

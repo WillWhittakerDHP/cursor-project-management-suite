@@ -1,0 +1,229 @@
+{
+  "tier": "task",
+  "identifier": "6.3.1.5",
+  "overallStatus": "fail",
+  "results": [
+    {
+      "category": "security",
+      "status": "fail",
+      "score": 0,
+      "findings": [
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: **Dependency vulnerabilities detected**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **axios@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **body-parser@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **express@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **form-data@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "1. Dependency Vulnerabilities: -  **qs@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "warning",
+          "message": "1. Dependency Vulnerabilities: -  **@babel/runtime@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security best practices"
+        },
+        {
+          "type": "warning",
+          "message": "1. Dependency Vulnerabilities: -  **lodash@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security best practices"
+        },
+        {
+          "type": "warning",
+          "message": "1. Dependency Vulnerabilities: -  **vite@unknown**",
+          "location": "1. Dependency Vulnerabilities",
+          "suggestion": "Review security best practices"
+        },
+        {
+          "type": "warning",
+          "message": "3. Security Configuration: -  **app configuration**",
+          "location": "3. Security Configuration",
+          "suggestion": "Review security best practices"
+        },
+        {
+          "type": "warning",
+          "message": "3. Security Configuration: -  **app configuration**",
+          "location": "3. Security Configuration",
+          "suggestion": "Review security best practices"
+        },
+        {
+          "type": "warning",
+          "message": "3. Security Configuration: -  **app configuration**",
+          "location": "3. Security Configuration",
+          "suggestion": "Review security best practices"
+        },
+        {
+          "type": "warning",
+          "message": "3. Security Configuration: -  **session configuration**",
+          "location": "3. Security Configuration",
+          "suggestion": "Review security best practices"
+        },
+        {
+          "type": "warning",
+          "message": "3. Security Configuration: -  **session configuration**",
+          "location": "3. Security Configuration",
+          "suggestion": "Review security best practices"
+        },
+        {
+          "type": "warning",
+          "message": "5. Authentication Patterns: -  **package.json**",
+          "location": "5. Authentication Patterns",
+          "suggestion": "Review security best practices"
+        },
+        {
+          "type": "error",
+          "message": "6. IDOR Vulnerabilities: **1 security check(s) found issues**",
+          "location": "6. IDOR Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        },
+        {
+          "type": "error",
+          "message": "6. IDOR Vulnerabilities: | Dependencies |  Issues Found |",
+          "location": "6. IDOR Vulnerabilities",
+          "suggestion": "Review security guidelines and fix security issues"
+        }
+      ],
+      "recommendations": [
+        "Fix 8 security error(s) immediately",
+        "Review SECURITY_GUIDELINES.md for best practices",
+        "Address 9 security warning(s)"
+      ],
+      "summary": "Security audit failed. 8 error(s), 9 warning(s)."
+    },
+    {
+      "category": "vue-architecture",
+      "status": "fail",
+      "score": 0,
+      "findings": [
+        {
+          "type": "warning",
+          "message": "Component script is large (211 non-empty lines). This often indicates logic creep.",
+          "location": "client/src/@core/components/TheCustomizer.vue",
+          "suggestion": "Move domain rules/orchestration into composables; keep only UI state and event wiring."
+        },
+        {
+          "type": "warning",
+          "message": "Component script is large (319 non-empty lines). This often indicates logic creep.",
+          "location": "client/src/components/admin/generic/EntityCard.vue",
+          "suggestion": "Move domain rules/orchestration into composables; keep only UI state and event wiring."
+        },
+        {
+          "type": "warning",
+          "message": "Component script is large (194 non-empty lines). This often indicates logic creep.",
+          "location": "client/src/components/admin/generic/fields/SelectInputs.vue",
+          "suggestion": "Move domain rules/orchestration into composables; keep only UI state and event wiring."
+        },
+        {
+          "type": "warning",
+          "message": "Component script is large (215 non-empty lines). This often indicates logic creep.",
+          "location": "client/src/components/admin/metadata/AdminPrimitiveMetadataEditor.vue",
+          "suggestion": "Move domain rules/orchestration into composables; keep only UI state and event wiring."
+        },
+        {
+          "type": "warning",
+          "message": "Component script is large (213 non-empty lines). This often indicates logic creep.",
+          "location": "client/src/components/booking/BookingWizard.vue",
+          "suggestion": "Move domain rules/orchestration into composables; keep only UI state and event wiring."
+        },
+        {
+          "type": "warning",
+          "message": "Component script is large (242 non-empty lines). This often indicates logic creep.",
+          "location": "client/src/components/booking/dev/DevPanelsContainer.vue",
+          "suggestion": "Move domain rules/orchestration into composables; keep only UI state and event wiring."
+        },
+        {
+          "type": "error",
+          "message": "Component script references a network/fetch client. Data fetching should be moved into composables/stores/services.",
+          "location": "client/src/components/booking/steps/PropertyDetailsStep.vue",
+          "suggestion": "Extract to a composable (use*Query) or store/service and keep component as wiring + UI behavior."
+        },
+        {
+          "type": "error",
+          "message": "Component script references a network/fetch client. Data fetching should be moved into composables/stores/services.",
+          "location": "client/src/components/common/AddressAutocomplete.vue",
+          "suggestion": "Extract to a composable (use*Query) or store/service and keep component as wiring + UI behavior."
+        },
+        {
+          "type": "warning",
+          "message": "Component script is large (212 non-empty lines). This often indicates logic creep.",
+          "location": "client/src/components/common/AddressAutocomplete.vue",
+          "suggestion": "Move domain rules/orchestration into composables; keep only UI state and event wiring."
+        },
+        {
+          "type": "warning",
+          "message": "Component script is large (181 non-empty lines). This often indicates logic creep.",
+          "location": "client/src/views/admin/tabs/BusinessControlsTab.vue",
+          "suggestion": "Move domain rules/orchestration into composables; keep only UI state and event wiring."
+        },
+        {
+          "type": "warning",
+          "message": "Component script is large (355 non-empty lines). This often indicates logic creep.",
+          "location": "client/src/views/admin/tabs/InstancesTab.vue",
+          "suggestion": "Move domain rules/orchestration into composables; keep only UI state and event wiring."
+        },
+        {
+          "type": "warning",
+          "message": "Component defines many local functions (10). Consider extracting reusable/domain logic into composables.",
+          "location": "client/src/views/admin/tabs/InstancesTab.vue",
+          "suggestion": "If functions implement business rules or shared transforms, move them into composables/utilities."
+        },
+        {
+          "type": "warning",
+          "message": "Component script is large (292 non-empty lines). This often indicates logic creep.",
+          "location": "client/src/views/admin/tabs/ShapesTab.vue",
+          "suggestion": "Move domain rules/orchestration into composables; keep only UI state and event wiring."
+        },
+        {
+          "type": "warning",
+          "message": "Component defines many local functions (18). Consider extracting reusable/domain logic into composables.",
+          "location": "client/src/views/admin/tabs/ShapesTab.vue",
+          "suggestion": "If functions implement business rules or shared transforms, move them into composables/utilities."
+        },
+        {
+          "type": "warning",
+          "message": "Component defines many local functions (10). Consider extracting reusable/domain logic into composables.",
+          "location": "client/src/views/admin/tabs/components/AppointmentsTable.vue",
+          "suggestion": "If functions implement business rules or shared transforms, move them into composables/utilities."
+        }
+      ],
+      "recommendations": [
+        "Review `.project-manager/patterns/vue-architecture-contract.md` and move domain logic out of components.",
+        "Review `.project-manager/patterns/composable-taxonomy.md` and standardize composable naming/return shapes."
+      ],
+      "summary": "Scanned 149 .vue file(s); found 2 error(s), 13 warning(s)."
+    }
+  ],
+  "timestamp": "2026-02-23T22:23:15.308Z",
+  "reportPath": "",
+  "featureName": "appointment-workflow",
+  "auditType": "end",
+  "baselineComparison": []
+}

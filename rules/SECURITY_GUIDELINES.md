@@ -85,6 +85,18 @@ if (error) {
 
 ---
 
+### Production Deployment
+
+**HTTPS:** Enforce HTTPS in production (e.g. at reverse proxy or load balancer). Do not send sensitive cookies or credentials over plain HTTP.
+
+**Session cookies:** When using session middleware, set `secure: true` (HTTPS only) and `httpOnly: true` (not accessible to JavaScript) to mitigate XSS and sniffing.
+
+**Error responses:** In production, do not expose stack traces or internal error messages to clients; use generic messages and log details server-side only.
+
+**Passwords:** When storing user passwords, use a dedicated hashing library (e.g. bcrypt, argon2). Never store plain-text passwords.
+
+---
+
 ### Secure Configuration
 
 **Risk:** Hardcoded secrets can be exposed in version control.

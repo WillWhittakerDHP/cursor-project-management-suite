@@ -1,51 +1,25 @@
 /**
- * Atomic Command: /verify-app
- * Verify app is up (server 3001, client 3002). Check first; only start if not listening.
- * Resolves project root by walking up from process.cwd() for package.json with start:dev and
- * scripts/start-dev.mjs, and uses that as cwd for `npm run start:dev`.
+ * Shared utility: check whether the dev app is running (server + client ports).
+ *
+ * This is a CHECK-ONLY utility — it never spawns processes or kills ports.
+ * Spawning belongs in the developer's terminal (`npm run start:dev`),
+ * not in the tier command pipeline.
+ *
+ * Called by tier orchestrators (tier-start, tier-end) when the tier config
+ * declares `preflight.ensureAppRunning`. Individual tier impls should NOT
+ * import this directly — that keeps infrastructure concerns out of business logic.
  */
 
-import { spawn } from 'child_process';
 import * as net from 'net';
-import { existsSync, readFileSync } from 'fs';
-import { join, resolve } from 'path';
 
-/** Ports used by start-dev.mjs: server 3001, client (Vite) 3002 */
 const SERVER_PORT = 3001;
 const CLIENT_PORT = 3002;
 
 /**
- * Find project root: directory that has package.json with "start:dev" and scripts/start-dev.mjs.
- * Walks up from process.cwd(); returns process.cwd() if none found (no throw).
+ * Try a single TCP connect to host:port. Resolves true on success, false on
+ * error or timeout.
  */
-function getProjectRoot(): string {
-  let dir = resolve(process.cwd());
-  for (;;) {
-    const pkgPath = join(dir, 'package.json');
-    const startDevPath = join(dir, 'scripts', 'start-dev.mjs');
-    if (existsSync(pkgPath) && existsSync(startDevPath)) {
-      try {
-        const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8')) as { scripts?: Record<string, string> };
-        if (pkg?.scripts?.['start:dev']) {
-          return dir;
-        }
-      } catch (err) {
-        console.warn('Verify app: package.json parse failed', pkgPath, err);
-      }
-    }
-    const parent = resolve(dir, '..');
-    if (parent === dir) break;
-    dir = parent;
-  }
-  return process.cwd();
-}
-
-/**
- * Check if a port has something accepting connections (connect-based).
- * Connects to 127.0.0.1:port; if connect succeeds the port is in use. Works regardless of
- * whether the app bound to 127.0.0.1, 0.0.0.0, or :: (avoids bind-based IPv4/IPv6 mismatch).
- */
-function checkPort(port: number): Promise<boolean> {
+function checkPortOnHost(port: number, host: string): Promise<boolean> {
   return new Promise((resolve) => {
     const socket = new net.Socket();
     const timeout = setTimeout(() => {
@@ -59,83 +33,81 @@ function checkPort(port: number): Promise<boolean> {
       resolve(true);
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    socket.once('error', (_err: any) => {
+    socket.once('error', () => {
       clearTimeout(timeout);
       resolve(false);
     });
 
-    socket.connect(port, '127.0.0.1');
+    socket.connect(port, host);
   });
 }
 
 /**
- * Consider app "up" if client port is listening (Vite). Optionally require server too.
+ * Connect-based port check: resolves true if something is accepting connections.
+ * Tries IPv4 first, then falls back to IPv6 so it works regardless of whether
+ * the service bound to 127.0.0.1, 0.0.0.0, ::1, or ::.
  */
-async function isAppUp(): Promise<boolean> {
-  const clientUp = await checkPort(CLIENT_PORT);
-  if (!clientUp) return false;
-  const serverUp = await checkPort(SERVER_PORT);
-  return serverUp;
+async function checkPort(port: number): Promise<boolean> {
+  if (await checkPortOnHost(port, '127.0.0.1')) return true;
+  return checkPortOnHost(port, '::1');
+}
+
+export interface AppStatus {
+  running: boolean;
+  serverUp: boolean;
+  clientUp: boolean;
+  serverPort: number;
+  clientPort: number;
 }
 
 /**
- * Verify app is running. Checks ports first; only runs start:dev if not up.
- * Resolves project root by walking up from process.cwd() for package.json with
- * start:dev and scripts/start-dev.mjs, and uses that as cwd for `npm run start:dev`.
- *
- * NOTE: Requires 'all' permissions when starting the app (node_modules, spawn).
- * When called from session-end, permissions should be automatically granted.
+ * Check-only: returns which ports are responding.
+ * No side-effects — never spawns or kills anything.
  */
-export async function verifyApp(): Promise<{ success: boolean; output: string }> {
-  const up = await isAppUp();
-  if (up) {
+export async function checkAppRunning(): Promise<AppStatus> {
+  const [serverUp, clientUp] = await Promise.all([
+    checkPort(SERVER_PORT),
+    checkPort(CLIENT_PORT),
+  ]);
+  return {
+    running: serverUp && clientUp,
+    serverUp,
+    clientUp,
+    serverPort: SERVER_PORT,
+    clientPort: CLIENT_PORT,
+  };
+}
+
+export interface VerifyAppResult {
+  success: boolean;
+  output: string;
+}
+
+/**
+ * Verify the app is running. Returns a structured result for tier orchestrators.
+ * If the app is not fully up, returns a failure with an actionable message.
+ */
+export async function verifyApp(): Promise<VerifyAppResult> {
+  const status = await checkAppRunning();
+
+  if (status.running) {
     return {
       success: true,
-      output: `App already running (ports ${SERVER_PORT} and ${CLIENT_PORT} responding).`,
+      output: `App running (server :${SERVER_PORT} ✓, client :${CLIENT_PORT} ✓).`,
     };
   }
 
-  const projectRoot = getProjectRoot();
-  const child = spawn('npm', ['run', 'start:dev'], {
-    cwd: projectRoot,
-    stdio: 'pipe',
-    detached: true,
-  });
+  const down = [
+    !status.serverUp ? `server :${SERVER_PORT}` : null,
+    !status.clientUp ? `client :${CLIENT_PORT}` : null,
+  ].filter(Boolean).join(', ');
 
-  let output = '';
-  let errorOutput = '';
-
-  child.stdout?.on('data', (data) => {
-    output += data.toString();
-  });
-  child.stderr?.on('data', (data) => {
-    errorOutput += data.toString();
-  });
-
-  const POLL_INTERVAL_MS = 3000;
-  const SAFETY_TIMEOUT_MS = 600000;
-
-  const startedAt = Date.now();
-  const poll = async (): Promise<{ success: boolean; output: string }> => {
-    const upNow = await isAppUp();
-    if (upNow) {
-      return {
-        success: true,
-        output: `App started successfully (ports ${SERVER_PORT} and ${CLIENT_PORT} responding). Left running in background.`,
-      };
-    }
-    if (Date.now() - startedAt >= SAFETY_TIMEOUT_MS) {
-      // Do not kill the spawned child: it may be the user's app or still starting. Just return failure.
-      const errSnippet = errorOutput.trim().slice(-500) || output.trim().slice(-500);
-      return {
-        success: false,
-        output: `Ports ${SERVER_PORT} and/or ${CLIENT_PORT} never came up within ${SAFETY_TIMEOUT_MS / 60000} min. Started \`npm run start:dev\` but it may have failed.${errSnippet ? ` Last output:\n${errSnippet}` : ''} Run \`npm run start:dev\` manually if needed and re-run.`,
-      };
-    }
-    await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
-    return poll();
+  return {
+    success: false,
+    output: [
+      `App not fully running — ${down} not responding.`,
+      'Start the dev environment in a terminal: `npm run start:dev`',
+      'Then re-run the command.',
+    ].join('\n'),
   };
-
-  return poll();
 }

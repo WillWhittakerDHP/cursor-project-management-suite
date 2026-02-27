@@ -1,15 +1,172 @@
 /**
  * Comment Compression Utilities
  * 
- * Shared utilities for compressing verbose comment clusters to concise, context-friendly versions
- * Used by phase-comment-cleanup and feature-comment-cleanup commands
+ * Shared utilities for compressing verbose comment clusters to concise, context-friendly versions.
+ * Used by phase-comment-cleanup and feature-comment-cleanup commands.
+ * 
+ * Safety: includes Vue SFC section detection, structural validation, and code-aware
+ * line handling to prevent accidental removal of executable code.
  */
 
 export interface CommentCluster {
   startLine: number;
   endLine: number;
   comments: string[];
-  types: Set<string>; // WHY, LEARNING, PATTERN, etc.
+  types: Set<string>;
+}
+
+/**
+ * Tracks which section of a Vue SFC a given line belongs to.
+ * Compression must emit correct comment syntax per section.
+ */
+export type VueSfcSection = 'script' | 'template' | 'style' | 'unknown';
+
+/**
+ * Determine the Vue SFC section boundaries for a .vue file.
+ * Returns an array mapping each line index to its SFC section.
+ */
+export function detectVueSfcSections(lines: string[]): VueSfcSection[] {
+  const sections: VueSfcSection[] = new Array(lines.length).fill('unknown');
+  let currentSection: VueSfcSection = 'unknown';
+
+  for (let i = 0; i < lines.length; i++) {
+    const trimmed = lines[i].trim();
+
+    if (/^<script[\s>]/.test(trimmed)) {
+      currentSection = 'script';
+    } else if (/^<template[\s>]/.test(trimmed)) {
+      currentSection = 'template';
+    } else if (/^<style[\s>]/.test(trimmed)) {
+      currentSection = 'style';
+    } else if (/^<\/script>/.test(trimmed)) {
+      sections[i] = currentSection;
+      currentSection = 'unknown';
+      continue;
+    } else if (/^<\/template>/.test(trimmed)) {
+      sections[i] = currentSection;
+      currentSection = 'unknown';
+      continue;
+    } else if (/^<\/style>/.test(trimmed)) {
+      sections[i] = currentSection;
+      currentSection = 'unknown';
+      continue;
+    }
+
+    sections[i] = currentSection;
+  }
+
+  return sections;
+}
+
+/**
+ * Strip only the trailing comment from a line that contains both code and a comment.
+ * Returns null if the entire line is a pure comment (no code portion).
+ */
+export function stripTrailingComment(line: string): string | null {
+  const trimmed = line.trim();
+
+  if (trimmed.startsWith('//') || trimmed.startsWith('/*') || trimmed.startsWith('*') || trimmed.startsWith('<!--')) {
+    return null;
+  }
+
+  const stripped = line.replace(/\s*\/\/\s*(WHY|PATTERN|LEARNING|RESOURCE|COMPARISON|STRUCTURED|REFERENCE|WHAT|HOW|SEE|Session\s+\d).*$/i, '').trimEnd();
+
+  if (stripped.trim().length === 0) {
+    return null;
+  }
+
+  return stripped;
+}
+
+/**
+ * Checks whether a line contains executable code (not purely a comment).
+ * A line with code AND a trailing comment is considered a code line.
+ */
+export function lineContainsCode(line: string): boolean {
+  const trimmed = line.trim();
+
+  if (trimmed === '' || trimmed === '/**' || trimmed === '*/' || trimmed === '*/') {
+    return false;
+  }
+  if (trimmed.startsWith('//')) return false;
+  if (trimmed.startsWith('/*')) return false;
+  if (trimmed.startsWith('*')) return false;
+  if (trimmed.startsWith('<!--')) return false;
+  if (trimmed.startsWith('-->')) return false;
+
+  return true;
+}
+
+export interface ValidationResult {
+  valid: boolean;
+  errors: string[];
+}
+
+/** File extensions that use JS/TS block comment syntax (bare * check applies only to these). */
+const JS_COMMENT_EXTENSIONS = /\.(ts|tsx|js|jsx|vue)$/i;
+
+/**
+ * Validate structural integrity of modified file content before writing.
+ * Catches orphaned comment delimiters, unbalanced blocks, Vue template issues,
+ * and real corruption (non-whitespace before /**). Relaxed so valid JSDoc is not rejected.
+ */
+export function validateFileIntegrity(lines: string[], filePath: string): ValidationResult {
+  const errors: string[] = [];
+  const isVue = filePath.endsWith('.vue');
+  const isJsCommentFile = JS_COMMENT_EXTENSIONS.test(filePath);
+
+  let openMultiLine = 0;
+  let inMultiLineComment = false;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const trimmed = line.trim();
+
+    if (!inMultiLineComment && trimmed === '*/') {
+      errors.push(`Line ${i + 1}: orphaned closing comment delimiter */`);
+      continue;
+    }
+
+    // Only in JS/TS: flag when there is non-whitespace before /** (e.g. "code /**"). Skip .md etc. where /** can be literal (e.g. in backticks).
+    if (isJsCommentFile && !inMultiLineComment && /\S.*\/\*\*/.test(line)) {
+      errors.push(`Line ${i + 1}: opening block comment appears after non-whitespace (corruption pattern)`);
+    }
+
+    // Bare * outside block: only in JS/TS/Vue; skip .md and other files where * is content (e.g. markdown lists).
+    if (isJsCommentFile && !inMultiLineComment && trimmed.startsWith('*') && !trimmed.startsWith('*/') && !trimmed.startsWith('/*')) {
+      errors.push(`Line ${i + 1}: bare \`*\` line outside comment block`);
+    }
+
+    if (!inMultiLineComment && (trimmed.startsWith('/*') || trimmed.startsWith('/**'))) {
+      if (!trimmed.includes('*/')) {
+        inMultiLineComment = true;
+        openMultiLine = i + 1;
+      }
+    } else if (inMultiLineComment) {
+      // No longer require star prefix on every line inside block; allow normal JSDoc formatting variants.
+      if (trimmed.includes('*/')) {
+        inMultiLineComment = false;
+      }
+    }
+  }
+
+  if (inMultiLineComment) {
+    errors.push(`Unclosed multi-line comment starting at line ${openMultiLine}`);
+  }
+
+  if (isVue) {
+    const sections = detectVueSfcSections(lines);
+    for (let i = 0; i < lines.length; i++) {
+      if (sections[i] === 'template') {
+        const trimmed = lines[i].trim();
+        if (trimmed.startsWith('/**') || (trimmed.startsWith('/*') && !trimmed.startsWith('<!--'))) {
+          errors.push(`Line ${i + 1}: JSDoc/JS comment inside <template> section`);
+        }
+      }
+    }
+  }
+
+  return { valid: errors.length === 0, errors };
 }
 
 /**
@@ -176,9 +333,11 @@ export function isRegularCommentValuable(comment: string): boolean {
 }
 
 /**
- * Compress a cluster of comments to their most helpful, context-friendly form
+ * Compress a cluster of comments to their most helpful, context-friendly form.
+ * When sfcSection is 'template', emits HTML comments instead of JSDoc.
+ * When sfcSection is 'style', emits CSS comments instead of JSDoc.
  */
-export function compressCommentCluster(cluster: CommentCluster): string[] {
+export function compressCommentCluster(cluster: CommentCluster, sfcSection: VueSfcSection = 'script'): string[] {
   const compressed: string[] = [];
   const insights = new Map<string, string>();
   
@@ -220,35 +379,25 @@ export function compressCommentCluster(cluster: CommentCluster): string[] {
       }
     }
     
-    // Build compressed comment (max 2-3 lines)
+    // Build compressed comment using syntax appropriate for the SFC section
     if (insights.size > 0) {
-      compressed.push('/**');
-      
-      // WHY first (most important) - max 1 line
+      const parts: string[] = [];
       if (insights.has('WHY')) {
         const whyText = insights.get('WHY')!;
-        // Truncate if too long (max ~80 chars per line)
-        const truncatedWhy = whyText.length > 75 ? whyText.substring(0, 72) + '...' : whyText;
-        compressed.push(` * WHY: ${truncatedWhy}`);
+        const truncated = whyText.length > 75 ? whyText.substring(0, 72) + '...' : whyText;
+        parts.push(`WHY: ${truncated}`);
       }
-      
-      // PATTERN second - max 1 line
       if (insights.has('PATTERN')) {
         const patternText = insights.get('PATTERN')!;
-        const truncatedPattern = patternText.length > 75 ? patternText.substring(0, 72) + '...' : patternText;
-        compressed.push(` * PATTERN: ${truncatedPattern}`);
+        const truncated = patternText.length > 75 ? patternText.substring(0, 72) + '...' : patternText;
+        parts.push(`PATTERN: ${truncated}`);
       }
-      
-      // Only add SEE/REFERENCE if we have space (max 3 lines total)
       if (insights.size <= 2 && (insights.has('SEE') || insights.has('REFERENCE'))) {
-        if (insights.has('SEE')) {
-          compressed.push(` * SEE: ${insights.get('SEE')}`);
-        } else if (insights.has('REFERENCE')) {
-          compressed.push(` * SEE: ${insights.get('REFERENCE')}`);
-        }
+        const seeText = insights.get('SEE') || insights.get('REFERENCE')!;
+        parts.push(`SEE: ${seeText}`);
       }
-      
-      compressed.push(' */');
+
+      compressed.push(...formatCompressedComment(parts, sfcSection));
     }
   } else {
     // Handle regular comment cluster (no typed comments)
@@ -260,8 +409,6 @@ export function compressCommentCluster(cluster: CommentCluster): string[] {
       return [];
     }
     
-    // Extract core insights from valuable regular comments
-    // Take the first valuable comment and compress it
     if (valuableComments.length > 0) {
       const firstValuable = valuableComments[0];
       let cleaned = firstValuable
@@ -270,20 +417,34 @@ export function compressCommentCluster(cluster: CommentCluster): string[] {
         .replace(/^\/\/\s*/gm, '')
         .replace(/^<!--\s*|\s*-->$/g, '')
         .trim();
-      
-      // Truncate if too long (max ~75 chars)
+
       if (cleaned.length > 75) {
         cleaned = cleaned.substring(0, 72) + '...';
       }
-      
-      // Build compressed comment (single line for regular comments)
-      compressed.push('/**');
-      compressed.push(` * ${cleaned}`);
-      compressed.push(' */');
+
+      compressed.push(...formatCompressedComment([cleaned], sfcSection));
     }
   }
   
   return compressed;
+}
+
+/**
+ * Emit a compressed comment in the correct syntax for the current SFC section.
+ */
+function formatCompressedComment(parts: string[], section: VueSfcSection): string[] {
+  if (section === 'template') {
+    return parts.map(part => `<!-- ${part} -->`);
+  }
+  if (section === 'style') {
+    return [`/* ${parts.join(' | ')} */`];
+  }
+  const result = ['/**'];
+  for (const part of parts) {
+    result.push(` * ${part}`);
+  }
+  result.push(' */');
+  return result;
 }
 
 /**
@@ -408,48 +569,88 @@ export function identifyCommentClusters(lines: string[]): CommentCluster[] {
 }
 
 /**
- * Apply compression to lines and return modified lines with compression count
+ * Apply compression to lines and return modified lines with compression count.
+ * When sfcSections is provided (for .vue files), compression uses the correct
+ * comment syntax for each section (HTML in template, CSS in style, JSDoc in script).
  */
-export function applyCompression(lines: string[]): { lines: string[]; compressionCount: number } {
+export function applyCompression(
+  lines: string[],
+  sfcSections?: VueSfcSection[]
+): { lines: string[]; compressionCount: number } {
   const clusters = identifyCommentClusters(lines);
-  
+
   if (clusters.length === 0) {
     return { lines, compressionCount: 0 };
   }
-  
-  // Process clusters in reverse order to maintain line numbers
+
   const clustersToCompress = clusters.reverse();
   const finalLines = [...lines];
   let compressionCount = 0;
-  
+
   for (const cluster of clustersToCompress) {
-    const compressed = compressCommentCluster(cluster);
-    
-    // Calculate original line span
+    const section: VueSfcSection = sfcSections?.[cluster.startLine - 1] ?? 'script';
+
+    // Skip compression entirely in <template> sections to avoid injecting invalid syntax
+    if (section === 'template') {
+      continue;
+    }
+
+    const compressed = compressCommentCluster(cluster, section);
+
     const originalLineSpan = cluster.endLine - cluster.startLine + 1;
-    
-    // Only compress if we actually reduced the size (comparing line counts)
+
     if (compressed.length > 0 && compressed.length < originalLineSpan) {
-      // Get indentation from original first line
       const originalFirstLine = lines[cluster.startLine - 1];
       const indentation = originalFirstLine.match(/^\s*/)?.[0] || '';
-      
-      // Apply indentation to compressed comments
-      const indentedCompressed = compressed.map(line => 
-        line === '/**' || line === ' */' ? `${indentation}${line}` : `${indentation}${line}`
+
+      const indentedCompressed = compressed.map(line =>
+        `${indentation}${line}`
       );
-      
-      // Replace cluster with compressed version
-      finalLines.splice(
-        cluster.startLine - 1,
-        originalLineSpan,
-        ...indentedCompressed
-      );
-      
-      compressionCount++;
+
+      const startIdx = cluster.startLine - 1;
+      const originalSegment = finalLines.slice(startIdx, startIdx + originalLineSpan);
+      finalLines.splice(startIdx, originalLineSpan, ...indentedCompressed);
+
+      if (!spliceSanityCheck(finalLines, startIdx, indentedCompressed.length)) {
+        finalLines.splice(startIdx, indentedCompressed.length, ...originalSegment);
+        console.warn(`[comment-cleanup] Skipping compression at line ${cluster.startLine} — post-splice sanity check failed`);
+      } else {
+        compressionCount++;
+      }
     }
   }
-  
+
   return { lines: finalLines, compressionCount };
+}
+
+/**
+ * After a splice, verify the replaced region does not introduce corruption:
+ * no bare star lines outside block comments, no opening block comment after non-whitespace, no missing star prefix inside blocks.
+ */
+function spliceSanityCheck(lines: string[], startIdx: number, span: number): boolean {
+  const slice = lines.slice(startIdx, startIdx + span);
+  let inBlock = false;
+  for (let i = 0; i < slice.length; i++) {
+    const trimmed = slice[i].trim();
+    if (/.\s*\/\*\*/.test(slice[i])) {
+      return false;
+    }
+    if (trimmed.startsWith('/**') || (trimmed.startsWith('/*') && !trimmed.includes('*/'))) {
+      inBlock = true;
+    }
+    if (inBlock) {
+      if (!trimmed.startsWith('*') && trimmed !== '*/' && trimmed !== '' && !trimmed.startsWith('/*')) {
+        return false;
+      }
+      if (trimmed.includes('*/')) {
+        inBlock = false;
+      }
+    } else {
+      if (trimmed.startsWith('*') && !trimmed.startsWith('*/')) {
+        return false;
+      }
+    }
+  }
+  return true;
 }
 

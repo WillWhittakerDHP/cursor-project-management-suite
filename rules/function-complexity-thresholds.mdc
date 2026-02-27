@@ -1,0 +1,11 @@
+---
+alwaysApply: true
+---
+
+Function complexity thresholds:
+- Max nesting 3 levels; max branches 8 per function; long branchy functions under 50 lines (or extract)
+- Exported and boundary functions: explicit return types
+- Prefer named utilities for transformations; avoid deep nesting in UI-facing code
+- Route handlers and permissible contexts may be allowlisted; otherwise stay under thresholds
+
+See: .project-manager/FUNCTION_AUTHORING_PLAYBOOK.md for thresholds and extract vs allowlist.

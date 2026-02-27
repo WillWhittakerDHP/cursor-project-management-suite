@@ -136,7 +136,7 @@ export async function branchExists(branchName: string): Promise<boolean> {
  */
 export async function runCommand(command: string, cwd?: string): Promise<{ success: boolean; output: string; error?: string }> {
   try {
-    const output = execSync(command, { 
+    const output = execSync(command, {
       encoding: 'utf-8',
       cwd: cwd || PROJECT_ROOT,
       stdio: 'pipe'
@@ -144,12 +144,93 @@ export async function runCommand(command: string, cwd?: string): Promise<{ succe
     return { success: true, output: output.trim() };
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
-    return { 
-      success: false, 
-      output: error.stdout?.toString() || '', 
-      error: error.stderr?.toString() || error.message 
+    return {
+      success: false,
+      output: error.stdout?.toString() || '',
+      error: error.stderr?.toString() || error.message
     };
   }
+}
+
+export interface LintGateResult {
+  success: boolean;
+  output: string;
+  /** First N lines of output for display; full exit code comes from success */
+  truncatedOutput: string;
+}
+
+const LINT_GATE_DISPLAY_LINES = 20;
+
+/**
+ * Run vue-tsc --noEmit in client/ and return real exit code.
+ * Do not pipe to head in the shell (that would mask exit code). Truncate output in JS for display.
+ */
+export function runLintGate(projectRoot: string = PROJECT_ROOT): LintGateResult {
+  const clientPath = join(projectRoot, FRONTEND_ROOT);
+  try {
+    const output = execSync('npx vue-tsc --noEmit', {
+      encoding: 'utf-8',
+      cwd: clientPath,
+      stdio: 'pipe'
+    });
+    const full = (output ?? '').trim();
+    const lines = full.split('\n');
+    const truncatedOutput = lines.slice(0, LINT_GATE_DISPLAY_LINES).join('\n');
+    return { success: true, output: full, truncatedOutput };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (error: any) {
+    const stdout = error.stdout?.toString() ?? '';
+    const stderr = error.stderr?.toString() ?? '';
+    const full = [stdout, stderr].filter(Boolean).join('\n').trim();
+    const lines = full.split('\n');
+    const truncatedOutput = lines.slice(0, LINT_GATE_DISPLAY_LINES).join('\n');
+    return { success: false, output: full, truncatedOutput };
+  }
+}
+
+/** Result of running cleanup with pre- and post-lint verification. */
+export interface LintVerifiedResult<TCleanupResult extends { success: boolean; filesModified: number }> {
+  /** Null when skippedCleanup is true (pre-cleanup lint failed). */
+  cleanupResult: TCleanupResult | null;
+  preCleanupLint: LintGateResult;
+  postCleanupLint: LintGateResult;
+  reverted: boolean;
+  /** True when pre-cleanup lint failed; cleanup was not run. */
+  skippedCleanup: boolean;
+}
+
+/**
+ * Run pre-cleanup lint; if it fails, skip cleanup and return skippedCleanup=true.
+ * Otherwise run cleanup, then post-cleanup lint; if post fails and files were modified, call revertFn and set reverted=true.
+ */
+export async function runWithLintVerification<TCleanupResult extends { success: boolean; filesModified: number }>(
+  cleanupFn: () => Promise<TCleanupResult>,
+  revertFn: () => Promise<void>
+): Promise<LintVerifiedResult<TCleanupResult>> {
+  const preCleanupLint = runLintGate();
+  if (!preCleanupLint.success) {
+    return {
+      cleanupResult: null,
+      preCleanupLint,
+      postCleanupLint: preCleanupLint,
+      reverted: false,
+      skippedCleanup: true
+    };
+  }
+  const cleanupResult = await cleanupFn();
+  const postCleanupLint = runLintGate();
+  let reverted = false;
+  if (!postCleanupLint.success && cleanupResult.filesModified > 0) {
+    await revertFn();
+    reverted = true;
+  }
+  return {
+    cleanupResult,
+    preCleanupLint,
+    postCleanupLint,
+    reverted,
+    skippedCleanup: false
+  };
 }
 
 

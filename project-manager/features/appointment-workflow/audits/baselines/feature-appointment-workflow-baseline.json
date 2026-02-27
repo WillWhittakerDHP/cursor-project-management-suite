@@ -1,0 +1,11 @@
+{
+  "tier": "feature",
+  "identifier": "appointment-workflow",
+  "featureName": "appointment-workflow",
+  "timestamp": "2026-02-23T19:04:00.845Z",
+  "scores": {
+    "security": 0,
+    "docs": 70,
+    "vue-architecture": 0
+  }
+}

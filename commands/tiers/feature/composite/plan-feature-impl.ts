@@ -67,11 +67,48 @@ export async function planFeatureImpl(featureId: string, description?: string): 
   }
 
   output.push('\n---\n\n');
+  output.push('## Step 3: Decomposition (Feature → Phases)\n\n');
+  try {
+    const featureGuidePath = context.paths.getFeatureGuidePath();
+    let guideContent = '';
+    try {
+      guideContent = await readProjectFile(featureGuidePath);
+    } catch {
+      guideContent = '';
+    }
+    const hasPhases = /\bPhase\s+[1-9]\d*:/i.test(guideContent);
+    if (!hasPhases) {
+      const appendResult = await appendChildToParentDoc(
+        'feature',
+        featureName,
+        '1',
+        resolvedDescription.slice(0, 200) || 'Phase 1',
+        context
+      );
+      if (appendResult.success && !appendResult.alreadyExists) {
+        output.push('**Scaffolded:** Phase 1 added to feature guide (Phases Breakdown).\n');
+        output.push('Refine phase goals/scope in the feature guide before running `/phase-start 1`.\n');
+      } else if (appendResult.alreadyExists) {
+        output.push('**Phases** already present in feature guide.\n');
+      } else {
+        output.push(`**Note:** ${appendResult.output.join(' ')}\n`);
+      }
+    } else {
+      output.push('**Phases** already listed in feature guide. Review and refine as needed.\n');
+    }
+    output.push('\n**Next:** Run `/phase-start 1` to begin planning the first phase.\n');
+  } catch (_error) {
+    output.push(`**Warning:** Decomposition step failed: ${_error instanceof Error ? _error.message : String(_error)}\n`);
+    output.push('You can add phases manually to the feature guide, then run `/phase-start 1`.\n');
+  }
+
+  output.push('\n---\n\n');
   output.push('## Next Steps\n\n');
   output.push('1. Answer all research questions (30+ questions)\n');
   output.push('2. Document findings in feature guide\n');
   output.push('3. Update feature log with research phase entry\n');
   output.push('4. Run `/feature-start [name]` to begin feature work\n');
+  output.push('5. Run `/phase-start 1` to plan the first phase (after cascade)\n');
 
   return output.join('\n');
 }

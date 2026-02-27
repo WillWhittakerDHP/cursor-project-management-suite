@@ -11,6 +11,7 @@ import type { WorkflowCommandContext } from '../../utils/command-context';
 import { MarkdownUtils } from '../../utils/markdown-utils';
 import { WorkflowId } from '../../utils/id-utils';
 import { deriveSessionDescription } from '../../tiers/session/composite/session-end-impl';
+export { deriveSessionDescription };
 
 export interface ResolvePlanningDescriptionParams {
   tier: PlanningTier;

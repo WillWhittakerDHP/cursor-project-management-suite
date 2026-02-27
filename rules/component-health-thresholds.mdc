@@ -1,0 +1,9 @@
+---
+alwaysApply: true
+---
+
+Component health thresholds:
+- Prop count ≤8, emit count ≤8, coupling ≤5; template directive depth ≤3; template size ≤200 lines (or extract)
+- Component-logic Tier1 hotspots (watch, async/await, map/reduce, DOM) warrant extraction to composable or util unless allowlisted
+
+See: .project-manager/COMPONENT_AUTHORING_PLAYBOOK.md for thresholds and allowlist location (audit-global-config).

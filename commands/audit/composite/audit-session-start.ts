@@ -1,22 +1,21 @@
 /**
  * Composite Command: /audit-session-start [session-id] [feature-name]
- * Run baseline audits for session tier start
- * 
+ * Run baseline audits for session tier start (mirrors session end: tier-session + docs + vue-architecture)
+ *
  * Tier: Session (Tier 2 - Medium-Level)
  * Operates on: Baseline quality assessment before session work begins
- * 
+ *
  * LEARNING: Start audits establish baseline scores for comparison with end audits
- * WHY: Enables tracking improvement/regression during the session
- * PATTERN: Lightweight audit subset (security, docs, vue-architecture)
+ * PATTERN: Mirror session-end audits (audit:tier-session, docs, vue-architecture)
  */
 
 import { TierAuditResult, AuditParams } from '../types';
-import { auditSecurity } from '../atomic/audit-security';
+import { auditTierQuality } from '../atomic/audit-tier-quality';
 import { auditDocs } from '../atomic/audit-docs';
 import { auditVueArchitecture } from '../atomic/audit-vue-architecture';
 import { WorkflowCommandContext } from '../../utils/command-context';
 import { resolveFeatureName } from '../../utils';
-import { writeAuditReport, calculateOverallStatus, getRelativePath, storeBaselineScore } from '../utils';
+import { writeAuditReport, calculateOverallStatus, getRelativePath, storeBaselineScore, getTypeConstantInventoryScore, getComposableGovernanceScore, getFunctionGovernanceScore, getComponentGovernanceScore } from '../utils';
 
 export interface AuditSessionStartParams {
   sessionId: string; // Format: X.Y (e.g., "1.3")
@@ -24,8 +23,7 @@ export interface AuditSessionStartParams {
 }
 
 /**
- * Run baseline audits for session tier start
- * Only runs: security, docs, vue-architecture
+ * Run baseline audits for session tier start (mirrors session-end: tier-session + docs + vue-architecture)
  */
 export async function auditSessionStart(params: AuditSessionStartParams): Promise<{
   success: boolean;
@@ -36,21 +34,21 @@ export async function auditSessionStart(params: AuditSessionStartParams): Promis
 }> {
   const featureName = await resolveFeatureName(params.featureName);
   const context = new WorkflowCommandContext(featureName);
-  
+
   const auditParams: AuditParams = {
     tier: 'session',
     identifier: params.sessionId,
     featureName,
-    modifiedFiles: [] // Start audits don't have modified files yet
+    modifiedFiles: [],
   };
-  
+
   const results = [];
   const errors: string[] = [];
 
   try {
-    results.push(await auditSecurity(auditParams));
+    results.push(await auditTierQuality({ ...auditParams, tier: 'session' }));
   } catch (_error) {
-    errors.push(`Security audit failed: ${_error instanceof Error ? _error.message : String(_error)}`);
+    errors.push(`Session tier quality audit failed: ${_error instanceof Error ? _error.message : String(_error)}`);
   }
 
   try {
@@ -64,7 +62,7 @@ export async function auditSessionStart(params: AuditSessionStartParams): Promis
   } catch (_error) {
     errors.push(`Vue architecture audit failed: ${_error instanceof Error ? _error.message : String(_error)}`);
   }
-  
+
   // Create audit result
   const overallStatus = calculateOverallStatus(results);
   const timestamp = new Date().toISOString();
@@ -79,13 +77,33 @@ export async function auditSessionStart(params: AuditSessionStartParams): Promis
     featureName
   };
   
-  // Store baseline scores for comparison
+  // Store baseline scores for comparison (includes type-constant-inventory, composable-governance, function-governance, component-governance from JSON)
+  let typeInventoryScore: number | undefined;
+  let composableGovernanceScore: number | undefined;
+  let functionGovernanceScore: number | undefined;
+  let componentGovernanceScore: number | undefined;
   try {
     const scores: Record<string, number> = {};
     for (const result of results) {
       if (result.score !== undefined) {
         scores[result.category] = result.score;
       }
+    }
+    typeInventoryScore = await getTypeConstantInventoryScore();
+    if (typeInventoryScore !== undefined) {
+      scores['type-constant-inventory'] = typeInventoryScore;
+    }
+    composableGovernanceScore = await getComposableGovernanceScore();
+    if (composableGovernanceScore !== undefined) {
+      scores['composable-governance'] = composableGovernanceScore;
+    }
+    functionGovernanceScore = await getFunctionGovernanceScore();
+    if (functionGovernanceScore !== undefined) {
+      scores['function-governance'] = functionGovernanceScore;
+    }
+    componentGovernanceScore = await getComponentGovernanceScore();
+    if (componentGovernanceScore !== undefined) {
+      scores['component-governance'] = componentGovernanceScore;
     }
     await storeBaselineScore('session', params.sessionId, featureName, scores);
   } catch (_error) {
@@ -126,6 +144,18 @@ export async function auditSessionStart(params: AuditSessionStartParams): Promis
     const emoji = result.status === 'pass' ? '✅' : result.status === 'warn' ? '⚠️' : '❌';
     const scoreText = result.score !== undefined ? ` (${result.score}/100)` : '';
     outputLines.push(`- ${emoji} **${result.category.charAt(0).toUpperCase() + result.category.slice(1)}**: ${result.status}${scoreText} (baseline)`);
+  }
+  if (typeInventoryScore !== undefined) {
+    outputLines.push(`- **Type constant inventory**: ${typeInventoryScore}/100 (baseline)`);
+  }
+  if (composableGovernanceScore !== undefined) {
+    outputLines.push(`- **Composable governance**: ${composableGovernanceScore}/100 (baseline)`);
+  }
+  if (functionGovernanceScore !== undefined) {
+    outputLines.push(`- **Function governance**: ${functionGovernanceScore}/100 (baseline)`);
+  }
+  if (componentGovernanceScore !== undefined) {
+    outputLines.push(`- **Component governance**: ${componentGovernanceScore}/100 (baseline)`);
   }
   
   // Calculate overall baseline score

@@ -6,6 +6,7 @@
 import type { TierConfig } from './types';
 import { validatePhaseImpl } from '../phase/composite/validate-phase-impl';
 import { validateSessionImpl } from '../session/composite/validate-session-impl';
+import { validateTaskImpl } from '../task/composite/validate-task-impl';
 
 export interface TierValidateResult {
   canStart: boolean;
@@ -32,6 +33,7 @@ export async function runTierValidate(
     case 'session':
       return validateSessionImpl(identifier);
     case 'task':
+      return validateTaskImpl(identifier);
     case 'feature':
       return { canStart: true, reason: 'No validation', details: [] };
     default:

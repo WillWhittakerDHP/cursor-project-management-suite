@@ -1,19 +1,17 @@
 /**
  * Composite Command: /audit-feature-start [feature-name]
- * Run baseline audits for feature tier start
- * 
+ * Run baseline audits for feature tier start (mirrors feature end: tier-feature audits)
+ *
  * Tier: Feature (Tier 0 - Highest Level)
  * Operates on: Baseline quality assessment before feature work begins
- * 
+ *
  * LEARNING: Start audits establish baseline scores for comparison with end audits
  * WHY: Enables tracking improvement/regression during the feature
- * PATTERN: Lightweight audit subset (security, docs, vue-architecture)
+ * PATTERN: Mirror feature-end audits (audit:tier-feature)
  */
 
 import { TierAuditResult, AuditParams } from '../types';
-import { auditSecurity } from '../atomic/audit-security';
-import { auditDocs } from '../atomic/audit-docs';
-import { auditVueArchitecture } from '../atomic/audit-vue-architecture';
+import { auditTierQuality } from '../atomic/audit-tier-quality';
 import { WorkflowCommandContext } from '../../utils/command-context';
 import { writeAuditReport, calculateOverallStatus, getRelativePath, storeBaselineScore } from '../utils';
 
@@ -22,8 +20,7 @@ export interface AuditFeatureStartParams {
 }
 
 /**
- * Run baseline audits for feature tier start
- * Only runs: security, docs, vue-architecture
+ * Run baseline audits for feature tier start (mirrors feature-end: tier-feature group)
  */
 export async function auditFeatureStart(params: AuditFeatureStartParams): Promise<{
   success: boolean;
@@ -33,35 +30,23 @@ export async function auditFeatureStart(params: AuditFeatureStartParams): Promis
   output: string;
 }> {
   const context = new WorkflowCommandContext(params.featureName);
-  
+
   const auditParams: AuditParams = {
     tier: 'feature',
     identifier: params.featureName,
     featureName: params.featureName,
-    modifiedFiles: [] // Start audits don't have modified files yet
+    modifiedFiles: [],
   };
-  
+
   const results = [];
   const errors: string[] = [];
 
   try {
-    results.push(await auditSecurity(auditParams));
+    results.push(await auditTierQuality({ ...auditParams, tier: 'feature' }));
   } catch (_error) {
-    errors.push(`Security audit failed: ${_error instanceof Error ? _error.message : String(_error)}`);
+    errors.push(`Feature tier quality audit failed: ${_error instanceof Error ? _error.message : String(_error)}`);
   }
 
-  try {
-    results.push(await auditDocs(auditParams));
-  } catch (_error) {
-    errors.push(`Docs audit failed: ${_error instanceof Error ? _error.message : String(_error)}`);
-  }
-
-  try {
-    results.push(await auditVueArchitecture(auditParams));
-  } catch (_error) {
-    errors.push(`Vue architecture audit failed: ${_error instanceof Error ? _error.message : String(_error)}`);
-  }
-  
   // Create audit result
   const overallStatus = calculateOverallStatus(results);
   const timestamp = new Date().toISOString();

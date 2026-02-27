@@ -66,5 +66,16 @@ export interface TierConfig {
     start?: PipelineStepFunction;
     end?: PipelineStepFunction;
   };
+  /**
+   * Preflight checks run by the orchestrators (tier-start, tier-end) before dispatching to impls.
+   * Keeps infrastructure concerns (app running, ports) out of tier-specific impl code.
+   */
+  preflight?: {
+    /** When true, orchestrator verifies the app is running (server + client ports) before dispatching. */
+    ensureAppRunning?: {
+      onStart?: boolean;
+      onEnd?: boolean;
+    };
+  };
 }
 

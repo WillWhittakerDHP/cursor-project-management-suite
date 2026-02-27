@@ -8,7 +8,8 @@ export type AuditCategory =
   | 'security'
   | 'code-quality'
   | 'vue-architecture'
-  | 'docs';
+  | 'docs'
+  | 'tier-quality';
 
 export type AuditStatus = 'pass' | 'warn' | 'fail';
 
@@ -49,5 +50,31 @@ export interface AuditParams {
   modifiedFiles?: string[];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   testResults?: any; // Test results from test-end-workflow
+}
+
+export type AutofixAction = 'script' | 'agent';
+
+export interface AutofixEntry {
+  action: AutofixAction;
+  auditName: string;
+  finding: AuditFinding;
+  /** For script fixes: the npm script or shell command to run */
+  command?: string;
+  /** For agent fixes: structured instruction for the agent */
+  agentDirective?: string;
+  /** Files this fix will/did touch */
+  affectedFiles: string[];
+  /** Whether the fix was successfully applied */
+  applied: boolean;
+}
+
+export interface AutofixResult {
+  tier: AuditTier;
+  scriptFixesApplied: number;
+  agentFixEntries: AutofixEntry[];
+  affectedFiles: string[];
+  /** Results from lower-tier re-audits */
+  cascadeResults: AutofixResult[];
+  summary: string;
 }
 

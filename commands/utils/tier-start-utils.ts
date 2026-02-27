@@ -3,7 +3,8 @@
  * Reduces duplication of branch hierarchy display, plan-mode preview, and "cannot start" messaging.
  */
 
-import { getCurrentBranch, branchExists } from './utils';
+import { formatBranchHierarchyFromConfig } from '../git/shared/tier-branch-manager';
+import { WorkflowCommandContext } from './command-context';
 
 export interface FormatBranchHierarchyOptions {
   featureName: string;
@@ -12,52 +13,26 @@ export interface FormatBranchHierarchyOptions {
 }
 
 /**
- * Builds the "Branch Hierarchy Verification" section string.
- * Tree: main -> feature/<name> -> optional phase -> optional session, with "(target)" on the leaf.
+ * Builds the "Branch Hierarchy Verification" section string using tier configs.
+ * Delegates to formatBranchHierarchyFromConfig for config-driven branch names.
  */
 export async function formatBranchHierarchy(options: FormatBranchHierarchyOptions): Promise<string> {
   const { featureName, phase, sessionId } = options;
   try {
-    const currentBranch = await getCurrentBranch();
-    const featureBranch = currentBranch.startsWith('feature/') ? currentBranch : `feature/${featureName}`;
-    const mainBranch = (await branchExists('main')) ? 'main' : 'master';
-    const lines: string[] = ['## Branch Hierarchy Verification\n', '```', mainBranch, `  └── ${featureBranch}`];
-
-    if (phase !== undefined) {
-      const phaseBranchName = `${featureName}-phase-${phase}`;
-      lines.push(`       └── ${phaseBranchName}`);
-      if (sessionId !== undefined) {
-        const sessionBranchName = `${featureName}-phase-${phase}-session-${sessionId}`;
-        lines.push(`            └── ${sessionBranchName} (target)`);
-        lines.push('```');
-        lines.push(`\n**Current Branch:** \`${currentBranch}\``);
-        lines.push(`\n**Target Session Branch:** \`${sessionBranchName}\``);
-        lines.push(`\n**Phase Branch:** \`${phaseBranchName}\``);
-        lines.push(`\n**Feature Branch:** \`${featureBranch}\``);
-        lines.push(`\n**Base Branch:** \`${mainBranch}\`\n`);
-      } else {
-        lines[lines.length - 1] = `       └── ${phaseBranchName} (target)`;
-        lines.push('```');
-        lines.push(`\n**Current Branch:** \`${currentBranch}\``);
-        lines.push(`\n**Target Phase Branch:** \`${phaseBranchName}\``);
-        lines.push(`\n**Feature Branch:** \`${featureBranch}\``);
-        lines.push(`\n**Base Branch:** \`${mainBranch}\`\n`);
-      }
-    } else {
-      lines.push('```');
-      lines.push(`\n**Current Branch:** \`${currentBranch}\``);
-      lines.push(`\n**Feature Branch:** \`${featureBranch}\``);
-      lines.push(`\n**Base Branch:** \`${mainBranch}\`\n`);
+    const context = new WorkflowCommandContext(featureName);
+    if (sessionId) {
+      const { SESSION_CONFIG } = await import('../tiers/configs/index');
+      return formatBranchHierarchyFromConfig(SESSION_CONFIG, sessionId, context);
     }
-
-    return lines.join('\n');
+    if (phase) {
+      const { PHASE_CONFIG } = await import('../tiers/configs/index');
+      return formatBranchHierarchyFromConfig(PHASE_CONFIG, phase, context);
+    }
+    const { FEATURE_CONFIG } = await import('../tiers/configs/index');
+    return formatBranchHierarchyFromConfig(FEATURE_CONFIG, featureName, context);
   } catch (_error) {
     const errMsg = _error instanceof Error ? _error.message : String(_error);
-    const context: string[] = [`**⚠️ Could not determine branch information:** ${errMsg}\n`];
-    if (phase !== undefined) context.push(`**Phase:** ${phase}\n`);
-    if (sessionId !== undefined) context.push(`**Session ID:** ${sessionId}\n`);
-    context.push(`**Feature:** ${featureName}\n`);
-    return '## Branch Hierarchy Verification\n' + context.join('');
+    return '## Branch Hierarchy Verification\n' + `**Could not determine branch information:** ${errMsg}\n`;
   }
 }
 
@@ -79,9 +54,12 @@ export function formatPlanModePreview(
   return `\n---\n## Mode: Plan (no side effects)${introBlock}\n### What would run (execute mode)\n${bullets}`;
 }
 
+/** Tier name for "cannot start" message (all tiers). */
+export type CannotStartTier = 'feature' | 'phase' | 'session' | 'task';
+
 /**
  * Returns the "Cannot start &lt;tier&gt;" message for early return when validation fails.
  */
-export function formatCannotStart(tier: 'phase' | 'session', _identifier: string): string {
+export function formatCannotStart(tier: CannotStartTier, _identifier: string): string {
   return `\n---\n**⚠️ Cannot start ${tier}. Please address the issues above before proceeding.**\n`;
 }

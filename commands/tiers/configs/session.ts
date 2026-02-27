@@ -66,4 +66,7 @@ export const SESSION_CONFIG: TierConfig = {
     `${ctx.feature.name}-phase-${WorkflowId.extractPhaseId(id) ?? '1'}`,
   getBranchName: (ctx, id) =>
     `${ctx.feature.name}-phase-${WorkflowId.extractPhaseId(id) ?? '1'}-session-${id}`,
+  preflight: {
+    ensureAppRunning: { onStart: true, onEnd: true },
+  },
 };
