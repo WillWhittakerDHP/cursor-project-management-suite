@@ -115,6 +115,26 @@ export async function sessionStartImpl(
       }
     },
 
+    async getTierDeliverables(): Promise<string> {
+      const lines: string[] = [`**Session ${sessionId}:** ${resolvedDescription}`];
+      try {
+        const guideContent = await context.readSessionGuide(sessionId);
+        const escaped = sessionId.replace(/\./g, '\\.');
+        const taskHeadingRegex = new RegExp(
+          `(?:-\\s*\\[[ x]\\]\\s*)?(?:####|###)\\s*Task\\s+${escaped}\\.(\\d+):\\s*([^\\n]*)`,
+          'gi'
+        );
+        let m: RegExpExecArray | null;
+        while ((m = taskHeadingRegex.exec(guideContent)) !== null) {
+          const tid = `${sessionId}.${m[1]}`;
+          const name = m[2].trim().slice(0, 80);
+          lines.push(`- Task ${tid}: ${name || '(untitled)'}`);
+        }
+      } catch { /* non-blocking */ }
+      if (lines.length === 1) lines.push('(No tasks found in session guide)');
+      return lines.join('\n');
+    },
+
     async ensureBranch() {
       return ensureTierBranch(SESSION_CONFIG, sessionId, context);
     },

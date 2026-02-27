@@ -1,0 +1,68 @@
+{
+  "timestamp": "2026-02-27T21:29:00.300Z",
+  "feature": "appointment-workflow",
+  "tier": "session",
+  "identifier": "6.4.3",
+  "items": [
+    {
+      "sourceId": "client-typecheck",
+      "label": "Vue Typecheck Audit",
+      "copied": [
+        {
+          "from": "client/.audit-reports/typecheck/typecheck-audit.json",
+          "to": ".cursor/project-manager/features/appointment-workflow/audits/external/session-6.4.3/2026-02-27T21-29-00Z/client-typecheck/typecheck-audit.json"
+        },
+        {
+          "from": "client/.audit-reports/typecheck/typecheck-audit.md",
+          "to": ".cursor/project-manager/features/appointment-workflow/audits/external/session-6.4.3/2026-02-27T21-29-00Z/client-typecheck/typecheck-audit.md"
+        },
+        {
+          "from": "client/.audit-reports/typecheck/typecheck-audit-summary.md",
+          "to": ".cursor/project-manager/features/appointment-workflow/audits/external/session-6.4.3/2026-02-27T21-29-00Z/client-typecheck/typecheck-audit-summary.md"
+        }
+      ],
+      "missing": [],
+      "errors": []
+    },
+    {
+      "sourceId": "client-composables-logic",
+      "label": "Vue Composables Logic Audit",
+      "copied": [
+        {
+          "from": "client/.audit-reports/composables-logic-audit.json",
+          "to": ".cursor/project-manager/features/appointment-workflow/audits/external/session-6.4.3/2026-02-27T21-29-00Z/client-composables-logic/composables-logic-audit.json"
+        },
+        {
+          "from": "client/.audit-reports/composables-logic-audit.md",
+          "to": ".cursor/project-manager/features/appointment-workflow/audits/external/session-6.4.3/2026-02-27T21-29-00Z/client-composables-logic/composables-logic-audit.md"
+        },
+        {
+          "from": "client/.audit-reports/composables-logic-audit-summary.md",
+          "to": ".cursor/project-manager/features/appointment-workflow/audits/external/session-6.4.3/2026-02-27T21-29-00Z/client-composables-logic/composables-logic-audit-summary.md"
+        }
+      ],
+      "missing": [],
+      "errors": []
+    },
+    {
+      "sourceId": "client-component-logic",
+      "label": "Vue Component Logic Audit",
+      "copied": [
+        {
+          "from": "client/.audit-reports/component-logic-audit.json",
+          "to": ".cursor/project-manager/features/appointment-workflow/audits/external/session-6.4.3/2026-02-27T21-29-00Z/client-component-logic/component-logic-audit.json"
+        },
+        {
+          "from": "client/.audit-reports/component-logic-audit.md",
+          "to": ".cursor/project-manager/features/appointment-workflow/audits/external/session-6.4.3/2026-02-27T21-29-00Z/client-component-logic/component-logic-audit.md"
+        },
+        {
+          "from": "client/.audit-reports/component-logic-audit-summary.md",
+          "to": ".cursor/project-manager/features/appointment-workflow/audits/external/session-6.4.3/2026-02-27T21-29-00Z/client-component-logic/component-logic-audit-summary.md"
+        }
+      ],
+      "missing": [],
+      "errors": []
+    }
+  ]
+}

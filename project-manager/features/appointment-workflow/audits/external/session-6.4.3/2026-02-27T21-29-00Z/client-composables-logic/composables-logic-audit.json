@@ -1,0 +1,427 @@
+{
+  "generatedAt": "2026-02-27T21:28:23.762Z",
+  "scope": {
+    "included": [
+      "client/src/composables/**/*.{ts,js}"
+    ],
+    "excluded": [
+      "**/__tests__/**",
+      "**/*.test.*",
+      "**/*.spec.*"
+    ]
+  },
+  "totalScanned": 262,
+  "exceptionSummary": {
+    "totalRequiresReview": 2
+  },
+  "files": [
+    {
+      "id": "client__src__composables__booking__useMoveablePartsScheduling.ts",
+      "repoPath": "client/src/composables/booking/useMoveablePartsScheduling.ts",
+      "absPath": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/src/composables/booking/useMoveablePartsScheduling.ts",
+      "counts": {
+        "computed": 13,
+        "ref": 3,
+        "reactive": 0,
+        "watch": 1,
+        "watchEffect": 1,
+        "lifecycle": 0,
+        "async": 2,
+        "await": 2,
+        "vueQuery": 0,
+        "map": 6,
+        "reduce": 0,
+        "filter": 5,
+        "sort": 0,
+        "dom": 0,
+        "timers": 0,
+        "console": 0
+      },
+      "matches": [
+        {
+          "ruleId": "map",
+          "lineNumber": 70,
+          "line": "return slots.map((slot) => ({",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "map",
+          "lineNumber": 88,
+          "line": "const [year, month, day] = contingencyPeriod.endDate.split('-').map(Number)",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 199,
+          "line": "const placeId = computed(() => propertyDetailsStepData.value?.candidatePlaceId)",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "ref",
+          "lineNumber": 201,
+          "line": "const showModal = ref(false)",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "ref",
+          "lineNumber": 207,
+          "line": "const isLoadingOptions = ref(false)",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "ref",
+          "lineNumber": 209,
+          "line": "const isLoadingMoveableDaySlots = ref(false)",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 212,
+          "line": "const moveableEventFinal = computed(() => {",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "map",
+          "lineNumber": 215,
+          "line": "const eventShapes = shape.slotShape.eventFinals.map(ef => ef.eventShape) as EventShapeEntity[]",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 221,
+          "line": "const hasMoveableParts = computed(() => (moveableEventFinal.value?.roundedDuration ?? 0) > 0)",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 223,
+          "line": "const moveableDuration = computed(() => {",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 231,
+          "line": "const moveablePartShapeName = computed(() => {",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "filter",
+          "lineNumber": 238,
+          "line": ".filter(([, eventInstances]) =>",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "map",
+          "lineNumber": 242,
+          "line": ".map(([partShapeName]) => partShapeName)",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "filter",
+          "lineNumber": 243,
+          "line": ".filter((name) => name.trim().length > 0)",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "filter",
+          "lineNumber": 244,
+          "line": ".filter((name) => !isGenericMoveableLabel(name))",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "map",
+          "lineNumber": 251,
+          "line": ".flatMap(([, eventInstances]) => eventInstances.map((eventInstance) => eventInstance.name))",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "filter",
+          "lineNumber": 252,
+          "line": ".filter((name): name is string => typeof name === 'string' && name.trim().length > 0)",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "filter",
+          "lineNumber": 253,
+          "line": ".filter((name) => !isGenericMoveableLabel(name))",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "watchEffect",
+          "lineNumber": 270,
+          "line": "watchEffect(async () => {",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "async",
+          "lineNumber": 270,
+          "line": "watchEffect(async () => {",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "await",
+          "lineNumber": 305,
+          "line": "const settings = await getAvailabilitySettings()",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 324,
+          "line": "const hasClosingDate = computed(",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "watch",
+          "lineNumber": 329,
+          "line": "watch(",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "async",
+          "lineNumber": 331,
+          "line": "async () => {",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "await",
+          "lineNumber": 345,
+          "line": "const data = await fetchComputedAvailabilityData({",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 362,
+          "line": "const moveableServerSlotsForDay = computed(() => moveableDaySlots.value)",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 363,
+          "line": "const moveableShapeOverride = computed(() =>",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 368,
+          "line": "blockInstances: computed(() => []),",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 371,
+          "line": "perspective: computed(() => 'nonDifferential' as const),",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 372,
+          "line": "isDifferentialService: computed(() => false),",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 376,
+          "line": "const allowedMoveableDates = computed(() => {",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "map",
+          "lineNumber": 393,
+          "line": "moveableAppointmentSlots.value.map((s) => {",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 426,
+          "line": "moveableOptions: computed(() => moveableOptions.value),",
+          "suppressionStatus": "unsuppressed"
+        }
+      ],
+      "exportUseFunctions": [
+        "useMoveablePartsScheduling"
+      ],
+      "returnKeys": [
+        "dayLabel",
+        "duration",
+        "endTime",
+        "startTime",
+        "timeLabel"
+      ],
+      "complexityScore": 33,
+      "priority": "P1",
+      "suggestions": [
+        {
+          "kind": "split_candidate",
+          "priority": "P1",
+          "message": "Moderate complexity score. Consider separating query/mutations from derived state and formatting."
+        }
+      ]
+    },
+    {
+      "id": "client__src__composables__fieldContext__useFieldContextState.ts",
+      "repoPath": "client/src/composables/fieldContext/useFieldContextState.ts",
+      "absPath": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/src/composables/fieldContext/useFieldContextState.ts",
+      "counts": {
+        "computed": 8,
+        "ref": 3,
+        "reactive": 0,
+        "watch": 0,
+        "watchEffect": 0,
+        "lifecycle": 0,
+        "async": 2,
+        "await": 6,
+        "vueQuery": 0,
+        "map": 1,
+        "reduce": 0,
+        "filter": 0,
+        "sort": 0,
+        "dom": 0,
+        "timers": 0,
+        "console": 0
+      },
+      "matches": [
+        {
+          "ruleId": "computed",
+          "lineNumber": 51,
+          "line": "const isTempEntity = computed(() => {",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 61,
+          "line": "const entity = computed(() => {",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 71,
+          "line": "const entityForMetadata = computed(() => {",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 77,
+          "line": "const fieldMetadataEntry = computed(() => {",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 85,
+          "line": "const actualPropertyName = computed(() => {",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "map",
+          "lineNumber": 103,
+          "line": "return components.map((ea) => ea.childId)",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 189,
+          "line": "const error = computed(() => errorMessage.value)",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 190,
+          "line": "const isValid = computed(() => meta.valid)",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 191,
+          "line": "const isDirty = computed(() => meta.dirty)",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "ref",
+          "lineNumber": 192,
+          "line": "const isValidating = ref(false)",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "ref",
+          "lineNumber": 193,
+          "line": "const isFocused = ref(false)",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "ref",
+          "lineNumber": 209,
+          "line": "const isDisabled = ref(providedDisplayConfig.disabled === true) // Explicit boolean, no default",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "async",
+          "lineNumber": 237,
+          "line": "const validate = async (): Promise<boolean> => {",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "await",
+          "lineNumber": 240,
+          "line": "await validateField()",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "async",
+          "lineNumber": 251,
+          "line": "const save = async (): Promise<void> => {",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "await",
+          "lineNumber": 268,
+          "line": "await apiClient.get(verifyEndpoint)",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "await",
+          "lineNumber": 294,
+          "line": "const isValidResult = await validate()",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "await",
+          "lineNumber": 302,
+          "line": "await saveComponentEntityField({",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "await",
+          "lineNumber": 312,
+          "line": "await saveRelationshipField({",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "await",
+          "lineNumber": 319,
+          "line": "await saveRegularField({",
+          "suppressionStatus": "unsuppressed"
+        }
+      ],
+      "exportUseFunctions": [],
+      "returnKeys": [
+        "actions",
+        "clearError",
+        "getValue",
+        "reset",
+        "save",
+        "setFocus",
+        "setValue",
+        "state",
+        "validate"
+      ],
+      "complexityScore": 20,
+      "priority": "P1",
+      "suggestions": [
+        {
+          "kind": "split_candidate",
+          "priority": "P1",
+          "message": "Moderate complexity score. Consider separating query/mutations from derived state and formatting."
+        }
+      ]
+    }
+  ]
+}

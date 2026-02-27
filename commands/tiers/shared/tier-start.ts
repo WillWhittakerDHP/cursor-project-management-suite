@@ -2,9 +2,7 @@
  * Shared tier start: dispatches to feature/phase/session/task start implementations.
  * Single entry point for tier start pipeline; each tier's logic remains in its composite.
  * Mode gate is applied here (generic); tier impls do not add mode messages.
- *
- * Preflight checks (e.g. ensureAppRunning) are executed here in the orchestrator,
- * keeping infrastructure concerns out of individual tier impls.
+ * Control-plane routing runs after the command; result includes controlPlaneDecision for mode/question behavior.
  */
 
 import type { TierConfig } from './types';
@@ -22,6 +20,8 @@ import { featureStartImpl } from '../feature/composite/feature-start-impl';
 import { phaseStartImpl } from '../phase/composite/phase-start-impl';
 import { sessionStartImpl } from '../session/composite/session-start-impl';
 import { taskStartImpl } from '../task/composite/task-start-impl';
+import { routeByOutcome } from './control-plane-route';
+import type { ControlPlaneDecision, CommandResultForRouting } from './control-plane-types';
 
 export type TierStartParams =
   | { featureId: string }
@@ -33,14 +33,14 @@ export async function runTierStart(
   config: TierConfig,
   params: TierStartParams,
   options?: CommandExecutionOptions
-): Promise<TierStartResult> {
+): Promise<TierStartResultWithControlPlane> {
   const executionMode = resolveCommandExecutionMode(options, 'plan');
   const gate = modeGateText(cursorModeForExecution(executionMode), `${config.name}-start`);
 
   if (config.preflight?.ensureAppRunning?.onStart && !isPlanMode(executionMode)) {
     const appCheck = await verifyApp();
     if (!appCheck.success) {
-      return {
+      const failedResult = {
         success: false,
         output: appCheck.output,
         outcome: {
@@ -49,6 +49,15 @@ export async function runTierStart(
           nextAction: appCheck.output,
         },
         modeGate: gate,
+      };
+      const decision = routeByOutcome(
+        failedResult,
+        { tier: config.name, action: 'start', originalParams: params }
+      );
+      return {
+        ...failedResult,
+        output: enforceModeSwitch('plan', `${config.name}-start`, 'failure').text + '\n\n---\n\n' + appCheck.output,
+        controlPlaneDecision: decision,
       };
     }
   }
@@ -99,9 +108,30 @@ export async function runTierStart(
     `${config.name}-start`,
     result.success ? 'normal' : 'failure'
   );
-  return {
-    ...result,
-    output: enforcement.text + '\n\n---\n\n' + result.output,
+  const outputWithEnforcement = enforcement.text + '\n\n---\n\n' + result.output;
+
+  const forRouting: CommandResultForRouting = {
+    success: result.success,
+    output: result.output,
+    outcome: result.outcome,
     modeGate: gate,
   };
+  const ctx = {
+    tier: config.name,
+    action: 'start' as const,
+    originalParams: params,
+  };
+  const controlPlaneDecision = routeByOutcome(forRouting, ctx);
+
+  return {
+    ...result,
+    output: outputWithEnforcement,
+    modeGate: gate,
+    controlPlaneDecision,
+  };
 }
+
+/** Result of runTierStart including control-plane decision for mode/question routing. */
+export type TierStartResultWithControlPlane = TierStartResult & {
+  controlPlaneDecision: ControlPlaneDecision;
+};

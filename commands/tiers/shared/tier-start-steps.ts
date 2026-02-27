@@ -55,7 +55,10 @@ export async function stepValidateStart(
   return null;
 }
 
-/** If plan mode, append plan preview (optional plan content summary + workflow steps) and return plan result; otherwise null. */
+/** If plan mode, append plan preview and return plan result; otherwise null.
+ *  - Agent sees: workflow steps (getPlanModeSteps) + content summary (getPlanContentSummary) in ctx.output.
+ *  - User sees: deliverables (getTierDeliverables) in AskQuestion via outcome.deliverables.
+ */
 export async function stepPlanModeExit(
   ctx: TierStartWorkflowContext,
   hooks: TierStartWorkflowHooks
@@ -63,12 +66,12 @@ export async function stepPlanModeExit(
   const executionMode = resolveCommandExecutionMode(ctx.options, 'plan');
   if (!isPlanMode(executionMode)) return null;
   const planSteps = hooks.getPlanModeSteps(ctx);
-  let intro: string | undefined;
-  if (hooks.getPlanContentSummary) {
-    const raw = await hooks.getPlanContentSummary(ctx);
-    intro = raw?.trim();
-  }
+  const rawSummary = await hooks.getPlanContentSummary(ctx);
+  const intro = rawSummary?.trim();
   ctx.output.push(formatPlanModePreview(planSteps, intro ? { intro } : undefined));
+
+  const deliverables = await hooks.getTierDeliverables(ctx);
+
   return {
     success: true,
     output: ctx.output.join('\n\n'),
@@ -76,6 +79,7 @@ export async function stepPlanModeExit(
       status: 'plan',
       reasonCode: 'plan_mode',
       nextAction: 'Plan preview complete. Awaiting approval to execute.',
+      deliverables: deliverables || undefined,
     },
   };
 }

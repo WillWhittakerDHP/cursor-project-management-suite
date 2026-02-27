@@ -65,10 +65,12 @@ export interface TierStartWorkflowHooks {
   getBranchHierarchyOptions(ctx: TierStartWorkflowContext): FormatBranchHierarchyOptions;
   /** Validate tier can be started; return canStart and message to append. */
   validate(ctx: TierStartWorkflowContext): Promise<TierStartValidationResult>;
-  /** Plan-mode preview steps (bullets). */
+  /** Internal workflow steps shown to the agent (file reads, branch ops, audit). Not user-facing. */
   getPlanModeSteps(ctx: TierStartWorkflowContext): string[];
-  /** Optional: plan-mode summary of what we're building (session/phase/feature plan). When present and non-empty, shown before "What would run". */
-  getPlanContentSummary?(ctx: TierStartWorkflowContext): Promise<string | undefined>;
+  /** High-level scope: what the tier contains (phases, sessions, tasks). Shown above workflow steps. */
+  getPlanContentSummary(ctx: TierStartWorkflowContext): Promise<string | undefined>;
+  /** User-facing deliverables for plan-mode approval (goal, files, acceptance criteria). Shown in AskQuestion prompt. */
+  getTierDeliverables(ctx: TierStartWorkflowContext): Promise<string>;
   /** Ensure branch (git). If not provided, step is skipped (e.g. task). */
   ensureBranch?(ctx: TierStartWorkflowContext): Promise<EnsureTierBranchResult>;
   /** Called after successful ensureBranch (e.g. updateTierScope). */

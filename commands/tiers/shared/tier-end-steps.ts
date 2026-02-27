@@ -159,7 +159,9 @@ export async function stepVerificationCheck(
   const outcome = buildTierEndOutcome(
     'completed',
     'verification_work_suggested',
-    VERIFICATION_NEXT_ACTION
+    VERIFICATION_NEXT_ACTION,
+    undefined,
+    output,
   );
   return {
     success: true,

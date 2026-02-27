@@ -112,6 +112,22 @@ export async function featureStartImpl(featureId: string, options?: import('../.
       }
     },
 
+    async getTierDeliverables(): Promise<string> {
+      const featureDesc = await deriveFeatureDescription(normalizedFeatureName, context);
+      const lines: string[] = [`**Feature:** ${featureDesc}`];
+      try {
+        const featureGuideContent = await context.readFeatureGuide();
+        const phaseMatches = featureGuideContent.matchAll(/Phase\s+(\d+\.\d+):?\s*([^\n]*)/gi);
+        for (const m of phaseMatches) {
+          const pid = m[1];
+          const name = m[2].trim().slice(0, 60) || `Phase ${pid}`;
+          lines.push(`- Phase ${pid}: ${name}`);
+        }
+      } catch { /* non-blocking */ }
+      if (lines.length === 1) lines.push('(No phases found in feature guide)');
+      return lines.join('\n');
+    },
+
     async ensureBranch() {
       return ensureTierBranch(FEATURE_CONFIG, normalizedFeatureName, context, {
         pullRoot: true,

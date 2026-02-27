@@ -27,6 +27,30 @@ function extractField(name: string, content: string): string {
   return m ? m[1].trim() : '';
 }
 
+function extractTaskHeading(content: string): string {
+  const m = content.match(/(?:####|###)\s*Task\s+[\d.]+:\s*(.+)/i);
+  return m ? m[1].trim() : '';
+}
+
+async function readTaskSection(
+  taskId: string,
+  context: WorkflowCommandContext,
+  sessionId: string
+): Promise<string> {
+  try {
+    const guideContent = await context.readSessionGuide(sessionId);
+    const escaped = taskId.replace(/\./g, '\\.');
+    const pattern = new RegExp(
+      `(?:- \\[[ x]\\])?\\s*(?:####|###) Task ${escaped}:.*?(?=(?:- \\[|#### Task|### Task|## |$))`,
+      's'
+    );
+    const match = guideContent.match(pattern);
+    return match ? match[0] : '';
+  } catch {
+    return '';
+  }
+}
+
 export async function taskStartImpl(
   taskId: string,
   featureId?: string,
@@ -80,11 +104,38 @@ export async function taskStartImpl(
       const sessionHandoffPath = context.paths.getSessionHandoffPath(sessionId);
       const sessionLogPath = context.paths.getSessionLogPath(sessionId);
       return [
-        `Docs: read task handoff context (from session handoff): \`${sessionHandoffPath}\``,
-        `Docs: read session guide (task section): \`${sessionGuidePath}\``,
-        `Docs: (reference) session log path (task updates at task-end): \`${sessionLogPath}\``,
-        'Output: show task details and auto-gathered file context (if present)',
+        `Read task handoff: \`${sessionHandoffPath}\``,
+        `Read session guide task section: \`${sessionGuidePath}\``,
+        `Reference session log: \`${sessionLogPath}\``,
+        'Output task details + gathered file context',
       ];
+    },
+
+    async getPlanContentSummary(): Promise<string | undefined> {
+      const section = await readTaskSection(taskId, context, sessionId);
+      if (!section) return undefined;
+      const title = extractTaskHeading(section);
+      const goal = extractField('Goal', section);
+      if (!title && !goal) return undefined;
+      const header = `## Task plan\n\n**Task ${taskId}:** ${title || '(untitled)'}`;
+      return goal ? `${header}\n**Goal:** ${goal}` : header;
+    },
+
+    async getTierDeliverables(): Promise<string> {
+      const section = await readTaskSection(taskId, context, sessionId);
+      const title = extractTaskHeading(section);
+      const goal = extractField('Goal', section);
+      const files = extractField('Files', section);
+      const approach = extractField('Approach', section);
+      const checkpoint = extractField('Checkpoint', section);
+
+      const lines: string[] = [`**Task ${taskId}:** ${title || '(untitled)'}`];
+      if (goal) lines.push(`**Goal:** ${goal}`);
+      if (files) lines.push(`**Files:** ${files}`);
+      if (approach) lines.push(`**Approach:** ${approach}`);
+      if (checkpoint) lines.push(`**Checkpoint:** ${checkpoint}`);
+      if (lines.length === 1) lines.push('(No task details found in session guide)');
+      return lines.join('\n');
     },
 
     async afterBranch() {
@@ -105,19 +156,7 @@ export async function taskStartImpl(
       } catch {
         handoff = `**Note:** Handoff context not available. Use \`/read-handoff session ${sessionId}\` to check session context\n`;
       }
-      let taskSectionContent = '';
-      try {
-        const sessionGuideContent = await context.readSessionGuide(sessionId);
-        const escapedTaskId = taskId.replace(/\./g, '\\.');
-        const taskSectionPattern = new RegExp(
-          `(?:- \\[[ x]\\])?\\s*(?:####|###) Task ${escapedTaskId}:.*?(?=(?:- \\[|#### Task|### Task|## |$))`,
-          's'
-        );
-        const taskSectionMatch = sessionGuideContent.match(taskSectionPattern);
-        if (taskSectionMatch) taskSectionContent = taskSectionMatch[0];
-      } catch {
-        // non-blocking
-      }
+      const taskSectionContent = await readTaskSection(taskId, context, sessionId);
       return {
         handoff: '## Task Handoff Context\n' + handoff,
         guide: taskSectionContent || undefined,

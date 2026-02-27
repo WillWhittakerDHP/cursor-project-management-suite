@@ -93,6 +93,22 @@ export async function phaseStartImpl(
       }
     },
 
+    async getTierDeliverables(): Promise<string> {
+      const phaseDesc = await derivePhaseDescription(phase, context);
+      const lines: string[] = [`**Phase ${phase}:** ${phaseDesc}`];
+      try {
+        const phaseGuideContent = await readProjectFile(context.paths.getPhaseGuidePath(phase));
+        const sessionMatches = phaseGuideContent.matchAll(/Session\s+(\d+\.\d+\.\d+):?\s*([^\n]*)/gi);
+        for (const m of sessionMatches) {
+          const sid = m[1];
+          const name = m[2].trim().slice(0, 60) || sid;
+          lines.push(`- Session ${sid}: ${name}`);
+        }
+      } catch { /* non-blocking */ }
+      if (lines.length === 1) lines.push('(No sessions found in phase guide)');
+      return lines.join('\n');
+    },
+
     async ensureBranch() {
       return ensureTierBranch(PHASE_CONFIG, phase, context);
     },

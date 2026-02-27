@@ -1,0 +1,9 @@
+{
+  "tier": "task",
+  "identifier": "6.4.3.1",
+  "featureName": "appointment-workflow",
+  "timestamp": "2026-02-27T19:49:55.706Z",
+  "scores": {
+    "tier-quality": 100
+  }
+}

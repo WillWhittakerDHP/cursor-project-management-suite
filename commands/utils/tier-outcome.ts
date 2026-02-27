@@ -28,6 +28,8 @@ export interface TierStartOutcome {
   status: TierStartStatus;
   reasonCode: string;
   nextAction: string;
+  /** User-facing deliverables summary for plan-mode approval (shown in AskQuestion). */
+  deliverables?: string;
   cascade?: CascadeInfo;
 }
 
@@ -43,6 +45,8 @@ export interface TierEndOutcome {
   status: TierEndStatus;
   reasonCode: string;
   nextAction: string;
+  /** User-facing verification checklist or deliverables summary (shown in AskQuestion). */
+  deliverables?: string;
   cascade?: CascadeInfo;
 }
 
@@ -50,7 +54,14 @@ export function buildTierEndOutcome(
   status: TierEndStatus,
   reasonCode: string,
   nextAction: string,
-  cascade?: CascadeInfo
+  cascade?: CascadeInfo,
+  deliverables?: string
 ): TierEndOutcome {
-  return { status, reasonCode, nextAction, ...(cascade !== undefined && { cascade }) };
+  return {
+    status,
+    reasonCode,
+    nextAction,
+    ...(deliverables !== undefined && deliverables !== '' && { deliverables }),
+    ...(cascade !== undefined && { cascade }),
+  };
 }

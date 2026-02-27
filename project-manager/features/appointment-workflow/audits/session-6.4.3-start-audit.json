@@ -35,7 +35,7 @@
     {
       "category": "docs",
       "status": "warn",
-      "score": 75,
+      "score": 70,
       "findings": [
         {
           "type": "warning",
@@ -48,6 +48,12 @@
           "message": "Guide missing or incomplete section: Learning Goals",
           "location": ".project-manager/features/appointment-workflow/sessions/session-6.4.3-guide.md",
           "suggestion": "Add or complete Learning Goals section in guide"
+        },
+        {
+          "type": "warning",
+          "message": "Guide missing or incomplete section: Tasks",
+          "location": ".project-manager/features/appointment-workflow/sessions/session-6.4.3-guide.md",
+          "suggestion": "Add or complete Tasks section in guide"
         },
         {
           "type": "warning",
@@ -65,7 +71,7 @@
       "recommendations": [
         "Create log document"
       ],
-      "summary": "2/3 documents exist. 4 issue(s) found."
+      "summary": "2/3 documents exist. 5 issue(s) found."
     },
     {
       "category": "vue-architecture",
@@ -116,7 +122,7 @@
       "summary": "Scanned 174 .vue file(s); found 0 error(s), 6 warning(s)."
     }
   ],
-  "timestamp": "2026-02-27T19:42:09.095Z",
+  "timestamp": "2026-02-27T19:48:03.558Z",
   "reportPath": "",
   "featureName": "appointment-workflow",
   "auditType": "start",

@@ -4,7 +4,7 @@
 **Feature:** appointment-workflow
 **Tier:** session
 **Identifier:** 6.4.3
-**Timestamp:** 2026-02-27T19:42:09.095Z
+**Timestamp:** 2026-02-27T19:48:03.558Z
 **Overall Status:** ⚠️ WARN
 
 ---
@@ -15,7 +15,7 @@
 - **Warn:** 3
 - **Fail:** 0
 
-**Baseline Score:** 67/100
+**Baseline Score:** 65/100
 
 ---
 
@@ -47,9 +47,9 @@ Ran 9 session-tier audits; found 0 error(s), 1 warning(s), 2 info signal(s).
 ## Docs Audit
 
 **Status:** ⚠️ WARN
-**Baseline Score:** 75/100
+**Baseline Score:** 70/100
 
-2/3 documents exist. 4 issue(s) found.
+2/3 documents exist. 5 issue(s) found.
 
 ### Findings
 
@@ -59,6 +59,9 @@ Ran 9 session-tier audits; found 0 error(s), 1 warning(s), 2 info signal(s).
 - ⚠️ **WARNING**: Guide missing or incomplete section: Learning Goals
   - Location: .project-manager/features/appointment-workflow/sessions/session-6.4.3-guide.md
   - Suggestion: Add or complete Learning Goals section in guide
+- ⚠️ **WARNING**: Guide missing or incomplete section: Tasks
+  - Location: .project-manager/features/appointment-workflow/sessions/session-6.4.3-guide.md
+  - Suggestion: Add or complete Tasks section in guide
 - ⚠️ **WARNING**: Guide missing or incomplete section: Session Workflow
   - Location: .project-manager/features/appointment-workflow/sessions/session-6.4.3-guide.md
   - Suggestion: Add or complete Session Workflow section in guide

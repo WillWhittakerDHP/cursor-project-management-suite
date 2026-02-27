@@ -1,0 +1,185 @@
+{
+  "generatedAt": "2026-02-27T19:47:52.789Z",
+  "scope": {
+    "included": [
+      "client/src/composables/**/*.{ts,js}"
+    ],
+    "excluded": [
+      "**/__tests__/**",
+      "**/*.test.*",
+      "**/*.spec.*"
+    ]
+  },
+  "totalScanned": 262,
+  "exceptionSummary": {
+    "totalRequiresReview": 1
+  },
+  "files": [
+    {
+      "id": "client__src__composables__fieldContext__useFieldContextState.ts",
+      "repoPath": "client/src/composables/fieldContext/useFieldContextState.ts",
+      "absPath": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/src/composables/fieldContext/useFieldContextState.ts",
+      "counts": {
+        "computed": 8,
+        "ref": 3,
+        "reactive": 0,
+        "watch": 0,
+        "watchEffect": 0,
+        "lifecycle": 0,
+        "async": 2,
+        "await": 6,
+        "vueQuery": 0,
+        "map": 1,
+        "reduce": 0,
+        "filter": 0,
+        "sort": 0,
+        "dom": 0,
+        "timers": 0,
+        "console": 0
+      },
+      "matches": [
+        {
+          "ruleId": "computed",
+          "lineNumber": 51,
+          "line": "const isTempEntity = computed(() => {",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 61,
+          "line": "const entity = computed(() => {",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 71,
+          "line": "const entityForMetadata = computed(() => {",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 77,
+          "line": "const fieldMetadataEntry = computed(() => {",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 85,
+          "line": "const actualPropertyName = computed(() => {",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "map",
+          "lineNumber": 103,
+          "line": "return components.map((ea) => ea.childId)",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 189,
+          "line": "const error = computed(() => errorMessage.value)",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 190,
+          "line": "const isValid = computed(() => meta.valid)",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 191,
+          "line": "const isDirty = computed(() => meta.dirty)",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "ref",
+          "lineNumber": 192,
+          "line": "const isValidating = ref(false)",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "ref",
+          "lineNumber": 193,
+          "line": "const isFocused = ref(false)",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "ref",
+          "lineNumber": 209,
+          "line": "const isDisabled = ref(providedDisplayConfig.disabled === true) // Explicit boolean, no default",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "async",
+          "lineNumber": 237,
+          "line": "const validate = async (): Promise<boolean> => {",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "await",
+          "lineNumber": 240,
+          "line": "await validateField()",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "async",
+          "lineNumber": 251,
+          "line": "const save = async (): Promise<void> => {",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "await",
+          "lineNumber": 268,
+          "line": "await apiClient.get(verifyEndpoint)",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "await",
+          "lineNumber": 294,
+          "line": "const isValidResult = await validate()",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "await",
+          "lineNumber": 302,
+          "line": "await saveComponentEntityField({",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "await",
+          "lineNumber": 312,
+          "line": "await saveRelationshipField({",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "await",
+          "lineNumber": 319,
+          "line": "await saveRegularField({",
+          "suppressionStatus": "unsuppressed"
+        }
+      ],
+      "exportUseFunctions": [],
+      "returnKeys": [
+        "actions",
+        "clearError",
+        "getValue",
+        "reset",
+        "save",
+        "setFocus",
+        "setValue",
+        "state",
+        "validate"
+      ],
+      "complexityScore": 20,
+      "priority": "P1",
+      "suggestions": [
+        {
+          "kind": "split_candidate",
+          "priority": "P1",
+          "message": "Moderate complexity score. Consider separating query/mutations from derived state and formatting."
+        }
+      ]
+    }
+  ]
+}
