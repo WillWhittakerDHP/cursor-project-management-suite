@@ -1,0 +1,3 @@
+[submodule "gmail-mcp-server"]
+	path = gmail-mcp-server
+	url = https://github.com/jasonsum/gmail-mcp-server.git
