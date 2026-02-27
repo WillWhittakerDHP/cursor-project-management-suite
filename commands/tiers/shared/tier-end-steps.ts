@@ -13,6 +13,7 @@ import { resolveRunTests, buildPlanModeResult } from '../../utils/tier-end-utils
 import { workflowCleanupReadmes } from '../../readme/composite/readme-workflow-cleanup';
 import { updateTierScope, clearTierScope } from '../../utils/tier-scope';
 import { runEndAuditForTier } from '../../audit/run-end-audit-for-tier';
+import { buildTierEndOutcome } from '../../utils/tier-outcome';
 
 /** If plan mode, build plan result and return it; else null. */
 export function stepPlanModeExit(
@@ -122,6 +123,50 @@ export async function stepTierGit(
 ): Promise<StepExitResult> {
   if (!hooks.runGit) return null;
   return hooks.runGit(ctx);
+}
+
+const VERIFICATION_NEXT_ACTION =
+  'Verification checklist suggested. See steps.verificationCheck. Use AskQuestion: add follow-up task/session/phase, do manually, or skip; then re-run this tier-end with continuePastVerification: true to run audits.';
+
+/** Call hook runVerificationCheck; when suggested and not continuePastVerification, return early with reasonCode verification_work_suggested. */
+export async function stepVerificationCheck(
+  ctx: TierEndWorkflowContext,
+  hooks: TierEndWorkflowHooks
+): Promise<StepExitResult> {
+  if (!hooks.runVerificationCheck) return null;
+  const result = await hooks.runVerificationCheck(ctx);
+  if (!result || !result.suggested || !result.checklist?.trim()) {
+    if (result?.suggested === false) {
+      ctx.steps.verificationCheck = { success: true, output: 'No verification checklist suggested.' };
+    }
+    return null;
+  }
+  const continuePast = (ctx.params as { continuePastVerification?: boolean }).continuePastVerification === true;
+  const parts: string[] = [];
+  if (result.productChecklist?.trim()) {
+    parts.push(`## What to verify (what we built)\n\n${result.productChecklist.trim()}`);
+  }
+  if (result.artifactChecklist?.trim()) {
+    parts.push(`## Artifacts / docs\n\n${result.artifactChecklist.trim()}`);
+  }
+  if (parts.length === 0 && result.checklist?.trim()) {
+    parts.push(`## Verification checklist (suggested)\n\n${result.checklist.trim()}`);
+  }
+  const output = parts.join('\n\n');
+  ctx.steps.verificationCheck = { success: true, output };
+  ctx.output.push(output);
+  if (continuePast) return null;
+  const outcome = buildTierEndOutcome(
+    'completed',
+    'verification_work_suggested',
+    VERIFICATION_NEXT_ACTION
+  );
+  return {
+    success: true,
+    output: ctx.output.join('\n\n'),
+    steps: ctx.steps,
+    outcome,
+  };
 }
 
 /** Run end audit via runEndAuditForTier when hook says so; append to steps and output. */

@@ -93,6 +93,25 @@ export async function featureStartImpl(featureId: string, options?: import('../.
       ];
     },
 
+    async getPlanContentSummary(): Promise<string | undefined> {
+      try {
+        const featureGuideContent = await context.readFeatureGuide();
+        const featureDesc = await deriveFeatureDescription(normalizedFeatureName, context);
+        const phaseMatches = featureGuideContent.matchAll(/Phase\s+(\d+\.\d+):?\s*([^\n]*)/gi);
+        const phaseLines: string[] = [];
+        for (const m of phaseMatches) {
+          const pid = m[1];
+          const name = m[2].trim().slice(0, 60) || `Phase ${pid}`;
+          phaseLines.push(`- Phase ${pid}: ${name}`);
+        }
+        if (phaseLines.length === 0) return undefined;
+        const header = `## Feature plan (what we're building)\n\n**Feature:** ${featureDesc}\n\n**Phases:**`;
+        return `${header}\n${phaseLines.join('\n')}`;
+      } catch {
+        return undefined;
+      }
+    },
+
     async ensureBranch() {
       return ensureTierBranch(FEATURE_CONFIG, normalizedFeatureName, context, {
         pullRoot: true,

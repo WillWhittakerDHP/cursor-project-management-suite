@@ -42,6 +42,7 @@ import type {
   StepExitResult,
 } from '../../shared/tier-end-workflow';
 import { runTierEndWorkflow } from '../../shared/tier-end-workflow';
+import { proposeVerificationChecklistForSession } from '../../shared/verification-check';
 
 const FRONTEND_ROOT = 'client';
 
@@ -70,6 +71,8 @@ export interface SessionEndParams {
   testTarget?: string;
   vueArchitectureOverride?: { reason: string; followUpTaskId: string };
   mode?: CommandExecutionMode;
+  /** When true, verification check step does not return early; used when re-running after verification work or skip. */
+  continuePastVerification?: boolean;
 }
 
 /**
@@ -175,7 +178,7 @@ export async function sessionEndImpl(params: SessionEndParams): Promise<SessionE
         '',
         'Would execute: Phase 1 preflight (verify), Phase 2 quality (commit feature, audit),',
         'Phase 3 tests (if runTests), Phase 4 docs (log, handoff, guide, mark complete),',
-        'Phase 5 git (merge, PR, commit audit fixes), Phase 6 push prompt only.',
+        'Phase 5 git (merge, PR, commit audit fixes), Phase 6 optional verification checklist (before audit); pause for add follow-up task or continue with continuePastVerification, Phase 7 push prompt only.',
       ];
     },
     requireExplicitRunTests: true,
@@ -260,6 +263,11 @@ export async function sessionEndImpl(params: SessionEndParams): Promise<SessionE
       );
       c.steps.gitCommitAuditFixes = { success: commitResult.success, output: commitResult.output };
       return null;
+    },
+
+    async runVerificationCheck(c): Promise<{ suggested: boolean; checklist?: string } | null> {
+      const p = c.params as SessionEndParams;
+      return proposeVerificationChecklistForSession(p.sessionId, c.context);
     },
 
     async runTestGoalValidation(c): Promise<StepExitResult> {

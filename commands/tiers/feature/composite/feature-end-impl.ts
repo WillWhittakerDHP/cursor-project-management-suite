@@ -24,6 +24,7 @@ import type {
   StepExitResult,
 } from '../../shared/tier-end-workflow';
 import { runTierEndWorkflow } from '../../shared/tier-end-workflow';
+import { proposeVerificationChecklistForFeature } from '../../shared/verification-check';
 
 export interface FeatureEndParams {
   featureId?: string;
@@ -34,6 +35,8 @@ export interface FeatureEndParams {
   commitMessage?: string;
   runTests?: boolean;
   mode?: import('../../../utils/command-execution-mode').CommandExecutionMode;
+  /** When true, verification check step does not return early; used when re-running after verification work or skip. */
+  continuePastVerification?: boolean;
 }
 
 export interface FeatureEndResult {
@@ -76,6 +79,7 @@ export async function featureEndImpl(params: FeatureEndParams): Promise<FeatureE
         '- README workflow cleanup',
         '- comprehensive comment cleanup (all obvious comments via npm script)',
         '- run code quality audit',
+        '- optional: propose verification checklist (before audit); pause for add follow-up phase or continue with continuePastVerification',
         '- commit/push',
         '- merge feature branch into develop + delete feature branch',
         '- update current feature pointer',
@@ -330,6 +334,10 @@ export async function featureEndImpl(params: FeatureEndParams): Promise<FeatureE
         modifiedFiles: modifiedFiles.length > 0 ? modifiedFiles : undefined,
         testResults: ctx.steps.runTests ? { success: ctx.steps.runTests.success } : undefined,
       };
+    },
+
+    async runVerificationCheck() {
+      return proposeVerificationChecklistForFeature(ctx.identifier, ctx.context);
     },
 
     getSuccessOutcome() {

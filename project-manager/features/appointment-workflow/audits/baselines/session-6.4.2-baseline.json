@@ -1,0 +1,15 @@
+{
+  "tier": "session",
+  "identifier": "6.4.2",
+  "featureName": "appointment-workflow",
+  "timestamp": "2026-02-27T05:16:47.037Z",
+  "scores": {
+    "tier-quality": 86,
+    "docs": 75,
+    "vue-architecture": 40,
+    "type-constant-inventory": 0,
+    "composable-governance": 94,
+    "function-governance": 100,
+    "component-governance": 100
+  }
+}

@@ -2,10 +2,7 @@
  * Composite Planning Command: /planning-plan-with-checks
  * Plan with scoping, documentation checks, reuse checks, and validation
  *
- * Combines: (optional) auto-context + downstream dedup → tier overlap check → parse → docs check → reuse check → validate → (optional) scope document
- *
- * Tier overlap check: search codebase for existing code that does what the tier start/end
- * commands do, so we can decide overwrite / add to / deprecate. Specs: getTierOverlapSearchSpec in utils/check-tier-overlap.ts.
+ * Combines: (optional) auto-context + downstream dedup → parse → docs check → reuse check → validate → (optional) scope document
  */
 
 import { parsePlainLanguage } from '../atomic/parse-plain-language';
@@ -13,7 +10,6 @@ import { checkDocumentation } from '../atomic/check-documentation';
 import { checkReuse } from '../atomic/check-reuse';
 import { validatePlanningCommand } from '../atomic/validate-planning';
 import { PlanningInput, PlanningTier } from '../../utils/planning-types';
-import { getTierOverlapSearchSpec, type TierName } from '../../utils/check-tier-overlap';
 import { WorkflowCommandContext } from '../../utils/command-context';
 import { MarkdownUtils } from '../../utils/markdown-utils';
 import { checkDownstreamPlans } from '../../utils/check-downstream-plans';
@@ -110,27 +106,6 @@ export async function planWithChecks(
   output.push('# Planning with Checks\n');
   output.push(`**Tier:** ${tier}\n`);
   output.push(`**Description:** ${description}\n`);
-  output.push('\n---\n');
-
-  // Step 0: Tier overlap check — search for existing code that does what tier start/end commands do
-  const tierName = tier as TierName;
-  const startSpec = getTierOverlapSearchSpec(tierName, 'start');
-  const endSpec = getTierOverlapSearchSpec(tierName, 'end');
-  output.push('## Step 0: Check Existing Code (Tier Overlap)\n');
-  output.push('Search the codebase for current code that looks like it does what the tier start/end commands would do. ');
-  output.push('Then decide: **overwrite** / **add to** / **deprecate** so the tier workflow stays the single source of truth.\n');
-  output.push('(Search specs: `getTierOverlapSearchSpec` in `.cursor/commands/utils/check-tier-overlap.ts`.)\n\n');
-  if (startSpec) {
-    output.push(`### ${startSpec.commandName}\n`);
-    output.push(`**Does:** ${startSpec.whatItDoes}\n`);
-    output.push(`**Search for:** ${startSpec.searchQueries.join(', ')}\n\n`);
-  }
-  if (endSpec) {
-    output.push(`### ${endSpec.commandName}\n`);
-    output.push(`**Does:** ${endSpec.whatItDoes}\n`);
-    output.push(`**Search for:** ${endSpec.searchQueries.join(', ')}\n\n`);
-  }
-  output.push('**After searching:** Present findings (files/locations) and decision (overwrite / add to / deprecate) with one-line rationale.\n');
   output.push('\n---\n');
 
   // Step 1: Parse plain language

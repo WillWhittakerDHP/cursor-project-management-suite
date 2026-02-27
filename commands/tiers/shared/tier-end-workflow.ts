@@ -75,6 +75,8 @@ export interface TierEndWorkflowHooks {
   runBeforeAudit?(ctx: TierEndWorkflowContext): Promise<void>;
   /** Called after stepEndAudit to run autofix commit (e.g. commitAutofixChanges using ctx.autofixResult). */
   runAfterAudit?(ctx: TierEndWorkflowContext): Promise<StepExitResult>;
+  /** Propose verification checklist (before audit); when suggested and not continuePastVerification, step returns early with reasonCode verification_work_suggested. */
+  runVerificationCheck?(ctx: TierEndWorkflowContext): Promise<{ suggested: boolean; checklist?: string } | null>;
   /** Cascade: build up or across; null = no cascade (feature). */
   getCascade?(ctx: TierEndWorkflowContext): Promise<CascadeInfo | null>;
   /** Final outcome reasonCode and nextAction when successful (e.g. pending_push_confirmation). */
@@ -93,6 +95,7 @@ import {
   stepCommentCleanup,
   stepReadmeCleanup,
   stepTierGit,
+  stepVerificationCheck,
   stepEndAudit,
   stepAfterAudit,
   stepClearScope,
@@ -132,6 +135,9 @@ export async function runTierEndWorkflow(
 
   const gitExit = await stepTierGit(ctx, hooks);
   if (gitExit) return gitExit;
+
+  const verificationExit = await stepVerificationCheck(ctx, hooks);
+  if (verificationExit) return verificationExit;
 
   await stepEndAudit(ctx, hooks);
   const afterAuditExit = await stepAfterAudit(ctx, hooks);

@@ -535,6 +535,12 @@ Example workflow:
 
 ---
 
+## Secrets and credentials
+
+- **Gmail MCP (invite-response verification):** OAuth client JSON and token files must live **outside the repo**. Use a directory such as `~/.cursor/gmail-mcp/` for `client_creds.json` and `tokens.json`; clone the Gmail MCP server to e.g. `~/.cursor/gmail-mcp-server`. See [.cursor/GMAIL_MCP_SETUP.md](GMAIL_MCP_SETUP.md) for full setup. Do not commit `.cursor/mcp.json` (it contains machine-specific paths); it is listed in the root `.gitignore`.
+
+---
+
 ## Additional Resources
 
 - **Commands Documentation**: `.cursor/commands/README.md`

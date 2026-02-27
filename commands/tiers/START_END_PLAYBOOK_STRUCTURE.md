@@ -23,14 +23,6 @@ All tier start/end commands (feature-start, feature-end, phase-start, phase-end,
 
 ## Required sections (every playbook)
 
-### Check existing code (early step)
-
-Before loading context or calling the implementation, search the codebase for **current code that looks like it does what this tier command would do** (e.g. scripts that update session logs, code that creates feature branches, logic that marks phases complete). Suggested search queries and decision prompt per command are in `.cursor/commands/utils/check-tier-overlap.ts` (`getTierOverlapSearchSpec` / `OVERLAP_SPECS`); use them if you want structured queries, or search generically for the behavior above.
-
-- **Purpose:** Decide whether to **overwrite** existing code, **add to** it, or **deprecate** it in favor of the tier command — so the tier workflow stays the single source of truth and we avoid duplicate or conflicting behavior.
-- **Output:** Present a short summary of what you found (files/locations and what they do) and the decision: overwrite / add to / deprecate (with one-line rationale). If nothing relevant is found, state that and proceed.
-- **When:** First step in the procedure (or first step in a planning command that leads to this tier). The agent runs this step once per tier command invocation.
-
 ### Context
 
 - User supplies only the identifier (F/P/S/T: feature number or name, phase number, session X.Y, task X.Y.Z). The agent never asks the user for a title or description.
@@ -55,13 +47,14 @@ Start and end commands return a structured result with `result.outcome` (and for
 - **Start commands** return `TierStartResult`: `{ success, output, outcome, modeGate? }`. Use `outcome.reasonCode` and `outcome.cascade` as below.
 - **End commands** return a result with `outcome`: `{ status, reasonCode, nextAction, cascade? }`.
 
-**Mode switching at transitions:** Each routing case below involves a mode transition. The agent MUST switch to the correct mode before performing the action: Plan mode for AskQuestion calls, Agent mode for command execution and file writes.
+**Mode switching at transitions:** Each routing case below involves a mode transition. The agent MUST switch to the correct mode before performing the action: Plan mode for AskQuestion and CreatePlan; Agent mode for command execution and file writes. After the user answers an AskQuestion, switch back to Agent mode if the next step is to execute (run command, write files).
 
 Routing:
 
 - If `outcome.reasonCode === 'plan_mode'`: see **Per-reasonCode behavioral rules → `plan_mode`** below.
 - If `outcome.reasonCode === 'pending_push_confirmation'`: see **Per-reasonCode behavioral rules → `pending_push_confirmation`** below.
-- If `outcome.cascade` is present (start or end): see **Per-reasonCode behavioral rules → Cascade confirmation** below.
+- If `outcome.reasonCode === 'verification_work_suggested'`: see **Per-reasonCode behavioral rules → `verification_work_suggested`** below.
+- **If `outcome.cascade` is present (start or end):** You MUST run **Cascade confirmation** first. Do not skip to `nextAction` or infer the next step (e.g. do not assume "session roll-up" when the cascade is to the next task). Cascade direction: `outcome.cascade.direction === 'across'` → next step is the **next tier at same level** (e.g. next task via `outcome.cascade.command`, typically `/task-start <nextTaskId>`); `'up'` → next step is **parent tier end** (e.g. `/session-end <sessionId>`). See **Per-reasonCode behavioral rules → Cascade confirmation** below.
 - If success and no push/cascade pending: show steps/output; then use `outcome.nextAction`.
 - **If not success (HARD STOP):**
   1. **Switch to Plan mode (Ask mode) immediately.** The `enforceModeSwitch` block prepended to the output will say "STOP — Command Failed" when `success` is false; follow it.
@@ -124,9 +117,11 @@ These rules tell the agent what to do for each `reasonCode` returned by commands
 
 ### `plan_mode` (start commands, default mode)
 
+The plan preview includes **what we're building** (session/phase/feature plan: tasks, goals, scope) and **what would run** (workflow: branch, docs, audit). The user is approving both. Present the plan content summary first when present, then the workflow steps.
+
 1. Show `result.output` (the plan preview).
-2. Switch to Plan mode. Use **AskQuestion**: "Approve this plan and execute?" Options: "Yes — execute" / "No — revise".
-3. On "Yes": switch to Agent mode, re-invoke the same command with `{ mode: 'execute' }`.
+2. **Switch to Plan mode** (Ask mode). Use **AskQuestion**: "Approve this plan and execute?" Options: "Yes — execute" / "No — revise".
+3. On "Yes": **switch to Agent mode**, then re-invoke the same command with **`{ mode: 'execute' }`**. You must call the composite directly (e.g. `sessionStart(sessionId, undefined, { mode: 'execute' })`) so the third argument is passed; do not re-run a script or slash command that only accepts the identifier, or the second run will still be plan mode and execute will never run.
 
 ### `pending_push_confirmation` (end commands)
 
@@ -134,6 +129,19 @@ These rules tell the agent what to do for each `reasonCode` returned by commands
 2. On "Yes": switch to Agent mode, run `git push`. Then check `outcome.cascade`.
 3. On "No": skip push. Then check `outcome.cascade`.
 4. If `outcome.cascade` is present: run **cascade confirmation** (see below).
+
+### `verification_work_suggested` (end commands)
+
+Suggested manual verification for this tier. The checklist is for **verifying what we built** (product behavior, UX, correctness), not for verifying that documentation was created. When the output includes a "What to verify (what we built)" section, present that as the main checklist; treat any "Artifacts / docs" section as secondary. Do not use "test" in playbook wording for this flow.
+
+1. Switch to Plan mode.
+2. **Always present the verification checklist as a fixed, bulleted list** from `result.steps.verificationCheck.output`. Show it verbatim. Present "What to verify (what we built)" first when present; then "Artifacts / docs" if present. Do not ask whether to add a validation step or whether the list is appropriate.
+3. Use **AskQuestion** only to choose how to proceed: "Suggested verification/fix work for this tier. How do you want to proceed?" Options:
+   - **"Add follow-up task"** (session-end), **"Add follow-up session"** (phase-end), or **"Add follow-up phase"** (feature-end): use existing planning + start with context; pass the checklist as the scope/description for the new task, session, or phase (e.g. `/plan-task [sessionId]` with description derived from the checklist, then cascade to task-start; or plan-session / plan-phase for next session or phase with that scope, then session-start or phase-start). After the user completes that work, they run the same tier-end again; they may pass `continuePastVerification: true` to skip this prompt and run audits.
+   - **"I'll do it manually; continue tier-end"**: switch to Agent mode, re-invoke the same tier-end command with `continuePastVerification: true` so the workflow continues past the verification step and runs audits.
+   - **"Skip; continue tier-end"**: same as above — re-invoke with `continuePastVerification: true`.
+
+**Anti-pattern:** Do not ask "Should I add a task to add a validation step?" or similar. The checklist is the fixed list of verification todos; show it, then offer the three options only.
 
 ### Cascade confirmation (start and end commands)
 
@@ -143,9 +151,11 @@ When `outcome.cascade` is present:
 2. On "Yes": switch to Agent mode, invoke `outcome.cascade.command`.
 3. On "No": show `outcome.nextAction` and stop.
 
+**Cascade direction (end commands):** For task-end, `direction === 'across'` means there is a **next task** in the session — the next step is to run the next task (e.g. `/task-start <nextTaskId>`), not to end the session. Only when `direction === 'up'` is the next step to end the parent tier (e.g. `/session-end <sessionId>`). Always use `outcome.cascade.command` as the exact next command.
+
 ### `task_complete` (task-end)
 
-- If `outcome.cascade` is present: run **cascade confirmation** above.
+- **If `outcome.cascade` is present:** Run **Cascade confirmation** (see above). Do not offer session-end or "roll up" unless `outcome.cascade.direction === 'up'`. When `direction === 'across'`, the next step is the **next task** — invoke `outcome.cascade.command` (e.g. `/task-start <nextTaskId>`) on "Yes", not `/session-end`.
 - If no cascade: task is done. Show `outcome.nextAction`.
 
 ### Task-start success (after execute mode)
@@ -191,8 +201,9 @@ When the procedure says "call implementation", the agent:
 - Session start (plan preview; default is plan): `npx tsx -e "import('./.cursor/commands/tiers/session/composite/session.ts').then(m => m.sessionStart('6.2.1')).then(r => console.log(JSON.stringify(r)))"`
 - Session start (execute after approval): `npx tsx -e "import('./.cursor/commands/tiers/session/composite/session.ts').then(m => m.sessionStart('6.2.1', undefined, { mode: 'execute' })).then(r => console.log(JSON.stringify(r)))"`
 - Task start: `npx tsx -e "import('./.cursor/commands/tiers/task/composite/task.ts').then(m => m.taskStart('6.2.1.4')).then(r => console.log(JSON.stringify(r)))"`
+- Task start (execute after approval): `npx tsx -e "import('./.cursor/commands/tiers/task/composite/task.ts').then(m => m.taskStart('6.2.1.4', { mode: 'execute' })).then(r => console.log(JSON.stringify(r)))"`
 
-**Session-start and phase-start (plan then execute):** Start commands default to **plan** mode. First invocation: no options — user sees the plan. When the user has approved and the agent is in **Agent mode**, invoke again with **`{ mode: 'execute' }`** so the command runs the steps (branch creation, scope update, etc.). Example: `sessionStart(sessionId, description, { mode: 'execute' })`.
+**Session-start and phase-start (plan then execute):** Start commands default to **plan** mode. First invocation: no options — user sees the plan. When the user has approved and the agent is in **Agent mode**, invoke again with **`{ mode: 'execute' }`** so the command runs the steps (branch creation, scope update, etc.). Example: `sessionStart(sessionId, description, { mode: 'execute' })`. **Task-start:** Pass options as the second argument when you do not need to pass featureId: `taskStart(taskId, { mode: 'execute' })` (no `undefined` placeholder).
 
 ---
 
@@ -220,6 +231,7 @@ All mode logic lives in one file: `.cursor/commands/utils/command-execution-mode
 
 ### Rules
 
+- **Switch to Plan mode whenever you need to ask the user a question.** Before any AskQuestion or CreatePlan, switch to Plan mode (Ask mode). After the user responds, if the next step is to execute (run a command, write files, git operations), switch to Agent mode. Do not ask questions in Agent mode; do not execute or write in Plan mode.
 - **Mode switching is mandatory, not advisory.** Plan mode (Ask mode) is required for AskQuestion and CreatePlan. Agent mode is required for file writes, git operations, and command execution. Before each action, verify the mode matches. The `enforceModeSwitch` header at the top of every command output states the required mode; the per-reasonCode rules below define the behavioral workflow.
 - **Execute/build** (branch creation, scope update, file writes, merges, etc.) happen in **Agent mode**, after the user has approved and the command is invoked with `{ mode: 'execute' }`.
 - The mode header comes from `enforceModeSwitch(requiredMode, commandName)` in `command-execution-mode.ts`. It is a **short declaration** only (e.g. "Mode: Agent — /task-end"); all behavioral rules live in this playbook.

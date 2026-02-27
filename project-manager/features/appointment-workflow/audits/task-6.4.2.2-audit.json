@@ -1,0 +1,20 @@
+{
+  "tier": "task",
+  "identifier": "6.4.2.2",
+  "overallStatus": "pass",
+  "results": [
+    {
+      "category": "tier-quality",
+      "status": "pass",
+      "score": 100,
+      "findings": [],
+      "recommendations": [],
+      "summary": "Ran 6 task-tier audits; found 0 error(s), 0 warning(s), 0 info signal(s)."
+    }
+  ],
+  "timestamp": "2026-02-27T19:10:23.969Z",
+  "reportPath": "",
+  "featureName": "appointment-workflow",
+  "auditType": "end",
+  "baselineComparison": []
+}

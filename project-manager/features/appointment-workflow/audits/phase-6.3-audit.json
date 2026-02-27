@@ -1,0 +1,81 @@
+{
+  "tier": "phase",
+  "identifier": "6.3",
+  "overallStatus": "warn",
+  "results": [
+    {
+      "category": "tier-quality",
+      "status": "warn",
+      "score": 80,
+      "findings": [
+        {
+          "type": "info",
+          "message": "type-similarity audit produced output (review JSON for details)",
+          "location": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/.audit-reports/type-similarity-audit.json",
+          "suggestion": "Review client/.audit-reports/type-similarity-audit.json for findings"
+        },
+        {
+          "type": "info",
+          "message": "9 duplication group(s) with high consolidation leverage",
+          "location": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/.audit-reports/duplication-audit.json",
+          "suggestion": "Review client/.audit-reports/duplication-audit.md for DRY opportunities"
+        },
+        {
+          "type": "info",
+          "message": "import-graph audit produced output (review JSON for details)",
+          "location": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/.audit-reports/import-graph-audit.json",
+          "suggestion": "Review client/.audit-reports/import-graph-audit.json for findings"
+        },
+        {
+          "type": "info",
+          "message": "file-cohesion audit produced output (review JSON for details)",
+          "location": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/.audit-reports/file-cohesion-audit.json",
+          "suggestion": "Review client/.audit-reports/file-cohesion-audit.json for findings"
+        },
+        {
+          "type": "info",
+          "message": "deprecation audit produced output (review JSON for details)",
+          "location": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/.audit-reports/deprecation-audit.json",
+          "suggestion": "Review client/.audit-reports/deprecation-audit.json for findings"
+        },
+        {
+          "type": "warning",
+          "message": "0 untyped inject(s), 2 deep provide/inject chain(s)",
+          "location": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/.audit-reports/data-flow-health-audit.json",
+          "suggestion": "Review data-flow-health-audit.md for provide/inject hygiene"
+        }
+      ],
+      "recommendations": [
+        "Review audit reports for warnings",
+        "Review duplication audit for consolidation opportunities"
+      ],
+      "summary": "Ran 12 phase-tier audits; found 0 error(s), 1 warning(s), 5 info signal(s)."
+    }
+  ],
+  "timestamp": "2026-02-27T04:10:09.305Z",
+  "reportPath": "",
+  "featureName": "appointment-workflow",
+  "auditType": "end",
+  "baselineComparison": [
+    {
+      "category": "security",
+      "startScore": 0,
+      "status": "missing"
+    },
+    {
+      "category": "docs",
+      "startScore": 75,
+      "status": "missing"
+    },
+    {
+      "category": "vue-architecture",
+      "startScore": 0,
+      "status": "missing"
+    },
+    {
+      "category": "tier-quality",
+      "endScore": 80,
+      "status": "new"
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "gmail-invite-verification": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "/Users/districthomepro/Bonsai/Differential_Scheduler/.cursor/gmail-mcp-server",
+        "run",
+        "gmail",
+        "--creds-file-path",
+        "/Users/districthomepro/.cursor/gmail-mcp/client_creds.json",
+        "--token-path",
+        "/Users/districthomepro/.cursor/gmail-mcp/tokens.json"
+      ],
+      "disabled": false
+    }
+  }
+}

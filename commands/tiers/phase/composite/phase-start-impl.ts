@@ -74,6 +74,25 @@ export async function phaseStartImpl(
       ];
     },
 
+    async getPlanContentSummary(): Promise<string | undefined> {
+      try {
+        const phaseGuideContent = await readProjectFile(context.paths.getPhaseGuidePath(phase));
+        const phaseDesc = await derivePhaseDescription(phase, context);
+        const sessionMatches = phaseGuideContent.matchAll(/Session\s+(\d+\.\d+\.\d+):?\s*([^\n]*)/gi);
+        const sessionLines: string[] = [];
+        for (const m of sessionMatches) {
+          const sid = m[1];
+          const name = m[2].trim().slice(0, 60) || sid;
+          sessionLines.push(`- Session ${sid}: ${name}`);
+        }
+        if (sessionLines.length === 0) return undefined;
+        const header = `## Phase plan (what we're building)\n\n**Phase:** ${phaseDesc}\n\n**Sessions:**`;
+        return `${header}\n${sessionLines.join('\n')}`;
+      } catch {
+        return undefined;
+      }
+    },
+
     async ensureBranch() {
       return ensureTierBranch(PHASE_CONFIG, phase, context);
     },

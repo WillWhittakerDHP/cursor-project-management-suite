@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "gmail-invite-verification": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "REPLACE_WITH_PATH_TO_GMAIL_MCP_CLONE",
+        "run",
+        "gmail",
+        "--creds-file-path",
+        "REPLACE_WITH_PATH_TO_CREDENTIALS_JSON",
+        "--token-path",
+        "REPLACE_WITH_PATH_TO_TOKENS_JSON"
+      ],
+      "disabled": false
+    }
+  }
+}

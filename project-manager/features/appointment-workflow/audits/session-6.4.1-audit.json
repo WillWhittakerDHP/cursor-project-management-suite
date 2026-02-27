@@ -1,0 +1,174 @@
+{
+  "tier": "session",
+  "identifier": "6.4.1",
+  "overallStatus": "warn",
+  "results": [
+    {
+      "category": "tier-quality",
+      "status": "warn",
+      "score": 86,
+      "findings": [
+        {
+          "type": "warning",
+          "message": "1 file(s) with high complexity scores",
+          "location": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/.audit-reports/composables-logic-audit.json",
+          "suggestion": "Review client/.audit-reports/composables-logic-audit.md for top hotspots"
+        },
+        {
+          "type": "info",
+          "message": "constants-consolidation audit produced output (review JSON for details)",
+          "location": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/.audit-reports/constants-consolidation-audit.json",
+          "suggestion": "Review client/.audit-reports/constants-consolidation-audit.json for findings"
+        },
+        {
+          "type": "info",
+          "message": "1 high-fan-in composable finding(s) requiring coordinated repair",
+          "location": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/.audit-reports/composable-health-audit.json",
+          "suggestion": "Review composable-health-audit.md wave 3 for multi-file planning"
+        }
+      ],
+      "recommendations": [
+        "Review audit reports for warnings"
+      ],
+      "summary": "Ran 9 session-tier audits; found 0 error(s), 1 warning(s), 2 info signal(s)."
+    },
+    {
+      "category": "docs",
+      "status": "warn",
+      "score": 80,
+      "findings": [
+        {
+          "type": "warning",
+          "message": "Guide missing or incomplete section: Quick Start",
+          "location": ".project-manager/features/appointment-workflow/sessions/session-6.4.1-guide.md",
+          "suggestion": "Add or complete Quick Start section in guide"
+        },
+        {
+          "type": "warning",
+          "message": "Guide missing or incomplete section: Learning Goals",
+          "location": ".project-manager/features/appointment-workflow/sessions/session-6.4.1-guide.md",
+          "suggestion": "Add or complete Learning Goals section in guide"
+        },
+        {
+          "type": "warning",
+          "message": "Guide missing or incomplete section: Tasks",
+          "location": ".project-manager/features/appointment-workflow/sessions/session-6.4.1-guide.md",
+          "suggestion": "Add or complete Tasks section in guide"
+        },
+        {
+          "type": "warning",
+          "message": "Guide missing or incomplete section: Session Workflow",
+          "location": ".project-manager/features/appointment-workflow/sessions/session-6.4.1-guide.md",
+          "suggestion": "Add or complete Session Workflow section in guide"
+        }
+      ],
+      "recommendations": [
+        "Review documentation structure and completeness"
+      ],
+      "summary": "3/3 documents exist. 4 issue(s) found."
+    },
+    {
+      "category": "vue-architecture",
+      "status": "warn",
+      "score": 40,
+      "findings": [
+        {
+          "type": "warning",
+          "message": "Component script is large (183 non-empty lines). This often indicates logic creep.",
+          "location": "client/src/components/booking/BookingWizard.vue",
+          "suggestion": "Move domain rules/orchestration into composables; keep only UI state and event wiring."
+        },
+        {
+          "type": "warning",
+          "message": "Component script is large (229 non-empty lines). This often indicates logic creep.",
+          "location": "client/src/views/admin/tabs/InstancesTab.vue",
+          "suggestion": "Move domain rules/orchestration into composables; keep only UI state and event wiring."
+        },
+        {
+          "type": "warning",
+          "message": "Component defines many local functions (14). Consider extracting reusable/domain logic into composables.",
+          "location": "client/src/views/admin/tabs/components/CapacityConstraintsPanel.vue",
+          "suggestion": "If functions implement business rules or shared transforms, move them into composables/utilities."
+        },
+        {
+          "type": "warning",
+          "message": "Component defines many local functions (8). Consider extracting reusable/domain logic into composables.",
+          "location": "client/src/views/admin/tabs/components/GridConfigPanel.vue",
+          "suggestion": "If functions implement business rules or shared transforms, move them into composables/utilities."
+        },
+        {
+          "type": "warning",
+          "message": "Component defines many local functions (9). Consider extracting reusable/domain logic into composables.",
+          "location": "client/src/views/admin/tabs/components/OverlapConstraintsPanel.vue",
+          "suggestion": "If functions implement business rules or shared transforms, move them into composables/utilities."
+        },
+        {
+          "type": "warning",
+          "message": "Component defines many local functions (11). Consider extracting reusable/domain logic into composables.",
+          "location": "client/src/views/admin/tabs/components/PropertyCreateForm.vue",
+          "suggestion": "If functions implement business rules or shared transforms, move them into composables/utilities."
+        }
+      ],
+      "recommendations": [
+        "Review `.project-manager/patterns/vue-architecture-contract.md` and move domain logic out of components.",
+        "Review `.project-manager/patterns/composable-taxonomy.md` and standardize composable naming/return shapes."
+      ],
+      "summary": "Scanned 174 .vue file(s); found 0 error(s), 6 warning(s)."
+    }
+  ],
+  "timestamp": "2026-02-27T04:58:05.301Z",
+  "reportPath": "",
+  "featureName": "appointment-workflow",
+  "auditType": "end",
+  "baselineComparison": [
+    {
+      "category": "tier-quality",
+      "startScore": 86,
+      "endScore": 86,
+      "delta": 0,
+      "status": "unchanged"
+    },
+    {
+      "category": "docs",
+      "startScore": 78,
+      "endScore": 80,
+      "delta": 2,
+      "status": "improved"
+    },
+    {
+      "category": "vue-architecture",
+      "startScore": 40,
+      "endScore": 40,
+      "delta": 0,
+      "status": "unchanged"
+    },
+    {
+      "category": "type-constant-inventory",
+      "startScore": 0,
+      "endScore": 0,
+      "delta": 0,
+      "status": "unchanged"
+    },
+    {
+      "category": "composable-governance",
+      "startScore": 94,
+      "endScore": 94,
+      "delta": 0,
+      "status": "unchanged"
+    },
+    {
+      "category": "function-governance",
+      "startScore": 100,
+      "endScore": 100,
+      "delta": 0,
+      "status": "unchanged"
+    },
+    {
+      "category": "component-governance",
+      "startScore": 100,
+      "endScore": 100,
+      "delta": 0,
+      "status": "unchanged"
+    }
+  ]
+}

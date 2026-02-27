@@ -75,12 +75,13 @@ export async function validateSessionImpl(sessionId: string): Promise<ValidateSe
 
     if (branchCheckResult.success && branchCheckResult.output.trim()) {
       if (currentBranch === sessionBranchName) {
+        // Already on session branch: allow start so workflow can run (context, fill children, etc.); ensureBranch will no-op.
         return {
-          canStart: false,
-          reason: 'Session already started',
+          canStart: true,
+          reason: 'Session branch is current',
           details: [
             `Session ${sessionId} branch exists and is current: ${sessionBranchName}`,
-            `Continue working on this session or complete it with /session-end ${sessionId}`,
+            `Proceeding with session-start (branch step will no-op).`,
           ],
         };
       }

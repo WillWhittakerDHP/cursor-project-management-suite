@@ -61,12 +61,32 @@ export function formatTaskValidation(result: ValidateTaskResult, taskId: string)
   return output.join('\n');
 }
 
+/**
+ * Start the task tier. Second argument can be featureId (string) or options (object with mode).
+ * taskStart(id), taskStart(id, { mode: 'execute' }), and taskStart(id, featureId, options) all work.
+ */
 export async function taskStart(
   taskId: string,
-  featureId?: string,
+  featureIdOrOptions?: string | CommandExecutionOptions,
   options?: CommandExecutionOptions
 ): Promise<TierStartResult> {
-  return runTierStart(TASK_CONFIG, { taskId, featureId }, options);
+  let featureId: string | undefined;
+  let opts: CommandExecutionOptions | undefined;
+  if (typeof featureIdOrOptions === 'string') {
+    featureId = featureIdOrOptions;
+    opts = options;
+  } else if (
+    featureIdOrOptions != null &&
+    typeof featureIdOrOptions === 'object' &&
+    'mode' in featureIdOrOptions
+  ) {
+    featureId = undefined;
+    opts = featureIdOrOptions;
+  } else {
+    featureId = undefined;
+    opts = options;
+  }
+  return runTierStart(TASK_CONFIG, { taskId, featureId }, opts);
 }
 
 export async function taskEnd(paramsOrId: TaskEndParams | string): Promise<TierEndResult> {

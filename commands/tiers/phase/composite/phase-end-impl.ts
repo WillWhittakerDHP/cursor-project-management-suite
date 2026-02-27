@@ -32,6 +32,7 @@ import type {
   StepExitResult,
 } from '../../shared/tier-end-workflow';
 import { runTierEndWorkflow } from '../../shared/tier-end-workflow';
+import { proposeVerificationChecklistForPhase } from '../../shared/verification-check';
 
 export interface PhaseEndParams {
   phaseId: string;
@@ -45,6 +46,8 @@ export interface PhaseEndParams {
   testTarget?: string;
   mode?: CommandExecutionMode;
   skipGit?: boolean;
+  /** When true, verification check step does not return early; used when re-running after verification work or skip. */
+  continuePastVerification?: boolean;
 }
 
 export interface PhaseEndResult {
@@ -90,6 +93,7 @@ export async function phaseEndImpl(params: PhaseEndParams): Promise<PhaseEndResu
         '- commit/push feature branch',
         '- optional: delete merged branches',
         '- optional: create new branch (if requested)',
+        '- optional: propose verification checklist (before audit); pause for add follow-up session or continue with continuePastVerification',
       ];
     },
 
@@ -467,6 +471,11 @@ export async function phaseEndImpl(params: PhaseEndParams): Promise<PhaseEndResu
         output: `\n🔍 **Phase ${p.phaseId} Complete - GitHub Validation Required**\n\nPlease visit GitHub to verify all session PRs from this phase are merged:\n🔗 https://github.com/WillWhittakerDHP/DHP_Differential_Scheduler/pulls\n\n**Validation Checklist:**\n☐ All session PRs from Phase ${p.phaseId} are merged\n☐ No outstanding review comments\n☐ Phase branch is clean and up-to-date with main\n☐ Ready to merge phase to main (if applicable)\n\n**Note:** This is a manual verification step. The agent cannot automatically check PR status.\n`,
       };
       return null;
+    },
+
+    async runVerificationCheck(c): Promise<{ suggested: boolean; checklist?: string } | null> {
+      const p = c.params as PhaseEndParams;
+      return proposeVerificationChecklistForPhase(p.phaseId, p.completedSessions, c.context);
     },
 
     async getCascade(c): Promise<{ reasonCode: string; nextIdentifier: string } | null> {

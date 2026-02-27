@@ -4,6 +4,7 @@
 
 import { readHandoff } from '../../../utils/read-handoff';
 import { readGuide } from '../../../utils/read-guide';
+import { readProjectFile } from '../../../utils/utils';
 import { createSessionLabel, formatSessionLabel } from '../atomic/create-session-label';
 import { WorkflowCommandContext } from '../../../utils/command-context';
 import { generateCurrentStateSummary } from '../../../utils/context-gatherer';
@@ -91,12 +92,73 @@ export async function sessionStartImpl(
       ];
     },
 
+    async getPlanContentSummary(): Promise<string | undefined> {
+      try {
+        const guideContent = await context.readSessionGuide(sessionId);
+        const escaped = sessionId.replace(/\./g, '\\.');
+        const taskHeadingRegex = new RegExp(
+          `(?:-\\s*\\[[ x]\\]\\s*)?(?:####|###)\\s*Task\\s+${escaped}\\.(\\d+):\\s*([^\\n]*)`,
+          'gi'
+        );
+        const taskLines: string[] = [];
+        let m: RegExpExecArray | null;
+        while ((m = taskHeadingRegex.exec(guideContent)) !== null) {
+          const taskId = `${sessionId}.${m[1]}`;
+          const nameOrGoal = m[2].trim().slice(0, 80);
+          taskLines.push(`- Task ${taskId}: ${nameOrGoal || '(no title)'}`);
+        }
+        if (taskLines.length === 0) return undefined;
+        const header = `## Session plan (what we're building)\n\n**Session:** ${resolvedDescription}\n\n**Tasks:**`;
+        return `${header}\n${taskLines.join('\n')}`;
+      } catch {
+        return undefined;
+      }
+    },
+
     async ensureBranch() {
       return ensureTierBranch(SESSION_CONFIG, sessionId, context);
     },
 
     async afterBranch() {
       await updateTierScope('session', { id: sessionId, name: resolvedDescription });
+    },
+
+    async ensureChildDocs(): Promise<void> {
+      const guidePath = context.paths.getSessionGuidePath(sessionId);
+      let content: string;
+      try {
+        content = await readProjectFile(guidePath);
+      } catch {
+        try {
+          const template = await context.templates.loadTemplate('session', 'guide');
+          content = context.templates.render(template, {
+            SESSION_ID: sessionId,
+            DESCRIPTION: resolvedDescription,
+            DATE: new Date().toISOString().split('T')[0],
+          });
+          await context.documents.writeGuide('session', sessionId, content);
+        } catch (err) {
+          console.warn('Session-start ensureChildDocs: could not create session guide', err);
+        }
+        return;
+      }
+      const firstTaskId = `${sessionId}.1`;
+      const hasFirstTask = new RegExp(`(?:####|###)\\s+Task\\s+${firstTaskId.replace(/\./g, '\\.')}[\\s:]`).test(content);
+      if (hasFirstTask) return;
+      const taskSection = [
+        '',
+        `- [ ] #### Task ${firstTaskId}: ${resolvedDescription}`,
+        '**Goal:** [Fill in]',
+        '**Files:**',
+        '- [Files to work with]',
+        '**Approach:** [Fill in]',
+        '**Checkpoint:** [What needs to be verified]',
+      ].join('\n');
+      try {
+        await context.documents.writeGuide('session', sessionId, content.trimEnd() + '\n\n' + taskSection);
+      } catch (err) {
+        console.warn('Session-start ensureChildDocs: could not append task section', err);
+      }
     },
 
     async readContext(): Promise<TierStartReadResult> {

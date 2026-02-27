@@ -50,8 +50,9 @@ export async function validateTaskImpl(taskId: string): Promise<ValidateTaskResu
 
   try {
     const sessionGuidePath = context.paths.getSessionGuidePath(sessionId);
+    let sessionGuideContent: string;
     try {
-      await readProjectFile(sessionGuidePath);
+      sessionGuideContent = await readProjectFile(sessionGuidePath);
     } catch (err) {
       console.warn('Validate task: session guide not found', sessionGuidePath, err);
       return {
@@ -59,7 +60,21 @@ export async function validateTaskImpl(taskId: string): Promise<ValidateTaskResu
         reason: 'Session guide not found',
         details: [
           `Session guide does not exist at: ${sessionGuidePath}`,
-          `Create the session guide first using /plan-session ${sessionId}`,
+          `Run /session-start ${sessionId} in execute mode to create the session guide and task sections.`,
+        ],
+      };
+    }
+
+    const taskSectionExists = new RegExp(
+      `(?:####|###)\\s+Task\\s+${taskId.replace(/\./g, '\\.')}[\\s:]`
+    ).test(sessionGuideContent);
+    if (!taskSectionExists) {
+      return {
+        canStart: false,
+        reason: 'Task section not found in session guide',
+        details: [
+          `Session guide exists but has no section for Task ${taskId}`,
+          `Run /session-start ${sessionId} in execute mode to create and fill task sections, then run /task-start ${taskId}`,
         ],
       };
     }

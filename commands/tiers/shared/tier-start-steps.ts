@@ -12,6 +12,7 @@ import { resolveCommandExecutionMode, isPlanMode } from '../../utils/command-exe
 import { runTierPlan } from './tier-plan';
 import { buildCascadeDown } from '../../utils/tier-cascade';
 import { runStartAuditForTier } from '../../audit/run-start-audit-for-tier';
+import { fillDirectChildrenInParentGuide } from './fill-direct-children';
 
 /** Early-exit result from a step; null means continue. */
 export type StepExitResult = TierStartResult | null;
@@ -54,15 +55,20 @@ export async function stepValidateStart(
   return null;
 }
 
-/** If plan mode, append plan preview and return plan result; otherwise null. */
-export function stepPlanModeExit(
+/** If plan mode, append plan preview (optional plan content summary + workflow steps) and return plan result; otherwise null. */
+export async function stepPlanModeExit(
   ctx: TierStartWorkflowContext,
   hooks: TierStartWorkflowHooks
-): StepExitResult {
+): Promise<StepExitResult> {
   const executionMode = resolveCommandExecutionMode(ctx.options, 'plan');
   if (!isPlanMode(executionMode)) return null;
   const planSteps = hooks.getPlanModeSteps(ctx);
-  ctx.output.push(formatPlanModePreview(planSteps));
+  let intro: string | undefined;
+  if (hooks.getPlanContentSummary) {
+    const raw = await hooks.getPlanContentSummary(ctx);
+    intro = raw?.trim();
+  }
+  ctx.output.push(formatPlanModePreview(planSteps, intro ? { intro } : undefined));
   return {
     success: true,
     output: ctx.output.join('\n\n'),
@@ -101,6 +107,17 @@ export async function stepEnsureStartBranch(
   return null;
 }
 
+/** Ensure child docs exist (e.g. session guide + task sections). Execute mode only; no-op if hook missing. */
+export async function stepEnsureChildDocs(
+  ctx: TierStartWorkflowContext,
+  hooks: TierStartWorkflowHooks
+): Promise<void> {
+  const executionMode = resolveCommandExecutionMode(ctx.options, 'plan');
+  if (isPlanMode(executionMode)) return;
+  if (!hooks.ensureChildDocs) return;
+  await hooks.ensureChildDocs(ctx);
+}
+
 /** Read handoff/guide/label and append to output (optional step). */
 export async function stepReadStartContext(
   ctx: TierStartWorkflowContext,
@@ -115,6 +132,17 @@ export async function stepReadStartContext(
     const title = readResult.sectionTitle ?? 'Guide';
     ctx.output.push(`## ${title}\n\n${readResult.guide}`);
   }
+}
+
+/** Fill implementation-plan fields for all direct children in parent guide (execute mode only). */
+export async function stepFillDirectChildren(
+  ctx: TierStartWorkflowContext,
+  _hooks: TierStartWorkflowHooks
+): Promise<void> {
+  const executionMode = resolveCommandExecutionMode(ctx.options, 'plan');
+  if (isPlanMode(executionMode)) return;
+  if (ctx.config.name === 'task') return;
+  await fillDirectChildrenInParentGuide(ctx);
 }
 
 /** Gather context string and append if non-empty (optional step). */

@@ -312,6 +312,7 @@ export async function taskEndImpl(params: TaskEndParams): Promise<{
       };
     },
 
+    /** Cascade: next task (across) if session guide lists a following task; session-end (up) if all tasks complete. Session guide must list tasks with a line matching "Task X.Y.Z.N:" (e.g. "#### Task 6.3.3.2: Name"). */
     async getCascade(c): Promise<import('../../../utils/tier-outcome').CascadeInfo | null> {
       const p = c.params as TaskEndParams & { sessionId: string; parsed: { task: string } };
       const sessionId = p.sessionId;
@@ -325,6 +326,7 @@ export async function taskEndImpl(params: TaskEndParams): Promise<{
         } catch {
           guideContent = '';
         }
+        // Match session guide lines like "- [ ] #### Task 6.3.3.2: Name" or "#### Task 6.3.3.2: Name"
         const nextTaskExists = new RegExp(`Task\\s+${nextTaskId.replace(/\./g, '\\.')}:`).test(guideContent);
         const nextTaskComplete = nextTaskExists && (await TASK_CONFIG.controlDoc.readStatus(c.context, nextTaskId)) === 'complete';
 

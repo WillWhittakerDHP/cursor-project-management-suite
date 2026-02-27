@@ -15,7 +15,9 @@ import {
   stepValidateStart,
   stepPlanModeExit,
   stepEnsureStartBranch,
+  stepEnsureChildDocs,
   stepReadStartContext,
+  stepFillDirectChildren,
   stepGatherContext,
   stepRunExtras,
   stepStartAudit,
@@ -65,10 +67,14 @@ export interface TierStartWorkflowHooks {
   validate(ctx: TierStartWorkflowContext): Promise<TierStartValidationResult>;
   /** Plan-mode preview steps (bullets). */
   getPlanModeSteps(ctx: TierStartWorkflowContext): string[];
+  /** Optional: plan-mode summary of what we're building (session/phase/feature plan). When present and non-empty, shown before "What would run". */
+  getPlanContentSummary?(ctx: TierStartWorkflowContext): Promise<string | undefined>;
   /** Ensure branch (git). If not provided, step is skipped (e.g. task). */
   ensureBranch?(ctx: TierStartWorkflowContext): Promise<EnsureTierBranchResult>;
   /** Called after successful ensureBranch (e.g. updateTierScope). */
   afterBranch?(ctx: TierStartWorkflowContext): Promise<void>;
+  /** Ensure child docs exist before readContext (e.g. session-start creates session guide + task sections). Execute mode only. */
+  ensureChildDocs?(ctx: TierStartWorkflowContext): Promise<void>;
   /** Read handoff/guide/label for display. If not provided, step is skipped. */
   readContext?(ctx: TierStartWorkflowContext): Promise<TierStartReadResult>;
   /** Gather and return formatted context string (e.g. auto-gathered files). Empty string skips section. */
@@ -103,13 +109,15 @@ export async function runTierStartWorkflow(
   const validationExit = await stepValidateStart(ctx, hooks);
   if (validationExit) return validationExit;
 
-  const planExit = stepPlanModeExit(ctx, hooks);
+  const planExit = await stepPlanModeExit(ctx, hooks);
   if (planExit) return planExit;
 
   const branchExit = await stepEnsureStartBranch(ctx, hooks);
   if (branchExit) return branchExit;
 
+  await stepEnsureChildDocs(ctx, hooks);
   await stepReadStartContext(ctx, hooks);
+  await stepFillDirectChildren(ctx, hooks);
   await stepGatherContext(ctx, hooks);
   await stepRunExtras(ctx, hooks);
   await stepStartAudit(ctx, hooks);
