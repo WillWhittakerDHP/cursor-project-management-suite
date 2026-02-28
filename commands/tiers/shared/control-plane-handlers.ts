@@ -29,6 +29,8 @@ function baseCascadeDecision(outcome: ControlPlaneOutcome, requiredMode: 'plan' 
 
 /** plan_mode: show deliverables (or fallback to nextAction), AskQuestion approve/revise; nextInvoke = same command with execute. */
 export function handlePlanMode(outcome: ControlPlaneOutcome, ctx: ControlPlaneContext): ControlPlaneDecision {
+  const baseParams =
+    typeof ctx.originalParams === 'object' && ctx.originalParams !== null ? ctx.originalParams : {};
   return {
     stop: true,
     requiredMode: 'plan',
@@ -37,7 +39,7 @@ export function handlePlanMode(outcome: ControlPlaneOutcome, ctx: ControlPlaneCo
     nextInvoke: {
       tier: ctx.tier,
       action: ctx.action,
-      params: ctx.originalParams,
+      params: { ...baseParams, options: { mode: 'execute' as const } },
     },
   };
 }

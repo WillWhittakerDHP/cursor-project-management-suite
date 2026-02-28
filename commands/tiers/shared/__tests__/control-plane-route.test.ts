@@ -33,7 +33,11 @@ describe('control-plane routeByOutcome', () => {
     expect(decision.nextInvoke).toBeDefined();
     expect(decision.nextInvoke?.tier).toBe('session');
     expect(decision.nextInvoke?.action).toBe('start');
-    expect(decision.nextInvoke?.params).toEqual({ sessionId: '6.2.1', description: undefined });
+    expect(decision.nextInvoke?.params).toEqual({
+      sessionId: '6.2.1',
+      description: undefined,
+      options: { mode: 'execute' },
+    });
   });
 
   it('plan_mode with deliverables shows deliverables in message instead of nextAction', () => {

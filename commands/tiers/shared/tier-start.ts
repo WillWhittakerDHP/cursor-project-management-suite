@@ -101,9 +101,14 @@ export async function runTierStart(
       },
     };
   }
-  const needsPlanFirst = !result.success
-    || result.outcome?.cascade != null;
-  const enforcedMode = needsPlanFirst ? 'plan' as const : cursorModeForExecution(executionMode);
+  // Only force Plan mode header when we actually stopped for plan approval or failed; don't force it for cascade (start_ok).
+  const reasonCode = result.outcome?.reasonCode;
+  const needsPlanFirst =
+    !result.success ||
+    reasonCode === 'plan_mode' ||
+    reasonCode === 'context_gathering' ||
+    reasonCode === 'uncommitted_changes_blocking';
+  const enforcedMode = needsPlanFirst ? ('plan' as const) : cursorModeForExecution(executionMode);
   const enforcement = enforceModeSwitch(
     enforcedMode,
     `${config.name}-start`,

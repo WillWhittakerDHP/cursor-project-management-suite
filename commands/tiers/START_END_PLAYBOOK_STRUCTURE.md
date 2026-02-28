@@ -144,7 +144,7 @@ The user is approving what we're about to build. `controlPlaneDecision.message` 
 1. **Switch to Plan mode** (Ask mode).
 2. **Present `controlPlaneDecision.message`** to the user — this is the deliverables summary (e.g. task list for a session, goal/files/approach for a task, phase list for a feature). Show it as formatted text, not as a code block or raw JSON.
 3. **Use AskQuestion (Cursor's question UI)** with prompt "Approve this plan and execute?" and **clickable options**: "Yes — execute" / "No — revise". Do not write this question as plain chat text; the user must see the AskQuestion UI with buttons.
-4. On "Yes": **switch to Agent mode**, then re-invoke the same command with **`{ mode: 'execute' }`** using `controlPlaneDecision.nextInvoke` (tier, action, params). You must call the composite directly (e.g. `sessionStart(sessionId, undefined, { mode: 'execute' })`) so the third argument is passed; do not re-run a script or slash command that only accepts the identifier, or the second run will still be plan mode and execute will never run.
+4. On "Yes": **switch to Agent mode**, then re-invoke using `controlPlaneDecision.nextInvoke`. The `params` object already includes `options: { mode: 'execute' }`. Call the composite directly (e.g. `sessionStart(params.sessionId, params.description, params.options)`) so execute mode is used; do not re-run a script or slash command that only accepts the identifier, or the second run will still be plan mode and execute will never run.
 
 ### `context_gathering` (start commands, all tiers)
 
