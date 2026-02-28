@@ -216,27 +216,50 @@ export async function sessionStartImpl(
       const guide = ctx.readResult?.guide ?? '';
       const sessionName = resolvedDescription || `Session ${sessionId}`;
       const escaped = sessionId.replace(/\./g, '\\.');
-      const firstTaskMatch = guide.match(
-        new RegExp(`(?:####|###)\\s*Task\\s+${escaped}\\.1:\\s*([^\\n]*)`, 'i')
+      const taskHeadingRegex = new RegExp(
+        `(?:-\\s*\\[[ x]\\]\\s*)?(?:####|###)\\s*Task\\s+${escaped}\\.(\\d+):\\s*([^\\n]*)`,
+        'gi'
       );
-      const firstTaskTitle = firstTaskMatch ? firstTaskMatch[1].trim().slice(0, 80) : '';
+      const taskLines: string[] = [];
+      let firstTaskTitle = '';
+      let m: RegExpExecArray | null;
+      while ((m = taskHeadingRegex.exec(guide)) !== null) {
+        const name = m[2].trim().slice(0, 50);
+        taskLines.push(`Task ${sessionId}.${m[1]}: ${name}`);
+        if (!firstTaskTitle && m[1] === '1') firstTaskTitle = m[2].trim().slice(0, 80);
+      }
+      const taskSummary = taskLines.length > 0 ? taskLines.join('; ') : '';
+
       const questions: ContextQuestion[] = [];
       questions.push({
         category: 'scope',
-        question: `For this session (${sessionName}), what's the main outcome you want when we're done?`,
+        insight: taskSummary
+          ? `The session guide indicates we're building "${sessionName}" through the listed tasks (${taskSummary}).`
+          : `The session guide describes "${sessionName}" as the session we're starting.`,
+        proposal: taskSummary
+          ? 'We\'ll work through tasks in order from the guide, starting with the first task and aligning behavior with the plan.'
+          : 'We\'ll align the session outcome with whatever tasks exist in the session guide once they\'re present.',
+        question: `What's the main outcome you want for this session when we're done?`,
         context: 'Session goal: what we\'re building.',
+        options: ['Match the session guide exactly', 'Add or change scope', 'Prioritize speed over full scope'],
       });
       if (firstTaskTitle) {
         questions.push({
           category: 'scope',
+          insight: `The first task in the guide is: ${firstTaskTitle}.`,
+          proposal: 'We\'ll treat this as the initial implementation focus unless you want to shift scope.',
           question: `For the first task (${firstTaskTitle}), what's the main behavior or change you want?`,
           context: 'Concrete deliverable for task one.',
+          options: ['As in the guide', 'Narrow to a subset', 'Expand or clarify'],
         });
       }
       questions.push({
         category: 'approach',
+        insight: 'Session structure and component/composable governance suggest reusing existing patterns and keeping tasks testable.',
+        proposal: 'We\'ll follow the task order and apply governance (e.g. thin components, composables for logic) unless you set different priorities.',
         question: `Any specific UX or technical constraints for ${sessionName}?`,
         context: 'Helps implementation match your expectations.',
+        options: ['Follow governance strictly', 'Relax for speed', 'Custom (describe in chat)'],
       });
       return questions;
     },

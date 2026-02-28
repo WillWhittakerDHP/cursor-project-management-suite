@@ -155,33 +155,46 @@ export async function taskStartImpl(
       const hasInventory = /inventory|composable|utility.*match/i.test(outputText);
       const placeholderLike = (s: string) =>
         !s || /TBD|to be refined|see above|\.\.\.|placeholder|fill in/i.test(s) || s.length < 3;
+
       const questions: ContextQuestion[] = [];
       if (placeholderLike(goal)) {
         questions.push({
           category: 'scope',
-          question: `This task is about "${taskTitle}". What's the specific outcome you want?`,
+          insight: `The task section describes "${taskTitle}". The Goal field is not yet filled or is placeholder.`,
+          proposal: 'We\'ll implement a concrete deliverable once you confirm the outcome; the session guide and handoff can inform it.',
+          question: `What's the specific outcome you want for this task?`,
           context: 'Task goal: the deliverable we\'re building.',
+          options: ['Describe in chat', 'Copy from session objective', 'Match checklist in guide'],
         });
       }
       if (placeholderLike(files)) {
         questions.push({
           category: 'files',
-          question: 'Which files or areas will this task touch?',
+          insight: 'The task section has no concrete Files listed (or placeholder).',
+          proposal: 'We\'ll target files inferred from the goal and approach, or you can specify areas/components to touch.',
+          question: 'Which files or areas should this task touch?',
           context: 'Where the deliverable lives.',
+          options: ['Infer from goal', 'List in chat', 'Match session guide'],
         });
       }
       if (placeholderLike(approach)) {
         questions.push({
           category: 'approach',
-          question: 'How should we implement it? (e.g. reuse an existing component, add a new composable)',
+          insight: 'The Approach field is empty or placeholder. Governance suggests thin components and composables for logic.',
+          proposal: 'We\'ll choose an approach that reuses existing components/composables where the inventory suggests fit, unless you prefer a different pattern.',
+          question: 'How should we implement it?',
           context: 'Approach for this deliverable.',
+          options: ['Reuse from inventory where possible', 'New composable/component', 'Describe in chat'],
         });
       }
       if (hasInventory) {
         questions.push({
           category: 'dependencies',
+          insight: 'The start workflow mentioned existing composables or utilities in the inventory that may relate to this task.',
+          proposal: 'We can prefer reusing those where they fit the goal, or implement from scratch if you want a clean boundary.',
           question: 'Should we reuse existing composables or utilities from the codebase for this task?',
           context: 'Related code was mentioned in the inventory.',
+          options: ['Reuse where it fits', 'Implement from scratch', 'Mix (specify in chat)'],
         });
       }
       return questions;

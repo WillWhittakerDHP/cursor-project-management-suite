@@ -207,7 +207,27 @@ function getPlanningDocPath(ctx: TierStartWorkflowContext): string {
   return `${base}/sessions/session-${id}-planning.md`;
 }
 
-/** Build initial planning doc markdown (Loaded Context, Goal, Files, Approach, Checkpoint, Decisions Made, Open Questions). */
+/** Format a single context item as Insight + Proposal + Decision block (or plain question fallback). */
+function formatContextItemBlock(q: ContextQuestion, index: number): string {
+  const parts: string[] = [];
+  parts.push(`### ${index + 1}. ${q.insight ? 'Insight / Proposal / Decision' : 'Question'}`);
+  if (q.insight) {
+    parts.push('**What the docs indicate:** ' + q.insight);
+  }
+  if (q.proposal) {
+    parts.push('**Proposed path:** ' + q.proposal);
+  }
+  parts.push('**Decision needed:** ' + q.question);
+  if (q.context) {
+    parts.push('*' + q.context + '*');
+  }
+  if (q.options && q.options.length > 0) {
+    parts.push('**Options:** ' + q.options.join(' | '));
+  }
+  return parts.join('\n\n');
+}
+
+/** Build initial planning doc markdown (Loaded Context, Goal, Files, Approach, Checkpoint, Decisions Made, Insight/Proposal/Decision blocks). */
 function buildPlanningDocContent(
   ctx: TierStartWorkflowContext,
   questions: ContextQuestion[]
@@ -218,15 +238,15 @@ function buildPlanningDocContent(
     ctx.output.length > 0
       ? 'Governance context has been loaded. Review the workflow output above for P0/P1 findings and inventory.'
       : 'No governance output yet.';
-  const openQuestionsBlock =
+  const insightBlocks =
     questions.length > 0
-      ? questions.map((q, i) => `${i + 1}. ${q.question}${q.context ? ` (${q.context})` : ''}`).join('\n')
+      ? questions.map((q, i) => formatContextItemBlock(q, i)).join('\n\n---\n\n')
       : 'None yet.';
 
   return `# Planning: ${tier} ${ctx.resolvedId} -- ${title}
 
 ## Loaded Context
-- **Session/scope:** ${ctx.resolvedId}
+- **Scope:** ${ctx.resolvedId}
 - **Governance highlights:** ${governanceSummary}
 - **Related code:** See inventory in workflow output if present.
 
@@ -245,8 +265,8 @@ function buildPlanningDocContent(
 ## Decisions Made
 [Populated as conversation progresses]
 
-## Open Questions
-${openQuestionsBlock}
+## Insight / Proposal / Decisions
+${insightBlocks}
 `;
 }
 
@@ -272,8 +292,25 @@ export async function stepContextGathering(
   const messageLines: string[] = [
     `Planning document created: \`${planningDocPath}\``,
     '',
-    '**Open questions (refine in the doc, then continue):**',
-    ...questions.map((q, i) => `${i + 1}. ${q.question}${q.context ? ` — ${q.context}` : ''}`),
+    '**From the docs (insight + proposal + decision):**',
+    ...questions.map((q, i) => {
+      const lines: string[] = [];
+      const prefix = (first: boolean) => (first ? `${i + 1}. ` : '   ');
+      let first = true;
+      if (q.insight) {
+        lines.push(`${prefix(first)}*Insight:* ${q.insight}`);
+        first = false;
+      }
+      if (q.proposal) {
+        lines.push(`${prefix(first)}*Proposal:* ${q.proposal}`);
+        first = false;
+      }
+      lines.push(`${prefix(first)}*Decision:* ${q.question}`);
+      first = false;
+      if (q.options?.length) lines.push(`   *Options:* ${q.options.join(' | ')}`);
+      if (q.context && !q.insight) lines.push(`   (${q.context})`);
+      return lines.join('\n');
+    }),
     '',
     "When satisfied, choose: **I'm satisfied with our plan and ready to begin**",
   ];

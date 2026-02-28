@@ -44,11 +44,23 @@ export interface TierStartWorkflowContext {
   planningDocPath?: string;
 }
 
-/** Single context question for iterative planning Q&A. */
+/**
+ * Single context item for iterative planning Q&A.
+ * Rich shape: doc-grounded insight + proposal + decision with explicit options.
+ * Backward compatible: question (+ optional context) alone still works.
+ */
 export interface ContextQuestion {
   category: 'governance' | 'scope' | 'approach' | 'files' | 'dependencies';
+  /** What the docs imply we're building (understanding statement). */
+  insight?: string;
+  /** Recommended path or concrete steps (proposed execution). */
+  proposal?: string;
+  /** Decision needed from the user. Required; use for plain fallback too. */
   question: string;
+  /** Short context or rule callout. */
   context?: string;
+  /** Explicit alternatives for AskQuestion (e.g. "Option A" | "Option B"). */
+  options?: string[];
 }
 
 /** Result of validation step. */

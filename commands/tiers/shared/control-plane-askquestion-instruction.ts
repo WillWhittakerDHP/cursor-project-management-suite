@@ -9,7 +9,8 @@ import { QUESTION_KEYS } from './control-plane-types';
 /** Option labels for each questionKey (used in the instruction block). */
 const QUESTION_KEY_OPTIONS: Record<string, string> = {
   [QUESTION_KEYS.APPROVE_EXECUTE]: 'Yes — execute | No — revise',
-  [QUESTION_KEYS.CONTEXT_GATHERING]: 'Include "I\'m satisfied with our plan and ready to begin" plus any open questions',
+  [QUESTION_KEYS.CONTEXT_GATHERING]:
+    'Use the decision options from the message above (Insight / Proposal / Decision blocks). Always include "I\'m satisfied with our plan and ready to begin" as a clickable option.',
   [QUESTION_KEYS.CASCADE]: 'Yes — run cascade command | No — stop here',
   [QUESTION_KEYS.PUSH_CONFIRMATION]: 'Yes — push to remote | No — skip push',
   [QUESTION_KEYS.VERIFICATION_OPTIONS]: 'Add follow-up task/session/phase | I\'ll do it manually; continue tier-end | Skip; continue tier-end',

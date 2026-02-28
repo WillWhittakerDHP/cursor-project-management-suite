@@ -146,28 +146,30 @@ The user is approving what we're about to build. `controlPlaneDecision.message` 
 3. **Use AskQuestion (Cursor's question UI)** with prompt "Approve this plan and execute?" and **clickable options**: "Yes — execute" / "No — revise". Do not write this question as plain chat text; the user must see the AskQuestion UI with buttons.
 4. On "Yes": **switch to Agent mode**, then re-invoke the same command with **`{ mode: 'execute' }`** using `controlPlaneDecision.nextInvoke` (tier, action, params). You must call the composite directly (e.g. `sessionStart(sessionId, undefined, { mode: 'execute' })`) so the third argument is passed; do not re-run a script or slash command that only accepts the identifier, or the second run will still be plan mode and execute will never run.
 
-### `context_gathering` (start commands, task and session tiers)
+### `context_gathering` (start commands, all tiers)
 
-The command loaded context and governance data, created a planning document, and generated initial questions. The agent now conducts an iterative planning conversation with the user, updating the planning document in-place.
+The command loaded context and governance data, created a planning document, and generated **doc-grounded insight prompts**. Context questions are based on what the tier docs say we're building: each item has an **Insight** (what the docs indicate), a **Proposal** (recommended path), and a **Decision** with explicit **Options** where possible. The agent conducts an iterative planning conversation with the user, updating the planning document in-place.
+
+**Requirement:** Context prompts must be **doc-grounded** (derived from feature/phase/session/task guides and tier responsibility). Do **not** use vague, process-only prompts (e.g. "What do you want?" or "What's your goal?") unless there is no extractable doc context. When docs exist, present insight + proposal + concrete options so the user can choose.
 
 1. **Switch to Plan mode.**
-2. **Present `controlPlaneDecision.message`** (initial questions + planning doc path).
+2. **Present `controlPlaneDecision.message`** — this contains the planning doc path and the **Insight / Proposal / Decision** blocks (what the docs say, proposed path, decision needed, and explicit options).
 3. **Open the planning doc in the editor** so the user can watch it being built.
 4. Begin the iterative Q&A loop:
-   a. Ask the context questions from the message.
+   a. Ask the context questions from the message, using the **decision options** from each block (the message lists Options per decision).
    b. After each user answer, **update the planning doc IN-PLACE:**
-      - Move answered items from "Open Questions" to "Decisions Made"
+      - Move answered items from "Insight / Proposal / Decisions" into "Decisions Made" (or mark them resolved)
       - Refine Goal, Files, Approach, Checkpoint based on answers
-      - Add follow-up questions to "Open Questions" if new gaps appear
-   c. Use **AskQuestion** with the remaining/new questions **plus** always include: **"I'm satisfied with our plan and ready to begin"**
+      - Add follow-up questions to "Insight / Proposal / Decisions" if new gaps appear
+   c. Use **AskQuestion** with the decision options from the message **plus** always include: **"I'm satisfied with our plan and ready to begin"**
    d. Repeat until the user selects "satisfied".
 5. On **"I'm satisfied"**:
    a. Switch to Agent mode.
    b. Read the refined Goal, Files, Approach, Checkpoint from the planning doc.
-   c. Write them into the session guide task section (replacing placeholders).
+   c. Write them into the session guide task section (replacing placeholders) when applicable.
    d. Re-invoke the original command with **`{ mode: 'execute', contextGatheringComplete: true }`** using `controlPlaneDecision.nextInvoke`.
 
-**Anti-pattern:** Do not skip the planning doc. Do not ask all questions at once without updating the doc. The doc IS the artifact — the user watches it being built and the final version feeds into the session guide.
+**Anti-pattern:** Do not skip the planning doc. Do not ask generic questions when the message already provides doc-grounded insight and options. Do not ask all questions at once without updating the doc. The doc IS the artifact — the user watches it being built and the final version feeds into the session guide.
 
 ### `pending_push_confirmation` (end commands)
 

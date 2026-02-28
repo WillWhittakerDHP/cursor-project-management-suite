@@ -174,31 +174,55 @@ export async function phaseStartImpl(
     },
 
     async getContextQuestions(): Promise<ContextQuestion[]> {
-      const phaseName = await derivePhaseDescription(phase, context);
-      const displayName = phaseName || `Phase ${phase}`;
+      const phaseDesc = await derivePhaseDescription(phase, context);
+      const displayName = phaseDesc || `Phase ${phase}`;
+      let sessionSummary = '';
       let firstSessionName = '';
       try {
         const phaseGuideContent = await readProjectFile(context.paths.getPhaseGuidePath(phase));
-        const firstSessionMatch = phaseGuideContent.match(/Session\s+(\d+\.\d+\.\d+):?\s*([^\n]*)/i);
-        if (firstSessionMatch) firstSessionName = firstSessionMatch[2].trim().slice(0, 80);
+        const sessionMatches = phaseGuideContent.matchAll(/Session\s+(\d+\.\d+\.\d+):?\s*([^\n]*)/gi);
+        const sessionLines: string[] = [];
+        let first: RegExpExecArray | null = null;
+        for (const m of sessionMatches) {
+          if (!first) first = m as unknown as RegExpExecArray;
+          sessionLines.push(`Session ${m[1]}: ${m[2].trim().slice(0, 50)}`);
+        }
+        if (sessionLines.length > 0) {
+          sessionSummary = sessionLines.join('; ');
+          if (first) firstSessionName = first[2].trim().slice(0, 80);
+        }
       } catch { /* non-blocking */ }
+
       const questions: ContextQuestion[] = [];
       questions.push({
         category: 'scope',
-        question: `For this phase (${displayName}), what's the main outcome you want when we're done?`,
+        insight: sessionSummary
+          ? `The phase guide indicates we're building "${displayName}" through the listed sessions (${sessionSummary}).`
+          : `The phase guide describes "${displayName}" as the phase we're starting.`,
+        proposal: sessionSummary
+          ? 'We\'ll execute sessions in order from the guide, starting with the first session and aligning deliverables with the plan.'
+          : 'We\'ll align the phase outcome with whatever sessions exist in the phase guide once they\'re present.',
+        question: `What's the main outcome you want for this phase when we're done?`,
         context: 'Phase goal: what we\'re building.',
+        options: ['Match the phase guide exactly', 'Add or change scope', 'Prioritize speed over full scope'],
       });
       if (firstSessionName) {
         questions.push({
           category: 'scope',
+          insight: `The first session in the guide is: ${firstSessionName}.`,
+          proposal: 'We\'ll treat this as the initial deliverable focus unless you want to shift scope.',
           question: `For the first session (${firstSessionName}), what's the main deliverable or focus?`,
           context: 'Concrete deliverable for session one.',
+          options: ['As in the guide', 'Narrow to a subset', 'Expand or clarify'],
         });
       }
       questions.push({
         category: 'approach',
+        insight: 'Governance and session structure suggest keeping sessions aligned with the phase guide and running session/task audits.',
+        proposal: 'We\'ll follow the session order and apply governance unless you set different priorities.',
         question: `Any specific constraints or priorities for ${displayName}?`,
         context: 'Helps sessions stay aligned with your expectations.',
+        options: ['Follow governance strictly', 'Relax audits for speed', 'Custom (describe in chat)'],
       });
       return questions;
     },

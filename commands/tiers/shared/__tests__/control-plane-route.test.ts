@@ -6,6 +6,7 @@
 import { describe, it, expect } from 'vitest';
 import { routeByOutcome } from '../control-plane-route';
 import { reinvokeStartExecute } from '../control-plane-reinvoke';
+import { formatAskQuestionInstruction } from '../control-plane-askquestion-instruction';
 import { REASON_CODE, QUESTION_KEYS } from '../control-plane-types';
 import type { CommandResultForRouting, ControlPlaneContext } from '../control-plane-types';
 
@@ -213,6 +214,72 @@ describe('control-plane routeByOutcome', () => {
     const decision = routeByOutcome(result, baseCtx);
     expect(decision.questionKey).toBe(QUESTION_KEYS.CASCADE);
     expect(decision.cascadeCommand).toBe('/task-start 6.2.1.2');
+  });
+
+  it('context_gathering returns context_gathering questionKey and deliverables as message', () => {
+    const deliverables =
+      'Planning document created: `.project-manager/features/6/sessions/session-6.2.1-planning.md`\n\n' +
+      '**From the docs (insight + proposal + decision):**\n' +
+      '1. *Insight:* The session guide indicates we\'re building "Slot Refactor" through the listed tasks.\n' +
+      '   *Proposal:* We\'ll work through tasks in order from the guide.\n' +
+      '   *Decision:* What\'s the main outcome you want for this session?\n' +
+      '   *Options:* Match the session guide exactly | Add or change scope\n\n' +
+      "When satisfied, choose: **I'm satisfied with our plan and ready to begin**";
+    const result: CommandResultForRouting = {
+      success: true,
+      output: 'Context loaded',
+      outcome: {
+        reasonCode: REASON_CODE.CONTEXT_GATHERING,
+        nextAction: 'Context gathering: answer questions and update the planning doc.',
+        deliverables,
+      },
+    };
+    const decision = routeByOutcome(result, baseCtx);
+    expect(decision.stop).toBe(true);
+    expect(decision.requiredMode).toBe('plan');
+    expect(decision.questionKey).toBe(QUESTION_KEYS.CONTEXT_GATHERING);
+    expect(decision.message).toBe(deliverables);
+    expect(decision.nextInvoke).toBeDefined();
+    expect((decision.nextInvoke?.params as { contextGatheringComplete?: boolean })?.contextGatheringComplete).toBe(
+      true
+    );
+  });
+
+  it('context_gathering deliverables include doc-grounded insight and satisfaction option (regression guard)', () => {
+    const deliverables =
+      '**From the docs (insight + proposal + decision):**\n' +
+      '1. *Insight:* The feature guide indicates we\'re building "Calendar" through the listed phases.\n' +
+      '   *Decision:* What\'s the main outcome?\n' +
+      '   *Options:* Match the guide | Add scope\n\n' +
+      "When satisfied, choose: **I'm satisfied with our plan and ready to begin**";
+    const result: CommandResultForRouting = {
+      success: true,
+      output: '',
+      outcome: {
+        reasonCode: REASON_CODE.CONTEXT_GATHERING,
+        nextAction: 'Refine plan then re-invoke.',
+        deliverables,
+      },
+    };
+    const decision = routeByOutcome(result, baseCtx);
+    expect(decision.message).toContain('Insight');
+    expect(decision.message).toContain("I'm satisfied with our plan and ready to begin");
+    expect(decision.questionKey).toBe(QUESTION_KEYS.CONTEXT_GATHERING);
+  });
+});
+
+describe('AskQuestion instruction (context_gathering)', () => {
+  it('context_gathering instruction includes satisfaction option and references decision options (no generic process-only)', () => {
+    const decision = {
+      stop: true,
+      message: 'Planning doc path and insight/proposal/decision blocks',
+      requiredMode: 'plan' as const,
+      questionKey: QUESTION_KEYS.CONTEXT_GATHERING,
+    };
+    const instruction = formatAskQuestionInstruction(decision);
+    expect(instruction).toContain("satisfied with our plan and ready to begin");
+    expect(instruction).toMatch(/decision options|Insight|Proposal|Decision/);
+    expect(instruction).not.toMatch(/just.*open questions|any open questions/);
   });
 });
 

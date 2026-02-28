@@ -171,31 +171,55 @@ export async function featureStartImpl(featureId: string, options?: import('../.
     },
 
     async getContextQuestions(): Promise<ContextQuestion[]> {
-      const featureName = await deriveFeatureDescription(normalizedFeatureName, context);
-      const displayName = featureName || normalizedFeatureName;
+      const featureDesc = await deriveFeatureDescription(normalizedFeatureName, context);
+      const displayName = featureDesc || normalizedFeatureName;
+      let phaseSummary = '';
       let firstPhaseName = '';
       try {
         const featureGuideContent = await context.readFeatureGuide();
-        const firstPhaseMatch = featureGuideContent.match(/Phase\s+(\d+\.\d+):?\s*([^\n]*)/i);
-        if (firstPhaseMatch) firstPhaseName = firstPhaseMatch[2].trim().slice(0, 80);
+        const phaseMatches = featureGuideContent.matchAll(/Phase\s+(\d+\.\d+):?\s*([^\n]*)/gi);
+        const phaseLines: string[] = [];
+        let first: RegExpExecArray | null = null;
+        for (const m of phaseMatches) {
+          if (!first) first = m as unknown as RegExpExecArray;
+          phaseLines.push(`Phase ${m[1]}: ${m[2].trim().slice(0, 50)}`);
+        }
+        if (phaseLines.length > 0) {
+          phaseSummary = phaseLines.join('; ');
+          if (first) firstPhaseName = first[2].trim().slice(0, 80);
+        }
       } catch { /* non-blocking */ }
+
       const questions: ContextQuestion[] = [];
       questions.push({
         category: 'scope',
-        question: `For this feature (${displayName}), what's the main outcome you want when we're done?`,
+        insight: phaseSummary
+          ? `The feature guide indicates we're building "${displayName}" through the listed phases (${phaseSummary}).`
+          : `The feature guide describes "${displayName}" as the feature we're starting.`,
+        proposal: phaseSummary
+          ? 'We\'ll execute phases in order from the guide, starting with the first phase and aligning deliverables with the plan.'
+          : 'We\'ll align the feature outcome with whatever phases exist in the feature guide once they\'re present.',
+        question: `What's the main outcome you want for this feature when we're done?`,
         context: 'Feature goal: what we\'re building.',
+        options: ['Match the feature guide exactly', 'Add or change scope', 'Prioritize speed over full scope'],
       });
       if (firstPhaseName) {
         questions.push({
           category: 'scope',
+          insight: `The first phase in the guide is: ${firstPhaseName}.`,
+          proposal: 'We\'ll treat this as the initial deliverable focus unless you want to shift scope.',
           question: `For the first phase (${firstPhaseName}), what's the main deliverable or focus?`,
           context: 'Concrete deliverable for phase one.',
+          options: ['As in the guide', 'Narrow to a subset', 'Expand or clarify'],
         });
       }
       questions.push({
         category: 'approach',
+        insight: 'Governance and rules suggest keeping phases aligned with the feature guide and running audits at tier boundaries.',
+        proposal: 'We\'ll follow the phase order and apply governance (function/composable/component) unless you set different priorities.',
         question: `Any specific constraints or priorities for ${displayName}?`,
         context: 'Helps phases stay aligned with your expectations.',
+        options: ['Follow governance strictly', 'Relax audits for speed', 'Custom (describe in chat)'],
       });
       return questions;
     },
