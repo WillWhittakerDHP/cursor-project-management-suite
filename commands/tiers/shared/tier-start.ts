@@ -22,6 +22,7 @@ import { sessionStartImpl } from '../session/composite/session-start-impl';
 import { taskStartImpl } from '../task/composite/task-start-impl';
 import { routeByOutcome } from './control-plane-route';
 import type { ControlPlaneDecision, CommandResultForRouting } from './control-plane-types';
+import { formatAskQuestionInstruction } from './control-plane-askquestion-instruction';
 
 export type TierStartParams =
   | { featureId: string }
@@ -123,9 +124,17 @@ export async function runTierStart(
   };
   const controlPlaneDecision = routeByOutcome(forRouting, ctx);
 
+  let finalOutput = outputWithEnforcement;
+  if (controlPlaneDecision.stop && controlPlaneDecision.questionKey) {
+    const askInstruction = formatAskQuestionInstruction(controlPlaneDecision);
+    if (askInstruction) {
+      finalOutput = finalOutput + '\n\n---\n\n' + askInstruction;
+    }
+  }
+
   return {
     ...result,
-    output: outputWithEnforcement,
+    output: finalOutput,
     modeGate: gate,
     controlPlaneDecision,
   };

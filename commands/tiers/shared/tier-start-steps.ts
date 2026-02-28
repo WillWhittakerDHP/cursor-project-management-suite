@@ -195,6 +195,12 @@ function getPlanningDocPath(ctx: TierStartWorkflowContext): string {
   const base = ctx.context.paths.getBasePath();
   const tier = ctx.config.name;
   const id = ctx.identifier;
+  if (tier === 'feature') {
+    return `${base}/feature-planning.md`;
+  }
+  if (tier === 'phase') {
+    return `${base}/phases/phase-${id}-planning.md`;
+  }
   if (tier === 'task') {
     return `${base}/sessions/task-${id}-planning.md`;
   }

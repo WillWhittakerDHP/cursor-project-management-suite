@@ -214,34 +214,30 @@ export async function sessionStartImpl(
 
     async getContextQuestions(): Promise<ContextQuestion[]> {
       const guide = ctx.readResult?.guide ?? '';
-      const outputText = ctx.output.join('\n');
-      const hasGovernance = /\bP0\b|\bP1\b|governance|violation|inventory/i.test(outputText);
-      const hasTaskBreakdown = /(?:####|###)\s*Task\s+\d+/i.test(guide);
+      const sessionName = resolvedDescription || `Session ${sessionId}`;
+      const escaped = sessionId.replace(/\./g, '\\.');
+      const firstTaskMatch = guide.match(
+        new RegExp(`(?:####|###)\\s*Task\\s+${escaped}\\.1:\\s*([^\\n]*)`, 'i')
+      );
+      const firstTaskTitle = firstTaskMatch ? firstTaskMatch[1].trim().slice(0, 80) : '';
       const questions: ContextQuestion[] = [];
-      if (hasTaskBreakdown) {
-        questions.push({
-          category: 'scope',
-          question: 'Does the task breakdown look right, or do you want to adjust tasks for this session?',
-          context: 'Session guide already lists tasks.',
-        });
-      }
       questions.push({
         category: 'scope',
-        question: 'Is the session scope clear, or does it need refinement before we start?',
-        context: 'Session scope affects task ordering and deliverables.',
+        question: `For this session (${sessionName}), what's the main outcome you want when we're done?`,
+        context: 'Session goal: what we\'re building.',
       });
-      questions.push({
-        category: 'approach',
-        question: 'Any design decisions already made (e.g. patterns, components to reuse)?',
-        context: 'Helps align implementation with existing decisions.',
-      });
-      if (hasGovernance) {
+      if (firstTaskTitle) {
         questions.push({
-          category: 'governance',
-          question: 'Are governance findings relevant to this session scope? Address now or defer?',
-          context: 'Governance output may include P0/P1 or inventory.',
+          category: 'scope',
+          question: `For the first task (${firstTaskTitle}), what's the main behavior or change you want?`,
+          context: 'Concrete deliverable for task one.',
         });
       }
+      questions.push({
+        category: 'approach',
+        question: `Any specific UX or technical constraints for ${sessionName}?`,
+        context: 'Helps implementation match your expectations.',
+      });
       return questions;
     },
 

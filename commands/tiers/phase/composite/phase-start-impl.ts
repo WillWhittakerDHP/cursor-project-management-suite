@@ -21,6 +21,7 @@ import type {
   TierStartWorkflowHooks,
   TierStartValidationResult,
   TierStartReadResult,
+  ContextQuestion,
 } from '../../shared/tier-start-workflow';
 import { runTierStartWorkflow } from '../../shared/tier-start-workflow';
 import { buildReuseOpportunitiesSection, type InventoryPayload } from '../helpers/inventory-reuse-check';
@@ -170,6 +171,36 @@ export async function phaseStartImpl(
       } catch {
         return '';
       }
+    },
+
+    async getContextQuestions(): Promise<ContextQuestion[]> {
+      const phaseName = await derivePhaseDescription(phase, context);
+      const displayName = phaseName || `Phase ${phase}`;
+      let firstSessionName = '';
+      try {
+        const phaseGuideContent = await readProjectFile(context.paths.getPhaseGuidePath(phase));
+        const firstSessionMatch = phaseGuideContent.match(/Session\s+(\d+\.\d+\.\d+):?\s*([^\n]*)/i);
+        if (firstSessionMatch) firstSessionName = firstSessionMatch[2].trim().slice(0, 80);
+      } catch { /* non-blocking */ }
+      const questions: ContextQuestion[] = [];
+      questions.push({
+        category: 'scope',
+        question: `For this phase (${displayName}), what's the main outcome you want when we're done?`,
+        context: 'Phase goal: what we\'re building.',
+      });
+      if (firstSessionName) {
+        questions.push({
+          category: 'scope',
+          question: `For the first session (${firstSessionName}), what's the main deliverable or focus?`,
+          context: 'Concrete deliverable for session one.',
+        });
+      }
+      questions.push({
+        category: 'approach',
+        question: `Any specific constraints or priorities for ${displayName}?`,
+        context: 'Helps sessions stay aligned with your expectations.',
+      });
+      return questions;
     },
 
     async runExtras(ctx): Promise<string> {

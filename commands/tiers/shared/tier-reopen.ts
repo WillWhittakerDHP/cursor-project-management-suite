@@ -13,6 +13,7 @@ import { sessionReopenImpl } from '../session/composite/session-reopen-impl';
 import { routeByOutcome } from './control-plane-route';
 import { REASON_CODE } from './control-plane-types';
 import type { ControlPlaneDecision, CommandResultForRouting } from './control-plane-types';
+import { formatAskQuestionInstruction } from './control-plane-askquestion-instruction';
 
 export type { TierReopenParams, TierReopenResult };
 
@@ -102,9 +103,17 @@ export async function runTierReopen(
   };
   const controlPlaneDecision = routeByOutcome(forRouting, ctx);
 
+  let finalOutput = outputWithEnforcement;
+  if (controlPlaneDecision.stop && controlPlaneDecision.questionKey) {
+    const askInstruction = formatAskQuestionInstruction(controlPlaneDecision);
+    if (askInstruction) {
+      finalOutput = finalOutput + '\n\n---\n\n' + askInstruction;
+    }
+  }
+
   return {
     ...result,
-    output: outputWithEnforcement,
+    output: finalOutput,
     controlPlaneDecision,
   };
 }

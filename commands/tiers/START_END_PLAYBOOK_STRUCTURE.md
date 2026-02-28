@@ -62,6 +62,8 @@ Every start/end/reopen command returns a `controlPlaneDecision` object that tell
 
 **Critical rule:** `controlPlaneDecision.message` is the **user-facing content**. `result.output` is **agent context** (workflow steps, branch info, audit details) — read it for your own understanding, but present `controlPlaneDecision.message` to the user. Do not dump `result.output` verbatim to the user; it contains internal workflow steps they do not need to see.
 
+**AskQuestion = Cursor's question UI (clickable options).** When `controlPlaneDecision.questionKey` is set, you MUST use Cursor's **AskQuestion** feature so the user sees a prompt with **clickable option buttons**. Do NOT write the question and options as plain text in the chat — that does not count as AskQuestion and the user will not get the intended experience. The command output may include a "REQUIRED — Use AskQuestion" block; follow it. Present `controlPlaneDecision.message` as the body of the question and use the options specified for that `questionKey` in the per-reasonCode rules below.
+
 **Mode switching at transitions:** Each routing case below involves a mode transition. The agent MUST switch to the correct mode before performing the action: Plan mode for AskQuestion and CreatePlan; Agent mode for command execution and file writes. After the user answers an AskQuestion, switch back to Agent mode if the next step is to execute (run command, write files).
 
 Routing (use `outcome.reasonCode`):
@@ -125,6 +127,8 @@ The code header is a **short mode declaration** only. All behavioral rules (what
 
 **Anti-pattern:** Code must NOT contain agent behavioral instructions like "Switch to Plan mode", "Use AskQuestion", "Do NOT cascade", "BEGIN IMPLEMENTATION — The agent should now write code". These belong exclusively in the playbook. Code returns *what happened* and *what's next* (data); the playbook says *how to handle it* (behavior).
 
+**Anti-pattern (AskQuestion):** Do not present an approval or choice question as plain text in the chat (e.g. "Approve this plan and execute? Yes — execute / No — revise"). When `controlPlaneDecision.questionKey` is set, you must use the AskQuestion feature so the user gets clickable options. Writing the question in markdown is not AskQuestion.
+
 ---
 
 ## Per-reasonCode behavioral rules
@@ -139,7 +143,7 @@ The user is approving what we're about to build. `controlPlaneDecision.message` 
 
 1. **Switch to Plan mode** (Ask mode).
 2. **Present `controlPlaneDecision.message`** to the user — this is the deliverables summary (e.g. task list for a session, goal/files/approach for a task, phase list for a feature). Show it as formatted text, not as a code block or raw JSON.
-3. Use **AskQuestion**: "Approve this plan and execute?" Options: "Yes — execute" / "No — revise".
+3. **Use AskQuestion (Cursor's question UI)** with prompt "Approve this plan and execute?" and **clickable options**: "Yes — execute" / "No — revise". Do not write this question as plain chat text; the user must see the AskQuestion UI with buttons.
 4. On "Yes": **switch to Agent mode**, then re-invoke the same command with **`{ mode: 'execute' }`** using `controlPlaneDecision.nextInvoke` (tier, action, params). You must call the composite directly (e.g. `sessionStart(sessionId, undefined, { mode: 'execute' })`) so the third argument is passed; do not re-run a script or slash command that only accepts the identifier, or the second run will still be plan mode and execute will never run.
 
 ### `context_gathering` (start commands, task and session tiers)

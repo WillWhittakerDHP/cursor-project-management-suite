@@ -18,6 +18,7 @@ import type {
   TierStartWorkflowHooks,
   TierStartValidationResult,
   TierStartReadResult,
+  ContextQuestion,
 } from '../../shared/tier-start-workflow';
 import { runTierStartWorkflow } from '../../shared/tier-start-workflow';
 
@@ -167,6 +168,36 @@ export async function featureStartImpl(featureId: string, options?: import('../.
       } catch {
         return '';
       }
+    },
+
+    async getContextQuestions(): Promise<ContextQuestion[]> {
+      const featureName = await deriveFeatureDescription(normalizedFeatureName, context);
+      const displayName = featureName || normalizedFeatureName;
+      let firstPhaseName = '';
+      try {
+        const featureGuideContent = await context.readFeatureGuide();
+        const firstPhaseMatch = featureGuideContent.match(/Phase\s+(\d+\.\d+):?\s*([^\n]*)/i);
+        if (firstPhaseMatch) firstPhaseName = firstPhaseMatch[2].trim().slice(0, 80);
+      } catch { /* non-blocking */ }
+      const questions: ContextQuestion[] = [];
+      questions.push({
+        category: 'scope',
+        question: `For this feature (${displayName}), what's the main outcome you want when we're done?`,
+        context: 'Feature goal: what we\'re building.',
+      });
+      if (firstPhaseName) {
+        questions.push({
+          category: 'scope',
+          question: `For the first phase (${firstPhaseName}), what's the main deliverable or focus?`,
+          context: 'Concrete deliverable for phase one.',
+        });
+      }
+      questions.push({
+        category: 'approach',
+        question: `Any specific constraints or priorities for ${displayName}?`,
+        context: 'Helps phases stay aligned with your expectations.',
+      });
+      return questions;
     },
 
     async runExtras(): Promise<string> {
