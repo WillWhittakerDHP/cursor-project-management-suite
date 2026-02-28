@@ -3,7 +3,7 @@
  */
 
 import { runTierStart } from '../../shared/tier-start';
-import { runTierEnd } from '../../shared/tier-end';
+import { runTierEnd, TierEndResult } from '../../shared/tier-end';
 import { runTierPlan } from '../../shared/tier-plan';
 import { runTierChange } from '../../shared/tier-change';
 import { runTierValidate } from '../../shared/tier-validate';
@@ -20,6 +20,7 @@ import { resolveFeatureName, resolveFeatureId } from '../../../utils/feature-con
 import { readProjectFile, writeProjectFile, PROJECT_ROOT, getCurrentDate } from '../../../utils/utils';
 import { join } from 'path';
 import { readFile } from 'fs/promises';
+import { TierStartResult } from '../../../utils/tier-outcome';
 
 export type { TaskEndParams };
 

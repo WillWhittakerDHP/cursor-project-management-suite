@@ -41,6 +41,7 @@ export interface FeatureEndParams {
 
 export interface FeatureEndResult {
   success: boolean;
+  output: string;
   steps: Record<string, { success: boolean; output: string }>;
   outcome: TierEndOutcome;
 }
@@ -270,7 +271,7 @@ export async function featureEndImpl(params: FeatureEndParams): Promise<FeatureE
         } else {
           const verified = await runWithLintVerification(
             () => featureCommentCleanup({ dryRun: false }),
-            () => runCommand('git checkout -- .')
+            async () => { await runCommand('git checkout -- .'); }
           );
           const cleanupResult = verified.cleanupResult;
           ctx.steps.commentCleanup = {
@@ -353,6 +354,7 @@ export async function featureEndImpl(params: FeatureEndParams): Promise<FeatureE
   const result: TierEndWorkflowResult = await runTierEndWorkflow(ctx, hooks);
   return {
     success: result.success,
+    output: result.output,
     steps: result.steps,
     outcome: result.outcome,
   };

@@ -16,6 +16,7 @@ import type { PhaseEndParams, PhaseEndResult } from './phase-end-impl';
 import type { MarkPhaseCompleteParams as ImplParams } from './mark-phase-complete-impl';
 import type { ValidatePhaseResult } from './validate-phase-impl';
 import type { ChangeRequest, ChangeScope } from '../../../utils/utils';
+import { TierStartResult } from '../../../utils/tier-outcome';
 
 export type { PhaseEndParams, PhaseEndResult };
 export type MarkPhaseCompleteParams = ImplParams;

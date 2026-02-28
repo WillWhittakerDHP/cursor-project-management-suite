@@ -1,5 +1,5 @@
 /**
- * Tier navigation: tierUp, tierAt, tierDown.
+ * Tier navigation: tierUp, tierAcross, tierDown.
  * Single source of truth for tier order and adjacent-tier transitions.
  * Used for next-step prompts and future automatic movements (e.g. suggest tier-up end when no next at tier).
  *
@@ -22,7 +22,7 @@ export function getTierLevel(tier: TierName): number {
 /**
  * Current tier context (identity). Use for "we are here" and for reuse in prompts.
  */
-export function tierAt(tier: TierName, identifier: string): { tier: TierName; identifier: string } {
+export function tierAcross(tier: TierName, identifier: string): { tier: TierName; identifier: string } {
   return { tier, identifier };
 }
 

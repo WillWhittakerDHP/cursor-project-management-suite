@@ -180,7 +180,7 @@ function generateFindingsFromAudit(
 
   if (auditName === 'loop-mutations') {
     const files = jsonData.files || [];
-    const mutationHits = files.filter((f: { forEachMutationHits?: unknown[] }) => (f.forEachMutationHits?.length ?? 0) > 0);
+    const mutationHits = files.filter((f) => (f.forEachMutationHits?.length ?? 0) > 0);
     if (mutationHits.length > 0) {
       findings.push({
         type: 'info',
@@ -368,11 +368,11 @@ function generateFindingsFromAudit(
 
   if (auditName === 'unused-code') {
     const files = jsonData.files || [];
-    const highPriorityFiles = files.filter((f: { priority?: string }) => {
+    const highPriorityFiles = files.filter((f) => {
       const p = f.priority ?? 'P2';
       return p === 'P0' || p === 'P1';
     });
-    const totalIssues = files.reduce((sum: number, f: { issues?: unknown[] }) => sum + (f.issues?.length ?? 0), 0);
+    const totalIssues = files.reduce((sum: number, f) => sum + (f.issues?.length ?? 0), 0);
     if (highPriorityFiles.length > 0) {
       findings.push({
         type: 'warning',
@@ -397,8 +397,8 @@ function generateFindingsFromAudit(
     const files = jsonData.files || [];
     const totalErrors = summary.totalErrors ?? 0;
     const totalWarnings = summary.totalWarnings ?? 0;
-    const p0Categories = categories.filter((c: { priority?: string }) => c.priority === 'P0');
-    const p0Files = files.filter((f: { priority?: string }) => f.priority === 'P0');
+    const p0Categories = categories.filter((c) => c.priority === 'P0');
+    const p0Files = files.filter((f) => f.priority === 'P0');
     if (totalErrors > 0) {
       findings.push({
         type: 'error',

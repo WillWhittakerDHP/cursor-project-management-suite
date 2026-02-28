@@ -17,7 +17,7 @@ import { requestTestFileFixPermission } from '../../../testing/composite/test-fi
 import { TEST_CONFIG } from '../../../testing/utils/test-config';
 import { analyzeCodeChangeImpact } from '../../../testing/composite/test-change-detector';
 import { CommandExecutionMode } from '../../../utils/command-execution-mode';
-import { buildTierEndOutcome, type TierEndOutcome } from '../../../utils/tier-outcome';
+import { buildTierEndOutcome, type TierEndOutcome, type CascadeInfo } from '../../../utils/tier-outcome';
 import { buildCascadeUp, buildCascadeAcross } from '../../../utils/tier-cascade';
 import { isLastPhaseInFeature } from '../../../utils/phase-session-utils';
 import { PHASE_CONFIG } from '../../configs/phase';
@@ -52,6 +52,7 @@ export interface PhaseEndParams {
 
 export interface PhaseEndResult {
   success: boolean;
+  output: string;
   steps: Record<string, { success: boolean; output: string }>;
   outcome: TierEndOutcome;
 }
@@ -375,7 +376,7 @@ export async function phaseEndImpl(params: PhaseEndParams): Promise<PhaseEndResu
       } else {
         const verified = await runWithLintVerification(
           () => phaseCommentCleanup({ dryRun: false, paths: cleanupPaths }),
-          () => runCommand('git checkout -- .')
+          async () => { await runCommand('git checkout -- .'); }
         );
         const cleanupResult = verified.cleanupResult;
         c.steps.commentCleanup = {
@@ -478,7 +479,7 @@ export async function phaseEndImpl(params: PhaseEndParams): Promise<PhaseEndResu
       return proposeVerificationChecklistForPhase(p.phaseId, p.completedSessions, c.context);
     },
 
-    async getCascade(c): Promise<{ reasonCode: string; nextIdentifier: string } | null> {
+    async getCascade(c): Promise<CascadeInfo | null> {
       const p = c.params as PhaseEndParams;
       let isLastPhase = false;
       let featureNameForCascade = '';
@@ -508,6 +509,7 @@ export async function phaseEndImpl(params: PhaseEndParams): Promise<PhaseEndResu
   const result: TierEndWorkflowResult = await runTierEndWorkflow(ctx, hooks);
   return {
     success: result.success,
+    output: result.output,
     steps: result.steps,
     outcome: result.outcome,
   };

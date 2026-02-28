@@ -78,18 +78,14 @@ export interface SessionEndParams {
 /**
  * Canonical outcome for session-end. Agents use status + reasonCode + nextAction + cascade
  * to decide next step without guessing. No re-prompt loops inside the command.
+ *
+ * Derivation order: session guide → phase guide → session log. At session-start the log
+ * usually does not exist yet; guide/phase do, so we avoid "missing session log" warnings.
  */
 export async function deriveSessionDescription(
   sessionId: string,
   context: WorkflowCommandContext
 ): Promise<string> {
-  try {
-    const sessionLog = await context.readSessionLog(sessionId);
-    const logTitleMatch = sessionLog.match(/^# Session\s+[\d.]+[:\s]+(.+?)$/m);
-    if (logTitleMatch) return logTitleMatch[1].trim();
-  } catch (err) {
-    console.warn('Session end: session log not found or unreadable', sessionId, err);
-  }
   try {
     const sessionGuide = await context.readSessionGuide(sessionId);
     const nameMatch = sessionGuide.match(/Session Name:\s*(.+?)(?:\n|$)/i);
@@ -109,6 +105,13 @@ export async function deriveSessionDescription(
     }
   } catch (err) {
     console.warn('Session end: phase guide not found or unreadable (session name fallback)', sessionId, err);
+  }
+  try {
+    const sessionLog = await context.readSessionLog(sessionId);
+    const logTitleMatch = sessionLog.match(/^# Session\s+[\d.]+[:\s]+(.+?)$/m);
+    if (logTitleMatch) return logTitleMatch[1].trim();
+  } catch (_err) {
+    // Expected at session-start (log created during session); only log at debug if desired
   }
   return `Session ${sessionId}`;
 }
@@ -143,6 +146,7 @@ async function deriveNextSession(
 
 export interface SessionEndResult {
   success: boolean;
+  output: string;
   steps: Record<string, { success: boolean; output: string }>;
   outcome: SessionEndOutcome;
 }
@@ -573,6 +577,7 @@ export async function sessionEndImpl(params: SessionEndParams): Promise<SessionE
   const result: TierEndWorkflowResult = await runTierEndWorkflow(ctx, hooks);
   return {
     success: result.success,
+    output: result.output,
     steps: result.steps,
     outcome: result.outcome as SessionEndOutcome,
   };

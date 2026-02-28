@@ -115,7 +115,7 @@ export async function taskEndImpl(params: TaskEndParams): Promise<{
     },
 
     async runPreWork(c): Promise<StepExitResult> {
-      const p = c.params as TaskEndParams & { sessionId: string; sessionLogPath: string };
+      const p = c.params as TaskEndParams & { sessionId: string; sessionLogPath: string; taskEntry: TaskEntry };
       const vueAudit = await auditVueArchitecture({
         tier: 'task',
         identifier: p.taskId,

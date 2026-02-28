@@ -2,9 +2,11 @@
  * Session-start implementation. Thin adapter: builds hooks and runs shared start workflow.
  */
 
+import { join, resolve } from 'path';
+import { execSync } from 'child_process';
 import { readHandoff } from '../../../utils/read-handoff';
 import { readGuide } from '../../../utils/read-guide';
-import { readProjectFile } from '../../../utils/utils';
+import { readProjectFile, writeProjectFile } from '../../../utils/utils';
 import { createSessionLabel, formatSessionLabel } from '../atomic/create-session-label';
 import { WorkflowCommandContext } from '../../../utils/command-context';
 import { generateCurrentStateSummary } from '../../../utils/context-gatherer';
@@ -161,6 +163,18 @@ export async function sessionStartImpl(
         } catch (err) {
           console.warn('Session-start ensureChildDocs: could not create session guide', err);
         }
+        try {
+          await readProjectFile(context.paths.getSessionLogPath(sessionId));
+        } catch {
+          try {
+            await writeProjectFile(
+              context.paths.getSessionLogPath(sessionId),
+              `# Session ${sessionId}: ${resolvedDescription}\n\n`
+            );
+          } catch (logErr) {
+            console.warn('Session-start ensureChildDocs: could not create session log', logErr);
+          }
+        }
         return;
       }
       const firstTaskId = `${sessionId}.1`;
@@ -180,7 +194,20 @@ export async function sessionStartImpl(
       } catch (err) {
         console.warn('Session-start ensureChildDocs: could not append task section', err);
       }
-    },
+    // Ensure session log exists so derivation and task-end have a consistent file (avoids missing-log warnings).
+    try {
+      await readProjectFile(context.paths.getSessionLogPath(sessionId));
+    } catch {
+      try {
+        await writeProjectFile(
+          context.paths.getSessionLogPath(sessionId),
+          `# Session ${sessionId}: ${resolvedDescription}\n\n`
+        );
+      } catch (err) {
+        console.warn('Session-start ensureChildDocs: could not create session log', err);
+      }
+    }
+  },
 
     async readContext(): Promise<TierStartReadResult> {
       const handoffContent = await readHandoff('session', sessionId);
@@ -288,8 +315,8 @@ export async function sessionStartImpl(
         '```'
       );
       try {
-        const clientRoot = path.join(process.cwd(), 'client');
-        const guidePath = path.resolve(process.cwd(), context.paths.getSessionGuidePath(sessionId));
+        const clientRoot = join(process.cwd(), 'client');
+        const guidePath = resolve(process.cwd(), context.paths.getSessionGuidePath(sessionId));
         const reuse = execSync(`node .scripts/inventory-reuse-check.mjs "${guidePath}"`, {
           encoding: 'utf8',
           cwd: clientRoot,

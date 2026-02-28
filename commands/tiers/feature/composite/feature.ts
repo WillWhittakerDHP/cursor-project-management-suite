@@ -15,6 +15,7 @@ import { access } from 'fs/promises';
 import { featureCheckpoint } from '../atomic/feature-checkpoint';
 
 import { WorkflowCommandContext } from '../../../utils/command-context';
+import { TierStartResult } from '../../../utils/tier-outcome';
 
 export type { FeatureEndParams, FeatureEndResult };
 

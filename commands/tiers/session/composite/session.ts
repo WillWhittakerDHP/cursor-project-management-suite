@@ -22,6 +22,7 @@ import { updateNextAction } from '../../../utils/update-next-action';
 import { updateTimestamp } from '../../../utils/update-timestamp';
 import { resolveFeatureName } from '../../../utils';
 import { generatePrompt } from '../../../utils/generate-prompt';
+import { TierStartResult } from '../../../utils/tier-outcome';
 
 export type { SessionEndOutcome, SessionEndParams, SessionEndResult };
 export type MarkSessionCompleteParams = ImplParams;
