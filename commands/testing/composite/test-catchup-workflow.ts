@@ -8,7 +8,6 @@ import { WorkflowCommandContext } from '../../utils/command-context';
 import { readProjectFile } from '../../utils/utils';
 import { testEndWorkflow } from './test-end-workflow';
 import { TEST_CONFIG } from '../utils/test-config';
-import { PROJECT_ROOT } from '../../utils/utils';
 
 export interface CatchUpTestResult {
   success: boolean;

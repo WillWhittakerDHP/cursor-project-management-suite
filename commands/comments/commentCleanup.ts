@@ -387,7 +387,7 @@ async function processFile(
     newLines.push(line);
   }
 
-  let workingLines = newLines;
+  const workingLines = newLines;
 
   if (cfg.evaluateTypedComments) {
     const typedCommentPatterns = [

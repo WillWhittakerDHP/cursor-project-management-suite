@@ -51,7 +51,6 @@ export async function verifyCompleteness(params: VerifyCompletenessParams): Prom
   };
   
   try {
-    const feature = context.feature.name;
     const PROJECT_ROOT = process.cwd();
     
     // Check documents exist

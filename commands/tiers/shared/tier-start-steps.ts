@@ -356,7 +356,7 @@ export async function stepStartAudit(
 /** Run tier plan and append output. */
 export async function stepRunTierPlan(
   ctx: TierStartWorkflowContext,
-  hooks: TierStartWorkflowHooks
+  _hooks: TierStartWorkflowHooks
 ): Promise<void> {
   const featureName = ctx.context.feature.name;
   const planOutput = await runTierPlan(

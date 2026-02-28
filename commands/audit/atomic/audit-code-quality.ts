@@ -16,4 +16,3 @@ export async function auditCodeQuality(params: AuditParams): Promise<AuditResult
   const result = await auditTierQuality({ ...params, tier });
   return { ...result, category: 'code-quality' as const };
 }
-

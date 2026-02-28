@@ -61,8 +61,6 @@ export async function validateWorkflow(params: ValidateWorkflowParams): Promise<
   };
   
   try {
-    const feature = context.feature.name;
-    
     // 1. Check todo exists
     const statusInfo = await getStatus({
       tier: params.tier as StatusTier,

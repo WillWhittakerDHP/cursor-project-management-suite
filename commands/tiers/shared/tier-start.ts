@@ -14,7 +14,7 @@ import {
   isPlanMode,
   enforceModeSwitch,
 } from '../../utils/command-execution-mode';
-import type { TierStartResult } from '../../utils/tier-outcome';
+import type { TierStartResult, TierStartOutcome } from '../../utils/tier-outcome';
 import { verifyApp } from '../../utils/verify-app';
 import { featureStartImpl } from '../feature/composite/feature-start-impl';
 import { phaseStartImpl } from '../phase/composite/phase-start-impl';
@@ -35,20 +35,22 @@ export async function runTierStart(
   params: TierStartParams,
   options?: CommandExecutionOptions
 ): Promise<TierStartResultWithControlPlane> {
-  const executionMode = resolveCommandExecutionMode(options, 'plan');
+  // Default execute so first invocation runs side effects; pass options: { mode: 'plan' } for plan-only preview.
+  const executionMode = resolveCommandExecutionMode(options, 'execute');
   const gate = modeGateText(cursorModeForExecution(executionMode), `${config.name}-start`);
 
   if (config.preflight?.ensureAppRunning?.onStart && !isPlanMode(executionMode)) {
     const appCheck = await verifyApp();
     if (!appCheck.success) {
-      const failedResult = {
+      const outcome: TierStartOutcome = {
+        status: 'blocked',
+        reasonCode: 'app_not_running',
+        nextAction: appCheck.output,
+      };
+      const failedResult: TierStartResult = {
         success: false,
         output: appCheck.output,
-        outcome: {
-          status: 'blocked',
-          reasonCode: 'app_not_running',
-          nextAction: appCheck.output,
-        },
+        outcome,
         modeGate: gate,
       };
       const decision = routeByOutcome(

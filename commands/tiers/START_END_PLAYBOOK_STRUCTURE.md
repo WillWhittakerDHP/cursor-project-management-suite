@@ -137,9 +137,9 @@ These rules tell the agent what to do for each `reasonCode` returned by commands
 
 **Failure reasonCodes:** Any `reasonCode` not listed below (e.g. `lint_or_typecheck_failed`, `test_failed`, `test_code_error`, `test_goal_validation_failed`, `vue_architecture_gate_failed`, etc.) indicates a failure. All failure reasonCodes follow the **"If not success (HARD STOP)"** rule in the Routing section above.
 
-### `plan_mode` (start commands, default mode)
+### `plan_mode` (start commands, when `mode: 'plan'` is passed)
 
-The user is approving what we're about to build. `controlPlaneDecision.message` contains the **deliverables** — the concrete tasks, goals, files, and acceptance criteria the user needs to see. `result.output` contains agent context (branch hierarchy, workflow steps, audit data) — read it for your own understanding but do not show it verbatim.
+Start commands **default to execute**; you only see this flow when the command was invoked with `options: { mode: 'plan' }` for a plan-only preview. The user is approving what we're about to build. `controlPlaneDecision.message` contains the **deliverables** — the concrete tasks, goals, files, and acceptance criteria the user needs to see. `result.output` contains agent context (branch hierarchy, workflow steps, audit data) — read it for your own understanding but do not show it verbatim.
 
 1. **Switch to Plan mode** (Ask mode).
 2. **Present `controlPlaneDecision.message`** to the user — this is the deliverables summary (e.g. task list for a session, goal/files/approach for a task, phase list for a feature). Show it as formatted text, not as a code block or raw JSON.
@@ -256,12 +256,12 @@ When the procedure says "call implementation", the agent:
 
 - Feature start: `npx tsx -e "import('./.cursor/commands/tiers/feature/composite/feature.ts').then(m => m.featureStart('6')).then(r => console.log(r))"`
 - Phase start: `npx tsx -e "import('./.cursor/commands/tiers/phase/composite/phase.ts').then(m => m.phaseStart('6.2')).then(r => console.log(r))"`
-- Session start (plan preview; default is plan): `npx tsx -e "import('./.cursor/commands/tiers/session/composite/session.ts').then(m => m.sessionStart('6.2.1')).then(r => console.log(JSON.stringify(r)))"`
-- Session start (execute after approval): `npx tsx -e "import('./.cursor/commands/tiers/session/composite/session.ts').then(m => m.sessionStart('6.2.1', undefined, { mode: 'execute' })).then(r => console.log(JSON.stringify(r)))"`
+- Session start (default execute): `npx tsx -e "import('./.cursor/commands/tiers/session/composite/session.ts').then(m => m.sessionStart('6.2.1')).then(r => console.log(JSON.stringify(r)))"`
+- Session start (plan-only preview): `npx tsx -e "import('./.cursor/commands/tiers/session/composite/session.ts').then(m => m.sessionStart('6.2.1', undefined, { mode: 'plan' })).then(r => console.log(JSON.stringify(r)))"`
 - Task start: `npx tsx -e "import('./.cursor/commands/tiers/task/composite/task.ts').then(m => m.taskStart('6.2.1.4')).then(r => console.log(JSON.stringify(r)))"`
-- Task start (execute after approval): `npx tsx -e "import('./.cursor/commands/tiers/task/composite/task.ts').then(m => m.taskStart('6.2.1.4', { mode: 'execute' })).then(r => console.log(JSON.stringify(r)))"`
+- Task start (plan-only): `npx tsx -e "import('./.cursor/commands/tiers/task/composite/task.ts').then(m => m.taskStart('6.2.1.4', { mode: 'plan' })).then(r => console.log(JSON.stringify(r)))"`
 
-**Session-start and phase-start (plan then execute):** Start commands default to **plan** mode. First invocation: no options — user sees the plan. When the user has approved and the agent is in **Agent mode**, invoke again with **`{ mode: 'execute' }`** so the command runs the steps (branch creation, scope update, etc.). Example: `sessionStart(sessionId, description, { mode: 'execute' })`. **Task-start:** Pass options as the second argument when you do not need to pass featureId: `taskStart(taskId, { mode: 'execute' })` (no `undefined` placeholder).
+**Start commands default to execute.** Invoking without options (e.g. `sessionStart('6.2.1')`) runs the full pipeline (branch, docs, audit, cascade). Pass **`{ mode: 'plan' }`** only when you want a plan-only preview and approval step. **Task-start:** options as second argument when no featureId: `taskStart(taskId, { mode: 'plan' })`.
 
 ---
 
@@ -282,7 +282,7 @@ All mode logic lives in one file: `.cursor/commands/utils/command-execution-mode
 
 | Generic dispatcher | Gate mode | How gate is delivered |
 |---|---|---|
-| `tier-start.ts` → `runTierStart` | Derived from `options.mode` (default plan) | `modeGate` field on result object |
+| `tier-start.ts` → `runTierStart` | Derived from `options.mode` (default execute) | `modeGate` field on result object |
 | `tier-end.ts` → `runTierEnd` | Derived from `params.mode` (default execute) | `modeGate` field on result object |
 | `tier-plan.ts` → `runTierPlan` | Always `plan` | Prepended to result string |
 | `tier-change.ts` → `runTierChange` | Always `plan` | Prepended to `output` field in result |

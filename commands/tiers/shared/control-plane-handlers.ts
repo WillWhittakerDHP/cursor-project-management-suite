@@ -10,7 +10,7 @@ import type {
 } from './control-plane-types';
 import { QUESTION_KEYS } from './control-plane-types';
 
-function baseCascadeDecision(outcome: ControlPlaneOutcome, requiredMode: 'plan' | 'agent'): ControlPlaneDecision {
+function baseCascadeDecision(outcome: ControlPlaneOutcome, _requiredMode: 'plan' | 'agent'): ControlPlaneDecision {
   if (outcome.cascade != null) {
     return {
       stop: true,
