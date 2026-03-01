@@ -142,17 +142,29 @@ export async function stepEnsureStartBranch(
   }
   if (!branchResult.success) {
     if (branchResult.blockedByUncommitted) {
-      const fileList = (branchResult.uncommittedFiles ?? []).map(f => `- \`${f}\``).join('\n');
-      return {
-        success: true,
-        output: ctx.output.join('\n\n'),
-        outcome: {
-          status: 'blocked',
-          reasonCode: 'uncommitted_changes_blocking',
-          nextAction: 'Uncommitted changes must be resolved before switching branches.',
-          deliverables: `**Uncommitted files blocking checkout:**\n${fileList}\n\nCommit these changes, or skip (stash) to proceed without committing.`,
-        },
-      };
+      // Playbook: only block on non-.cursor files; .cursor changes are excluded from blocking.
+      const allFiles = branchResult.uncommittedFiles ?? [];
+      const blockingFiles = allFiles.filter(
+        f => f !== '.cursor' && f !== 'cursor' && !f.startsWith('.cursor/')
+      );
+      if (blockingFiles.length > 0) {
+        const fileList = blockingFiles.map(f => `- \`${f}\``).join('\n');
+        return {
+          success: true,
+          output: ctx.output.join('\n\n'),
+          outcome: {
+            status: 'blocked',
+            reasonCode: 'uncommitted_changes_blocking',
+            nextAction: 'Uncommitted changes must be resolved before switching branches.',
+            deliverables: `**Uncommitted files blocking checkout:**\n${fileList}\n\nCommit these changes, or skip (stash) to proceed without committing.`,
+          },
+        };
+      }
+      // Only .cursor changed; do not block (playbook: .cursor auto-committed or excluded). Continue.
+      if (hooks.afterBranch) {
+        await hooks.afterBranch(ctx);
+      }
+      return null;
     }
     return {
       success: false,
