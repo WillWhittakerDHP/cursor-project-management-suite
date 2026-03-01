@@ -4,7 +4,7 @@
  * Runs in execute mode only; called from tier-start workflow step.
  */
 
-import type { TierStartWorkflowContext } from './tier-start-workflow';
+import type { TierStartWorkflowContext } from './tier-start-workflow-types';
 import type { WorkflowCommandContext } from '../../utils/command-context';
 import { readProjectFile, writeProjectFile } from '../../utils/utils';
 

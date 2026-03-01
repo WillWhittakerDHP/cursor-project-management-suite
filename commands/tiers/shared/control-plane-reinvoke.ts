@@ -1,56 +1,46 @@
 /**
- * Re-invocation adapter: invokes tier start with { mode: 'execute' } (and any
- * other options from params.options) so the second run performs side effects
- * after plan or context-gathering approval.
- * Single place that knows each tier's start signature and option placement.
+ * Control-plane re-invoke: canonical helpers for building re-invoke params and (future) WorkflowSpec.
+ * Keeps option nesting in one place so flat option keys are never added at the dispatcher boundary.
  */
 
 import type { CommandExecutionOptions } from '../../utils/command-execution-mode';
+import type { StartReinvokeParams } from './control-plane-types';
 import type { TierName } from './types';
-import type { TierStartResult } from '../../utils/tier-outcome';
-import { featureStart } from '../feature/composite/feature';
-import { phaseStart } from '../phase/composite/phase';
-import { sessionStart } from '../session/composite/session';
-import { taskStart } from '../task/composite/task';
+import type { TierAction } from './control-plane-types';
 
-/** Start params per tier (identifier-only; options injected by this adapter). */
-export type StartParamsByTier =
-  | { tier: 'feature'; featureId: string }
-  | { tier: 'phase'; phaseId: string }
-  | { tier: 'session'; sessionId: string; description?: string }
-  | { tier: 'task'; taskId: string; featureId?: string };
+const START_TIERS: TierName[] = ['feature', 'phase', 'session', 'task'];
 
 /**
- * Re-invoke the same tier start with execute mode. Use after plan_mode approval.
- * Preserves task-start option overloading (featureId vs options as second arg).
+ * Build start re-invoke params with options nested.
+ * All start handlers must use this so the dispatcher receives options via params.options.
  */
-export async function reinvokeStartExecute(
+export function buildStartReinvokeParams(
+  baseParams: Record<string, unknown>,
+  options: CommandExecutionOptions
+): StartReinvokeParams {
+  return { ...baseParams, options };
+}
+
+/**
+ * Build reinvoke params for "start with execute" for a given tier.
+ * Returns a Promise that resolves to StartReinvokeParams for known tiers and rejects for unknown tier.
+ */
+export function reinvokeStartExecute(
   tier: TierName,
-  params: unknown
-): Promise<TierStartResult> {
-  const base = (params as { options?: CommandExecutionOptions })?.options;
-  const opts: CommandExecutionOptions = { ...base, mode: 'execute' };
-  switch (tier) {
-    case 'feature': {
-      const p = params as { featureId: string };
-      return featureStart(p.featureId, opts);
-    }
-    case 'phase': {
-      const p = params as { phaseId: string };
-      return phaseStart(p.phaseId, opts);
-    }
-    case 'session': {
-      const p = params as { sessionId: string; description?: string };
-      return sessionStart(p.sessionId, p.description, opts);
-    }
-    case 'task': {
-      const p = params as { taskId: string; featureId?: string };
-      if (p.featureId != null && p.featureId !== '') {
-        return taskStart(p.taskId, p.featureId, opts);
-      }
-      return taskStart(p.taskId, opts);
-    }
-    default:
-      throw new Error(`Unknown tier: ${tier}`);
+  baseParams: Record<string, unknown>
+): Promise<StartReinvokeParams> {
+  if (!START_TIERS.includes(tier)) {
+    return Promise.reject(new Error('Unknown tier'));
   }
+  return Promise.resolve(buildStartReinvokeParams(baseParams, { mode: 'execute' }));
+}
+
+/**
+ * Shape used when re-invoking after user confirmation.
+ * For harness cutover, nextInvoke will be a full WorkflowSpec (see harness ControlPlaneDecision).
+ */
+export interface ReinvokeIntent {
+  tier: TierName;
+  action: TierAction;
+  params: unknown; // StartReinvokeParams when action === 'start'
 }

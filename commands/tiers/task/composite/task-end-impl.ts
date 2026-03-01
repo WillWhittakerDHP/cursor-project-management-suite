@@ -29,9 +29,13 @@ import type {
   TierEndWorkflowContext,
   TierEndWorkflowHooks,
   TierEndWorkflowResult,
+  TierEndWorkflowResultWithShadow,
   StepExitResult,
-} from '../../shared/tier-end-workflow';
-import { runTierEndWorkflow } from '../../shared/tier-end-workflow';
+} from '../../shared/tier-end-workflow-types';
+import { runTierEndWorkflow } from '../../../harness/run-end-steps';
+import type { RunRecorder, RunTraceHandle } from '../../../harness/contracts';
+
+export type EndShadowContext = { recorder: RunRecorder; handle: RunTraceHandle };
 
 export interface TaskEndParams {
   taskId: string;
@@ -47,11 +51,18 @@ export interface TaskEndParams {
   vueArchitectureOverride?: { reason: string; followUpTaskId: string };
 }
 
-export async function taskEndImpl(params: TaskEndParams): Promise<{
+export async function taskEndImpl(
+  params: TaskEndParams,
+  shadow?: EndShadowContext
+): Promise<{
   success: boolean;
   output: string;
   outcome: TierEndOutcome;
-}> {
+} | ({
+  success: boolean;
+  output: string;
+  outcome: TierEndOutcome;
+} & TierEndWorkflowResultWithShadow)> {
   const featureName = params.featureId != null && params.featureId.trim() !== ''
     ? await resolveFeatureId(params.featureId)
     : await resolveFeatureName();
@@ -96,6 +107,11 @@ export async function taskEndImpl(params: TaskEndParams): Promise<{
     steps,
     shouldRunTests: false,
     outcome,
+    ...(shadow && {
+      runRecorder: shadow.recorder,
+      runTraceHandle: shadow.handle,
+      stepPath: [],
+    }),
   };
 
   const hooks: TierEndWorkflowHooks = {
@@ -357,11 +373,16 @@ export async function taskEndImpl(params: TaskEndParams): Promise<{
   };
 
   try {
-    const result: TierEndWorkflowResult = await runTierEndWorkflow(ctx, hooks);
+    const result = await runTierEndWorkflow(ctx, hooks);
+    const withShadow = result as TierEndWorkflowResultWithShadow;
     return {
       success: result.success,
       output: result.output || ctx.output.join('\n'),
       outcome: result.outcome,
+      ...(withShadow.__traceHandle != null && {
+        __traceHandle: withShadow.__traceHandle,
+        __stepPath: withShadow.__stepPath ?? [],
+      }),
     };
   } catch (_error) {
     const p = ctx.params as TaskEndParams & { sessionLogPath: string };

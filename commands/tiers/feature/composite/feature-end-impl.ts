@@ -21,9 +21,13 @@ import type {
   TierEndWorkflowContext,
   TierEndWorkflowHooks,
   TierEndWorkflowResult,
+  TierEndWorkflowResultWithShadow,
   StepExitResult,
-} from '../../shared/tier-end-workflow';
-import { runTierEndWorkflow } from '../../shared/tier-end-workflow';
+} from '../../shared/tier-end-workflow-types';
+import { runTierEndWorkflow } from '../../../harness/run-end-steps';
+import type { RunRecorder, RunTraceHandle } from '../../../harness/contracts';
+
+export type EndShadowContext = { recorder: RunRecorder; handle: RunTraceHandle };
 import { proposeVerificationChecklistForFeature } from '../../shared/verification-check';
 
 export interface FeatureEndParams {
@@ -49,7 +53,10 @@ export interface FeatureEndResult {
 const CLEANUP_FILE_THRESHOLD = 100;
 const CLEANUP_COMMENT_THRESHOLD = 500;
 
-export async function featureEndImpl(params: FeatureEndParams): Promise<FeatureEndResult> {
+export async function featureEndImpl(
+  params: FeatureEndParams,
+  shadow?: EndShadowContext
+): Promise<FeatureEndResult | (FeatureEndResult & TierEndWorkflowResultWithShadow)> {
   const featureName =
     (params.featureId != null && params.featureId.trim() !== ''
       ? await resolveFeatureId(params.featureId)
@@ -65,6 +72,11 @@ export async function featureEndImpl(params: FeatureEndParams): Promise<FeatureE
     steps: {},
     shouldRunTests: false,
     outcome: buildTierEndOutcome('completed', 'pending_push_confirmation', ''),
+    ...(shadow && {
+      runRecorder: shadow.recorder,
+      runTraceHandle: shadow.handle,
+      stepPath: [],
+    }),
   };
 
   const hooks: TierEndWorkflowHooks = {
@@ -351,11 +363,16 @@ export async function featureEndImpl(params: FeatureEndParams): Promise<FeatureE
     },
   };
 
-  const result: TierEndWorkflowResult = await runTierEndWorkflow(ctx, hooks);
+  const result = await runTierEndWorkflow(ctx, hooks);
+  const withShadow = result as TierEndWorkflowResultWithShadow;
   return {
     success: result.success,
     output: result.output,
     steps: result.steps,
     outcome: result.outcome,
+    ...(withShadow.__traceHandle != null && {
+      __traceHandle: withShadow.__traceHandle,
+      __stepPath: withShadow.__stepPath ?? [],
+    }),
   };
 }

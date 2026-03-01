@@ -39,9 +39,13 @@ import type {
   TierEndWorkflowContext,
   TierEndWorkflowHooks,
   TierEndWorkflowResult,
+  TierEndWorkflowResultWithShadow,
   StepExitResult,
-} from '../../shared/tier-end-workflow';
-import { runTierEndWorkflow } from '../../shared/tier-end-workflow';
+} from '../../shared/tier-end-workflow-types';
+import { runTierEndWorkflow } from '../../../harness/run-end-steps';
+import type { RunRecorder, RunTraceHandle } from '../../../harness/contracts';
+
+export type EndShadowContext = { recorder: RunRecorder; handle: RunTraceHandle };
 import { proposeVerificationChecklistForSession } from '../../shared/verification-check';
 
 const FRONTEND_ROOT = 'client';
@@ -151,7 +155,10 @@ export interface SessionEndResult {
   outcome: SessionEndOutcome;
 }
 
-export async function sessionEndImpl(params: SessionEndParams): Promise<SessionEndResult> {
+export async function sessionEndImpl(
+  params: SessionEndParams,
+  shadow?: EndShadowContext
+): Promise<SessionEndResult | (SessionEndResult & TierEndWorkflowResultWithShadow)> {
   const context = await WorkflowCommandContext.getCurrent();
   const description = params.description !== undefined
     ? params.description
@@ -173,6 +180,11 @@ export async function sessionEndImpl(params: SessionEndParams): Promise<SessionE
     steps,
     shouldRunTests: false,
     outcome,
+    ...(shadow && {
+      runRecorder: shadow.recorder,
+      runTraceHandle: shadow.handle,
+      stepPath: [],
+    }),
   };
 
   const hooks: TierEndWorkflowHooks = {
@@ -574,12 +586,17 @@ export async function sessionEndImpl(params: SessionEndParams): Promise<SessionE
     },
   };
 
-  const result: TierEndWorkflowResult = await runTierEndWorkflow(ctx, hooks);
+  const result = await runTierEndWorkflow(ctx, hooks);
+  const withShadow = result as TierEndWorkflowResultWithShadow;
   return {
     success: result.success,
     output: result.output,
     steps: result.steps,
     outcome: result.outcome as SessionEndOutcome,
+    ...(withShadow.__traceHandle != null && {
+      __traceHandle: withShadow.__traceHandle,
+      __stepPath: withShadow.__stepPath ?? [],
+    }),
   };
 }
 

@@ -6,9 +6,19 @@
 
 import type { TierName } from './types';
 import type { CascadeInfo } from '../../utils/tier-outcome';
+import type { CommandExecutionOptions } from '../../utils/command-execution-mode';
 
 /** Action verb for tier commands. */
 export type TierAction = 'start' | 'end' | 'reopen';
+
+/**
+ * Canonical shape for tier-start re-invoke params.
+ * Tier identifiers at top level; execution toggles ONLY in options.
+ * Use buildStartReinvokeParams() so flat option keys are never added.
+ */
+export type StartReinvokeParams = Record<string, unknown> & {
+  options?: CommandExecutionOptions;
+};
 
 /** Normalized outcome shape for routing; start and end results both expose this. */
 export interface ControlPlaneOutcome {
@@ -56,7 +66,7 @@ export interface ControlPlaneDecision {
   nextInvoke?: {
     tier: TierName;
     action: TierAction;
-    params: unknown;
+    params: unknown; // StartReinvokeParams when action === 'start'
   };
 }
 
@@ -75,6 +85,8 @@ export const REASON_CODE = {
 /** Question template keys used by the agent to render AskQuestion. */
 export const QUESTION_KEYS = {
   APPROVE_EXECUTE: 'approve_execute',
+  /** Task tier: explicit "Begin Coding" confirmation after design artifact. */
+  APPROVE_EXECUTE_TASK: 'approve_execute_task',
   CONTEXT_GATHERING: 'context_gathering',
   CASCADE: 'cascade',
   PUSH_CONFIRMATION: 'push_confirmation',

@@ -43,6 +43,7 @@ export interface FormatPlanModePreviewOptions {
 
 /**
  * Returns the plan-mode section: "Mode: Plan", optional intro, and "What would run" with steps as bullets.
+ * @deprecated No longer called by stepPlanModeExit. Process steps are now a one-line summary. Retained for backward compatibility.
  */
 export function formatPlanModePreview(
   planSteps: string[],

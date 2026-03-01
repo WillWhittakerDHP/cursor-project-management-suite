@@ -4,11 +4,13 @@ This MCP lets the Cursor AI read the mailbox that receives calendar invite respo
 
 **Decision:** Use **Gmail MCP** (Option A from the plan). The mailbox that receives invite replies is the Gmail inbox of the Google account that owns the calendar (same account used for Calendar OAuth). Server: [jasonsum/gmail-mcp-server](https://github.com/jasonsum/gmail-mcp-server).
 
+**We use the same OAuth as Calendar.** The app already has Google OAuth set up (web flow with `GOOGLE_REDIRECT_URI`). The Gmail MCP does **not** run its own desktop OAuth flow. Instead, the server requests the Gmail scope when you sign in, and a sync script copies those tokens to the path the MCP reads. That avoids `redirect_uri_mismatch` and the repeated “Access blocked” popup that happened when the MCP tried to open its own auth (with a random localhost port not registered in Google Cloud).
+
 ---
 
 ## 1. Google Cloud / Gmail API setup
 
-Use the **admin panel dev testing email** for the MCP mailbox. In code this is **`ADMIN_DEV_TESTING_EMAIL`** in [server/src/routes/internal/appointments/appointmentConstants.ts](../server/src/routes/internal/appointments/appointmentConstants.ts) (same as `DEFAULT_CALENDAR_EMAIL`). You can **reuse the existing Google Cloud project** used for Calendar (and other Google APIs); only add Gmail API, the Gmail scope, and the test user as below.
+Use the **admin panel dev testing email** for the MCP mailbox. In code this is **`ADMIN_DEV_TESTING_EMAIL`** in [server/src/routes/internal/appointments/appointmentConstants.ts](../server/src/routes/internal/appointments/appointmentConstants.ts) (same as `DEFAULT_CALENDAR_EMAIL`). You can **reuse the existing Google Cloud project and OAuth client** used for Calendar; only add Gmail API and the Gmail scope below.
 
 1. **Reuse the existing Google Cloud project**  
    Use the same project as your Calendar API. [APIs & Services](https://console.cloud.google.com/apis).
@@ -22,23 +24,32 @@ Use the **admin panel dev testing email** for the MCP mailbox. In code this is *
    - Add the admin dev testing email (`ADMIN_DEV_TESTING_EMAIL` in `appointmentConstants.ts`; currently `scheduling@districthomepro.com`) as a **Test user** (if not already).  
    - Scopes: add `https://www.googleapis.com/auth/gmail.modify` (read + mark read).
 
-4. **Create or reuse OAuth Client ID**  
-   [APIs & Services → Credentials](https://console.cloud.google.com/apis/credentials) → Create Credentials → OAuth client ID (or reuse an existing Desktop app client and add the Gmail scope).  
-   - Application type: **Desktop app**.  
-   - Use your **existing** OAuth client (the one in server `.env`). Generate the credentials file from .env in section 2 (see “Credential and token location” below).
+4. **Use your existing OAuth Client ID**  
+   Keep using the **same** OAuth client as Calendar (the one in server `.env` with `GOOGLE_REDIRECT_URI`). No separate “Desktop app” client or extra redirect URIs are needed; the Gmail MCP uses tokens obtained via the server’s web OAuth flow.
 
 ---
 
-## 2. Use existing .env for MCP credentials
+## 2. Creds and tokens (same OAuth as Calendar)
 
-Your server `.env` already has `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`. Generate the Gmail MCP credentials file from them. From the **server** directory:
+Your server already has `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and `GOOGLE_REDIRECT_URI`. The server’s default scopes now include `gmail.modify` (see [server/src/config/googleOAuth.ts](../server/src/config/googleOAuth.ts)), so when you complete OAuth via the server (Calendar auth URL), you get both Calendar and Gmail scopes.
 
-```bash
-cd server
-npm run gmail-mcp:creds
-```
+1. **Gmail MCP client file** (for the Python MCP to read client id/secret):  
+   From the **server** directory run:
+   ```bash
+   cd server
+   npm run gmail-mcp:creds
+   ```
+   This writes `~/.cursor/gmail-mcp/client_creds.json`.
 
-This reads `server/.env.development` and writes `~/.cursor/gmail-mcp/client_creds.json` (creating the directory if needed). Then run the Gmail MCP once (section 4) to complete OAuth and create the token file; point Cursor at those paths in section 5.
+2. **Token file** (so the MCP doesn’t open its own OAuth):  
+   After you’ve done **Calendar OAuth at least once** (and preferably re-auth once so the token includes the new Gmail scope), sync the server’s tokens to the path the MCP uses:
+   ```bash
+   cd server
+   npm run gmail-mcp:sync-tokens
+   ```
+   This reads `server/.google-tokens.json` and writes `~/.cursor/gmail-mcp/tokens.json` in the format the Gmail MCP expects. No browser, no redirect_uri_mismatch.
+
+3. Add the Gmail server to **`~/.cursor/mcp.json`** (section 5). Cursor uses that file, not a project-level mcp.json.
 
 ---
 
@@ -56,23 +67,33 @@ These paths are already listed in [.gitignore](.gitignore) (or equivalent) so th
 
 ---
 
-## 4. Install and run the MCP server
+## 4. Install uv and MCP server path
 
-1. **Install uv** (recommended by the Gmail MCP):  
+1. **Install uv** (required by the Gmail MCP):  
    https://docs.astral.sh/uv/
 
-2. **Clone the Gmail MCP repo** (or use the project copy). Either:
-   - In project: `git clone https://github.com/jasonsum/gmail-mcp-server.git .cursor/gmail-mcp-server` (already done; `.cursor/gmail-mcp-server` is gitignored).
-   - Or in home: `git clone https://github.com/jasonsum/gmail-mcp-server.git "$HOME/.cursor/gmail-mcp-server"`.
-   Use the same path in `.cursor/mcp.json` for `--directory`.
+2. **Gmail MCP code** – use the project submodule (clones get it via `git submodule update --init --recursive`):
+   - Path: `<project-root>/.cursor/gmail-mcp-server`
+   - Or your own clone: `git clone https://github.com/jasonsum/gmail-mcp-server.git "$HOME/.cursor/gmail-mcp-server"`.
+   Use that path for `--directory` in the MCP config (section 5).
 
-3. **First-time auth**  
-   When the MCP runs, it will open a browser for OAuth. Sign in with the **admin panel dev testing email** (see `ADMIN_DEV_TESTING_EMAIL` in `appointmentConstants.ts`). Tokens will be written to the path you set as `--token-path`.
+3. **No separate OAuth in the MCP**  
+   If `tokens.json` exists and has a valid `refresh_token`, the MCP uses it and never opens a browser. You create that file by running `npm run gmail-mcp:sync-tokens` (section 2). If you see “Access blocked: redirect_uri_mismatch”, sync tokens (section 2) and restart Cursor. If you see **`RefreshError: invalid_scope`** or **403 insufficientPermissions / insufficient authentication scopes**, your server token was issued before the Gmail scope was added. Do the **Re-auth for Gmail scope** steps below, then sync and restart Cursor.
+
+**Re-auth for Gmail scope (fix 403 insufficientPermissions)**  
+If the MCP crashes with “insufficient authentication scopes” or 403, the token in `server/.google-tokens.json` was created before the server requested the Gmail scope. Get a new token that includes Gmail:
+
+1. Start the server (e.g. `cd server && npm run dev`).
+2. In a browser, open: **`http://localhost:3001/api/v1/external/oauth`** (use your server port if different).
+3. Sign in with the admin dev testing email (e.g. `scheduling@districthomepro.com`). Approve the requested access (Calendar + Gmail).
+4. After the redirect back to the server, the new tokens are saved to `server/.google-tokens.json`.
+5. Run: `cd server && npm run gmail-mcp:sync-tokens`.
+6. Restart Cursor.
 
 4. **Verify**  
-   Run the server manually once to confirm it can list/read mail:
+   Run the MCP manually once to confirm it can list mail (no browser should open):
    ```bash
-   cd "$HOME/.cursor/gmail-mcp-server"
+   cd "<project-root>/.cursor/gmail-mcp-server"
    uv run gmail --creds-file-path "$HOME/.cursor/gmail-mcp/client_creds.json" --token-path "$HOME/.cursor/gmail-mcp/tokens.json"
    ```
    Or use [MCP Inspector](https://modelcontextprotocol.io/docs/tools/inspector) and call `get-unread-emails` (see the [Gmail MCP README](https://github.com/jasonsum/gmail-mcp-server)).
@@ -81,8 +102,17 @@ These paths are already listed in [.gitignore](.gitignore) (or equivalent) so th
 
 ## 5. Register the MCP in Cursor
 
-- **Project-level (recommended):** Copy [.cursor/mcp.json.example](mcp.json.example) to `.cursor/mcp.json`. Edit `.cursor/mcp.json` and replace the three placeholder paths with your actual paths (creds file, token file, and clone directory). Restart Cursor so it picks up the MCP.
-- **Or:** Cursor Settings → Features → MCP → Add server. Use the same `command` and `args` as in the example (with your paths).
+Cursor reads MCP config from your **user config file**, not from the project. Add the Gmail server to **`~/.cursor/mcp.json`** (merge into the existing `mcpServers` object if you already have other servers).
+
+Use the server entry from [.cursor/mcp.json.example](mcp.json.example): copy that server block into `~/.cursor/mcp.json` and replace the three paths with your actual paths:
+
+| Placeholder | Replace with |
+|-------------|--------------|
+| `REPLACE_WITH_PATH_TO_GMAIL_MCP_CLONE` | Project submodule: `/Users/.../Differential_Scheduler/.cursor/gmail-mcp-server` (or your clone path) |
+| `REPLACE_WITH_PATH_TO_CREDENTIALS_JSON` | `$HOME/.cursor/gmail-mcp/client_creds.json` |
+| `REPLACE_WITH_PATH_TO_TOKENS_JSON` | `$HOME/.cursor/gmail-mcp/tokens.json` |
+
+Restart Cursor so it loads the new server.
 
 ---
 

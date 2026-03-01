@@ -55,6 +55,21 @@ describe('control-plane routeByOutcome', () => {
     expect(decision.questionKey).toBe(QUESTION_KEYS.APPROVE_EXECUTE);
   });
 
+  it('plan_mode for task tier returns approve_execute_task (Begin Coding)', () => {
+    const taskCtx = { ...baseCtx, tier: 'task' as const, originalParams: { taskId: '6.4.4.1' } };
+    const result: CommandResultForRouting = {
+      success: true,
+      output: 'Task plan',
+      outcome: {
+        reasonCode: REASON_CODE.PLAN_MODE,
+        nextAction: 'Approve design to begin coding.',
+      },
+    };
+    const decision = routeByOutcome(result, taskCtx);
+    expect(decision.questionKey).toBe(QUESTION_KEYS.APPROVE_EXECUTE_TASK);
+    expect(decision.nextInvoke?.params).toEqual({ taskId: '6.4.4.1', options: { mode: 'execute' } });
+  });
+
   it('plan_mode without deliverables falls back to nextAction for message', () => {
     const result: CommandResultForRouting = {
       success: true,
@@ -224,10 +239,10 @@ describe('control-plane routeByOutcome', () => {
     const deliverables =
       'Planning document created: `.project-manager/features/6/sessions/session-6.2.1-planning.md`\n\n' +
       '**From the docs (insight + proposal + decision):**\n' +
-      '1. *Insight:* The session guide indicates we\'re building "Slot Refactor" through the listed tasks.\n' +
-      '   *Proposal:* We\'ll work through tasks in order from the guide.\n' +
-      '   *Decision:* What\'s the main outcome you want for this session?\n' +
-      '   *Options:* Match the session guide exactly | Add or change scope\n\n' +
+      '1. *Insight:* Session intent and tasks from the guide.\n' +
+      '   *Proposal:* We\'ll plan all necessary items and follow governance.\n' +
+      '   *Decision:* After reading the planning doc and context, what do you want to lock in or adjust before we proceed?\n' +
+      '   *Options:* Let\'s discuss in chat | I\'m ready to lock the plan as-is\n\n' +
       "When satisfied, choose: **I'm satisfied with our plan and ready to begin**";
     const result: CommandResultForRouting = {
       success: true,
@@ -244,17 +259,19 @@ describe('control-plane routeByOutcome', () => {
     expect(decision.questionKey).toBe(QUESTION_KEYS.CONTEXT_GATHERING);
     expect(decision.message).toBe(deliverables);
     expect(decision.nextInvoke).toBeDefined();
-    expect((decision.nextInvoke?.params as { contextGatheringComplete?: boolean })?.contextGatheringComplete).toBe(
-      true
-    );
+    // Options are nested under params.options (buildStartReinvokeParams contract)
+    expect(
+      (decision.nextInvoke?.params as { options?: { contextGatheringComplete?: boolean } })?.options
+        ?.contextGatheringComplete
+    ).toBe(true);
   });
 
   it('context_gathering deliverables include doc-grounded insight and satisfaction option (regression guard)', () => {
     const deliverables =
       '**From the docs (insight + proposal + decision):**\n' +
-      '1. *Insight:* The feature guide indicates we\'re building "Calendar" through the listed phases.\n' +
-      '   *Decision:* What\'s the main outcome?\n' +
-      '   *Options:* Match the guide | Add scope\n\n' +
+      '1. *Insight:* Feature intent and phases from the guide.\n' +
+      '   *Decision:* After reading the planning doc and context, what do you want to lock in or adjust before we proceed?\n' +
+      '   *Options:* Let\'s discuss in chat | I\'m ready to lock the plan as-is\n\n' +
       "When satisfied, choose: **I'm satisfied with our plan and ready to begin**";
     const result: CommandResultForRouting = {
       success: true,

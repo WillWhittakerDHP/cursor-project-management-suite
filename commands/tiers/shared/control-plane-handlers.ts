@@ -9,6 +9,7 @@ import type {
   ControlPlaneOutcome,
 } from './control-plane-types';
 import { QUESTION_KEYS } from './control-plane-types';
+import { buildStartReinvokeParams } from './control-plane-reinvoke';
 
 function baseCascadeDecision(outcome: ControlPlaneOutcome, _requiredMode: 'plan' | 'agent'): ControlPlaneDecision {
   if (outcome.cascade != null) {
@@ -27,30 +28,33 @@ function baseCascadeDecision(outcome: ControlPlaneOutcome, _requiredMode: 'plan'
   };
 }
 
-/** plan_mode: show deliverables (or fallback to nextAction), AskQuestion approve/revise; nextInvoke = same command with execute. */
+/** plan_mode: show deliverables (or fallback to nextAction), AskQuestion approve/revise; nextInvoke = same command with execute. Task uses explicit "Begin Coding" wording. */
 export function handlePlanMode(outcome: ControlPlaneOutcome, ctx: ControlPlaneContext): ControlPlaneDecision {
   const baseParams =
-    typeof ctx.originalParams === 'object' && ctx.originalParams !== null ? ctx.originalParams : {};
+    typeof ctx.originalParams === 'object' && ctx.originalParams !== null
+      ? (ctx.originalParams as Record<string, unknown>)
+      : {};
+  const questionKey =
+    ctx.tier === 'task' ? QUESTION_KEYS.APPROVE_EXECUTE_TASK : QUESTION_KEYS.APPROVE_EXECUTE;
   return {
     stop: true,
     requiredMode: 'plan',
     message: outcome.deliverables ?? outcome.nextAction,
-    questionKey: QUESTION_KEYS.APPROVE_EXECUTE,
+    questionKey,
     nextInvoke: {
       tier: ctx.tier,
       action: ctx.action,
-      params: { ...baseParams, options: { mode: 'execute' as const } },
+      params: buildStartReinvokeParams(baseParams, { mode: 'execute' }),
     },
   };
 }
 
-/** context_gathering: show questions + planning doc path; nextInvoke = same command with contextGatheringComplete: true. */
+/** context_gathering: show questions + planning doc path; nextInvoke = same command with contextGatheringComplete + mode plan (pass 2). */
 export function handleContextGathering(outcome: ControlPlaneOutcome, ctx: ControlPlaneContext): ControlPlaneDecision {
-  const params = {
-    ...(typeof ctx.originalParams === 'object' && ctx.originalParams !== null ? ctx.originalParams : {}),
-    contextGatheringComplete: true,
-    mode: 'execute',
-  } as Record<string, unknown>;
+  const baseParams =
+    typeof ctx.originalParams === 'object' && ctx.originalParams !== null
+      ? (ctx.originalParams as Record<string, unknown>)
+      : {};
   return {
     stop: true,
     requiredMode: 'plan',
@@ -59,7 +63,10 @@ export function handleContextGathering(outcome: ControlPlaneOutcome, ctx: Contro
     nextInvoke: {
       tier: ctx.tier,
       action: ctx.action,
-      params,
+      params: buildStartReinvokeParams(baseParams, {
+        contextGatheringComplete: true,
+        mode: 'plan',
+      }),
     },
   };
 }

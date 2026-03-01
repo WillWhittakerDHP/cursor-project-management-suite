@@ -4,10 +4,15 @@
  * and tier-supplied hooks. The orchestrator runs these in order; steps that can exit early return a result.
  */
 
-import type { TierStartWorkflowContext, TierStartWorkflowHooks, TierStartReadResult, ContextQuestion } from './tier-start-workflow';
+import type {
+  TierStartWorkflowContext,
+  TierStartWorkflowHooks,
+  TierStartReadResult,
+  ContextQuestion,
+} from './tier-start-workflow-types';
 import type { TierStartResult, CascadeInfo } from '../../utils/tier-outcome';
 import type { CannotStartTier } from '../../utils/tier-start-utils';
-import { formatBranchHierarchy, formatPlanModePreview, formatCannotStart } from '../../utils/tier-start-utils';
+import { formatBranchHierarchy, formatCannotStart } from '../../utils/tier-start-utils';
 import { resolveCommandExecutionMode, isPlanMode } from '../../utils/command-execution-mode';
 import { runTierPlan } from './tier-plan';
 import { buildCascadeDown } from '../../utils/tier-cascade';
@@ -57,8 +62,42 @@ export async function stepValidateStart(
   return null;
 }
 
-/** If plan mode, append plan preview and return plan result; otherwise null.
- *  - Agent sees: workflow steps (getPlanModeSteps) + content summary (getPlanContentSummary) in ctx.output.
+/**
+ * Read guide/handoff in plan mode without appending to ctx.output.
+ * Populates ctx.readResult so getContextQuestions(ctx) has content. Only runs in plan mode.
+ */
+export async function stepReadContextLight(
+  ctx: TierStartWorkflowContext,
+  hooks: TierStartWorkflowHooks
+): Promise<void> {
+  const executionMode = resolveCommandExecutionMode(ctx.options, 'plan');
+  if (!isPlanMode(executionMode)) return;
+  if (!hooks.readContext) return;
+  if (ctx.readResult) return;
+
+  try {
+    ctx.readResult = await hooks.readContext(ctx);
+  } catch {
+    // Non-blocking: guide/handoff may not exist yet.
+  }
+}
+
+/**
+ * Plan-mode-only wrapper for stepContextGathering.
+ * Use at the early position (before stepPlanModeExit) so explicit execute-mode
+ * calls without contextGatheringComplete do not accidentally trigger Q&A.
+ */
+export async function stepContextGatheringPlanMode(
+  ctx: TierStartWorkflowContext,
+  hooks: TierStartWorkflowHooks
+): Promise<StepExitResult> {
+  const executionMode = resolveCommandExecutionMode(ctx.options, 'plan');
+  if (!isPlanMode(executionMode)) return null;
+  return stepContextGathering(ctx, hooks);
+}
+
+/** If plan mode, append plan summary and return plan result; otherwise null.
+ *  - Agent sees: content summary (getPlanContentSummary) + tier-aware one-line process hint in ctx.output.
  *  - User sees: deliverables (getTierDeliverables) in AskQuestion via outcome.deliverables.
  */
 export async function stepPlanModeExit(
@@ -67,10 +106,15 @@ export async function stepPlanModeExit(
 ): Promise<StepExitResult> {
   const executionMode = resolveCommandExecutionMode(ctx.options, 'plan');
   if (!isPlanMode(executionMode)) return null;
-  const planSteps = hooks.getPlanModeSteps(ctx);
   const rawSummary = await hooks.getPlanContentSummary(ctx);
-  const intro = rawSummary?.trim();
-  ctx.output.push(formatPlanModePreview(planSteps, intro ? { intro } : undefined));
+  if (rawSummary?.trim()) {
+    ctx.output.push(rawSummary.trim());
+  }
+  const processLine =
+    ctx.config.name === 'task'
+      ? 'On approval (Begin Coding), execute mode will load context and begin implementation.'
+      : 'On approval, execute mode will set up the branch, load context, run audit, and cascade to the first child tier.';
+  ctx.output.push(processLine);
 
   const deliverables = await hooks.getTierDeliverables(ctx);
 
@@ -227,28 +271,163 @@ function formatContextItemBlock(q: ContextQuestion, index: number): string {
   return parts.join('\n\n');
 }
 
-/** Build initial planning doc markdown (Loaded Context, Goal, Files, Approach, Checkpoint, Decisions Made, Insight/Proposal/Decision blocks). */
+/** Max characters to include from guide/handoff in planning doc so the doc stays readable. */
+const LOADED_CONTEXT_EXCERPT_MAX = 3200;
+
+function truncateForLoadedContext(text: string, maxLen: number = LOADED_CONTEXT_EXCERPT_MAX): string {
+  const t = text.trim();
+  if (t.length <= maxLen) return t;
+  return t.slice(0, maxLen) + '\n\n*(excerpt truncated)*';
+}
+
+function extractGovernanceHighlights(output: string): string[] {
+  const lines = output.split('\n');
+  const findings = lines
+    .map(line => line.trim())
+    .filter(line =>
+      line.length > 0 &&
+      (line.includes('P0') || line.includes('P1') || line.includes('violations') || line.includes('hotspot'))
+    )
+    .slice(0, 6);
+  return findings;
+}
+
+function extractInventoryHints(output: string): string[] {
+  const lines = output.split('\n');
+  const hints = lines
+    .map(line => line.trim())
+    .filter(line =>
+      line.startsWith('- `') ||
+      line.includes('Related Existing Code') ||
+      line.includes('reuse')
+    )
+    .slice(0, 8);
+  return hints;
+}
+
+/**
+ * Enforce tierUp-only: loaded context in the planning doc is from tierUp sources only;
+ * tierDown docs are excluded. Call when building planning doc in plan mode.
+ */
+function getTierUpOnlyPolicyNote(
+  ctx: TierStartWorkflowContext,
+  hooks: TierStartWorkflowHooks
+): string | undefined {
+  const policy = hooks.getContextSourcePolicy?.(ctx);
+  if (!policy?.tierUpOnly) return undefined;
+  const desc = policy.allowedSourceDescription?.trim();
+  return desc
+    ? `- **Context source policy:** tierUp only. ${desc}`
+    : `- **Context source policy:** tierUp only. TierDown documents are excluded from planning.`;
+}
+
+/** Task design artifact shape for "Design Before Execute" section in task planning doc. */
+export interface TaskDesignArtifact {
+  codingGoal: string;
+  files: string[];
+  pseudocodeSteps: string[];
+  snippets: string;
+  acceptanceChecks: string[];
+}
+
+/** Build initial planning doc markdown (Loaded Context, Goal, Files, Approach, Checkpoint, Decisions Made, Insight/Proposal/Decision blocks). For task, adds Design Before Execute when taskDesign present. */
 function buildPlanningDocContent(
   ctx: TierStartWorkflowContext,
-  questions: ContextQuestion[]
+  hooks: TierStartWorkflowHooks,
+  questions: ContextQuestion[],
+  governanceContext?: string,
+  contextWorkBrief?: {
+    planningSummary: string;
+    executionProposal: string;
+    taskDesign?: TaskDesignArtifact;
+  }
 ): string {
   const tier = ctx.config.name;
   const title = ctx.resolvedDescription ?? ctx.resolvedId;
-  const governanceSummary =
-    ctx.output.length > 0
-      ? 'Governance context has been loaded. Review the workflow output above for P0/P1 findings and inventory.'
-      : 'No governance output yet.';
+  const readResult = ctx.readResult;
+  const fullOutput = [ctx.output.join('\n'), governanceContext ?? ''].filter(Boolean).join('\n');
+  const governanceHighlights = extractGovernanceHighlights(fullOutput);
+  const inventoryHints = extractInventoryHints(fullOutput);
+  const governanceSummary = governanceHighlights.length > 0
+    ? `Loaded ${governanceHighlights.length} governance highlights from current audits.`
+    : 'No governance findings were extracted from current output.';
+
+  const loadedContextLines: string[] = [`- **Scope:** ${ctx.resolvedId}`];
+  const policyNote = getTierUpOnlyPolicyNote(ctx, hooks);
+  if (policyNote) loadedContextLines.push('', policyNote, '');
+  if (contextWorkBrief?.planningSummary?.trim()) {
+    loadedContextLines.push('', '### What We Are Planning (from context)', '', contextWorkBrief.planningSummary.trim(), '');
+  }
+  if (contextWorkBrief?.executionProposal?.trim()) {
+    loadedContextLines.push('', '### Proposed Implementation Plan', '', contextWorkBrief.executionProposal.trim(), '');
+  }
+  if (readResult?.label?.trim()) {
+    loadedContextLines.push('', readResult.label.trim(), '');
+  }
+  if (readResult?.handoff?.trim()) {
+    loadedContextLines.push('### Transition context (handoff)', '', truncateForLoadedContext(readResult.handoff, 2000), '');
+  }
+  if (readResult?.guide?.trim()) {
+    const guideTitle = readResult.sectionTitle ?? 'Guide';
+    loadedContextLines.push(`### ${guideTitle}`, '', truncateForLoadedContext(readResult.guide), '');
+  }
+  if (governanceContext?.trim()) {
+    loadedContextLines.push(
+      '### Governance Context (audit digest)',
+      '',
+      truncateForLoadedContext(governanceContext, 1800),
+      ''
+    );
+  }
+  loadedContextLines.push('- **Governance highlights:** ' + governanceSummary);
+  if (governanceHighlights.length > 0) {
+    loadedContextLines.push('', '### Governance Findings', '', ...governanceHighlights.map(g => `- ${g}`), '');
+  }
+  if (inventoryHints.length > 0) {
+    loadedContextLines.push('### Reuse Opportunities', '', ...inventoryHints.map(i => `- ${i.replace(/^- /, '')}`), '');
+  } else {
+    loadedContextLines.push('- **Related code:** No inventory reuse hints were extracted from current output.');
+  }
+
   const insightBlocks =
     questions.length > 0
       ? questions.map((q, i) => formatContextItemBlock(q, i)).join('\n\n---\n\n')
       : 'None yet.';
 
-  return `# Planning: ${tier} ${ctx.resolvedId} -- ${title}
+  const designSection =
+    tier === 'task' && contextWorkBrief?.taskDesign
+      ? [
+          '',
+          '## Design Before Execute',
+          '',
+          '### Coding Goal',
+          contextWorkBrief.taskDesign.codingGoal.trim() || '[Define explicit coding goal before beginning implementation]',
+          '',
+          '### Files',
+          contextWorkBrief.taskDesign.files.length > 0
+            ? contextWorkBrief.taskDesign.files.map(f => `- ${f}`).join('\n')
+            : '[List files to touch]',
+          '',
+          '### Pseudocode',
+          contextWorkBrief.taskDesign.pseudocodeSteps.length > 0
+            ? contextWorkBrief.taskDesign.pseudocodeSteps.map((s, i) => `${i + 1}. ${s}`).join('\n')
+            : '[Outline steps before coding]',
+          '',
+          '### Snippets (scaffold)',
+          contextWorkBrief.taskDesign.snippets.trim() || '[Key code shapes or signatures]',
+          '',
+          '### Acceptance / Test Intent',
+          contextWorkBrief.taskDesign.acceptanceChecks.length > 0
+            ? contextWorkBrief.taskDesign.acceptanceChecks.map(c => `- ${c}`).join('\n')
+            : '[What to verify when done]',
+          '',
+        ].join('\n')
+      : '';
 
-## Loaded Context
-- **Scope:** ${ctx.resolvedId}
-- **Governance highlights:** ${governanceSummary}
-- **Related code:** See inventory in workflow output if present.
+  const goalFilesApproach =
+    tier === 'task' && contextWorkBrief?.taskDesign
+      ? ''
+      : `
 
 ## Goal
 [To be refined during discussion]
@@ -261,6 +440,14 @@ function buildPlanningDocContent(
 
 ## Checkpoint
 [To be refined during discussion]
+`;
+
+  return `# Planning: ${tier} ${ctx.resolvedId} -- ${title}
+
+## Loaded Context
+${loadedContextLines.join('\n')}
+${designSection}
+${goalFilesApproach}
 
 ## Decisions Made
 [Populated as conversation progresses]
@@ -284,13 +471,42 @@ export async function stepContextGathering(
   const questions = await hooks.getContextQuestions(ctx);
   if (!questions.length) return null;
 
+  const taskFiles = hooks.getTaskFilePaths
+    ? await hooks.getTaskFilePaths(ctx)
+    : undefined;
+  const governanceContext = await buildGovernanceContext({
+    tier: ctx.config.name,
+    taskFiles,
+  });
+  const contextWorkBrief = hooks.getContextWorkBrief
+    ? await hooks.getContextWorkBrief(ctx)
+    : undefined;
+
   const planningDocPath = getPlanningDocPath(ctx);
-  const content = buildPlanningDocContent(ctx, questions);
+  const content = buildPlanningDocContent(ctx, hooks, questions, governanceContext, contextWorkBrief);
   await writeProjectFile(planningDocPath, content);
   ctx.planningDocPath = planningDocPath;
 
   const messageLines: string[] = [
     `Planning document created: \`${planningDocPath}\``,
+    '',
+  ];
+  if (contextWorkBrief?.planningSummary?.trim()) {
+    messageLines.push(
+      '**What the context says we are planning/building:**',
+      contextWorkBrief.planningSummary.trim(),
+      ''
+    );
+  }
+  if (contextWorkBrief?.executionProposal?.trim()) {
+    messageLines.push(
+      '**Proposed implementation approach (project/code execution):**',
+      contextWorkBrief.executionProposal.trim(),
+      ''
+    );
+  }
+  messageLines.push(
+    '**Discussion first:** We should review/adjust the concrete work plan above before final satisfaction.',
     '',
     '**From the docs (insight + proposal + decision):**',
     ...questions.map((q, i) => {
@@ -312,8 +528,8 @@ export async function stepContextGathering(
       return lines.join('\n');
     }),
     '',
-    "When satisfied, choose: **I'm satisfied with our plan and ready to begin**",
-  ];
+    "After we discuss/refine the concrete work plan, choose: **I'm satisfied with our plan and ready to begin**",
+  );
   const deliverables = messageLines.join('\n');
 
   return {

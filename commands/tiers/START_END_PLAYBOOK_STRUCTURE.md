@@ -19,6 +19,34 @@ All tier start/end commands (feature-start, feature-end, phase-start, phase-end,
 
 **No one-off runner scripts:** Do not create ad hoc tier wrappers like `run-task-start-*.ts`, `run-task-end-*.ts`, or `run-session-end-*.ts` (and similar `run-*-start/end-*.ts` files). Invoke composite exports directly with inline `tsx -e` imports so all tiers follow the same entrypoint pattern.
 
+### Entry points and call chain (where things live)
+
+The composite is the **invocation** entry point; the **workflow and context questions** live in the tier's `*-start-impl.ts` (or `*-end-impl.ts`). The call chain is: composite export → `runTierStart` / `runTierEnd` (shared) → tier adapter → `*StartImpl` / `*EndImpl`. Tier config (e.g. `SESSION_CONFIG`) lives under `tiers/configs/<tier>.ts`.
+
+| Concern | Session-start example | Same pattern for other tiers |
+|--------|------------------------|------------------------------|
+| **What to invoke for /session-start** | Playbook table → `session.ts` → `sessionStart` | Table → `<tier>.ts` → `<tier>Start` |
+| **How to run from repo root** | `npx tsx -e "import('.../session/composite/session.ts').then(m => m.sessionStart('6.4.4'))..."` | Same pattern with path/export from table |
+| **Where workflow and context questions live** | `tiers/session/composite/session-start-impl.ts` (`sessionStartImpl`, `getContextQuestions`, hooks) | `tiers/<tier>/composite/<tier>-start-impl.ts` |
+| **Where dispatch happens** | `tiers/shared/tier-start.ts` → `runTierStart(config, params, options)` → `harness/tier-adapter.ts` → `sessionStartImpl(...)` | Same; adapter switches on `config.name` |
+| **Tier config** | `tiers/configs/session.ts` (`SESSION_CONFIG`) | `tiers/configs/<tier>.ts` |
+
+**Agent path:** User says `/session-start 6.4.4` → agent calls `sessionStart('6.4.4')` from `session.ts` → `runTierStart(SESSION_CONFIG, ...)` → adapter → `sessionStartImpl`. **Harness path:** Spec runs `session-start` → adapter (with `SESSION_CONFIG`) calls `sessionStartImpl` directly; no composite in the loop.
+
+### Proceed commands (chat-first: no AskQuestion for planning approval)
+
+When the user prefers to **discuss the plan in chat** and then signal "ready" with a command instead of clicking an option:
+
+| Slash command       | Composite file (from repo root)                           | Export to invoke   |
+|---------------------|-----------------------------------------------------------|--------------------|
+| /accepted-proceed   | .cursor/commands/tiers/shared/accepted-proceed.ts         | acceptedProceed    |
+| /accepted-code      | .cursor/commands/tiers/shared/accepted-code.ts            | acceptedCode       |
+
+- **/accepted-proceed:** Runs the next pass for the pending session/phase/feature start (pass 2: plan deliverables, or pass 3: execute). Invoke `acceptedProceed()` and present `controlPlaneDecision.message`; handle outcome per reasonCode as for any tier start.
+- **/accepted-code:** Runs task start with execute for the pending task (Begin Coding). Invoke `acceptedCode()` and present the result.
+
+See `.cursor/commands/accepted-proceed.md` and `.cursor/commands/accepted-code.md` for invocation and behavior.
+
 ---
 
 ## Required sections (every playbook)
@@ -59,6 +87,8 @@ Every start/end/reopen command returns a `controlPlaneDecision` object that tell
 | `stop` | If `true`, stop and wait for user response before proceeding. |
 | `nextInvoke` | On approval, re-invoke this command (tier, action, params with `{ mode: 'execute' }`). |
 | `cascadeCommand` | Exact command string to run on cascade confirmation. |
+
+**Options-passing (start re-invokes):** For start re-invokes, options MUST be passed as `params.options`; flat option keys (e.g. `mode`, `contextGatheringComplete` at params root) are invalid and ignored by composite invocation.
 
 **Critical rule:** `controlPlaneDecision.message` is the **user-facing content**. `result.output` is **agent context** (workflow steps, branch info, audit details) — read it for your own understanding, but present `controlPlaneDecision.message` to the user. Do not dump `result.output` verbatim to the user; it contains internal workflow steps they do not need to see.
 
@@ -139,14 +169,18 @@ These rules tell the agent what to do for each `reasonCode` returned by commands
 
 ### `plan_mode` (start commands, when `mode: 'plan'` is passed)
 
-Start commands **default to execute**; you only see this flow when the command was invoked with `options: { mode: 'plan' }` for a plan-only preview. The user is approving what we're about to build. `controlPlaneDecision.message` contains the **deliverables** — the concrete tasks, goals, files, and acceptance criteria the user needs to see. `result.output` contains agent context (branch hierarchy, workflow steps, audit data) — read it for your own understanding but do not show it verbatim.
+Start commands **default to execute**; you only see this flow when the command was invoked with `options: { mode: 'plan' }` for a plan-only preview (or after context_gathering when the user chose "I'm satisfied"). The user is approving what we're about to build. `controlPlaneDecision.message` contains the **deliverables** — the concrete tasks, goals, files, and acceptance criteria the user needs to see. `result.output` contains agent context (branch hierarchy, workflow steps, audit data) — read it for your own understanding but do not show it verbatim.
+
+**Presentation rule:** For `plan_mode`, present **only** `controlPlaneDecision.message`. Do not show, quote, or summarize `result.output`. Do not add process framing ("If you approve, execute mode will...", "Planned task: ..."). The message is the full tier plan; show it as-is.
 
 1. **Switch to Plan mode** (Ask mode).
-2. **Present `controlPlaneDecision.message`** to the user — this is the deliverables summary (e.g. task list for a session, goal/files/approach for a task, phase list for a feature). Show it as formatted text, not as a code block or raw JSON.
-3. **Use AskQuestion (Cursor's question UI)** with prompt "Approve this plan and execute?" and **clickable options**: "Yes — execute" / "No — revise". Do not write this question as plain chat text; the user must see the AskQuestion UI with buttons.
-4. On "Yes": **switch to Agent mode**, then re-invoke using `controlPlaneDecision.nextInvoke`. The `params` object already includes `options: { mode: 'execute' }`. Call the composite directly (e.g. `sessionStart(params.sessionId, params.description, params.options)`) so execute mode is used; do not re-run a script or slash command that only accepts the identifier, or the second run will still be plan mode and execute will never run.
+2. **Present `controlPlaneDecision.message`** to the user — this is the deliverables summary (e.g. Session plan / Tasks in this session, Phase plan / Sessions in this phase, Feature plan / Phases, Task plan / Goal-Files-Approach). Show it as formatted text, not as a code block or raw JSON.
+3. **Chat-first (preferred):** For **session/phase/feature**: tell the user "When this plan looks good, run **/accepted-proceed** to execute (branch, docs, audit, cascade)." When they run it, invoke `acceptedProceed()` and handle the result. For **task** (task-start design approval): tell the user "When ready to begin coding, run **/accepted-code**." When they run it, invoke `acceptedCode()` from `.cursor/commands/tiers/shared/accepted-code.ts` and handle the result. Do not use AskQuestion for approval; the user signals by running the command.
+4. **Optional AskQuestion flow:** If you use AskQuestion instead, use "Approve this plan and execute?" (or for task "I approve this coding design and want to begin implementation") and the usual options. On "Yes"/approve: switch to Agent mode, re-invoke using `controlPlaneDecision.nextInvoke` (params include `options: { mode: 'execute' }`). Call the composite directly so execute mode is used.
 
 ### `context_gathering` (start commands, all tiers)
+
+**Pipeline order:** In plan mode, context_gathering runs **before** plan_mode. The user answers Q&A first, then sees the plan deliverables for approval (plan_mode), then executes.
 
 The command loaded context and governance data, created a planning document, and generated **doc-grounded insight prompts**. Context questions are based on what the tier docs say we're building: each item has an **Insight** (what the docs indicate), a **Proposal** (recommended path), and a **Decision** with explicit **Options** where possible. The agent conducts an iterative planning conversation with the user, updating the planning document in-place.
 
@@ -155,21 +189,10 @@ The command loaded context and governance data, created a planning document, and
 1. **Switch to Plan mode.**
 2. **Present `controlPlaneDecision.message`** — this contains the planning doc path and the **Insight / Proposal / Decision** blocks (what the docs say, proposed path, decision needed, and explicit options).
 3. **Open the planning doc in the editor** so the user can watch it being built.
-4. Begin the iterative Q&A loop:
-   a. Ask the context questions from the message, using the **decision options** from each block (the message lists Options per decision).
-   b. After each user answer, **update the planning doc IN-PLACE:**
-      - Move answered items from "Insight / Proposal / Decisions" into "Decisions Made" (or mark them resolved)
-      - Refine Goal, Files, Approach, Checkpoint based on answers
-      - Add follow-up questions to "Insight / Proposal / Decisions" if new gaps appear
-   c. Use **AskQuestion** with the decision options from the message **plus** always include: **"I'm satisfied with our plan and ready to begin"**
-   d. Repeat until the user selects "satisfied".
-5. On **"I'm satisfied"**:
-   a. Switch to Agent mode.
-   b. Read the refined Goal, Files, Approach, Checkpoint from the planning doc.
-   c. Write them into the session guide task section (replacing placeholders) when applicable.
-   d. Re-invoke the original command with **`{ mode: 'execute', contextGatheringComplete: true }`** using `controlPlaneDecision.nextInvoke`.
+4. **Chat-first (preferred):** Discuss the plan **in chat** with the user — no AskQuestion required. Use the insight/proposal/decision blocks as conversation starters. After each answer, **update the planning doc IN-PLACE** (move answered items into "Decisions Made", refine Goal/Files/Approach/Checkpoint). When the user is satisfied, tell them: "When you're ready, run **/accepted-proceed** to continue." When they run it, invoke `acceptedProceed()` from `.cursor/commands/tiers/shared/accepted-proceed.ts`; that runs **pass 2** (plan deliverables). If the result is `plan_mode`, present that message and tell the user to run **/accepted-proceed** again for **pass 3** (execute). If the result is `start_ok`, handle cascade per playbook.
+5. **Optional AskQuestion flow:** If you use AskQuestion, include the decision options from the message plus **"I'm satisfied with our plan and ready to begin"**. On "I'm satisfied": switch to Agent mode; optionally write refined Goal/Files/Approach/Checkpoint into the session guide; re-invoke using `controlPlaneDecision.nextInvoke` (params include `options: { contextGatheringComplete: true, mode: 'plan' }` for pass 2), then after plan_mode approval re-invoke with `options: { mode: 'execute' }` for pass 3.
 
-**Anti-pattern:** Do not skip the planning doc. Do not ask generic questions when the message already provides doc-grounded insight and options. Do not ask all questions at once without updating the doc. The doc IS the artifact — the user watches it being built and the final version feeds into the session guide.
+**Anti-pattern:** Do not skip the planning doc. Do not ask generic questions when the message already provides doc-grounded insight and options. The doc IS the artifact — the user watches it being built. Prefer chat + **/accepted-proceed** over a single large AskQuestion with many options.
 
 ### `pending_push_confirmation` (end commands)
 
@@ -301,7 +324,7 @@ All mode logic lives in one file: `.cursor/commands/utils/command-execution-mode
 
 **Shared workflow only.** All tier **start** commands use a single orchestrator and reusable step modules. The workflow is defined in:
 
-- **Orchestrator:** `.cursor/commands/tiers/shared/tier-start-workflow.ts` — `runTierStartWorkflow(ctx, hooks)` runs the pipeline: validate → branch (optional) → ensure child docs → read context → gather context → governance → context gathering (optional Q&A; task/session) → extras → start audit → tier plan → fill direct children → trailing output (optional) → cascade.
+- **Orchestrator:** `.cursor/commands/harness/run-start-steps.ts` — `runTierStartWorkflow(ctx, hooks)` runs the pipeline. **In plan mode**, the pipeline runs **context_gathering before plan_mode_exit**: validate → read context (light) → context gathering (Q&A) → plan_mode exit (deliverables) → then on re-invoke with execute: branch → ensure child docs → read context → gather → governance → extras → start audit → tier plan → fill direct children → trailing output (optional) → cascade. This gives the user a Q&A step before seeing the final deliverables for approval.
 - **Step modules:** `.cursor/commands/tiers/shared/tier-start-steps.ts` — Reusable steps (e.g. `stepValidateStart`, `stepEnsureStartBranch`, `stepReadStartContext`, `stepStartAudit`, `stepRunTierPlan`, `stepBuildStartCascade`) use shared primitives (`formatBranchHierarchy`, `ensureTierBranch`, `runTierPlan`, `buildCascadeDown`, `runStartAuditForTier`).
 - **Start audit entry point:** `.cursor/commands/audit/run-start-audit-for-tier.ts` — `runStartAuditForTier({ tier, identifier, featureName })` dispatches to feature/phase/session start audits; task has no start audit.
 
@@ -313,13 +336,35 @@ All mode logic lives in one file: `.cursor/commands/utils/command-execution-mode
 
 **Anti-regression:** When adding or changing start behavior, add or change it in the shared workflow or step modules and/or in the hooks contract; do not re-inline workflow steps into `feature-start-impl.ts`, `phase-start-impl.ts`, `session-start-impl.ts`, or `task-start-impl.ts`.
 
+### Options-passing contract (tier-start re-invokes)
+
+**Canonical params shape (non-negotiable):**
+- `nextInvoke.params` must carry tier identifiers at top level (`featureId`, `phaseId`, `sessionId`, `taskId`, `description` where applicable).
+- Execution toggles must live **only** in `nextInvoke.params.options`.
+- Valid nested options for tier-start re-invoke: `options: { mode: 'plan' | 'execute' }` or `options: { contextGatheringComplete: true, mode: 'plan' }` (pass 2).
+
+**Anti-patterns (prohibited):**
+- Flat params like `{ mode: 'plan', contextGatheringComplete: true, sessionId: '6.4.4' }`.
+- Mixing modes in two places (e.g. both `params.mode` and `params.options.mode`).
+- Building re-invoke params ad hoc in handlers with inconsistent shape; use `buildStartReinvokeParams(baseParams, options)` in control-plane handlers.
+
+**Decision flow table:**
+
+| Reason code | Re-invoke params contract | Expected next pass |
+|-------------|---------------------------|---------------------|
+| `context_gathering` | `params.options = { contextGatheringComplete: true, mode: 'plan' }` | Pass 2 (`plan_mode`) |
+| `plan_mode` | `params.options = { mode: 'execute' }` | Pass 3 (`start_ok`) |
+| `uncommitted_changes_blocking` (start) | preserve existing `params.options` unchanged | same pass retried |
+
+**Options-passing verification matrix (all tiers):** For each of `featureStart`, `phaseStart`, `sessionStart`, `taskStart` verify: (1) Pass 1 output (`reasonCode: 'context_gathering'`): `nextInvoke.params.options` exists and equals `{ contextGatheringComplete: true, mode: 'plan' }`; no flat `mode` or `contextGatheringComplete` at params root. (2) Pass 2 output (`reasonCode: 'plan_mode'`): `nextInvoke.params.options` equals `{ mode: 'execute' }`; identifier fields preserved. (3) Pass 3 (`reasonCode: 'start_ok'`): no further start re-invoke required. (4) Negative: `stepContextGatheringPlanMode` returns null for explicit execute invocation without context flags.
+
 ---
 
 ## End workflow architecture (dry-out guardrails)
 
 **Shared workflow only.** All tier **end** commands use a single orchestrator and reusable step modules. The workflow is defined in:
 
-- **Orchestrator:** `.cursor/commands/tiers/shared/tier-end-workflow.ts` — `runTierEndWorkflow(ctx, hooks)` runs the pipeline: plan exit → resolve runTests → preWork → test goal validation → runTests → midWork → comment cleanup → readme cleanup → git → end audit → clear scope → build cascade.
+- **Orchestrator:** `.cursor/commands/harness/run-end-steps.ts` — `runTierEndWorkflow(ctx, hooks)` runs the pipeline: plan exit → resolve runTests → preWork → test goal validation → runTests → midWork → comment cleanup → readme cleanup → git → end audit → clear scope → build cascade.
 - **Step modules:** `.cursor/commands/tiers/shared/tier-end-steps.ts` — Reusable steps (e.g. `stepPlanModeExit`, `stepResolveRunTests`, `stepTierPreWork`, `stepTestGoalValidation`, `stepRunTests`, `stepTierMidWork`, `stepCommentCleanup`, `stepReadmeCleanup`, `stepTierGit`, `stepEndAudit`, `stepClearScope`, `stepBuildEndCascade`) use shared primitives and tier-supplied hooks.
 - **End audit entry point:** `.cursor/commands/audit/run-end-audit-for-tier.ts` — `runEndAuditForTier({ tier, identifier, params, featureName })` dispatches to `auditFeature`, `auditCodeQuality` (phase/session), or `auditTask`.
 

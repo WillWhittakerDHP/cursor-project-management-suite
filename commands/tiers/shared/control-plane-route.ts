@@ -2,6 +2,7 @@
  * Control-plane routing: given a command result and context, return the decision
  * (required mode, message, question key, optional nextInvoke/cascadeCommand).
  * Delegates to shared handlers per reasonCode.
+ * Exhaustive over charter ReasonCode union — no permissive string fallback.
  */
 
 import type {
@@ -9,7 +10,8 @@ import type {
   ControlPlaneDecision,
   CommandResultForRouting,
 } from './control-plane-types';
-import { REASON_CODE } from './control-plane-types';
+import { parseReasonCode } from '../../harness/reason-code';
+import type { ReasonCode } from '../../harness/contracts';
 import {
   handlePlanMode,
   handleContextGathering,
@@ -25,7 +27,7 @@ import {
 
 /**
  * Route by outcome. Use result.outcome.reasonCode and result.success only.
- * Does not perform mode switch or AskQuestion; it returns what the agent should do.
+ * reasonCode is parsed to charter ReasonCode; switch is exhaustive (no default).
  */
 export function routeByOutcome(
   result: CommandResultForRouting,
@@ -42,22 +44,32 @@ export function routeByOutcome(
     return handleFailure(outcome, result.output);
   }
 
-  switch (outcome.reasonCode) {
-    case REASON_CODE.PLAN_MODE:
+  const reasonCode: ReasonCode = parseReasonCode(outcome.reasonCode);
+
+  switch (reasonCode) {
+    case 'plan_mode':
       return handlePlanMode(outcome, ctx);
-    case REASON_CODE.CONTEXT_GATHERING:
+    case 'context_gathering':
       return handleContextGathering(outcome, ctx);
-    case REASON_CODE.PENDING_PUSH_CONFIRMATION:
+    case 'pending_push':
       return handlePendingPushConfirmation(outcome);
-    case REASON_CODE.VERIFICATION_WORK_SUGGESTED:
+    case 'verification_suggested':
       return handleVerificationWorkSuggested(outcome);
-    case REASON_CODE.TASK_COMPLETE:
+    case 'task_complete':
       return handleTaskComplete(outcome);
-    case REASON_CODE.REOPEN_OK:
+    case 'reopen_ok':
       return handleReopenOk(outcome);
-    case REASON_CODE.UNCOMMITTED_CHANGES_BLOCKING:
+    case 'uncommitted_blocking':
       return handleUncommittedChanges(outcome, ctx);
-    default:
+    case 'start_ok':
+    case 'end_ok':
       return handleSuccessWithOptionalCascade(outcome);
+    case 'validation_failed':
+    case 'audit_failed':
+    case 'test_failed':
+    case 'preflight_failed':
+    case 'git_failed':
+    case 'unhandled_error':
+      return handleFailure(outcome, result.output);
   }
 }

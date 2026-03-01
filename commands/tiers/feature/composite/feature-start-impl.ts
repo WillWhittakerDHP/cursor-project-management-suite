@@ -19,12 +19,20 @@ import type {
   TierStartValidationResult,
   TierStartReadResult,
   ContextQuestion,
-} from '../../shared/tier-start-workflow';
-import { runTierStartWorkflow } from '../../shared/tier-start-workflow';
+  TierStartWorkflowResult,
+} from '../../shared/tier-start-workflow-types';
+import { runTierStartWorkflow } from '../../../harness/run-start-steps';
+import type { RunRecorder, RunTraceHandle } from '../../../harness/contracts';
 
 const BLOCKED_STATUSES = ['complete', 'blocked'] as const;
 
-export async function featureStartImpl(featureId: string, options?: import('../../../utils/command-execution-mode').CommandExecutionOptions): Promise<TierStartResult> {
+export type ShadowContext = { recorder: RunRecorder; handle: RunTraceHandle };
+
+export async function featureStartImpl(
+  featureId: string,
+  options?: import('../../../utils/command-execution-mode').CommandExecutionOptions,
+  shadow?: ShadowContext
+): Promise<TierStartResult | TierStartWorkflowResult> {
   const featureName = await resolveFeatureId(featureId);
   const normalizedFeatureName = featureName.toLowerCase().replace(/\s+/g, '-');
   const context = new WorkflowCommandContext(normalizedFeatureName);
@@ -37,6 +45,11 @@ export async function featureStartImpl(featureId: string, options?: import('../.
     options,
     context,
     output,
+    ...(shadow && {
+      runRecorder: shadow.recorder,
+      runTraceHandle: shadow.handle,
+      stepPath: [],
+    }),
   };
 
   const hooks: TierStartWorkflowHooks = {
@@ -115,7 +128,11 @@ export async function featureStartImpl(featureId: string, options?: import('../.
 
     async getTierDeliverables(): Promise<string> {
       const featureDesc = await deriveFeatureDescription(normalizedFeatureName, context);
-      const lines: string[] = [`**Feature:** ${featureDesc}`];
+      const lines: string[] = [
+        '**Feature plan**',
+        `**Feature:** ${featureDesc}`,
+        '**Phases in this feature:**',
+      ];
       try {
         const featureGuideContent = await context.readFeatureGuide();
         const phaseMatches = featureGuideContent.matchAll(/Phase\s+(\d+\.\d+):?\s*([^\n]*)/gi);
@@ -125,7 +142,9 @@ export async function featureStartImpl(featureId: string, options?: import('../.
           lines.push(`- Phase ${pid}: ${name}`);
         }
       } catch { /* non-blocking */ }
-      if (lines.length === 1) lines.push('(No phases found in feature guide)');
+      if (lines.length === 3) lines.push('(No phases found in feature guide)');
+      lines.push('');
+      lines.push("After approval we'll set up the branch and context, then cascade to the first phase.");
       return lines.join('\n');
     },
 
@@ -141,9 +160,21 @@ export async function featureStartImpl(featureId: string, options?: import('../.
       await updateTierScope('feature', { id: normalizedFeatureName, name: featureDisplayName });
     },
 
+    /** TierUp only: feature guide. No phase/session/task docs as planning input. */
     async readContext(): Promise<TierStartReadResult> {
       const featureGuideContent = await context.readFeatureGuide();
-      return { guide: featureGuideContent, sectionTitle: 'Feature Guide' };
+      return {
+        guide: featureGuideContent,
+        sectionTitle: 'Feature Guide',
+        sourcePolicy: 'tierUpOnly',
+      };
+    },
+
+    getContextSourcePolicy() {
+      return {
+        tierUpOnly: true as const,
+        allowedSourceDescription: 'Feature guide only. Phase, session, and task docs are excluded.',
+      };
     },
 
     async gatherContext(): Promise<string> {
@@ -194,32 +225,30 @@ export async function featureStartImpl(featureId: string, options?: import('../.
       questions.push({
         category: 'scope',
         insight: phaseSummary
-          ? `The feature guide indicates we're building "${displayName}" through the listed phases (${phaseSummary}).`
-          : `The feature guide describes "${displayName}" as the feature we're starting.`,
-        proposal: phaseSummary
-          ? 'We\'ll execute phases in order from the guide, starting with the first phase and aligning deliverables with the plan.'
-          : 'We\'ll align the feature outcome with whatever phases exist in the feature guide once they\'re present.',
-        question: `What's the main outcome you want for this feature when we're done?`,
-        context: 'Feature goal: what we\'re building.',
-        options: ['Match the feature guide exactly', 'Add or change scope', 'Prioritize speed over full scope'],
+          ? `Feature intent: "${displayName}" through phases: ${phaseSummary}.`
+          : `Feature: "${displayName}".`,
+        proposal: "We'll plan all necessary phases and follow governance. This is the place to lock in or adjust what we're building.",
+        question: "After reading the planning doc and context, what do you want to lock in or adjust before we proceed?",
+        context: 'Where you and the agent talk about the plan.',
+        options: ["Let's discuss in chat", "I'm ready to lock the plan as-is"],
       });
       if (firstPhaseName) {
         questions.push({
           category: 'scope',
-          insight: `The first phase in the guide is: ${firstPhaseName}.`,
-          proposal: 'We\'ll treat this as the initial deliverable focus unless you want to shift scope.',
+          insight: `First phase in the guide: ${firstPhaseName}.`,
+          proposal: "We'll treat this as the initial deliverable focus unless you want to shift scope.",
           question: `For the first phase (${firstPhaseName}), what's the main deliverable or focus?`,
           context: 'Concrete deliverable for phase one.',
-          options: ['As in the guide', 'Narrow to a subset', 'Expand or clarify'],
+          options: ['As in the guide', "I'll clarify in chat"],
         });
       }
       questions.push({
         category: 'approach',
-        insight: 'Governance and rules suggest keeping phases aligned with the feature guide and running audits at tier boundaries.',
-        proposal: 'We\'ll follow the phase order and apply governance (function/composable/component) unless you set different priorities.',
+        insight: "We'll follow governance (phase order, audits at tier boundaries). No option to relax for speed.",
+        proposal: "We'll follow the phase order and apply governance (function/composable/component).",
         question: `Any specific constraints or priorities for ${displayName}?`,
-        context: 'Helps phases stay aligned with your expectations.',
-        options: ['Follow governance strictly', 'Relax audits for speed', 'Custom (describe in chat)'],
+        context: 'Domain constraints only.',
+        options: ["I'll describe in chat", 'None in mind'],
       });
       return questions;
     },

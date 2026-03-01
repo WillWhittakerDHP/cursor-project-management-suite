@@ -19,8 +19,12 @@ import type {
   TierStartValidationResult,
   TierStartReadResult,
   ContextQuestion,
-} from '../../shared/tier-start-workflow';
-import { runTierStartWorkflow } from '../../shared/tier-start-workflow';
+  TierStartWorkflowResult,
+} from '../../shared/tier-start-workflow-types';
+import { runTierStartWorkflow } from '../../../harness/run-start-steps';
+import type { RunRecorder, RunTraceHandle } from '../../../harness/contracts';
+
+export type ShadowContext = { recorder: RunRecorder; handle: RunTraceHandle };
 
 function extractField(name: string, content: string): string {
   const re = new RegExp(`\\*\\*${name}:\\*\\*\\s*([\\s\\S]*?)(?=\\n\\*\\*|\\n\\n|$)`, 'i');
@@ -52,11 +56,25 @@ async function readTaskSection(
   }
 }
 
+async function readSessionHandoffExcerpt(
+  context: WorkflowCommandContext,
+  sessionId: string
+): Promise<string> {
+  try {
+    const content = await readHandoff('session', sessionId);
+    if (!content?.trim()) return '';
+    return content.trim().slice(0, 1000) + (content.length > 1000 ? '\n\n*(excerpt truncated)*' : '');
+  } catch {
+    return '';
+  }
+}
+
 export async function taskStartImpl(
   taskId: string,
   featureId?: string,
-  options?: import('../../../utils/command-execution-mode').CommandExecutionOptions
-): Promise<TierStartResult> {
+  options?: import('../../../utils/command-execution-mode').CommandExecutionOptions,
+  shadow?: ShadowContext
+): Promise<TierStartResult | TierStartWorkflowResult> {
   const resolvedFeatureName =
     featureId != null && featureId.trim() !== '' ? await resolveFeatureId(featureId) : await resolveFeatureName();
   const context = new WorkflowCommandContext(resolvedFeatureName);
@@ -78,6 +96,11 @@ export async function taskStartImpl(
     identifier: taskId,
     resolvedId: taskId,
     options,
+    ...(shadow && {
+      runRecorder: shadow.recorder,
+      runTraceHandle: shadow.handle,
+      stepPath: [],
+    }),
     context,
     output,
   };
@@ -130,12 +153,17 @@ export async function taskStartImpl(
       const approach = extractField('Approach', section);
       const checkpoint = extractField('Checkpoint', section);
 
-      const lines: string[] = [`**Task ${taskId}:** ${title || '(untitled)'}`];
+      const lines: string[] = [
+        '**Task plan**',
+        `**Task ${taskId}:** ${title || '(untitled)'}`,
+      ];
       if (goal) lines.push(`**Goal:** ${goal}`);
       if (files) lines.push(`**Files:** ${files}`);
       if (approach) lines.push(`**Approach:** ${approach}`);
       if (checkpoint) lines.push(`**Checkpoint:** ${checkpoint}`);
-      if (lines.length === 1) lines.push('(No task details found in session guide)');
+      if (lines.length === 2) lines.push('(No task details found in session guide)');
+      lines.push('');
+      lines.push('After you approve the design (Begin Coding), we\'ll load context and begin implementation.');
       return lines.join('\n');
     },
 
@@ -211,19 +239,55 @@ export async function taskStartImpl(
       return '';
     },
 
+    /** TierUp only: session guide (task section). Task handoff is excluded from planning input. */
     async readContext(): Promise<TierStartReadResult> {
-      let handoff = '';
-      try {
-        handoff = await readHandoff('task', taskId);
-      } catch {
-        handoff = `**Note:** Handoff context not available. Use \`/read-handoff session ${sessionId}\` to check session context\n`;
-      }
       const taskSectionContent = await readTaskSection(taskId, context, sessionId);
+      const sessionHandoffExcerpt = await readSessionHandoffExcerpt(context, sessionId);
       return {
-        handoff: '## Task Handoff Context\n' + handoff,
+        handoff: sessionHandoffExcerpt ? `## Transition Context (tierUp: session)\n\n${sessionHandoffExcerpt}` : undefined,
         guide: taskSectionContent || undefined,
-        sectionTitle: 'Task Context (from guide)',
+        sectionTitle: 'Task context (from session guide)',
+        sourcePolicy: 'tierUpOnly',
       };
+    },
+
+    getContextSourcePolicy() {
+      return {
+        tierUpOnly: true as const,
+        allowedSourceDescription: 'Session guide (task section) and session handoff excerpt only. Task handoff and other task-level docs are excluded.',
+      };
+    },
+
+    async getContextWorkBrief() {
+      const guide = ctx.readResult?.guide ?? await readTaskSection(taskId, context, sessionId);
+      const taskTitle = extractTaskHeading(guide) || `Task ${taskId}`;
+      const goal = extractField('Goal', guide).trim();
+      const filesRaw = extractField('Files', guide).trim();
+      const approach = extractField('Approach', guide).trim();
+      const checkpointRaw = extractField('Checkpoint', guide).trim();
+      const fileList = filesRaw
+        .split('\n')
+        .map(line => line.replace(/^\s*-\s*/, '').trim())
+        .filter(Boolean);
+      const acceptanceList = checkpointRaw
+        .split('\n')
+        .map(line => line.replace(/^\s*-\s*/, '').trim())
+        .filter(Boolean);
+      const planningSummary = goal
+        ? `**Explicit coding goal:** ${goal}`
+        : `Task ${taskId}: ${taskTitle}. Define an explicit coding goal before beginning implementation.`;
+      const executionProposal = [
+        approach ? `**Approach:** ${approach}` : 'Define approach (e.g. thin component + composable).',
+        'Add pseudocode steps and key snippets in the Design Before Execute section, then approve to begin coding.',
+      ].join('\n');
+      const taskDesign = {
+        codingGoal: goal || `Deliver: ${taskTitle}. [Refine in planning doc.]`,
+        files: fileList.length > 0 ? fileList : extractFilePaths(guide),
+        pseudocodeSteps: approach ? [approach] : ['[Outline steps in planning doc before execute]'],
+        snippets: '[Add key signatures or code shapes in planning doc]',
+        acceptanceChecks: acceptanceList.length > 0 ? acceptanceList : ['[Define verification steps in planning doc]'],
+      };
+      return { planningSummary, executionProposal, taskDesign };
     },
 
     async gatherContext(): Promise<string> {

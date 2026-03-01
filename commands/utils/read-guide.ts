@@ -10,6 +10,70 @@
 import { WorkflowCommandContext } from './command-context';
 import { MarkdownUtils } from './markdown-utils';
 import { resolveFeatureName } from './feature-context';
+import { WorkflowId } from './id-utils';
+
+function extractSessionTaskBlocks(guideContent: string, sessionId: string): string[] {
+  const escaped = sessionId.replace(/\./g, '\\.');
+  const pattern = new RegExp(
+    `(?:-\\s*\\[[ x]\\]\\s*)?(?:####|###)\\s*Task\\s+${escaped}\\.\\d+:[\\s\\S]*?(?=(?:\\n(?:-\\s*\\[[ x]\\]\\s*)?(?:####|###)\\s*Task\\s+${escaped}\\.\\d+:)|\\n##\\s+|\\n#\\s+|$)`,
+    'gi'
+  );
+  const matches = guideContent.match(pattern);
+  if (!matches) return [];
+  return matches.map(m => m.trim()).filter(Boolean);
+}
+
+function extractPhaseSessionEntry(phaseGuide: string, sessionId: string): string {
+  const escaped = sessionId.replace(/\./g, '\\.');
+  const pattern = new RegExp(
+    `(?:-\\s*\\[[ x]\\]\\s*)?###\\s*Session\\s+${escaped}:[\\s\\S]*?(?=(?:\\n(?:-\\s*\\[[ x]\\]\\s*)?###\\s*Session\\s+\\d+\\.\\d+\\.\\d+:)|\\n##\\s+|\\n#\\s+|$)`,
+    'i'
+  );
+  return phaseGuide.match(pattern)?.[0]?.trim() ?? '';
+}
+
+function buildSessionSpecificGuideOutput(
+  guideContent: string,
+  templateContent: string,
+  sessionId: string
+): string {
+  const output: string[] = ['# Session Guide - Session-Specific Context', ''];
+
+  const sessionOverview = MarkdownUtils.extractSection(guideContent, 'Session Overview');
+  if (sessionOverview) {
+    output.push(sessionOverview, '');
+  }
+
+  const sessionObjectives = MarkdownUtils.extractSection(guideContent, 'Session Objectives');
+  if (sessionObjectives) {
+    output.push(sessionObjectives, '');
+  }
+
+  const taskBlocks = extractSessionTaskBlocks(guideContent, sessionId);
+  if (taskBlocks.length > 0) {
+    output.push(`## Tasks for Session ${sessionId}`, '', ...taskBlocks, '');
+  } else {
+    output.push(`## Tasks for Session ${sessionId}`, '', '**Warning:** No session-specific task sections found in session guide.', '');
+  }
+
+  const fallbackSections = ['Learning Checkpoints', 'Task Template'];
+  for (const section of fallbackSections) {
+    let sectionContent = MarkdownUtils.extractSection(guideContent, section);
+    let source = 'session guide';
+    if (!sectionContent && templateContent) {
+      sectionContent = MarkdownUtils.extractSection(templateContent, section);
+      source = 'template (fallback)';
+    }
+    if (sectionContent) {
+      output.push(sectionContent, '');
+      if (source === 'template (fallback)') {
+        output.push('*[Note: Section extracted from template - consider adding to session guide]*', '');
+      }
+    }
+  }
+
+  return output.join('\n');
+}
 
 export async function readGuide(
   sessionId?: string,
@@ -62,43 +126,40 @@ export async function readGuide(
     );
   }
   
-  const sections = [
-    'Session Structure',
-    'Learning Checkpoints',
-    'Task Template', // Updated from "Sub-Session Template"
-  ];
-  
-  const output: string[] = [];
-  output.push('# Session Guide - Key Sections\n');
-  
   if (usingTemplate) {
-    output.push('**Note:** Using template guide. Create session-specific guide for custom content.\n\n');
-  }
-  
-  // Extract sections with fallback to template
-  for (const section of sections) {
-    let sectionContent = MarkdownUtils.extractSection(guideContent, section);
-    let source = 'session guide';
-    
-    // If section not found in session guide and we have template, try template
-    if (!sectionContent && templateContent && !usingTemplate) {
-      sectionContent = MarkdownUtils.extractSection(templateContent, section);
-      source = 'template (fallback)';
+    const output: string[] = [
+      '# Session Guide - Key Sections',
+      '',
+      '**Note:** Using template guide. Create session-specific guide for custom content.',
+      '',
+    ];
+    const sections = ['Session Structure', 'Learning Checkpoints', 'Task Template'];
+    for (const section of sections) {
+      const sectionContent = MarkdownUtils.extractSection(guideContent, section);
+      if (sectionContent) output.push(sectionContent, '');
     }
-    
-    if (sectionContent) {
-      output.push(sectionContent);
-      if (!usingTemplate && source === 'template (fallback)') {
-        output.push(`\n*[Note: Section extracted from template - consider adding to session guide]*\n`);
+    return output.join('\n');
+  }
+
+  if (sessionId) {
+    const parsed = WorkflowId.parseSessionId(sessionId);
+    let phaseContext = '';
+    if (parsed) {
+      try {
+        const phaseGuide = await context.readPhaseGuide(parsed.phaseId);
+        const phaseSessionEntry = extractPhaseSessionEntry(phaseGuide, sessionId);
+        if (phaseSessionEntry) {
+          phaseContext = `## Phase Guide Context\n\n${phaseSessionEntry}\n`;
+        }
+      } catch {
+        // Non-blocking: phase context may be absent.
       }
-      output.push('');
-    } else {
-      // Section not found in either - log warning
-      output.push(`## ${section}\n`);
-      output.push(`**Warning:** Section not found in session guide or template.\n\n`);
     }
+
+    const sessionSpecific = buildSessionSpecificGuideOutput(guideContent, templateContent, sessionId);
+    return [sessionSpecific, phaseContext].filter(Boolean).join('\n');
   }
-  
-  return output.join('\n');
+
+  return guideContent;
 }
 

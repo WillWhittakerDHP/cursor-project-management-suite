@@ -7,7 +7,7 @@ import type {
   TierEndWorkflowContext,
   TierEndWorkflowHooks,
   StepExitResult,
-} from './tier-end-workflow';
+} from './tier-end-workflow-types';
 import { resolveCommandExecutionMode, isPlanMode } from '../../utils/command-execution-mode';
 import { resolveRunTests, buildPlanModeResult } from '../../utils/tier-end-utils';
 import { workflowCleanupReadmes } from '../../readme/composite/readme-workflow-cleanup';

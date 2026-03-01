@@ -3,7 +3,6 @@
  */
 
 import { readProjectFile, PROJECT_ROOT } from '../../../utils/utils';
-import { readHandoff } from '../../../utils/read-handoff';
 import { join } from 'path';
 import { access } from 'fs/promises';
 import { MarkdownUtils } from '../../../utils/markdown-utils';
@@ -22,14 +21,19 @@ import type {
   TierStartValidationResult,
   TierStartReadResult,
   ContextQuestion,
-} from '../../shared/tier-start-workflow';
-import { runTierStartWorkflow } from '../../shared/tier-start-workflow';
+  TierStartWorkflowResult,
+} from '../../shared/tier-start-workflow-types';
+import { runTierStartWorkflow } from '../../../harness/run-start-steps';
 import { buildReuseOpportunitiesSection, type InventoryPayload } from '../helpers/inventory-reuse-check';
+import type { RunRecorder, RunTraceHandle } from '../../../harness/contracts';
+
+export type ShadowContext = { recorder: RunRecorder; handle: RunTraceHandle };
 
 export async function phaseStartImpl(
   phaseId: string,
-  options?: import('../../../utils/command-execution-mode').CommandExecutionOptions
-): Promise<TierStartResult> {
+  options?: import('../../../utils/command-execution-mode').CommandExecutionOptions,
+  shadow?: ShadowContext
+): Promise<TierStartResult | TierStartWorkflowResult> {
   const context = await WorkflowCommandContext.getCurrent();
   const phase = phaseId;
   const output: string[] = [];
@@ -41,6 +45,11 @@ export async function phaseStartImpl(
     options,
     context,
     output,
+    ...(shadow && {
+      runRecorder: shadow.recorder,
+      runTraceHandle: shadow.handle,
+      stepPath: [],
+    }),
   };
 
   const hooks: TierStartWorkflowHooks = {
@@ -77,17 +86,17 @@ export async function phaseStartImpl(
 
     async getPlanContentSummary(): Promise<string | undefined> {
       try {
-        const phaseGuideContent = await readProjectFile(context.paths.getPhaseGuidePath(phase));
         const phaseDesc = await derivePhaseDescription(phase, context);
-        const sessionMatches = phaseGuideContent.matchAll(/Session\s+(\d+\.\d+\.\d+):?\s*([^\n]*)/gi);
+        const content = ctx.readResult?.guide ?? (await readProjectFile(context.paths.getPhaseGuidePath(phase)));
+        const sessionMatches = content.matchAll(/Session\s+(\d+\.\d+\.\d+):?\s*([^\n]*)/gi);
         const sessionLines: string[] = [];
         for (const m of sessionMatches) {
           const sid = m[1];
           const name = m[2].trim().slice(0, 60) || sid;
           sessionLines.push(`- Session ${sid}: ${name}`);
         }
-        if (sessionLines.length === 0) return undefined;
         const header = `## Phase plan (what we're building)\n\n**Phase:** ${phaseDesc}\n\n**Sessions:**`;
+        if (sessionLines.length === 0) return `${header}\n(generated from feature guide; add session list in phase guide during execute)`;
         return `${header}\n${sessionLines.join('\n')}`;
       } catch {
         return undefined;
@@ -96,17 +105,23 @@ export async function phaseStartImpl(
 
     async getTierDeliverables(): Promise<string> {
       const phaseDesc = await derivePhaseDescription(phase, context);
-      const lines: string[] = [`**Phase ${phase}:** ${phaseDesc}`];
-      try {
-        const phaseGuideContent = await readProjectFile(context.paths.getPhaseGuidePath(phase));
-        const sessionMatches = phaseGuideContent.matchAll(/Session\s+(\d+\.\d+\.\d+):?\s*([^\n]*)/gi);
+      const lines: string[] = [
+        '**Phase plan**',
+        `**Phase ${phase}:** ${phaseDesc}`,
+        '**Sessions in this phase:**',
+      ];
+      const content = ctx.readResult?.guide ?? '';
+      if (content) {
+        const sessionMatches = content.matchAll(/Session\s+(\d+\.\d+\.\d+):?\s*([^\n]*)/gi);
         for (const m of sessionMatches) {
           const sid = m[1];
           const name = m[2].trim().slice(0, 60) || sid;
           lines.push(`- Session ${sid}: ${name}`);
         }
-      } catch { /* non-blocking */ }
-      if (lines.length === 1) lines.push('(No sessions found in phase guide)');
+      }
+      if (lines.length === 3) lines.push('(No sessions in feature-derived context; add in phase guide during execute)');
+      lines.push('');
+      lines.push("After approval we'll set up the branch and context, then cascade to the first session.");
       return lines.join('\n');
     },
 
@@ -119,34 +134,46 @@ export async function phaseStartImpl(
       await updateTierScope('phase', { id: phase, name: phaseName });
     },
 
+    /** TierUp only: feature guide (phase descriptor). Phase guide and phase handoff files are excluded from planning input. */
     async readContext(): Promise<TierStartReadResult> {
-      const phaseGuidePath = context.paths.getPhaseGuidePath(phase);
       let guide = '';
       let handoff = '';
       try {
-        await access(join(PROJECT_ROOT, phaseGuidePath));
-        const phaseGuideContent = await readProjectFile(phaseGuidePath);
-        const phaseSection = MarkdownUtils.extractSection(phaseGuideContent, `Phase ${phase}`);
-        if (phaseSection) guide = phaseSection;
+        const featureGuideContent = await context.readFeatureGuide();
+        const phaseSection = MarkdownUtils.extractSection(featureGuideContent, `Phase ${phase}`);
+        if (phaseSection) {
+          guide = `## Phase intent from feature guide\n\n${phaseSection}`;
+        } else {
+          const phaseMatch = featureGuideContent.match(
+            new RegExp(`(?:Phase|###)\\s+${phase.replace(/\./g, '\\.')}[\\s:]*([\\s\\S]*?)(?=\\n(?:Phase|###)\\s+\\d|\n##\\s+|$)`, 'i')
+          );
+          if (phaseMatch?.[0]) guide = `## Phase intent from feature guide\n\n${phaseMatch[0].trim()}`;
+        }
       } catch (_error) {
-        const fullPath = join(PROJECT_ROOT, phaseGuidePath);
         guide =
-          `**ERROR: Phase guide not found**\n` +
-          `**Attempted:** ${phaseGuidePath}\n` +
-          `**Full Path:** ${fullPath}\n` +
-          `**Expected:** Phase guide file for phase ${phase}\n` +
-          `**Suggestion:** Create the file at ${phaseGuidePath}\n` +
-          `**Template:** Use \`.cursor/commands/tiers/phase/templates/phase-guide.md\` as a starting point\n`;
+          `**Warning: Feature guide not found or phase ${phase} not listed.** ` +
+          `Planning will proceed with minimal context. Add phase to feature guide for tierUp context.`;
       }
       try {
-        handoff = await readHandoff('phase', phase);
-      } catch (_error) {
-        handoff = `**ERROR: Phase handoff not found**\n${_error instanceof Error ? _error.message : String(_error)}\n`;
+        const featureHandoffPath = context.paths.getFeatureHandoffPath();
+        await access(join(PROJECT_ROOT, featureHandoffPath));
+        handoff = await readProjectFile(featureHandoffPath);
+        if (handoff?.trim()) handoff = handoff.trim().slice(0, 1200) + (handoff.length > 1200 ? '\n\n*(excerpt truncated)*' : '');
+      } catch {
+        handoff = '';
       }
       return {
-        handoff: handoff ? '## Transition Context\n' + handoff : undefined,
+        handoff: handoff ? `## Transition Context (tierUp: feature)\n\n${handoff}` : undefined,
         guide: guide || undefined,
-        sectionTitle: 'Phase Guide',
+        sectionTitle: 'Phase intent (from feature guide)',
+        sourcePolicy: 'tierUpOnly',
+      };
+    },
+
+    getContextSourcePolicy() {
+      return {
+        tierUpOnly: true as const,
+        allowedSourceDescription: 'Feature guide (phase descriptor) and feature handoff only. Phase guide and phase handoff files are excluded.',
       };
     },
 
@@ -178,9 +205,9 @@ export async function phaseStartImpl(
       const displayName = phaseDesc || `Phase ${phase}`;
       let sessionSummary = '';
       let firstSessionName = '';
-      try {
-        const phaseGuideContent = await readProjectFile(context.paths.getPhaseGuidePath(phase));
-        const sessionMatches = phaseGuideContent.matchAll(/Session\s+(\d+\.\d+\.\d+):?\s*([^\n]*)/gi);
+      const content = ctx.readResult?.guide ?? '';
+      if (content) {
+        const sessionMatches = content.matchAll(/Session\s+(\d+\.\d+\.\d+):?\s*([^\n]*)/gi);
         const sessionLines: string[] = [];
         let first: RegExpExecArray | null = null;
         for (const m of sessionMatches) {
@@ -191,38 +218,36 @@ export async function phaseStartImpl(
           sessionSummary = sessionLines.join('; ');
           if (first) firstSessionName = first[2].trim().slice(0, 80);
         }
-      } catch { /* non-blocking */ }
+      }
 
       const questions: ContextQuestion[] = [];
       questions.push({
         category: 'scope',
         insight: sessionSummary
-          ? `The phase guide indicates we're building "${displayName}" through the listed sessions (${sessionSummary}).`
-          : `The phase guide describes "${displayName}" as the phase we're starting.`,
-        proposal: sessionSummary
-          ? 'We\'ll execute sessions in order from the guide, starting with the first session and aligning deliverables with the plan.'
-          : 'We\'ll align the phase outcome with whatever sessions exist in the phase guide once they\'re present.',
-        question: `What's the main outcome you want for this phase when we're done?`,
-        context: 'Phase goal: what we\'re building.',
-        options: ['Match the phase guide exactly', 'Add or change scope', 'Prioritize speed over full scope'],
+          ? `Phase intent: "${displayName}" through sessions: ${sessionSummary}.`
+          : `Phase: "${displayName}".`,
+        proposal: "We'll plan all necessary sessions and follow governance. This is the place to lock in or adjust what we're building.",
+        question: "After reading the planning doc and context, what do you want to lock in or adjust before we proceed?",
+        context: 'Where you and the agent talk about the plan.',
+        options: ["Let's discuss in chat", "I'm ready to lock the plan as-is"],
       });
       if (firstSessionName) {
         questions.push({
           category: 'scope',
-          insight: `The first session in the guide is: ${firstSessionName}.`,
-          proposal: 'We\'ll treat this as the initial deliverable focus unless you want to shift scope.',
+          insight: `First session in the guide: ${firstSessionName}.`,
+          proposal: "We'll treat this as the initial deliverable focus unless you want to shift scope.",
           question: `For the first session (${firstSessionName}), what's the main deliverable or focus?`,
           context: 'Concrete deliverable for session one.',
-          options: ['As in the guide', 'Narrow to a subset', 'Expand or clarify'],
+          options: ['As in the guide', "I'll clarify in chat"],
         });
       }
       questions.push({
         category: 'approach',
-        insight: 'Governance and session structure suggest keeping sessions aligned with the phase guide and running session/task audits.',
-        proposal: 'We\'ll follow the session order and apply governance unless you set different priorities.',
+        insight: "We'll follow governance (session order, session/task audits). No option to relax for speed.",
+        proposal: "We'll follow the session order and apply governance.",
         question: `Any specific constraints or priorities for ${displayName}?`,
-        context: 'Helps sessions stay aligned with your expectations.',
-        options: ['Follow governance strictly', 'Relax audits for speed', 'Custom (describe in chat)'],
+        context: 'Domain constraints only.',
+        options: ["I'll describe in chat", 'None in mind'],
       });
       return questions;
     },
