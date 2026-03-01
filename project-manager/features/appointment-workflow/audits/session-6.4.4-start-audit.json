@@ -35,7 +35,7 @@
     {
       "category": "docs",
       "status": "warn",
-      "score": 75,
+      "score": 73,
       "findings": [
         {
           "type": "warning",
@@ -51,21 +51,33 @@
         },
         {
           "type": "warning",
+          "message": "Guide missing or incomplete section: Tasks",
+          "location": ".project-manager/features/appointment-workflow/sessions/session-6.4.4-guide.md",
+          "suggestion": "Add or complete Tasks section in guide"
+        },
+        {
+          "type": "warning",
           "message": "Guide missing or incomplete section: Session Workflow",
           "location": ".project-manager/features/appointment-workflow/sessions/session-6.4.4-guide.md",
           "suggestion": "Add or complete Session Workflow section in guide"
         },
         {
           "type": "warning",
-          "message": "Log document not found for session 6.4.4",
-          "location": "session log",
-          "suggestion": "Create log document to track progress"
+          "message": "Log document has no completed task entries",
+          "location": ".project-manager/features/appointment-workflow/sessions/session-6.4.4-log.md",
+          "suggestion": "Add task entries to log as tasks are completed"
+        },
+        {
+          "type": "info",
+          "message": "Log document missing status section",
+          "location": ".project-manager/features/appointment-workflow/sessions/session-6.4.4-log.md",
+          "suggestion": "Add status section to log document"
         }
       ],
       "recommendations": [
-        "Create log document"
+        "Review documentation structure and completeness"
       ],
-      "summary": "2/3 documents exist. 4 issue(s) found."
+      "summary": "3/3 documents exist. 6 issue(s) found."
     },
     {
       "category": "vue-architecture",
@@ -116,7 +128,7 @@
       "summary": "Scanned 174 .vue file(s); found 0 error(s), 6 warning(s)."
     }
   ],
-  "timestamp": "2026-02-27T22:06:02.991Z",
+  "timestamp": "2026-03-01T18:12:35.542Z",
   "reportPath": "",
   "featureName": "appointment-workflow",
   "auditType": "start",
