@@ -28,6 +28,7 @@ import { defaultKernel } from '../../harness/kernel';
 import { createTierAdapter } from '../../harness/tier-adapter';
 import { defaultProfileDefaultsResolver } from '../../harness/spec-builder';
 import { buildSpecFromTierRun } from '../../harness/build-spec-from-tier';
+import { isHarnessDefaultForTier } from '../../harness/cutover-config';
 import { WorkflowCommandContext } from '../../utils/command-context';
 
 export type TierEndParams =

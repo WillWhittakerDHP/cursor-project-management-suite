@@ -2,11 +2,9 @@
  * Phase-start implementation. Thin adapter: builds hooks and runs shared start workflow.
  */
 
-import { readProjectFile, PROJECT_ROOT } from '../../../utils/utils';
-import { join } from 'path';
-import { access } from 'fs/promises';
-import { MarkdownUtils } from '../../../utils/markdown-utils';
+import { readProjectFile, writeProjectFile } from '../../../utils/utils';
 import { WorkflowCommandContext } from '../../../utils/command-context';
+import { readTierUpContext, getTierContextSourcePolicy } from '../../shared/context-policy';
 import { extractFilesFromPhaseGuide, gatherFileStatuses } from '../../../utils/context-gatherer';
 import { formatFileStatusList } from '../../../utils/context-templates';
 import { ensureTierBranch } from '../../../git/shared/tier-branch-manager';
@@ -136,45 +134,39 @@ export async function phaseStartImpl(
 
     /** TierUp only: feature guide (phase descriptor). Phase guide and phase handoff files are excluded from planning input. */
     async readContext(): Promise<TierStartReadResult> {
-      let guide = '';
-      let handoff = '';
-      try {
-        const featureGuideContent = await context.readFeatureGuide();
-        const phaseSection = MarkdownUtils.extractSection(featureGuideContent, `Phase ${phase}`);
-        if (phaseSection) {
-          guide = `## Phase intent from feature guide\n\n${phaseSection}`;
-        } else {
-          const phaseMatch = featureGuideContent.match(
-            new RegExp(`(?:Phase|###)\\s+${phase.replace(/\./g, '\\.')}[\\s:]*([\\s\\S]*?)(?=\\n(?:Phase|###)\\s+\\d|\n##\\s+|$)`, 'i')
-          );
-          if (phaseMatch?.[0]) guide = `## Phase intent from feature guide\n\n${phaseMatch[0].trim()}`;
-        }
-      } catch (_error) {
-        guide =
-          `**Warning: Feature guide not found or phase ${phase} not listed.** ` +
-          `Planning will proceed with minimal context. Add phase to feature guide for tierUp context.`;
-      }
-      try {
-        const featureHandoffPath = context.paths.getFeatureHandoffPath();
-        await access(join(PROJECT_ROOT, featureHandoffPath));
-        handoff = await readProjectFile(featureHandoffPath);
-        if (handoff?.trim()) handoff = handoff.trim().slice(0, 1200) + (handoff.length > 1200 ? '\n\n*(excerpt truncated)*' : '');
-      } catch {
-        handoff = '';
-      }
-      return {
-        handoff: handoff ? `## Transition Context (tierUp: feature)\n\n${handoff}` : undefined,
-        guide: guide || undefined,
-        sectionTitle: 'Phase intent (from feature guide)',
-        sourcePolicy: 'tierUpOnly',
-      };
+      const phaseDesc = await derivePhaseDescription(phase, context);
+      return readTierUpContext({
+        tier: 'phase',
+        identifier: phase,
+        resolvedDescription: phaseDesc,
+        context,
+      });
     },
 
     getContextSourcePolicy() {
-      return {
-        tierUpOnly: true as const,
-        allowedSourceDescription: 'Feature guide (phase descriptor) and feature handoff only. Phase guide and phase handoff files are excluded.',
-      };
+      return getTierContextSourcePolicy('phase');
+    },
+
+    async getTierGoals(): Promise<string> {
+      const phaseDesc = await derivePhaseDescription(phase, context);
+      const guide = ctx.readResult?.guide ?? '';
+      const firstParagraph = guide.split(/\n\n+/)[0]?.trim().slice(0, 400) || phaseDesc || `Phase ${phase}`;
+      return `Achieve phase outcomes: ${firstParagraph}. Success criteria and session breakdown define "done" for this tier.`;
+    },
+
+    async getTierDownBuildPlan(): Promise<string> {
+      const content = ctx.readResult?.guide ?? '';
+      const sessionMatches = content.matchAll(/Session\s+(\d+\.\d+\.\d+):?\s*([^\n]*)/gi);
+      const sessionLines: string[] = [];
+      for (const m of sessionMatches) {
+        const sid = m[1];
+        const name = m[2].trim().slice(0, 80) || sid;
+        sessionLines.push(`- **Session ${sid}:** ${name}`);
+      }
+      if (sessionLines.length === 0) {
+        return `Add sessions for Phase ${phase} in the phase guide (e.g. ${phase}.1, ${phase}.2), then run session-start for each in order. Cascade session-end → next session or phase-end.`;
+      }
+      return `Build the following sessions to achieve the phase goals:\n\n${sessionLines.join('\n')}\n\nRun session-start for each in order; after each session run session-end and cascade to next session or phase-end.`;
     },
 
     async gatherContext(): Promise<string> {
@@ -263,7 +255,7 @@ export async function phaseStartImpl(
       }
     },
 
-    async getFirstChildId(): Promise<string | null> {
+    async getFirstTierDownId(): Promise<string | null> {
       try {
         const phaseGuideContent = await context.readPhaseGuide(phase);
         const firstSessionMatch = phaseGuideContent.match(/Session\s+(\d+\.\d+(?:\.\d+)?):/);

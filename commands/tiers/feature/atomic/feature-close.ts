@@ -11,6 +11,7 @@ import { join } from 'path';
 import { access } from 'fs/promises';
 import { WorkflowCommandContext } from '../../../utils/command-context';
 import { FEATURE_CONFIG } from '../../configs/feature';
+import { getExcerptEndMarker } from '../../shared/context-policy';
 
 export async function featureClose(featureName: string): Promise<string> {
   const output: string[] = [];
@@ -79,7 +80,11 @@ export async function featureClose(featureName: string): Promise<string> {
         /^\*\*Last Updated:\*\* .*/m,
         `**Last Updated:** ${new Date().toISOString().split('T')[0]}`
       );
-      
+
+      const featureHandoffMarker = getExcerptEndMarker('feature');
+      if (!handoffContent.includes(featureHandoffMarker)) {
+        handoffContent = handoffContent.trimEnd() + '\n\n' + featureHandoffMarker;
+      }
       await writeProjectFile(featureHandoffPath, handoffContent);
       output.push(`**Handoff Updated:** ${featureHandoffPath}\n`);
     } catch (err) {

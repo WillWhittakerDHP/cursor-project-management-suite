@@ -202,6 +202,23 @@ describe('routeByOutcome', () => {
     expect(decision.message).toBe('Command failed with exit code 1');
   });
 
+  it('audit_failed with deliverables: message is full audit report (deliverables)', () => {
+    const fullReport = '## Audit results\nwarn: 2\nfail: 1\n\n**STOP — Fix in compliance with governance rules.**';
+    const result: CommandResultForRouting = {
+      success: false,
+      output: 'Audit failed',
+      outcome: {
+        reasonCode: 'audit_failed',
+        nextAction: 'Fix audit issues',
+        deliverables: fullReport,
+      },
+    };
+    const decision = routeByOutcome(result, baseCtx);
+    expect(decision.message).toBe(fullReport);
+    expect(decision.stop).toBe(true);
+    expect(decision.questionKey).toBe('failure_options');
+  });
+
   it('handleMissingOutcome: uses output as message when provided', () => {
     const result: CommandResultForRouting = {
       success: false,

@@ -12,6 +12,7 @@ import { FEATURE_CONFIG } from '../../configs/feature';
 import { ensureTierBranch } from '../../../git/shared/tier-branch-manager';
 import { updateTierScope } from '../../../utils/tier-scope';
 import { deriveFeatureDescription } from '../../../planning/utils/resolve-planning-description';
+import { readTierUpContext, getTierContextSourcePolicy } from '../../shared/context-policy';
 import type { TierStartResult } from '../../../utils/tier-outcome';
 import type {
   TierStartWorkflowContext,
@@ -162,19 +163,39 @@ export async function featureStartImpl(
 
     /** TierUp only: feature guide. No phase/session/task docs as planning input. */
     async readContext(): Promise<TierStartReadResult> {
-      const featureGuideContent = await context.readFeatureGuide();
-      return {
-        guide: featureGuideContent,
-        sectionTitle: 'Feature Guide',
-        sourcePolicy: 'tierUpOnly',
-      };
+      const resolvedDescription = await deriveFeatureDescription(normalizedFeatureName, context);
+      return readTierUpContext({
+        tier: 'feature',
+        identifier: normalizedFeatureName,
+        resolvedDescription,
+        context,
+      });
     },
 
     getContextSourcePolicy() {
-      return {
-        tierUpOnly: true as const,
-        allowedSourceDescription: 'Feature guide only. Phase, session, and task docs are excluded.',
-      };
+      return getTierContextSourcePolicy('feature');
+    },
+
+    async getTierGoals(): Promise<string> {
+      const featureDesc = await deriveFeatureDescription(normalizedFeatureName, context);
+      const featureGuideContent = await context.readFeatureGuide();
+      const firstBlock = featureGuideContent.split(/\n##\s+|\n---/)[0]?.trim().slice(0, 400) || featureDesc || normalizedFeatureName;
+      return `Deliver the feature: ${firstBlock}. PROJECT_PLAN and feature guide define scope and "done" for this tier.`;
+    },
+
+    async getTierDownBuildPlan(): Promise<string> {
+      const featureGuideContent = await context.readFeatureGuide();
+      const phaseMatches = featureGuideContent.matchAll(/Phase\s+(\d+\.\d+):?\s*([^\n]*)/gi);
+      const phaseLines: string[] = [];
+      for (const m of phaseMatches) {
+        const pid = m[1];
+        const name = m[2].trim().slice(0, 80) || `Phase ${pid}`;
+        phaseLines.push(`- **Phase ${pid}:** ${name}`);
+      }
+      if (phaseLines.length === 0) {
+        return `Add phases for this feature in the feature guide (e.g. Phase 1, Phase 2), then run phase-start for each in order. Cascade phase-end → next phase or feature complete.`;
+      }
+      return `Build the following phases to achieve the feature goals:\n\n${phaseLines.join('\n')}\n\nRun phase-start for each in order; after each phase run phase-end and cascade to next phase.`;
     },
 
     async gatherContext(): Promise<string> {
@@ -270,7 +291,7 @@ export async function featureStartImpl(
       return parts.join('');
     },
 
-    async getFirstChildId(): Promise<string | null> {
+    async getFirstTierDownId(): Promise<string | null> {
       return '1';
     },
 

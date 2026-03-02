@@ -36,6 +36,14 @@ const TEMPORARY_CONTENT_PATTERNS = [
 ];
 
 /**
+ * Tier control docs (phase/session guides) are never temporary — exclude from content/filename heuristics.
+ */
+const TIER_GUIDE_PATTERNS = [
+  /\/phases\/phase-\d+(\.\d+)?-guide\.md$/,
+  /\/sessions\/session-\d+(\.\d+)*\-guide\.md$/,
+];
+
+/**
  * Detect if README is temporary
  * 
  * @param filePath Path to README file
@@ -43,6 +51,8 @@ const TEMPORARY_CONTENT_PATTERNS = [
  */
 export async function detectTemporaryReadme(filePath: string): Promise<TemporaryReadmeInfo | null> {
   try {
+    if (TIER_GUIDE_PATTERNS.some((p) => p.test(filePath))) return null;
+
     const fullPath = join(PROJECT_ROOT, filePath);
     const content = await readFile(fullPath, 'utf-8');
     const filename = filePath.split('/').pop() || '';

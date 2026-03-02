@@ -21,6 +21,7 @@ import { readProjectFile, writeProjectFile, PROJECT_ROOT, getCurrentDate } from 
 import { join } from 'path';
 import { readFile } from 'fs/promises';
 import { TierStartResult } from '../../../utils/tier-outcome';
+import { getExcerptEndMarker } from '../../shared/context-policy';
 
 export type { TaskEndParams };
 
@@ -210,8 +211,31 @@ export async function markTaskComplete(params: MarkTaskCompleteParams): Promise<
     } else {
       logContent += `\n\n${completedTasksMarker}\n\n${formattedEntry}`;
     }
+    const sessionLogMarker = getExcerptEndMarker('session');
+    if (!logContent.includes(sessionLogMarker)) {
+      logContent = logContent.trimEnd() + '\n\n' + sessionLogMarker;
+    }
     await writeProjectFile(sessionLogPath, logContent);
     output.push(`✅ Updated session log: ${sessionLogPath}`);
+
+    const handoffLines: string[] = [
+      `# Task ${params.taskId} handoff`,
+      '',
+      `**Completed:** ${getCurrentDate()}`,
+      `**Description:** ${logEntry.description}`,
+      `**Goal:** ${logEntry.goal}`,
+      '',
+    ];
+    if (logEntry.filesCreated.length > 0) {
+      handoffLines.push('**Files created:**', ...logEntry.filesCreated.map((f) => `- ${f}`), '');
+    }
+    if (logEntry.filesModified.length > 0) {
+      handoffLines.push('**Files modified:**', ...logEntry.filesModified.map((f) => `- ${f}`), '');
+    }
+    handoffLines.push(`**Next:** ${logEntry.nextTask}`, '', getExcerptEndMarker('task'));
+    await context.writeTaskHandoff(params.taskId, handoffLines.join('\n'));
+    output.push(`✅ Wrote task handoff: ${context.paths.getTaskHandoffPath(params.taskId)}`);
+
     return output.join('\n');
   } catch (_error) {
     const fullPath = join(PROJECT_ROOT, sessionGuidePath);

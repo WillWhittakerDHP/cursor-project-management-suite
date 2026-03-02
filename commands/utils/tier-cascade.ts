@@ -7,25 +7,25 @@ import { tierUp, tierDown } from './tier-navigation';
 import type { TierName } from '../tiers/shared/types';
 import type { CascadeInfo } from './tier-outcome';
 
-export function buildCascadeDown(fromTier: TierName, childId: string): CascadeInfo | undefined {
-  const childTier = tierDown(fromTier);
-  if (!childTier) return undefined;
+export function buildCascadeDown(fromTier: TierName, tierDownId: string): CascadeInfo | undefined {
+  const tierDownTier = tierDown(fromTier);
+  if (!tierDownTier) return undefined;
   return {
     direction: 'down',
-    tier: childTier,
-    identifier: childId,
-    command: `/${childTier}-start ${childId}`,
+    tier: tierDownTier,
+    identifier: tierDownId,
+    command: `/${tierDownTier}-start ${tierDownId}`,
   };
 }
 
-export function buildCascadeUp(fromTier: TierName, parentId: string): CascadeInfo | undefined {
-  const parentTier = tierUp(fromTier);
-  if (!parentTier) return undefined;
+export function buildCascadeUp(fromTier: TierName, tierUpId: string): CascadeInfo | undefined {
+  const tierUpTier = tierUp(fromTier);
+  if (!tierUpTier) return undefined;
   return {
     direction: 'up',
-    tier: parentTier,
-    identifier: parentId,
-    command: `/${parentTier}-end ${parentId}`,
+    tier: tierUpTier,
+    identifier: tierUpId,
+    command: `/${tierUpTier}-end ${tierUpId}`,
   };
 }
 

@@ -97,6 +97,18 @@ export function handleTaskComplete(outcome: ControlPlaneOutcome): ControlPlaneDe
   return baseCascadeDecision(outcome, 'agent');
 }
 
+/** audit_failed: show full audit report (deliverables) and STOP — fix per governance, then re-run. */
+export function handleAuditFailed(outcome: ControlPlaneOutcome, outputFallback: string): ControlPlaneDecision {
+  const message =
+    outcome.deliverables ?? (outcome.nextAction?.trim() ? outcome.nextAction : outputFallback);
+  return {
+    stop: true,
+    requiredMode: 'plan',
+    message,
+    questionKey: QUESTION_KEYS.FAILURE_OPTIONS,
+  };
+}
+
 /** Generic failure: Plan mode hard-stop, AskQuestion retry/investigate/skip. No cascade. */
 export function handleFailure(outcome: ControlPlaneOutcome, outputFallback: string): ControlPlaneDecision {
   return {

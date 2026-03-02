@@ -118,6 +118,15 @@ export class WorkflowPathResolver {
   }
 
   /**
+   * Get task handoff path
+   * @param taskId Task ID in format X.Y.Z.A (e.g., "4.1.3.1")
+   * @returns Path to task handoff: `.project-manager/features/{feature}/sessions/task-{taskId}-handoff.md`
+   */
+  getTaskHandoffPath(taskId: string): string {
+    return `${this.basePath}/sessions/task-${taskId}-handoff.md`;
+  }
+
+  /**
    * Get task guide path
    * Task guides are derived from session guides, so this returns the session guide path
    * @param taskId Task ID in format X.Y.Z.A (e.g., "4.1.3.1")

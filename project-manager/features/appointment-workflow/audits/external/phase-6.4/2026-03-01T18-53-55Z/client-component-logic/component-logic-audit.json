@@ -1,0 +1,84 @@
+{
+  "generatedAt": "2026-03-01T18:53:14.169Z",
+  "totalScanned": 11,
+  "exceptionSummary": {
+    "totalRequiresReview": 1
+  },
+  "files": [
+    {
+      "id": "client__src__components__booking__steps__PropertyDetailsSection.vue",
+      "repoPath": "client/src/components/booking/steps/PropertyDetailsSection.vue",
+      "absPath": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/src/components/booking/steps/PropertyDetailsSection.vue",
+      "counts": {
+        "watch": 1,
+        "watchEffect": 0,
+        "async": 0,
+        "await": 0,
+        "map": 1,
+        "reduce": 0,
+        "dom": 0,
+        "inlineConfig": 0,
+        "console": 0,
+        "alert": 0
+      },
+      "matches": [
+        {
+          "ruleId": "computed",
+          "lineNumber": 187,
+          "line": "const selectedPropertyType = computed((): PropertyTypeWithComponents | undefined => {"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 192,
+          "line": "const showComponents = computed("
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 197,
+          "line": "const activeInstanceComponents = computed((): ComponentItem[] => {"
+        },
+        {
+          "ruleId": "filter",
+          "lineNumber": 200,
+          "line": "return comps.filter((c: ComponentItem) => c.active === true)"
+        },
+        {
+          "ruleId": "ref",
+          "lineNumber": 203,
+          "line": "const propertyTypeSelectWidthPx = ref(MIN_PROPERTY_TYPE_WIDTH_PX)"
+        },
+        {
+          "ruleId": "watch",
+          "lineNumber": 204,
+          "line": "watch("
+        },
+        {
+          "ruleId": "map",
+          "lineNumber": 207,
+          "line": "const labels = (list ?? []).map((i) => i.name).filter(Boolean) as string[]"
+        },
+        {
+          "ruleId": "filter",
+          "lineNumber": 207,
+          "line": "const labels = (list ?? []).map((i) => i.name).filter(Boolean) as string[]"
+        }
+      ],
+      "requiresReview": [
+        {
+          "ruleId": "watch",
+          "lineNumber": 204,
+          "line": "watch("
+        },
+        {
+          "ruleId": "map",
+          "lineNumber": 207,
+          "line": "const labels = (list ?? []).map((i) => i.name).filter(Boolean) as string[]"
+        }
+      ],
+      "score": 2,
+      "priority": "P2"
+    }
+  ],
+  "deltaMode": true,
+  "baseRef": "HEAD~1"
+}

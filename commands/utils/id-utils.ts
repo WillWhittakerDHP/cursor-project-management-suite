@@ -146,5 +146,20 @@ export class WorkflowId {
     if (parts.length < 2) return null;
     return `${parts[0]}.${parts[1]}`;
   }
+
+  /**
+   * Previous sibling ID for tierAcross context (e.g. phase 4.2 → 4.1, session 4.1.3 → 4.1.2).
+   * Decrements the last numeric segment; returns null if it would become 0 or ID is invalid.
+   */
+  static getPreviousSiblingId(identifier: string, tier: 'feature' | 'phase' | 'session' | 'task'): string | null {
+    if (tier === 'feature') return null;
+    const parts = identifier.trim().split('.');
+    if (parts.length < 2) return null;
+    const last = parts[parts.length - 1];
+    const n = parseInt(last, 10);
+    if (Number.isNaN(n) || n <= 1) return null;
+    parts[parts.length - 1] = String(n - 1);
+    return parts.join('.');
+  }
 }
 

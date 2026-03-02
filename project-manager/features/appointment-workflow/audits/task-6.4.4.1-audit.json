@@ -1,0 +1,29 @@
+{
+  "tier": "task",
+  "identifier": "6.4.4.1",
+  "overallStatus": "warn",
+  "results": [
+    {
+      "category": "tier-quality",
+      "status": "warn",
+      "score": 90,
+      "findings": [
+        {
+          "type": "warning",
+          "message": "1 TypeScript error(s) found",
+          "location": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/.audit-reports/typecheck/typecheck-audit.json",
+          "suggestion": "Review client/.audit-reports/typecheck/typecheck-audit.md for details"
+        }
+      ],
+      "recommendations": [
+        "Review audit reports for warnings"
+      ],
+      "summary": "Ran 6 task-tier audits; found 0 error(s), 1 warning(s), 0 info signal(s)."
+    }
+  ],
+  "timestamp": "2026-03-01T18:23:32.733Z",
+  "reportPath": "",
+  "featureName": "appointment-workflow",
+  "auditType": "end",
+  "baselineComparison": []
+}

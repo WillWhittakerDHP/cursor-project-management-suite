@@ -1,7 +1,7 @@
 /**
- * Fill implementation-plan fields for all direct children during parent-start.
- * Shared by all tiers: feature→phase, phase→session, session→task.
- * Runs in execute mode only; called from tier-start workflow step.
+ * Fill implementation-plan fields for all direct tierDown in the current-tier guide during tier-start.
+ * Shared by all tiers (each tier fills its tierDown sections from tierUp scope). Uses tierUp/tierDown
+ * language only; no parent/child or concrete tier names in generic prose. Execute mode only; tier-start step.
  */
 
 import type { TierStartWorkflowContext } from './tier-start-workflow-types';
@@ -22,7 +22,7 @@ function needsFill(value: string): boolean {
 }
 
 /**
- * Session → task: fill Goal, Files, Approach, Checkpoint in each task section from session scope.
+ * Fill tierDown sections: Goal, Files, Approach, Checkpoint from tierUp scope.
  */
 async function fillTaskSectionsInSessionGuide(
   sessionId: string,
@@ -46,10 +46,10 @@ async function fillTaskSectionsInSessionGuide(
     const approach = extractField('Approach', taskBody);
     const checkpoint = extractField('Checkpoint', taskBody);
     if (!needsFill(goal) && !needsFill(files) && !needsFill(approach) && !needsFill(checkpoint)) continue;
-    const newGoal = needsFill(goal) ? (scopeDescription || 'Implement per session scope above.') : goal;
-    const newFiles = needsFill(files) ? '(See session guide and phase context above.)' : files;
-    const newApproach = needsFill(approach) ? 'See session scope above.' : approach;
-    const newCheckpoint = needsFill(checkpoint) ? 'Verify per session success criteria.' : checkpoint;
+    const newGoal = needsFill(goal) ? (scopeDescription || 'Implement per tierUp scope above.') : goal;
+    const newFiles = needsFill(files) ? '(See tierUp guide and context above.)' : files;
+    const newApproach = needsFill(approach) ? 'See tierUp scope above.' : approach;
+    const newCheckpoint = needsFill(checkpoint) ? 'Verify per tierUp success criteria.' : checkpoint;
     const newSection = [
       firstLine,
       '',
@@ -71,7 +71,7 @@ async function fillTaskSectionsInSessionGuide(
 }
 
 /**
- * Phase → session: fill Description, Tasks, Learning Goals in each session section from phase scope.
+ * Fill tierDown sections: Description, Tasks from tierUp scope.
  */
 async function fillSessionSectionsInPhaseGuide(
   phaseId: string,
@@ -92,20 +92,15 @@ async function fillSessionSectionsInPhaseGuide(
     const sessionBody = match[2];
     const desc = extractField('Description', sessionBody);
     const tasks = extractField('Tasks', sessionBody);
-    const learning = extractField('Learning Goals', sessionBody);
-    if (!needsFill(desc) && !needsFill(tasks) && !needsFill(learning)) continue;
-    const newDesc = needsFill(desc) ? (scopeDescription || 'See phase scope above.') : desc;
+    if (!needsFill(desc) && !needsFill(tasks)) continue;
+    const newDesc = needsFill(desc) ? (scopeDescription || 'See tierUp scope above.') : desc;
     const newTasks = needsFill(tasks) ? '[To be planned]' : tasks;
-    const newLearning = needsFill(learning) ? '- [To be identified during planning]' : learning;
     const newSection = [
       firstLine,
       '',
       '**Description:** ' + newDesc,
       '',
       '**Tasks:** ' + newTasks,
-      '',
-      '**Learning Goals:**',
-      '- ' + newLearning,
     ].join('\n');
     replacements.push({ from: fullMatch, to: newSection });
   }
@@ -116,7 +111,7 @@ async function fillSessionSectionsInPhaseGuide(
 }
 
 /**
- * Feature → phase: fill Description, Sessions, Success Criteria in each phase section from feature scope.
+ * Fill tierDown sections: Description, Sessions, Success Criteria from tierUp scope.
  */
 async function fillPhaseSectionsInFeatureGuide(
   scopeDescription: string,
@@ -138,7 +133,7 @@ async function fillPhaseSectionsInFeatureGuide(
     const sessions = extractField('Sessions', phaseBody);
     const criteria = extractField('Success Criteria', phaseBody);
     if (!needsFill(desc) && !needsFill(sessions) && !needsFill(criteria)) continue;
-    const newDesc = needsFill(desc) ? (scopeDescription || 'See feature scope above.') : desc;
+    const newDesc = needsFill(desc) ? (scopeDescription || 'See tierUp scope above.') : desc;
     const newSessions = needsFill(sessions) ? '[To be planned]' : sessions;
     const newCriteria = needsFill(criteria) ? '- [To be defined]' : criteria;
     const newSection = [
@@ -160,14 +155,14 @@ async function fillPhaseSectionsInFeatureGuide(
 }
 
 /**
- * Fill implementation-plan fields for all direct children in the parent guide.
- * Dispatches by parent tier (feature → phases, phase → sessions, session → tasks).
- * No-op for task tier (no children). Idempotent: only fills empty/placeholder fields.
+ * Fill implementation-plan fields for all direct tierDown in the current-tier guide.
+ * Dispatches by current tier (each tier fills its tierDown sections).
+ * No-op for lowest tier (no tierDown). Idempotent: only fills empty/placeholder fields.
  */
-export async function fillDirectChildrenInParentGuide(ctx: TierStartWorkflowContext): Promise<void> {
+export async function fillDirectTierDownInGuide(ctx: TierStartWorkflowContext): Promise<void> {
   const { config, identifier, context, resolvedDescription } = ctx;
   const scope = resolvedDescription ?? identifier;
-  if (config.name === 'task') return;
+  if (config.name === 'task') return; // lowest tier
   try {
     if (config.name === 'session') {
       await fillTaskSectionsInSessionGuide(identifier, scope, context);
@@ -177,6 +172,6 @@ export async function fillDirectChildrenInParentGuide(ctx: TierStartWorkflowCont
       await fillPhaseSectionsInFeatureGuide(scope, context);
     }
   } catch (err) {
-    console.warn('fill-direct-children: non-blocking failure', config.name, identifier, err);
+    console.warn('fill-direct-tier-down: non-blocking failure', config.name, identifier, err);
   }
 }

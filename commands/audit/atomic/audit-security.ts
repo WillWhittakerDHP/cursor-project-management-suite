@@ -1,5 +1,5 @@
 /**
- * Atomic Command: /audit-security [tier] [identifier] [feature-name]
+ * Atomic Command: /audit-security [tier] [identifier] [scope-name]
  * Audit security standards compliance
  * 
  * Tier: Cross-tier utility
@@ -113,9 +113,9 @@ export async function auditSecurity(params: AuditParams): Promise<AuditResult> {
       recommendations.push('Security audit passed - maintain security standards');
     }
     
-    // Additional recommendations based on tier and phase context
+    // Additional recommendations based on tier context
     if (params.tier === 'feature' || params.tier === 'phase') {
-      // Check if this is Phase 3 (frontend work) - auth is deferred
+      // Check if this is identifier 3 (frontend work) - auth is deferred
       const isPhase3 = params.tier === 'phase' && params.identifier === '3';
       const hasOnlyClientFiles = params.modifiedFiles && params.modifiedFiles.length > 0 &&
         params.modifiedFiles.every(f => f.startsWith(`${FRONTEND_ROOT}/`));
@@ -170,4 +170,3 @@ export async function auditSecurity(params: AuditParams): Promise<AuditResult> {
     };
   }
 }
-

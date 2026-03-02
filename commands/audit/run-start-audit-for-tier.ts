@@ -16,31 +16,50 @@ export interface RunStartAuditParams {
   featureName?: string;
 }
 
+export interface RunStartAuditResult {
+  output: string;
+  /** true only when audit completed with no errors and overallStatus === 'pass' (no warns/fails). */
+  clean: boolean;
+}
+
 /**
- * Run the start audit for the given tier. Returns the audit output string to append to workflow.
+ * Run the start audit for the given tier. Returns output and clean (true only when pass; any warn/fail = not clean).
+ * When not clean, the tier-start workflow should STOP and require fixes per governance before proceeding.
  */
-export async function runStartAuditForTier(params: RunStartAuditParams): Promise<string> {
+export async function runStartAuditForTier(params: RunStartAuditParams): Promise<RunStartAuditResult> {
   const { tier, identifier, featureName: rawFeatureName } = params;
   const featureName = await resolveFeatureName(rawFeatureName);
 
   switch (tier) {
     case 'feature': {
       const result = await auditFeatureStart({ featureName: identifier });
-      return result.output;
+      return {
+        output: result.output,
+        clean: result.success && result.auditResult.overallStatus === 'pass',
+      };
     }
     case 'phase': {
       const result = await auditPhaseStart({ phase: identifier, featureName });
-      return result.output;
+      return {
+        output: result.output,
+        clean: result.success && result.auditResult.overallStatus === 'pass',
+      };
     }
     case 'session': {
       const result = await auditSessionStart({ sessionId: identifier, featureName });
-      return result.output;
+      return {
+        output: result.output,
+        clean: result.success && result.auditResult.overallStatus === 'pass',
+      };
     }
     case 'task': {
       const result = await auditTaskStart({ taskId: identifier, featureName });
-      return result.output;
+      return {
+        output: result.output,
+        clean: result.success && result.auditResult.overallStatus === 'pass',
+      };
     }
     default:
-      return '';
+      return { output: '', clean: true };
   }
 }

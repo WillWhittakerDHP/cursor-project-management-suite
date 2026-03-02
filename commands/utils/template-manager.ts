@@ -104,10 +104,11 @@ export class TemplateManager {
   render(template: string, replacements: TemplateReplacements): string {
     let rendered = template;
 
-    // Replace all placeholders in format [PLACEHOLDER]
+    // Replace all placeholders in format [PLACEHOLDER]; escape [ ] for regex (literal match, not character class)
     for (const [key, value] of Object.entries(replacements)) {
-      const placeholder = `[${key.toUpperCase()}]`;
-      rendered = rendered.replace(new RegExp(placeholder, 'g'), value);
+      const literal = `[${key.toUpperCase()}]`;
+      const escaped = literal.replace(/[[\]]/g, '\\$&');
+      rendered = rendered.replace(new RegExp(escaped, 'g'), value);
     }
 
     return rendered;
@@ -119,7 +120,7 @@ export class TemplateManager {
    * Loads template, renders with replacements, and optionally writes to file.
    * 
    * @param tier Document tier
-   * @param id Document ID (phase number, session ID, etc.)
+   * @param id Document ID (tier identifier)
    * @param docType Document type
    * @param replacements Template replacements
    * @returns Rendered document content
@@ -142,7 +143,7 @@ export class TemplateManager {
    * 
    * Scans tier template directories and returns list of available templates.
    * 
-   * @returns Array of template identifiers (e.g., ["feature-guide", "session-log"])
+   * @returns Array of template identifiers (e.g. tier-guide, tier-log)
    */
   async listTemplates(): Promise<string[]> {
     const templates: string[] = [];
@@ -158,7 +159,7 @@ export class TemplateManager {
         
         for (const file of files) {
           if (file.endsWith('.md')) {
-            // Extract template identifier (e.g., "session-guide.md" -> "session-guide")
+            // Extract template identifier (e.g. "*-guide.md" -> "*-guide")
             const identifier = file.replace(/\.md$/, '');
             templates.push(identifier);
           }

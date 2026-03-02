@@ -1,0 +1,9 @@
+{
+  "tier": "phase",
+  "identifier": "6.5",
+  "featureName": "appointment-workflow",
+  "timestamp": "2026-03-01T19:10:17.869Z",
+  "scores": {
+    "tier-quality": 92
+  }
+}

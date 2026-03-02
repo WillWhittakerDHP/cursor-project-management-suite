@@ -5,6 +5,7 @@
 import { readHandoff } from '../../../utils/read-handoff';
 import { WorkflowCommandContext } from '../../../utils/command-context';
 import { WorkflowId } from '../../../utils/id-utils';
+import { readTierUpContext, getTierContextSourcePolicy } from '../../shared/context-policy';
 import { extractFilePaths, gatherFileStatuses } from '../../../utils/context-gatherer';
 import { formatFileStatusList } from '../../../utils/context-templates';
 import { resolveFeatureName, resolveFeatureId } from '../../../utils/feature-context';
@@ -23,6 +24,7 @@ import type {
 } from '../../shared/tier-start-workflow-types';
 import { runTierStartWorkflow } from '../../../harness/run-start-steps';
 import type { RunRecorder, RunTraceHandle } from '../../../harness/contracts';
+import { getInventoryMatchesForFiles } from '../../../audit/governance-context';
 
 export type ShadowContext = { recorder: RunRecorder; handle: RunTraceHandle };
 
@@ -126,13 +128,19 @@ export async function taskStartImpl(
     getPlanModeSteps() {
       const sessionGuidePath = context.paths.getSessionGuidePath(sessionId);
       const sessionHandoffPath = context.paths.getSessionHandoffPath(sessionId);
+      const prevTaskId = WorkflowId.getPreviousSiblingId(taskId, 'task');
+      const prevTaskHandoffPath = prevTaskId ? context.paths.getTaskHandoffPath(prevTaskId) : null;
       const sessionLogPath = context.paths.getSessionLogPath(sessionId);
-      return [
-        `Read task handoff: \`${sessionHandoffPath}\``,
+      const steps = [
+        `Read session handoff (tierUp): \`${sessionHandoffPath}\``,
         `Read session guide task section: \`${sessionGuidePath}\``,
         `Reference session log: \`${sessionLogPath}\``,
         'Output task details + gathered file context',
       ];
+      if (prevTaskHandoffPath) {
+        steps.splice(1, 0, `Read previous task handoff (tierAcross): \`${prevTaskHandoffPath}\``);
+      }
+      return steps;
     },
 
     async getPlanContentSummary(): Promise<string | undefined> {
@@ -167,7 +175,7 @@ export async function taskStartImpl(
       return lines.join('\n');
     },
 
-    async getTaskFilePaths(): Promise<string[]> {
+    async getTierDownFilePaths(): Promise<string[]> {
       const taskSectionContent = ctx.readResult?.guide ?? await readTaskSection(taskId, context, sessionId);
       if (!taskSectionContent) return [];
       return extractFilePaths(taskSectionContent);
@@ -185,6 +193,19 @@ export async function taskStartImpl(
         !s || /TBD|to be refined|see above|\.\.\.|placeholder|fill in/i.test(s) || s.length < 3;
 
       const questions: ContextQuestion[] = [];
+
+      // Always include a discussion opener so we always create task-<id>-planning.md (align with session-start).
+      questions.push({
+        category: 'scope',
+        insight: guide.trim()
+          ? `Task context: ${taskTitle}. Goal/Files/Approach from the session guide inform the design.`
+          : `Task ${taskId}: we'll lock the coding goal and design from context or chat.`,
+        proposal: "We'll create a task planning doc (Design Before Execute) and use it as the single source of truth. Discuss in chat, then run /accepted-code when ready to begin coding.",
+        question: 'What do you want to lock in or adjust before we begin coding?',
+        context: 'Where you and the agent talk about the task plan.',
+        options: ["Let's discuss in chat", "I'm ready to lock the design and begin coding"],
+      });
+
       if (placeholderLike(goal)) {
         questions.push({
           category: 'scope',
@@ -241,21 +262,51 @@ export async function taskStartImpl(
 
     /** TierUp only: session guide (task section). Task handoff is excluded from planning input. */
     async readContext(): Promise<TierStartReadResult> {
-      const taskSectionContent = await readTaskSection(taskId, context, sessionId);
-      const sessionHandoffExcerpt = await readSessionHandoffExcerpt(context, sessionId);
-      return {
-        handoff: sessionHandoffExcerpt ? `## Transition Context (tierUp: session)\n\n${sessionHandoffExcerpt}` : undefined,
-        guide: taskSectionContent || undefined,
-        sectionTitle: 'Task context (from session guide)',
-        sourcePolicy: 'tierUpOnly',
-      };
+      const resolvedDescription = await deriveTaskDescription(taskId, context);
+      return readTierUpContext({
+        tier: 'task',
+        identifier: taskId,
+        resolvedDescription,
+        context,
+      });
     },
 
     getContextSourcePolicy() {
-      return {
-        tierUpOnly: true as const,
-        allowedSourceDescription: 'Session guide (task section) and session handoff excerpt only. Task handoff and other task-level docs are excluded.',
-      };
+      return getTierContextSourcePolicy('task');
+    },
+
+    async getTierGoals(): Promise<string> {
+      const section = await readTaskSection(taskId, context, sessionId);
+      const title = extractTaskHeading(section) || `Task ${taskId}`;
+      const goal = extractField('Goal', section).trim();
+      return goal ? `${title}: ${goal}` : `Deliver: ${title}. Define acceptance criteria before execute.`;
+    },
+
+    async getTierDownBuildPlan(): Promise<string> {
+      const guide = ctx.readResult?.guide ?? await readTaskSection(taskId, context, sessionId);
+      const taskFiles = extractFilePaths(guide);
+      const inventoryMatches = getInventoryMatchesForFiles(taskFiles);
+      const goal = extractField('Goal', guide).trim();
+      const approach = extractField('Approach', guide).trim();
+
+      const lines: string[] = [];
+      if (inventoryMatches.length > 0) {
+        lines.push('**Reuse (from inventory):**');
+        lines.push(inventoryMatches.map(m => `- ${m}`).join('\n'));
+        lines.push('');
+      }
+      lines.push('**Create/add (from Goal/Approach):**');
+      if (approach?.trim()) {
+        const steps = approach.split(/\n+/).map(s => s.replace(/^\s*[-*]\s*/, '').trim()).filter(Boolean);
+        steps.slice(0, 6).forEach(s => lines.push(`- ${s}`));
+      } else if (goal?.trim()) {
+        lines.push(`- ${goal.slice(0, 200)}${goal.length > 200 ? '…' : ''}`);
+      } else {
+        lines.push('- [List concrete code moves: reuse/create function X, build table/model Y, add switch, import Z, etc.]');
+      }
+      lines.push('');
+      lines.push('Then run task-end and cascade to next task or session-end.');
+      return lines.join('\n');
     },
 
     async getContextWorkBrief() {

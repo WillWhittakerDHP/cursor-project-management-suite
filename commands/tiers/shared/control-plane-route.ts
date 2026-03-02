@@ -19,6 +19,7 @@ import {
   handleVerificationWorkSuggested,
   handleTaskComplete,
   handleFailure,
+  handleAuditFailed,
   handleMissingOutcome,
   handleSuccessWithOptionalCascade,
   handleReopenOk,
@@ -40,11 +41,23 @@ export function routeByOutcome(
     return handleMissingOutcome(result.output);
   }
 
-  if (!success) {
-    return handleFailure(outcome, result.output);
-  }
-
   const reasonCode: ReasonCode = parseReasonCode(outcome.reasonCode);
+
+  if (!success) {
+    switch (reasonCode) {
+      case 'validation_failed':
+        return handleFailure(outcome, result.output);
+      case 'audit_failed':
+        return handleAuditFailed(outcome, result.output);
+      case 'test_failed':
+      case 'preflight_failed':
+      case 'git_failed':
+      case 'unhandled_error':
+        return handleFailure(outcome, result.output);
+      default:
+        return handleFailure(outcome, result.output);
+    }
+  }
 
   switch (reasonCode) {
     case 'plan_mode':
@@ -64,12 +77,7 @@ export function routeByOutcome(
     case 'start_ok':
     case 'end_ok':
       return handleSuccessWithOptionalCascade(outcome);
-    case 'validation_failed':
-    case 'audit_failed':
-    case 'test_failed':
-    case 'preflight_failed':
-    case 'git_failed':
-    case 'unhandled_error':
+    default:
       return handleFailure(outcome, result.output);
   }
 }

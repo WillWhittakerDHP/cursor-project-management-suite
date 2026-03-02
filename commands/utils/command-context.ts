@@ -15,6 +15,7 @@ import { DocumentManager } from './document-manager';
 import { TemplateManager } from './template-manager';
 import { FileCache } from './file-cache';
 import { WorkflowId } from './id-utils';
+import { readProjectFile, writeProjectFile } from './utils';
 
 /**
  * Document tier types
@@ -135,6 +136,28 @@ export class WorkflowCommandContext {
    */
   async readSessionHandoff(sessionId: string): Promise<string> {
     return this.documents.readHandoff('session', sessionId);
+  }
+
+  /**
+   * Read task handoff
+   * @param taskId Task ID in format X.Y.Z.A (e.g., "4.1.3.1")
+   * @returns Task handoff content (empty string if file does not exist)
+   */
+  async readTaskHandoff(taskId: string): Promise<string> {
+    try {
+      return await readProjectFile(this.paths.getTaskHandoffPath(taskId));
+    } catch {
+      return '';
+    }
+  }
+
+  /**
+   * Write task handoff (e.g. at task-end so next task or session can read it)
+   * @param taskId Task ID in format X.Y.Z.A
+   * @param content Handoff content (what was done, what's next)
+   */
+  async writeTaskHandoff(taskId: string, content: string): Promise<void> {
+    await writeProjectFile(this.paths.getTaskHandoffPath(taskId), content);
   }
 
   /**

@@ -1,5 +1,5 @@
 /**
- * Canonical tier start step runner: runs validate → branch → childDocs → read → gather → governance → extras → audit → plan → fillChildren → cascade.
+ * Canonical tier start step runner: runs validate → branch → tierDownDocs → read → gather → governance → extras → audit → plan → fillTierDown → cascade.
  * Types live in tiers/shared/tier-start-workflow-types.ts; step logic in tier-start-steps.ts.
  */
 
@@ -13,9 +13,11 @@ import {
   stepContextGatheringPlanMode,
   stepPlanModeExit,
   stepEnsureStartBranch,
-  stepEnsureChildDocs,
+  stepSyncPlannedTierDownToGuide,
+  stepEnsureTierDownDocs,
+  stepSyncGuideFromPlanningDoc,
   stepReadStartContext,
-  stepFillDirectChildren,
+  stepFillDirectTierDown,
   stepGatherContext,
   stepGovernanceContext,
   stepRunExtras,
@@ -85,9 +87,17 @@ export async function runTierStartWorkflow(
   await recordStep(ctx, 'ensure_branch', branchExit ? 'exit_failure' : 'exit_success');
   if (branchExit) return attachShadowPayload(ctx, branchExit);
 
-  await recordStep(ctx, 'ensure_child_docs', 'enter');
-  await stepEnsureChildDocs(ctx, hooks);
-  await recordStep(ctx, 'ensure_child_docs', 'exit_success');
+  await recordStep(ctx, 'sync_planned_tier_down_to_guide', 'enter');
+  await stepSyncPlannedTierDownToGuide(ctx, hooks);
+  await recordStep(ctx, 'sync_planned_tier_down_to_guide', 'exit_success');
+
+  await recordStep(ctx, 'ensure_tier_down_docs', 'enter');
+  await stepEnsureTierDownDocs(ctx, hooks);
+  await recordStep(ctx, 'ensure_tier_down_docs', 'exit_success');
+
+  await recordStep(ctx, 'sync_guide_from_planning', 'enter');
+  await stepSyncGuideFromPlanningDoc(ctx, hooks);
+  await recordStep(ctx, 'sync_guide_from_planning', 'exit_success');
 
   await recordStep(ctx, 'read_start_context', 'enter');
   await stepReadStartContext(ctx, hooks);
@@ -106,16 +116,17 @@ export async function runTierStartWorkflow(
   await recordStep(ctx, 'extras', 'exit_success');
 
   await recordStep(ctx, 'audit', 'enter');
-  await stepStartAudit(ctx, hooks);
-  await recordStep(ctx, 'audit', 'exit_success');
+  const auditExit = await stepStartAudit(ctx, hooks);
+  await recordStep(ctx, 'audit', auditExit ? 'exit_failure' : 'exit_success');
+  if (auditExit) return attachShadowPayload(ctx, auditExit);
 
   await recordStep(ctx, 'plan', 'enter');
   await stepRunTierPlan(ctx, hooks);
   await recordStep(ctx, 'plan', 'exit_success');
 
-  await recordStep(ctx, 'fill_children', 'enter');
-  await stepFillDirectChildren(ctx, hooks);
-  await recordStep(ctx, 'fill_children', 'exit_success');
+  await recordStep(ctx, 'fill_tier_down', 'enter');
+  await stepFillDirectTierDown(ctx, hooks);
+  await recordStep(ctx, 'fill_tier_down', 'exit_success');
 
   if (hooks.getTrailingOutput) {
     const trailing = await hooks.getTrailingOutput(ctx);

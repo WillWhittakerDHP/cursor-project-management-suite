@@ -13,6 +13,7 @@ import { WorkflowCommandContext } from './command-context';
 import { resolveFeatureName } from './feature-context';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
+import { getExcerptEndMarker } from '../tiers/shared/context-policy';
 
 export interface MinimalHandoffUpdate {
   lastCompletedTask: string; // Format: X.Y.Z (e.g., "1.3.4") - last task completed
@@ -155,7 +156,12 @@ Completed Task ${update.lastCompletedTask}
       updatedLines.push(...lines.slice(i));
     }
   }
-  
-  await writeProjectFile(handoffPath, updatedLines.join('\n'));
+
+  let finalContent = updatedLines.join('\n').trimEnd();
+  const sessionMarker = getExcerptEndMarker('session');
+  if (!finalContent.includes(sessionMarker)) {
+    finalContent = finalContent + '\n\n' + sessionMarker;
+  }
+  await writeProjectFile(handoffPath, finalContent);
 }
 

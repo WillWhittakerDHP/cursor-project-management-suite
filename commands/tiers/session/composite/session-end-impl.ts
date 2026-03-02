@@ -14,7 +14,7 @@ import { markSessionComplete, MarkSessionCompleteParams } from './session';
 import { WorkflowCommandContext } from '../../../utils/command-context';
 import { detectSessionModifiedFiles } from '../../../utils/detect-modified-files';
 import { mergeTierBranch } from '../../../git/shared/tier-branch-manager';
-import { getCurrentBranch } from '../../../utils/utils';
+import { getCurrentBranch, readProjectFile, writeProjectFile } from '../../../utils/utils';
 import { validateTestGoals } from '../../../testing/composite/test-goal-validator';
 import { analyzeTestError } from '../../../testing/composite/test-error-analyzer';
 import { requestTestFileFixPermission } from '../../../testing/composite/test-file-fix-permission';
@@ -47,6 +47,7 @@ import type { RunRecorder, RunTraceHandle } from '../../../harness/contracts';
 
 export type EndShadowContext = { recorder: RunRecorder; handle: RunTraceHandle };
 import { proposeVerificationChecklistForSession } from '../../shared/verification-check';
+import { getExcerptEndMarker } from '../../shared/context-policy';
 
 const FRONTEND_ROOT = 'client';
 
@@ -448,6 +449,30 @@ export async function sessionEndImpl(
         c.steps.updateGuide = { success: true, output: `Guide updated with ${p.guideUpdates.length} update(s)` };
       } else {
         c.steps.updateGuide = { success: true, output: 'No guide updates provided' };
+      }
+
+      const sessionMarker = getExcerptEndMarker('session');
+      try {
+        const sessionLogPath = c.context.paths.getSessionLogPath(p.sessionId);
+        let sessionLogContent = await readProjectFile(sessionLogPath);
+        if (!sessionLogContent.includes(sessionMarker)) {
+          sessionLogContent = sessionLogContent.trimEnd() + '\n\n' + sessionMarker;
+          await writeProjectFile(sessionLogPath, sessionLogContent);
+        }
+        c.steps.excerptMarkerSessionLog = { success: true, output: 'Session log excerpt marker ensured' };
+      } catch (_err) {
+        c.steps.excerptMarkerSessionLog = { success: false, output: `Session log marker step skipped: ${_err instanceof Error ? _err.message : String(_err)}` };
+      }
+      try {
+        const sessionGuidePath = c.context.paths.getSessionGuidePath(p.sessionId);
+        let sessionGuideContent = await readProjectFile(sessionGuidePath);
+        if (!sessionGuideContent.includes(sessionMarker)) {
+          sessionGuideContent = sessionGuideContent.trimEnd() + '\n\n' + sessionMarker;
+          await writeProjectFile(sessionGuidePath, sessionGuideContent);
+        }
+        c.steps.excerptMarkerSessionGuide = { success: true, output: 'Session guide excerpt marker ensured' };
+      } catch (_err) {
+        c.steps.excerptMarkerSessionGuide = { success: false, output: `Session guide marker step skipped: ${_err instanceof Error ? _err.message : String(_err)}` };
       }
 
       try {

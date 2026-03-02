@@ -4,12 +4,15 @@
 
 import { join, resolve } from 'path';
 import { execSync } from 'child_process';
-import { readProjectFile, writeProjectFile } from '../../../utils/utils';
 import { readGuide } from '../../../utils/read-guide';
 import { WorkflowCommandContext } from '../../../utils/command-context';
 import { sessionExecutionPolicy } from '../policies/execution-policy';
 import { sessionGitPolicy } from '../policies/git-policy';
-import { sessionContextPolicy } from '../policies/context-policy';
+import {
+  readTierUpContext,
+  getTierContextSourcePolicy,
+  gatherTierContext,
+} from '../../shared/context-policy';
 import { deriveSessionDescription } from './session-end-impl';
 import { SESSION_CONFIG } from '../../configs/session';
 import { getConfigForTier } from '../../configs/index';
@@ -249,82 +252,26 @@ export async function sessionStartImpl(
       await sessionGitPolicy.afterBranch({ sessionId, resolvedDescription });
     },
 
-    async ensureChildDocs(): Promise<void> {
-      const guidePath = context.paths.getSessionGuidePath(sessionId);
-      let content: string;
-      try {
-        content = await readProjectFile(guidePath);
-      } catch {
-        try {
-          const template = await context.templates.loadTemplate('session', 'guide');
-          content = context.templates.render(template, {
-            SESSION_ID: sessionId,
-            DESCRIPTION: resolvedDescription,
-            DATE: new Date().toISOString().split('T')[0],
-          });
-          await context.documents.writeGuide('session', sessionId, content);
-        } catch (err) {
-          console.warn('Session-start ensureChildDocs: could not create session guide', err);
-        }
-        try {
-          await readProjectFile(context.paths.getSessionLogPath(sessionId));
-        } catch {
-          try {
-            await writeProjectFile(
-              context.paths.getSessionLogPath(sessionId),
-              `# Session ${sessionId}: ${resolvedDescription}\n\n`
-            );
-          } catch (logErr) {
-            console.warn('Session-start ensureChildDocs: could not create session log', logErr);
-          }
-        }
-        return;
-      }
-      const firstTaskId = `${sessionId}.1`;
-      const hasFirstTask = new RegExp(`(?:####|###)\\s+Task\\s+${firstTaskId.replace(/\./g, '\\.')}[\\s:]`).test(content);
-      if (hasFirstTask) return;
-      const taskSection = [
-        '',
-        `- [ ] #### Task ${firstTaskId}: ${resolvedDescription}`,
-        '**Goal:** [Fill in]',
-        '**Files:**',
-        '- [Files to work with]',
-        '**Approach:** [Fill in]',
-        '**Checkpoint:** [What needs to be verified]',
-      ].join('\n');
-      try {
-        await context.documents.writeGuide('session', sessionId, content.trimEnd() + '\n\n' + taskSection);
-      } catch (err) {
-        console.warn('Session-start ensureChildDocs: could not append task section', err);
-      }
-    // Ensure session log exists so derivation and task-end have a consistent file (avoids missing-log warnings).
-    try {
-      await readProjectFile(context.paths.getSessionLogPath(sessionId));
-    } catch {
-      try {
-        await writeProjectFile(
-          context.paths.getSessionLogPath(sessionId),
-          `# Session ${sessionId}: ${resolvedDescription}\n\n`
-        );
-      } catch (err) {
-        console.warn('Session-start ensureChildDocs: could not create session log', err);
-      }
-    }
-  },
-
     async readContext(): Promise<TierStartReadResult> {
-      return sessionContextPolicy.readContext({ sessionId, resolvedDescription });
+      return readTierUpContext({
+        tier: 'session',
+        identifier: sessionId,
+        resolvedDescription,
+        context,
+      });
     },
 
     getContextSourcePolicy() {
-      return {
-        tierUpOnly: true as const,
-        allowedSourceDescription: 'Phase guide (session entry) and phase handoff only. Session handoff, session guide, and session log are excluded.',
-      };
+      return getTierContextSourcePolicy('session');
     },
 
     async gatherContext(): Promise<string> {
-      return sessionContextPolicy.gatherContext({ context, sessionId, resolvedDescription });
+      return gatherTierContext({
+        tier: 'session',
+        identifier: sessionId,
+        resolvedDescription,
+        context,
+      });
     },
 
     async getContextQuestions(): Promise<ContextQuestion[]> {
@@ -419,6 +366,25 @@ export async function sessionStartImpl(
       };
     },
 
+    async getTierGoals(): Promise<string> {
+      const guide = ctx.readResult?.guide ?? '';
+      const sessionEntry = guide.match(
+        new RegExp(`(?:###\\s*Session\\s+${sessionId.replace(/\./g, '\\.')}[\\s:]*)([^\\n]+)`, 'i')
+      )?.[1]?.trim();
+      const intent = sessionEntry || resolvedDescription || `Session ${sessionId}`;
+      return `Complete this session's scope: ${intent}. Lock acceptance criteria and file boundaries before execute; deliver via tasks (tierDown).`;
+    },
+
+    async getTierDownBuildPlan(): Promise<string> {
+      const guide = ctx.readResult?.guide ?? '';
+      const tasks = extractTaskDetails(guide, sessionId);
+      if (tasks.length === 0) {
+        return `Enumerate tasks for ${sessionId} (e.g. ${sessionId}.1, ${sessionId}.2) in the session/phase guide, then implement in order with governance checks. Add task blocks (Goal, Files, Approach, Checkpoint) before execute.`;
+      }
+      const lines = tasks.map(t => `- **${t.taskId}:** ${t.title}${t.goal ? ` — ${t.goal}` : ''}`);
+      return `Build the following tasks to achieve the session goals:\n\n${lines.join('\n')}\n\nImplement in order; after each task run task-end and cascade to next or session-end.`;
+    },
+
     async runExtras(): Promise<string> {
       const guideContent = ctx.readResult?.guide ?? (await readGuide(sessionId));
       const firstTaskId = `${sessionId}.1`;
@@ -456,7 +422,7 @@ export async function sessionStartImpl(
       return parts.join('\n');
     },
 
-    async getFirstChildId(): Promise<string | null> {
+    async getFirstTierDownId(): Promise<string | null> {
       return `${sessionId}.1`;
     },
 

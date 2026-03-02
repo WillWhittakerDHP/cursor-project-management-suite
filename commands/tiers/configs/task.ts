@@ -24,11 +24,7 @@ export const TASK_CONFIG: TierConfig = {
       if (!parsed) return ctx.paths.getSessionLogPath(id);
       return ctx.paths.getSessionLogPath(parsed.sessionId);
     },
-    handoff: (ctx, id) => {
-      const parsed = WorkflowId.parseTaskId(id);
-      if (!parsed) return ctx.paths.getSessionHandoffPath(id);
-      return ctx.paths.getSessionHandoffPath(parsed.sessionId);
-    },
+    handoff: (ctx, id) => ctx.paths.getTaskHandoffPath(id),
   },
   controlDoc: {
     path: (ctx, id) => {

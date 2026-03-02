@@ -1,5 +1,5 @@
 /**
- * Shared outcome type for tier end commands (session-end, phase-end, feature-end, task-end).
+ * Shared outcome type for tier end commands (one per tier).
  * Agents use status + reasonCode + nextAction to decide next step without inferring from step text.
  */
 

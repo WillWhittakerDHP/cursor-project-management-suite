@@ -7,6 +7,7 @@ import { join } from 'path';
 import { readFile } from 'fs/promises';
 import { WorkflowCommandContext } from '../../../utils/command-context';
 import { PHASE_CONFIG } from '../../configs/phase';
+import { getExcerptEndMarker } from '../../shared/context-policy';
 
 export interface MarkPhaseCompleteParams {
   phase: string;
@@ -29,7 +30,6 @@ export async function markPhaseCompleteImpl(params: MarkPhaseCompleteParams): Pr
   guideContent = guideContent.replace(successCriteriaPattern, '- [x] All sessions completed');
 
   const otherCriteriaPatterns = [
-    /(- \[ \] All learning goals achieved)/g,
     /(- \[ \] Code quality checks passing)/g,
     /(- \[ \] Documentation updated)/g,
     /(- \[ \] Ready for next phase)/g,
@@ -38,6 +38,10 @@ export async function markPhaseCompleteImpl(params: MarkPhaseCompleteParams): Pr
     guideContent = guideContent.replace(pattern, (match) => match.replace('- [ ]', '- [x]'));
   });
 
+  const phaseGuideMarker = getExcerptEndMarker('phase');
+  if (!guideContent.includes(phaseGuideMarker)) {
+    guideContent = guideContent.trimEnd() + '\n\n' + phaseGuideMarker;
+  }
   await writeProjectFile(phaseGuidePath, guideContent);
   output.push(`✅ Updated phase guide: ${phaseGuidePath}`);
 
@@ -55,6 +59,10 @@ export async function markPhaseCompleteImpl(params: MarkPhaseCompleteParams): Pr
       /(\*\*Last Completed:\*\*)\s*.*/,
       `$1 ${lastSession}`
     );
+    const featureHandoffMarker = getExcerptEndMarker('feature');
+    if (!handoffContent.includes(featureHandoffMarker)) {
+      handoffContent = handoffContent.trimEnd() + '\n\n' + featureHandoffMarker;
+    }
     await writeProjectFile(handoffPath, handoffContent);
     output.push(`✅ Updated handoff: ${handoffPath}`);
   } catch (_error) {
@@ -107,6 +115,10 @@ export async function markPhaseCompleteImpl(params: MarkPhaseCompleteParams): Pr
     logContent += `\n\n## Phase Completion Summary\n\n**Sessions Completed:** ${sessionsList}\n**Total Tasks Completed:** ${totalTasks}\n**Success Criteria Met:** Yes - All success criteria met\n`;
   }
 
+  const phaseLogMarker = getExcerptEndMarker('phase');
+  if (!logContent.includes(phaseLogMarker)) {
+    logContent = logContent.trimEnd() + '\n\n' + phaseLogMarker;
+  }
   await writeProjectFile(phaseLogPath, logContent);
   output.push(`✅ Updated phase log: ${phaseLogPath}`);
 

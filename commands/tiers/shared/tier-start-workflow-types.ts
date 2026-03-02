@@ -10,22 +10,31 @@ import type { EnsureTierBranchResult } from '../../git/shared/tier-branch-manage
 import type { FormatBranchHierarchyOptions } from '../../utils/tier-start-utils';
 import type { CommandExecutionOptions } from '../../utils/command-execution-mode';
 import type { RunRecorder, RunTraceHandle } from '../../harness/contracts';
+import type { TierContextSources } from './context-policy';
+
+/** Per-tierDown item parsed from the planning doc "How we build the tierDown" section. */
+export interface TierDownPlanItem {
+  id: string;
+  description: string;
+}
 
 /** Context passed through the start workflow (mutable output array). */
 export interface TierStartWorkflowContext {
   config: TierConfig;
   identifier: string;
-  /** Resolved display identifier (e.g. feature name, session id). */
+  /** Resolved display identifier (e.g. scope name, tier identifier). */
   resolvedId: string;
   options?: CommandExecutionOptions;
   context: WorkflowCommandContext;
   output: string[];
-  /** Resolved description for scope/display (session/phase/feature/task name). */
+  /** Resolved description for scope/display. */
   resolvedDescription?: string;
   /** Set by read-context step; used by plan step. */
   readResult?: TierStartReadResult;
   /** Set by stepContextGathering; path to the living planning doc for iterative Q&A. */
   planningDocPath?: string;
+  /** Set by stepSyncPlannedTierDownToGuide; per-tierDown id + description from "How we build the tierDown" section. */
+  tierDownPlanItems?: TierDownPlanItem[];
   /** Shadow observability: when set, step events and step-path are recorded. */
   runRecorder?: RunRecorder;
   runTraceHandle?: RunTraceHandle;
@@ -68,8 +77,12 @@ export interface TierStartReadResult {
  */
 export interface TierContextSourcePolicy {
   tierUpOnly: true;
-  /** Human-readable description of allowed sources (e.g. "feature guide and phase descriptor only"). */
-  allowedSourceDescription?: string;
+  /** Which tier supplies guide/handoff/log for this tier's context. */
+  sources: TierContextSources;
+  /** Human-readable description of allowed sources; derived from sources. */
+  allowedSourceDescription: string;
+  /** When true or omitted, include tier-appropriate governance; when false, skip; when string[], scope to those domains (future). */
+  governance?: true | false | string[];
 }
 
 /**
@@ -85,21 +98,22 @@ export interface TierStartWorkflowHooks {
   getTierDeliverables(ctx: TierStartWorkflowContext): Promise<string>;
   ensureBranch?(ctx: TierStartWorkflowContext): Promise<EnsureTierBranchResult>;
   afterBranch?(ctx: TierStartWorkflowContext): Promise<void>;
-  ensureChildDocs?(ctx: TierStartWorkflowContext): Promise<void>;
   readContext?(ctx: TierStartWorkflowContext): Promise<TierStartReadResult>;
   gatherContext?(ctx: TierStartWorkflowContext): Promise<string>;
   runExtras?(ctx: TierStartWorkflowContext): Promise<string>;
-  getFirstChildId?(ctx: TierStartWorkflowContext): Promise<string | null>;
+  /** Returns the first tierDown identifier for cascade (first tierDown in current-tier guide). */
+  getFirstTierDownId?(ctx: TierStartWorkflowContext): Promise<string | null>;
   getCompactPrompt?(ctx: TierStartWorkflowContext): string;
   runStartAudit?: boolean;
   getTrailingOutput?(ctx: TierStartWorkflowContext): Promise<string>;
-  getTaskFilePaths?(ctx: TierStartWorkflowContext): Promise<string[]>;
+  /** Paths for tierDown (e.g. lowest-tier) files. */
+  getTierDownFilePaths?(ctx: TierStartWorkflowContext): Promise<string[]>;
   getContextQuestions?(ctx: TierStartWorkflowContext): Promise<ContextQuestion[]>;
   /**
    * Optional pre-question briefing shown before context decisions:
    * - planningSummary: what the docs indicate we are planning/building this tier.
    * - executionProposal: proposed implementation/code execution approach for this tier.
-   * - taskDesign: (task tier only) explicit coding goal, files, pseudocode, snippets, acceptance for "Design Before Execute".
+   * - taskDesign: (lowest tier only) explicit coding goal, files, pseudocode, snippets, acceptance for "Design Before Execute".
    */
   getContextWorkBrief?(ctx: TierStartWorkflowContext): Promise<{
     planningSummary: string;
@@ -117,6 +131,17 @@ export interface TierStartWorkflowHooks {
    * Enforced in shared steps when building the planning doc.
    */
   getContextSourcePolicy?(ctx: TierStartWorkflowContext): TierContextSourcePolicy;
+  /**
+   * Goals of this tier — what this tier is for and what "done" looks like.
+   * Used as the primary "Goals of this tier" section in the planning doc.
+   */
+  getTierGoals?(ctx: TierStartWorkflowContext): Promise<string>;
+  /**
+   * How we will build the tierDown to achieve those goals (phases for feature, sessions for phase,
+   * tasks for session). Lowest tier may return empty or "Single deliverable (no child tier)."
+   * Used as the primary "How we build the tierDown to achieve them" section in the planning doc.
+   */
+  getTierDownBuildPlan?(ctx: TierStartWorkflowContext): Promise<string>;
 }
 
 export type { TierStartResult, CascadeInfo };

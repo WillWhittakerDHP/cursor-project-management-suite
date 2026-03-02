@@ -758,13 +758,7 @@ function buildTaskGovernance(taskFiles: string[]): string {
     sections.push('### File-Scoped Violations\nNo existing violations in task files.');
   }
 
-  // Inventory matches
-  const inventoryMatches = collectInventoryMatches(taskFiles);
-  if (inventoryMatches.length > 0) {
-    sections.push(
-      `### Related Existing Code\nBefore creating new, check:\n${inventoryMatches.map(m => `- ${m}`).join('\n')}`
-    );
-  }
+  // Inventory (reuse) is built separately by the pipeline via getInventoryMatchesForFiles — not included here so Governance slot is constraints-only.
 
   // Tier-appropriate thresholds based on file types
   const fileTypes = detectTaskFileTypes(taskFiles);
@@ -791,6 +785,14 @@ function buildTaskGovernance(taskFiles: string[]): string {
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
+
+/**
+ * Return inventory matches (composables, utils, types) for the given task files.
+ * Used by task tier to build coding-todos "Reuse:" list in "How we build the tierDown".
+ */
+export function getInventoryMatchesForFiles(taskFiles: string[]): string[] {
+  return collectInventoryMatches(taskFiles);
+}
 
 export interface GovernanceContextConfig {
   tier: TierName;
