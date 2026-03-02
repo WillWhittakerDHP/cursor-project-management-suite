@@ -73,10 +73,17 @@ interface UncommittedResolution {
   message: string;
 }
 
-const AUTO_COMMIT_PREFIXES = ['.cursor/', '.cursor'];
+/**
+ * True if path is .cursor or under .cursor (normalized). Used so we only block
+ * on uncommitted non-.cursor files; .cursor submodule/dir changes are excluded.
+ */
+export function isCursorPath(path: string): boolean {
+  const p = path.trim();
+  return p === '.cursor' || p === 'cursor' || p.startsWith('.cursor/') || p.startsWith('cursor/');
+}
 
 function isAutoCommittable(filePath: string): boolean {
-  return AUTO_COMMIT_PREFIXES.some(p => filePath === p || filePath.startsWith(p + '/'));
+  return isCursorPath(filePath);
 }
 
 /**
@@ -95,7 +102,7 @@ async function resolveUncommittedBeforeCheckout(): Promise<UncommittedResolution
   const changedFiles = lines.map(l => l.slice(3).trim());
 
   const autoFiles = changedFiles.filter(isAutoCommittable);
-  const blockingFiles = changedFiles.filter(f => !isAutoCommittable(f));
+  const blockingFiles = changedFiles.filter(f => !isAutoCommittable(f.trim()));
 
   if (autoFiles.length > 0 && blockingFiles.length === 0) {
     const addResult = await runCommand('git add .cursor');
@@ -130,13 +137,14 @@ async function resolveUncommittedBeforeCheckout(): Promise<UncommittedResolution
       if (commitResult.success) {
         const recheck = await runCommand('git status --porcelain');
         const remaining = (recheck.output ?? '').trim().split('\n').filter(l => l.length > 0);
-        if (remaining.length === 0) {
+        const remainingPaths = remaining.map(l => l.slice(3).trim()).filter(f => !isCursorPath(f));
+        if (remainingPaths.length === 0) {
           return { clean: true, autoCommitted: true, blockingFiles: [], message: 'Auto-committed .cursor changes.' };
         }
         return {
           clean: false,
           autoCommitted: true,
-          blockingFiles: remaining.map(l => l.slice(3).trim()),
+          blockingFiles: remainingPaths,
           message: 'Auto-committed .cursor changes. Remaining uncommitted files need attention.',
         };
       }
