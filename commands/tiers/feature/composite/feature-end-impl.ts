@@ -16,6 +16,7 @@ import { analyzeCodeChangeImpact } from '../../../testing/composite/test-change-
 import { testEndWorkflow } from '../../../testing/composite/test-end-workflow';
 import { buildTierEndOutcome, type TierEndOutcome } from '../../../utils/tier-outcome';
 import { resolveFeatureId } from '../../../utils/feature-context';
+import { getOptionsFromParams } from '../../../utils/command-execution-mode';
 import { FEATURE_CONFIG } from '../../configs/feature';
 import type {
   TierEndWorkflowContext,
@@ -67,6 +68,7 @@ export async function featureEndImpl(
     config: FEATURE_CONFIG,
     identifier: featureName,
     params,
+    options: getOptionsFromParams(params),
     context,
     output: [],
     steps: {},

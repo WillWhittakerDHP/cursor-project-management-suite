@@ -15,7 +15,7 @@ import { TEST_CONFIG } from '../../../testing/utils/test-config';
 import { analyzeTestError } from '../../../testing/composite/test-error-analyzer';
 import { requestTestFileFixPermission } from '../../../testing/composite/test-file-fix-permission';
 import { analyzeCodeChangeImpact, getRecentlyModifiedFiles } from '../../../testing/composite/test-change-detector';
-import { CommandExecutionMode } from '../../../utils/command-execution-mode';
+import { CommandExecutionMode, getOptionsFromParams } from '../../../utils/command-execution-mode';
 import { auditVueArchitecture } from '../../../audit/atomic/audit-vue-architecture';
 import { areAllTasksInSessionComplete } from '../../../utils/phase-session-utils';
 import { resolveFeatureName, resolveFeatureId } from '../../../utils/feature-context';
@@ -89,10 +89,8 @@ export async function taskEndImpl(
     goal: 'Task completed',
     filesCreated: [],
     filesModified: [],
-    vueConceptsLearned: [],
     keyMethodsPorted: [],
     architectureNotes: [],
-    learningCheckpoint: [],
     questionsAnswered: [],
     nextTask: `${sessionId}.${parseInt(parsed.task, 10) + 1}`,
   };
@@ -102,6 +100,7 @@ export async function taskEndImpl(
     config: TASK_CONFIG,
     identifier: params.taskId,
     params: { ...params, taskEntry, sessionId, sessionLogPath, parsed },
+    options: getOptionsFromParams(params),
     context,
     output,
     steps,

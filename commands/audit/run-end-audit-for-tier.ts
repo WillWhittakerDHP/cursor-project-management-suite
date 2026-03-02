@@ -4,7 +4,7 @@
  */
 
 import type { TierName } from '../tiers/shared/types';
-import type { AutofixResult } from './types';
+import type { AutofixResult, AuditStatus } from './types';
 import { auditFeature } from './composite/audit-feature';
 import { auditPhase } from './composite/audit-phase';
 import { auditSession } from './composite/audit-session';
@@ -22,6 +22,10 @@ export interface RunEndAuditParams {
 export interface RunEndAuditResult {
   output: string;
   autofixResult?: AutofixResult;
+  /** For tier-end only: true only when overallStatus === 'pass'. Composites unchanged (warn still success there). */
+  success?: boolean;
+  /** Pass-through from composite auditResult; used by tier-end to stop on warn or fail (Option B). */
+  overallStatus?: AuditStatus;
 }
 
 /**
@@ -40,7 +44,13 @@ export async function runEndAuditForTier(params: RunEndAuditParams): Promise<Run
         modifiedFiles: p?.modifiedFiles,
         testResults: p?.testResults,
       });
-      return { output: result.output, autofixResult: result.autofixResult };
+      const status = (result as { auditResult?: { overallStatus?: AuditStatus } }).auditResult?.overallStatus;
+      return {
+        output: result.output,
+        autofixResult: result.autofixResult,
+        success: status === 'pass',
+        overallStatus: status,
+      };
     }
     case 'phase': {
       const p = rawParams as { modifiedFiles?: string[]; testResults?: unknown };
@@ -50,7 +60,13 @@ export async function runEndAuditForTier(params: RunEndAuditParams): Promise<Run
         modifiedFiles: p?.modifiedFiles,
         testResults: p?.testResults,
       });
-      return { output: result.output, autofixResult: result.autofixResult };
+      const status = (result as { auditResult?: { overallStatus?: AuditStatus } }).auditResult?.overallStatus;
+      return {
+        output: result.output,
+        autofixResult: result.autofixResult,
+        success: status === 'pass',
+        overallStatus: status,
+      };
     }
     case 'session': {
       const p = rawParams as { modifiedFiles?: string[]; testResults?: unknown };
@@ -60,7 +76,13 @@ export async function runEndAuditForTier(params: RunEndAuditParams): Promise<Run
         modifiedFiles: p?.modifiedFiles,
         testResults: p?.testResults,
       });
-      return { output: result.output, autofixResult: result.autofixResult };
+      const status = (result as { auditResult?: { overallStatus?: AuditStatus } }).auditResult?.overallStatus;
+      return {
+        output: result.output,
+        autofixResult: result.autofixResult,
+        success: status === 'pass',
+        overallStatus: status,
+      };
     }
     case 'task': {
       const p = rawParams as { modifiedFiles?: string[]; testResults?: unknown };
@@ -70,7 +92,13 @@ export async function runEndAuditForTier(params: RunEndAuditParams): Promise<Run
         modifiedFiles: p?.modifiedFiles,
         testResults: p?.testResults,
       });
-      return { output: result.output, autofixResult: result.autofixResult };
+      const status = (result as { auditResult?: { overallStatus?: AuditStatus } }).auditResult?.overallStatus;
+      return {
+        output: result.output,
+        autofixResult: result.autofixResult,
+        success: status === 'pass',
+        overallStatus: status,
+      };
     }
     default:
       return { output: '' };

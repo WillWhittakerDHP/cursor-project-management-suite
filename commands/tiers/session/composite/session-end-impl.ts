@@ -22,7 +22,6 @@ import { TEST_CONFIG } from '../../../testing/utils/test-config';
 import { getCurrentDate } from '../../../utils/utils';
 import { runCatchUpTests } from '../../../testing/composite/test-catchup-workflow';
 import { analyzeCodeChangeImpact } from '../../../testing/composite/test-change-detector';
-import { CommandExecutionMode } from '../../../utils/command-execution-mode';
 import { commitAutofixChanges } from '../../../audit/autofix/commit-autofix';
 import { WorkflowId } from '../../../utils/id-utils';
 import { SESSION_CONFIG } from '../../configs/session';
@@ -42,6 +41,7 @@ import type {
   TierEndWorkflowResultWithShadow,
   StepExitResult,
 } from '../../shared/tier-end-workflow-types';
+import { CommandExecutionMode, getOptionsFromParams } from '../../../utils/command-execution-mode';
 import { runTierEndWorkflow } from '../../../harness/run-end-steps';
 import type { RunRecorder, RunTraceHandle } from '../../../harness/contracts';
 
@@ -176,6 +176,7 @@ export async function sessionEndImpl(
     config: SESSION_CONFIG,
     identifier: params.sessionId,
     params: { ...params, description, nextSession, lastCompletedTask },
+    options: getOptionsFromParams(params),
     context,
     output: [],
     steps,

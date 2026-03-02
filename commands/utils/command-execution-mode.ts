@@ -36,6 +36,19 @@ export function resolveCommandExecutionMode(
   return options?.mode ?? defaultMode;
 }
 
+/**
+ * Resolve CommandExecutionOptions from tier params (start or end).
+ * Supports nested params.options (canonical) and flat params.mode for backward compatibility.
+ */
+export function getOptionsFromParams(params: unknown): CommandExecutionOptions | undefined {
+  const p = params as Record<string, unknown> | null | undefined;
+  if (p == null) return undefined;
+  const opts = p.options as CommandExecutionOptions | undefined;
+  if (opts != null && typeof opts === 'object') return opts;
+  if (p.mode !== undefined) return { mode: p.mode as CommandExecutionMode };
+  return undefined;
+}
+
 export function isPlanMode(mode: CommandExecutionMode): boolean {
   return mode === 'plan';
 }

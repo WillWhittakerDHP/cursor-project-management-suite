@@ -3,7 +3,6 @@
  * 
  * Hierarchy: Feature (X) → Phase (X.Y) → Session (X.Y.Z) → Task (X.Y.Z.A)
  * 
- * LEARNING: Centralized ID handling ensures consistency across the codebase
  * WHY: ID format conversion scattered across files leads to bugs and inconsistencies
  * PATTERN: Static utility class for pure functions that don't need instance state
  */

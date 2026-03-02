@@ -15,14 +15,13 @@ import { updateTierScope, clearTierScope } from '../../utils/tier-scope';
 import { runEndAuditForTier } from '../../audit/run-end-audit-for-tier';
 import { buildTierEndOutcome } from '../../utils/tier-outcome';
 
-/** If plan mode, build plan result and return it; else null. */
+/** If plan mode, build plan result and return it; else null. Uses same options contract as tier-start (ctx.options, default execute). */
 export function stepPlanModeExit(
   ctx: TierEndWorkflowContext,
   hooks: TierEndWorkflowHooks
 ): StepExitResult {
-  const params = ctx.params as { mode?: string };
-  const mode = resolveCommandExecutionMode(params);
-  if (!isPlanMode(mode)) return null;
+  const executionMode = resolveCommandExecutionMode(ctx.options, 'execute');
+  if (!isPlanMode(executionMode)) return null;
   const planSteps = hooks.getPlanModeSteps(ctx);
   const { steps, outcome } = buildPlanModeResult(planSteps, 'Execute in execute mode to run workflow.');
   return {
@@ -171,12 +170,12 @@ export async function stepVerificationCheck(
   };
 }
 
-/** Run end audit via runEndAuditForTier when hook says so; append to steps and output. */
+/** Run end audit via runEndAuditForTier when hook says so; append to steps and output. Returns exit on warn/fail (Option B: only tier-end stops on warnings). */
 export async function stepEndAudit(
   ctx: TierEndWorkflowContext,
   hooks: TierEndWorkflowHooks
-): Promise<void> {
-  if (hooks.runEndAudit !== true) return;
+): Promise<StepExitResult> {
+  if (hooks.runEndAudit !== true) return null;
   if (hooks.runBeforeAudit) await hooks.runBeforeAudit(ctx);
   const auditResult = await runEndAuditForTier({
     tier: ctx.config.name,
@@ -184,14 +183,33 @@ export async function stepEndAudit(
     params: ctx.auditPayload ?? ctx.params,
     featureName: ctx.context.feature.name,
   });
-  const auditOutput = typeof auditResult === 'string' ? auditResult : auditResult.output;
+  const raw = typeof auditResult === 'string' ? { output: auditResult } : auditResult;
+  const auditOutput = raw.output ?? '';
+  const passed = typeof auditResult === 'object' && auditResult.success === true;
+
   if (auditOutput) {
-    ctx.steps.audit = { success: true, output: auditOutput };
+    ctx.steps.audit = { success: passed, output: auditOutput };
     ctx.output.push(auditOutput);
   }
   if (typeof auditResult === 'object' && auditResult.autofixResult) {
     ctx.autofixResult = auditResult.autofixResult;
   }
+
+  if (!passed) {
+    return {
+      success: false,
+      output: ctx.output.join('\n\n'),
+      steps: ctx.steps,
+      outcome: buildTierEndOutcome(
+        'blocked_fix_required',
+        'audit_failed',
+        'Fix audit warnings or errors per governance, then re-run this tier-end.',
+        undefined,
+        auditOutput || undefined
+      ),
+    };
+  }
+  return null;
 }
 
 /** Run runAfterAudit hook when provided (e.g. commit autofix changes). */

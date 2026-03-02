@@ -110,8 +110,9 @@ export async function runTierEndWorkflow(
   if (verificationExit) return attachEndShadowPayload(ctx, verificationExit);
 
   await recordEndStep(ctx, 'end_audit', 'enter');
-  await stepEndAudit(ctx, hooks);
-  await recordEndStep(ctx, 'end_audit', 'exit_success');
+  const auditExit = await stepEndAudit(ctx, hooks);
+  await recordEndStep(ctx, 'end_audit', auditExit ? 'exit_failure' : 'exit_success');
+  if (auditExit) return attachEndShadowPayload(ctx, auditExit);
 
   await recordEndStep(ctx, 'after_audit', 'enter');
   const afterAuditExit = await stepAfterAudit(ctx, hooks);

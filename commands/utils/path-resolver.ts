@@ -4,7 +4,6 @@
  * Centralizes all path construction logic for workflow manager documents.
  * Eliminates hardcoded paths throughout the codebase.
  * 
- * LEARNING: Centralized path management reduces duplication and makes refactoring easier
  * WHY: Hardcoded paths scattered across files make changes difficult and error-prone
  * PATTERN: Single source of truth for path construction logic
  */

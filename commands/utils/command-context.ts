@@ -4,7 +4,6 @@
  * Single entry point providing all utilities to commands.
  * Simplifies command implementation by providing pre-configured utilities.
  * 
- * LEARNING: Context objects reduce boilerplate and provide consistent configuration
  * WHY: Commands need multiple utilities; context provides them in one place
  * PATTERN: Facade pattern providing simplified interface to complex utility system
  */

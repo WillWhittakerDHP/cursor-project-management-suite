@@ -16,7 +16,7 @@ import { analyzeTestError } from '../../../testing/composite/test-error-analyzer
 import { requestTestFileFixPermission } from '../../../testing/composite/test-file-fix-permission';
 import { TEST_CONFIG } from '../../../testing/utils/test-config';
 import { analyzeCodeChangeImpact } from '../../../testing/composite/test-change-detector';
-import { CommandExecutionMode } from '../../../utils/command-execution-mode';
+import { CommandExecutionMode, getOptionsFromParams } from '../../../utils/command-execution-mode';
 import { buildTierEndOutcome, type TierEndOutcome, type CascadeInfo } from '../../../utils/tier-outcome';
 import { buildCascadeUp, buildCascadeAcross } from '../../../utils/tier-cascade';
 import { isLastPhaseInFeature } from '../../../utils/phase-session-utils';
@@ -76,6 +76,7 @@ export async function phaseEndImpl(
     config: PHASE_CONFIG,
     identifier: params.phaseId,
     params,
+    options: getOptionsFromParams(params),
     context,
     output: [],
     steps,

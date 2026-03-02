@@ -8,6 +8,7 @@ import type { WorkflowCommandContext } from '../../utils/command-context';
 import type { TierEndOutcome, CascadeInfo } from '../../utils/tier-outcome';
 import type { AutofixResult } from '../../audit/types';
 import type { RunRecorder, RunTraceHandle } from '../../harness/contracts';
+import type { CommandExecutionOptions } from '../../utils/command-execution-mode';
 
 /** Step record shape used by feature/phase/session end results. */
 export type TierEndStepRecord = Record<string, { success: boolean; output: string }>;
@@ -15,11 +16,14 @@ export type TierEndStepRecord = Record<string, { success: boolean; output: strin
 /**
  * Context passed through the end workflow.
  * params is tier-specific; impls cast when building hooks.
+ * options: execution toggles (same contract as tier-start); resolve from params.options ?? { mode: params.mode }.
  */
 export interface TierEndWorkflowContext {
   config: TierConfig;
   identifier: string;
   params: unknown;
+  /** Execution mode options; same contract as tier-start (params.options). Default execute when omitted. */
+  options?: CommandExecutionOptions;
   context: WorkflowCommandContext;
   output: string[];
   steps: TierEndStepRecord;

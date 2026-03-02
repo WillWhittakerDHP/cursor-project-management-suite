@@ -178,11 +178,9 @@ export async function markTaskComplete(params: MarkTaskCompleteParams): Promise<
       goal: params.entry?.goal || 'Task completed',
       filesCreated: params.entry?.filesCreated || [],
       filesModified: params.entry?.filesModified || [],
-      vueConceptsLearned: params.entry?.vueConceptsLearned || [],
       reactVueDifferences: params.entry?.reactVueDifferences,
       keyMethodsPorted: params.entry?.keyMethodsPorted || [],
       architectureNotes: params.entry?.architectureNotes || [],
-      learningCheckpoint: params.entry?.learningCheckpoint || [],
       questionsAnswered: params.entry?.questionsAnswered || [],
       nextTask: params.entry?.nextTask || `Task ${parsed.feature}.${parsed.phase}.${parsed.session}.${parseInt(parsed.task) + 1}`,
     };

@@ -4,7 +4,6 @@
  * Centralizes template loading and rendering.
  * Implements caching to avoid redundant file reads.
  * 
- * LEARNING: Template management separates content structure from data
  * WHY: Templates provide consistent document structure while allowing customization
  * PATTERN: Manager class with caching for performance optimization
  */

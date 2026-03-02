@@ -16,7 +16,7 @@ import {
   modeGateText,
   isPlanMode,
   enforceModeSwitch,
-  type CommandExecutionOptions,
+  getOptionsFromParams,
 } from '../../utils/command-execution-mode';
 import { verifyApp } from '../../utils/verify-app';
 import { routeByOutcome } from './control-plane-route';
@@ -70,7 +70,7 @@ export async function runTierEnd(
   config: TierConfig,
   params: TierEndParams
 ): Promise<TierEndResultWithControlPlane> {
-  const executionMode = resolveCommandExecutionMode(params as CommandExecutionOptions);
+  const executionMode = resolveCommandExecutionMode(getOptionsFromParams(params), 'execute');
   const gate = modeGateText(cursorModeForExecution(executionMode), `${config.name}-end`);
 
   const shadowRecorder = getDefaultShadowRecorder();
@@ -131,8 +131,8 @@ export async function runTierEnd(
       action: 'end',
       identifier,
       featureContext,
-      mode: resolveCommandExecutionMode(params as CommandExecutionOptions),
-      userChoices: (params as Record<string, unknown>).mode !== undefined ? { continuePastVerification: (params as Record<string, unknown>).continuePastVerification as boolean | undefined } : undefined,
+      mode: resolveCommandExecutionMode(getOptionsFromParams(params), 'execute'),
+      userChoices: getOptionsFromParams(params) != null ? { continuePastVerification: (params as Record<string, unknown>).continuePastVerification as boolean | undefined } : undefined,
     });
     const adapter = createTierAdapter({ config, params });
     const shadowRecorder = getDefaultShadowRecorder();

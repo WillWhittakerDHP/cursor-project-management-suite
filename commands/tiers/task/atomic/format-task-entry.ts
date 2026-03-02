@@ -12,11 +12,9 @@ export interface TaskEntry {
   goal: string;
   filesCreated: string[];
   filesModified: string[];
-  vueConceptsLearned: string[];
   reactVueDifferences?: string[]; // Optional - only during migration phase
   keyMethodsPorted: string[];
   architectureNotes: string[];
-  learningCheckpoint: string[];
   questionsAnswered: string[];
   nextTask: string;
 }
@@ -28,10 +26,6 @@ export function formatTaskEntry(entry: TaskEntry): string {
   
   const filesModifiedSection = entry.filesModified.length > 0
     ? `**Files Modified:**\n${entry.filesModified.map(f => `- \`${f}\` - [Description]`).join('\n')}\n`
-    : '';
-  
-  const vueConceptsSection = entry.vueConceptsLearned.length > 0
-    ? `**Vue.js Concepts Learned:**\n${entry.vueConceptsLearned.map(c => `- **${c}**: [Explanation]`).join('\n')}\n`
     : '';
   
   const differencesSection = entry.reactVueDifferences && entry.reactVueDifferences.length > 0
@@ -46,10 +40,6 @@ export function formatTaskEntry(entry: TaskEntry): string {
     ? `**Architecture Notes:**\n${entry.architectureNotes.map(n => `- **${n}**: [Explanation]`).join('\n')}\n`
     : '';
   
-  const checkpointSection = entry.learningCheckpoint.length > 0
-    ? `**Learning Checkpoint:**\n${entry.learningCheckpoint.map(c => `- [x] ${c} ✅`).join('\n')}\n`
-    : '';
-  
   const questionsSection = entry.questionsAnswered.length > 0
     ? `**Questions Answered:**\n${entry.questionsAnswered.map(q => `- **${q}** - [Answer]`).join('\n')}\n`
     : '';
@@ -57,7 +47,7 @@ export function formatTaskEntry(entry: TaskEntry): string {
   return `### Task ${entry.id}: ${entry.description} ✅
 **Goal:** ${entry.goal}
 
-${filesCreatedSection}${filesModifiedSection}${vueConceptsSection}${differencesSection}${methodsSection}${architectureSection}${checkpointSection}${questionsSection}**Next Task:**
+${filesCreatedSection}${filesModifiedSection}${differencesSection}${methodsSection}${architectureSection}${questionsSection}**Next Task:**
 - ${entry.nextTask}
 `;
 }

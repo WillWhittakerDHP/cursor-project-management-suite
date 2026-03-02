@@ -1,0 +1,81 @@
+{
+  "generatedAt": "2026-03-02T19:37:29.232Z",
+  "scope": {
+    "client": {
+      "command": "vue-tsc -b --pretty false",
+      "cwd": "client"
+    },
+    "server": {
+      "command": "tsc --noEmit --pretty false",
+      "cwd": "server"
+    }
+  },
+  "exitCode": 1,
+  "command": "vue-tsc -b --pretty false && tsc --noEmit --pretty false",
+  "exceptionSummary": {
+    "totalAllowed": 0,
+    "totalRequiresReview": 1,
+    "bySource": {
+      "inline": 0,
+      "pattern": 0,
+      "specific": 0
+    }
+  },
+  "errors": [
+    {
+      "file": "src/components/booking/BookingWizard.vue",
+      "line": 191,
+      "col": 3,
+      "code": "TS2739",
+      "message": "Type 'Ref<WizardMode, WizardMode>' is missing the following properties from type 'ComputedRef<WizardMode>': effect, [ComputedRefSymbol]",
+      "raw": "src/components/booking/BookingWizard.vue(191,3): error TS2739: Type 'Ref<WizardMode, WizardMode>' is missing the following properties from type 'ComputedRef<WizardMode>': effect, [ComputedRefSymbol]",
+      "scope": "client",
+      "repoPath": "src/components/booking/BookingWizard.vue"
+    }
+  ],
+  "allowedErrors": [],
+  "pools": [
+    {
+      "poolId": "TS2739-ts2739-type-ref-wizardmode-wizardmode-is-missing-the-following-properties-from-type-computedref-wizardmode-effect-comput",
+      "groupKey": "TS2739::Type 'Ref<WizardMode, WizardMode>' is missing the following properties from type 'ComputedRef<WizardMode>': effect, [ComputedRefSymbol]",
+      "errorCount": 1,
+      "fileCount": 1,
+      "severityScore": 9,
+      "blastRadiusScore": 2,
+      "repetitionScore": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 12,
+      "sample": [
+        {
+          "repoPath": "src/components/booking/BookingWizard.vue",
+          "line": 191,
+          "col": 3,
+          "code": "TS2739",
+          "message": "Type 'Ref<WizardMode, WizardMode>' is missing the following properties from type 'ComputedRef<WizardMode>': effect, [ComputedRefSymbol]"
+        }
+      ],
+      "priority": "P1"
+    }
+  ],
+  "files": [
+    {
+      "repoPath": "src/components/booking/BookingWizard.vue",
+      "errorCount": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "errors": [
+        {
+          "file": "src/components/booking/BookingWizard.vue",
+          "line": 191,
+          "col": 3,
+          "code": "TS2739",
+          "message": "Type 'Ref<WizardMode, WizardMode>' is missing the following properties from type 'ComputedRef<WizardMode>': effect, [ComputedRefSymbol]",
+          "raw": "src/components/booking/BookingWizard.vue(191,3): error TS2739: Type 'Ref<WizardMode, WizardMode>' is missing the following properties from type 'ComputedRef<WizardMode>': effect, [ComputedRefSymbol]",
+          "scope": "client",
+          "repoPath": "src/components/booking/BookingWizard.vue"
+        }
+      ]
+    }
+  ]
+}
