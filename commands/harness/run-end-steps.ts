@@ -18,6 +18,7 @@ import {
   stepTierMidWork,
   stepCommentCleanup,
   stepReadmeCleanup,
+  stepCommitUncommittedNonCursor,
   stepTierGit,
   stepVerificationCheck,
   stepEndAudit,
@@ -98,6 +99,10 @@ export async function runTierEndWorkflow(
   await recordEndStep(ctx, 'readme_cleanup', 'enter');
   await stepReadmeCleanup(ctx, hooks);
   await recordEndStep(ctx, 'readme_cleanup', 'exit_success');
+
+  await recordEndStep(ctx, 'commit_remaining', 'enter');
+  await stepCommitUncommittedNonCursor(ctx);
+  await recordEndStep(ctx, 'commit_remaining', 'exit_success');
 
   await recordEndStep(ctx, 'git', 'enter');
   const gitExit = await stepTierGit(ctx, hooks);

@@ -283,7 +283,7 @@ export async function sessionEndImpl(
       return null;
     },
 
-    async runVerificationCheck(c): Promise<{ suggested: boolean; checklist?: string } | null> {
+    async runVerificationCheck(c): Promise<{ suggested: boolean; checklist?: string; productChecklist?: string; artifactChecklist?: string } | null> {
       const p = c.params as SessionEndParams;
       return proposeVerificationChecklistForSession(p.sessionId, c.context);
     },

@@ -3,7 +3,7 @@
 **Feature:** appointment-workflow
 **Tier:** session
 **Identifier:** 6.5.2
-**Timestamp:** 2026-03-02T20:03:52.120Z
+**Timestamp:** 2026-03-02T20:55:58.827Z
 **Overall Status:** ⚠️ WARN
 
 ---
@@ -14,25 +14,28 @@
 - **Warn:** 3
 - **Fail:** 0
 
-**Average Score:** 74/100
+**Average Score:** 80/100
 
 ---
 
 ## Tier-quality Audit
 
 **Status:** ⚠️ WARN
-**Score:** 86/100
+**Score:** 76/100
 
-Ran 9 session-tier audits; found 0 error(s), 1 warning(s), 2 info signal(s).
+Ran 9 session-tier audits; found 0 error(s), 2 warning(s), 2 info signal(s).
 
 ### Findings
 
-- ⚠️ **WARNING**: 2 file(s) with high complexity scores
+- ⚠️ **WARNING**: 1 file(s) with high complexity scores
   - Location: /Users/districthomepro/Bonsai/Differential_Scheduler/client/.audit-reports/composables-logic-audit.json
   - Suggestion: Review client/.audit-reports/composables-logic-audit.md for top hotspots
 - ℹ️ **INFO**: constants-consolidation audit produced output (review JSON for details)
   - Location: /Users/districthomepro/Bonsai/Differential_Scheduler/client/.audit-reports/constants-consolidation-audit.json
   - Suggestion: Review client/.audit-reports/constants-consolidation-audit.json for findings
+- ⚠️ **WARNING**: 2 composable(s) missing explicit return type
+  - Location: /Users/districthomepro/Bonsai/Differential_Scheduler/client/.audit-reports/composable-health-audit.json
+  - Suggestion: Review composable-health-audit.md wave 1 for local fixes
 - ℹ️ **INFO**: 1 high-fan-in composable finding(s) requiring coordinated repair
   - Location: /Users/districthomepro/Bonsai/Differential_Scheduler/client/.audit-reports/composable-health-audit.json
   - Suggestion: Review composable-health-audit.md wave 3 for multi-file planning
@@ -52,9 +55,9 @@ Ran 9 session-tier audits; found 0 error(s), 1 warning(s), 2 info signal(s).
 
 ### Findings
 
-- ⚠️ **WARNING**: Guide missing or incomplete section: Session Workflow
+- ⚠️ **WARNING**: Guide missing or incomplete section: Learning Goals
   - Location: .project-manager/features/appointment-workflow/sessions/session-6.5.2-guide.md
-  - Suggestion: Add or complete Session Workflow section in guide
+  - Suggestion: Add or complete Learning Goals section in guide
 
 ### Recommendations
 
@@ -65,26 +68,17 @@ Ran 9 session-tier audits; found 0 error(s), 1 warning(s), 2 info signal(s).
 ## Vue-architecture Audit
 
 **Status:** ⚠️ WARN
-**Score:** 40/100
+**Score:** 70/100
 
-Scanned 175 .vue file(s); found 0 error(s), 6 warning(s).
+Scanned 175 .vue file(s); found 0 error(s), 3 warning(s).
 
 ### Findings
 
-- ⚠️ **WARNING**: Component script is large (193 non-empty lines). This often indicates logic creep.
-  - Location: client/src/components/booking/BookingWizard.vue
-  - Suggestion: Move domain rules/orchestration into composables; keep only UI state and event wiring.
-- ⚠️ **WARNING**: Component script is large (229 non-empty lines). This often indicates logic creep.
-  - Location: client/src/views/admin/tabs/InstancesTab.vue
-  - Suggestion: Move domain rules/orchestration into composables; keep only UI state and event wiring.
 - ⚠️ **WARNING**: Component defines many local functions (14). Consider extracting reusable/domain logic into composables.
   - Location: client/src/views/admin/tabs/components/CapacityConstraintsPanel.vue
   - Suggestion: If functions implement business rules or shared transforms, move them into composables/utilities.
 - ⚠️ **WARNING**: Component defines many local functions (9). Consider extracting reusable/domain logic into composables.
   - Location: client/src/views/admin/tabs/components/GridConfigPanel.vue
-  - Suggestion: If functions implement business rules or shared transforms, move them into composables/utilities.
-- ⚠️ **WARNING**: Component defines many local functions (9). Consider extracting reusable/domain logic into composables.
-  - Location: client/src/views/admin/tabs/components/OverlapConstraintsPanel.vue
   - Suggestion: If functions implement business rules or shared transforms, move them into composables/utilities.
 - ⚠️ **WARNING**: Component defines many local functions (11). Consider extracting reusable/domain logic into composables.
   - Location: client/src/views/admin/tabs/components/PropertyCreateForm.vue

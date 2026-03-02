@@ -11,9 +11,10 @@ import type {
 import { resolveCommandExecutionMode, isPlanMode } from '../../utils/command-execution-mode';
 import { resolveRunTests, buildPlanModeResult } from '../../utils/tier-end-utils';
 import { workflowCleanupReadmes } from '../../readme/composite/readme-workflow-cleanup';
-import { updateTierScope, clearTierScope } from '../../utils/tier-scope';
+import { updateTierScope, clearTierScope, readTierScope, formatScopeCommitPrefix } from '../../utils/tier-scope';
 import { runEndAuditForTier } from '../../audit/run-end-audit-for-tier';
 import { buildTierEndOutcome } from '../../utils/tier-outcome';
+import { commitUncommittedNonCursor } from '../../git/shared/tier-branch-manager';
 
 /** If plan mode, build plan result and return it; else null. Uses same options contract as tier-start (ctx.options, default execute). */
 export function stepPlanModeExit(
@@ -113,6 +114,29 @@ export async function stepReadmeCleanup(
   });
   ctx.steps.readmeCleanup = { success: true, output: report };
   ctx.output.push(report);
+}
+
+/**
+ * Commit any uncommitted non-.cursor changes with a tier-scoped message so they are
+ * included in the final push. Uses git layer (tier-branch-manager.commitUncommittedNonCursor).
+ * Runs before stepTierGit; no-op if working tree clean or only .cursor changed.
+ */
+export async function stepCommitUncommittedNonCursor(
+  ctx: TierEndWorkflowContext
+): Promise<void> {
+  let scopeConfig;
+  try {
+    scopeConfig = await readTierScope();
+  } catch {
+    scopeConfig = { feature: null, phase: null, session: null, task: null };
+  }
+  const prefix = formatScopeCommitPrefix(scopeConfig, ctx.config.name);
+  const commitMessage = `${prefix} tier-end: commit remaining work`;
+
+  const result = await commitUncommittedNonCursor(commitMessage);
+  if (!result.committed && !result.output) return;
+  ctx.steps.commitRemaining = { success: result.success, output: result.output };
+  ctx.output.push(result.output);
 }
 
 /** Call hook runGit; return its result or null. */

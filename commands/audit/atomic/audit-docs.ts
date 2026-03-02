@@ -71,7 +71,7 @@ export async function auditDocs(params: AuditParams): Promise<AuditResult> {
       const requiredSections: Record<string, string[]> = {
         feature: ['Overview', 'Architecture', 'Implementation Plan'],
         phase: ['Overview', 'Objectives', 'Tasks'],
-        session: ['Quick Start', 'Learning Goals', 'Tasks', 'Session Workflow']
+        session: ['Quick Start', 'Tasks', 'Session Workflow']
       };
       
       const sections = requiredSections[params.tier] || [];

@@ -63,7 +63,12 @@ export interface TierEndWorkflowHooks {
   runEndAudit?: boolean;
   runBeforeAudit?(ctx: TierEndWorkflowContext): Promise<void>;
   runAfterAudit?(ctx: TierEndWorkflowContext): Promise<StepExitResult>;
-  runVerificationCheck?(ctx: TierEndWorkflowContext): Promise<{ suggested: boolean; checklist?: string } | null>;
+  runVerificationCheck?(ctx: TierEndWorkflowContext): Promise<{
+    suggested: boolean;
+    checklist?: string;
+    productChecklist?: string;
+    artifactChecklist?: string;
+  } | null>;
   getCascade?(ctx: TierEndWorkflowContext): Promise<CascadeInfo | null>;
   getSuccessOutcome(ctx: TierEndWorkflowContext): TierEndOutcome;
 }

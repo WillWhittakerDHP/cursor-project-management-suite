@@ -6,11 +6,11 @@
     {
       "category": "tier-quality",
       "status": "warn",
-      "score": 86,
+      "score": 76,
       "findings": [
         {
           "type": "warning",
-          "message": "2 file(s) with high complexity scores",
+          "message": "1 file(s) with high complexity scores",
           "location": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/.audit-reports/composables-logic-audit.json",
           "suggestion": "Review client/.audit-reports/composables-logic-audit.md for top hotspots"
         },
@@ -19,6 +19,12 @@
           "message": "constants-consolidation audit produced output (review JSON for details)",
           "location": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/.audit-reports/constants-consolidation-audit.json",
           "suggestion": "Review client/.audit-reports/constants-consolidation-audit.json for findings"
+        },
+        {
+          "type": "warning",
+          "message": "2 composable(s) missing explicit return type",
+          "location": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/.audit-reports/composable-health-audit.json",
+          "suggestion": "Review composable-health-audit.md wave 1 for local fixes"
         },
         {
           "type": "info",
@@ -30,7 +36,7 @@
       "recommendations": [
         "Review audit reports for warnings"
       ],
-      "summary": "Ran 9 session-tier audits; found 0 error(s), 1 warning(s), 2 info signal(s)."
+      "summary": "Ran 9 session-tier audits; found 0 error(s), 2 warning(s), 2 info signal(s)."
     },
     {
       "category": "docs",
@@ -39,9 +45,9 @@
       "findings": [
         {
           "type": "warning",
-          "message": "Guide missing or incomplete section: Session Workflow",
+          "message": "Guide missing or incomplete section: Learning Goals",
           "location": ".project-manager/features/appointment-workflow/sessions/session-6.5.2-guide.md",
-          "suggestion": "Add or complete Session Workflow section in guide"
+          "suggestion": "Add or complete Learning Goals section in guide"
         }
       ],
       "recommendations": [
@@ -52,20 +58,8 @@
     {
       "category": "vue-architecture",
       "status": "warn",
-      "score": 40,
+      "score": 70,
       "findings": [
-        {
-          "type": "warning",
-          "message": "Component script is large (193 non-empty lines). This often indicates logic creep.",
-          "location": "client/src/components/booking/BookingWizard.vue",
-          "suggestion": "Move domain rules/orchestration into composables; keep only UI state and event wiring."
-        },
-        {
-          "type": "warning",
-          "message": "Component script is large (229 non-empty lines). This often indicates logic creep.",
-          "location": "client/src/views/admin/tabs/InstancesTab.vue",
-          "suggestion": "Move domain rules/orchestration into composables; keep only UI state and event wiring."
-        },
         {
           "type": "warning",
           "message": "Component defines many local functions (14). Consider extracting reusable/domain logic into composables.",
@@ -80,12 +74,6 @@
         },
         {
           "type": "warning",
-          "message": "Component defines many local functions (9). Consider extracting reusable/domain logic into composables.",
-          "location": "client/src/views/admin/tabs/components/OverlapConstraintsPanel.vue",
-          "suggestion": "If functions implement business rules or shared transforms, move them into composables/utilities."
-        },
-        {
-          "type": "warning",
           "message": "Component defines many local functions (11). Consider extracting reusable/domain logic into composables.",
           "location": "client/src/views/admin/tabs/components/PropertyCreateForm.vue",
           "suggestion": "If functions implement business rules or shared transforms, move them into composables/utilities."
@@ -95,10 +83,10 @@
         "Review `.project-manager/patterns/vue-architecture-contract.md` and move domain logic out of components.",
         "Review `.project-manager/patterns/composable-taxonomy.md` and standardize composable naming/return shapes."
       ],
-      "summary": "Scanned 175 .vue file(s); found 0 error(s), 6 warning(s)."
+      "summary": "Scanned 175 .vue file(s); found 0 error(s), 3 warning(s)."
     }
   ],
-  "timestamp": "2026-03-02T20:03:52.120Z",
+  "timestamp": "2026-03-02T20:55:58.827Z",
   "reportPath": "",
   "featureName": "appointment-workflow",
   "auditType": "end",

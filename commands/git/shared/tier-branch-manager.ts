@@ -160,6 +160,50 @@ async function resolveUncommittedBeforeCheckout(): Promise<UncommittedResolution
 }
 
 /**
+ * Commit any uncommitted non-.cursor changes with the given message (e.g. tier-end "remaining work").
+ * Uses same status/parsing strategy as resolveUncommittedBeforeCheckout; does not touch .cursor.
+ * Use from tier-end before runGit so the final push includes this commit.
+ */
+export async function commitUncommittedNonCursor(commitMessage: string): Promise<{
+  committed: boolean;
+  success: boolean;
+  output: string;
+}> {
+  const status = await runCommand('git status --porcelain');
+  if (!status.success || !status.output.trim()) {
+    return { committed: false, success: true, output: '' };
+  }
+
+  const lines = status.output.trim().split('\n').filter(l => l.length > 0);
+  const changedPaths = lines.map(l => l.slice(3).trim());
+  const nonCursorPaths = changedPaths.filter(p => !isCursorPath(p.trim()));
+  if (nonCursorPaths.length === 0) {
+    return { committed: false, success: true, output: '' };
+  }
+
+  const addResult = await runCommand('git add -A');
+  if (!addResult.success) {
+    return { committed: false, success: false, output: `Failed to stage: ${addResult.error || addResult.output}` };
+  }
+  const resetResult = await runCommand('git reset -- .cursor');
+  if (!resetResult.success) {
+    return { committed: false, success: false, output: `Failed to unstage .cursor: ${resetResult.error || resetResult.output}` };
+  }
+
+  const diffStaged = await runCommand('git diff --cached --quiet');
+  if (diffStaged.success) {
+    return { committed: false, success: true, output: '' };
+  }
+
+  const safeMessage = commitMessage.replace(/'/g, "'\\''");
+  const commitResult = await runCommand(`git commit -m '${safeMessage}'`);
+  const output = commitResult.success
+    ? `Committed remaining uncommitted (non-.cursor) work: ${commitMessage}`
+    : `Commit remaining work failed: ${commitResult.error || commitResult.output}`;
+  return { committed: true, success: commitResult.success, output };
+}
+
+/**
  * Resolve the identifier the parent tier needs for getBranchName.
  *
  * Session (3.6.1) -> parent is phase -> needs phase id "3.6"
