@@ -404,3 +404,91 @@ export function getTierContextSourcePolicy(tier: TierName): {
     governance: true,
   };
 }
+
+/** Max characters for continuity summary in the short planning prompt. */
+const CONTINUITY_SUMMARY_MAX = 600;
+
+/**
+ * Extract the last "Where we left off" and "What you need to start" blocks from handoff text
+ * and return a curated 3–5 sentence summary. Caps at CONTINUITY_SUMMARY_MAX chars.
+ */
+export function buildContinuitySummary(
+  handoffText: string | undefined,
+  _logText: string | undefined,
+  tier: TierName
+): string {
+  if (!handoffText?.trim()) {
+    return `No prior handoff for this ${tier}.`;
+  }
+  const whereRe = /\*\*Where we left off:\*\*\s*([\s\S]*?)(?=\n\*\*|\n##|\n---|\n<!-- end excerpt|$)/gi;
+  const whatRe = /\*\*What you need to start:\*\*\s*([\s\S]*?)(?=\n\*\*|\n##|\n---|\n<!-- end excerpt|$)/gi;
+  const whereMatches = [...handoffText.matchAll(whereRe)];
+  const whatMatches = [...handoffText.matchAll(whatRe)];
+  const lastWhere = whereMatches.length > 0 ? whereMatches[whereMatches.length - 1][1].trim() : '';
+  const lastWhat = whatMatches.length > 0 ? whatMatches[whatMatches.length - 1][1].trim() : '';
+  const combined = [lastWhere, lastWhat].filter(Boolean).join(' ');
+  if (!combined) {
+    return `No prior handoff for this ${tier}.`;
+  }
+  const trimmed = combined.replace(/\s+/g, ' ').trim();
+  if (trimmed.length <= CONTINUITY_SUMMARY_MAX) {
+    return trimmed;
+  }
+  return trimmed.slice(0, CONTINUITY_SUMMARY_MAX) + ' (See full handoff linked below)';
+}
+
+/** Tier-aware reference paths for the short planning doc (links only). */
+export interface ReferencePaths {
+  tierUpGuide: string;
+  handoff: string | null;
+  auditReportsDir: string;
+  playbooks: string[];
+}
+
+const GOVERNANCE_PLAYBOOKS = [
+  '.project-manager/TYPE_AUTHORING_PLAYBOOK.md',
+  '.project-manager/COMPOSABLE_AUTHORING_PLAYBOOK.md',
+  '.project-manager/FUNCTION_AUTHORING_PLAYBOOK.md',
+  '.project-manager/COMPONENT_AUTHORING_PLAYBOOK.md',
+];
+
+/**
+ * Build tier-aware reference file paths for the planning doc Reference section.
+ * Paths are relative to repo root.
+ */
+export function buildReferencePaths(
+  tier: TierName,
+  identifier: string,
+  context: WorkflowCommandContext
+): ReferencePaths {
+  const basePath = context.paths.getBasePath();
+  let tierUpGuide: string;
+  let handoff: string | null = null;
+
+  if (tier === 'feature') {
+    tierUpGuide = context.paths.getFeatureGuidePath();
+    handoff = context.paths.getFeatureHandoffPath();
+  } else if (tier === 'phase') {
+    tierUpGuide = context.paths.getFeatureGuidePath();
+    const prevPhaseId = WorkflowId.getPreviousSiblingId(identifier, 'phase');
+    handoff = prevPhaseId ? context.paths.getPhaseHandoffPath(prevPhaseId) : null;
+  } else if (tier === 'session') {
+    const parsed = WorkflowId.parseSessionId(identifier);
+    tierUpGuide = parsed ? context.paths.getPhaseGuidePath(parsed.phaseId) : `${basePath}/phases/phase-?.?.?-guide.md`;
+    const prevSessionId = WorkflowId.getPreviousSiblingId(identifier, 'session');
+    handoff = prevSessionId ? context.paths.getSessionHandoffPath(prevSessionId) : null;
+  } else {
+    const parsed = WorkflowId.parseTaskId(identifier);
+    const sessionId = parsed?.sessionId ?? '';
+    tierUpGuide = context.paths.getSessionGuidePath(sessionId);
+    const prevTaskId = WorkflowId.getPreviousSiblingId(identifier, 'task');
+    handoff = prevTaskId ? context.paths.getTaskHandoffPath(prevTaskId) : null;
+  }
+
+  return {
+    tierUpGuide,
+    handoff,
+    auditReportsDir: 'client/.audit-reports/',
+    playbooks: [...GOVERNANCE_PLAYBOOKS],
+  };
+}

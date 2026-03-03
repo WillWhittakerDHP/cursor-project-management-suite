@@ -19,7 +19,8 @@ import { resolveCommandExecutionMode, isPlanMode } from '../../utils/command-exe
 import { runTierPlan } from './tier-plan';
 import { buildCascadeDown } from '../../utils/tier-cascade';
 import { runStartAuditForTier } from '../../audit/run-start-audit-for-tier';
-import { buildGovernanceContext, getInventoryMatchesForFiles } from '../../audit/governance-context';
+import { buildGovernanceContext } from '../../audit/governance-context';
+import { buildContinuitySummary, buildReferencePaths, type ReferencePaths } from './context-policy';
 import { fillDirectTierDownInGuide } from './fill-direct-tier-down';
 import {
   runEnsureTierDownDocsForTier,
@@ -519,6 +520,55 @@ export async function stepGovernanceContext(
   if (governance) ctx.output.push(governance);
 }
 
+/** Placeholder strings that indicate the planning doc has not been filled by the agent. */
+export const PLACEHOLDER_REFINED = '[To be refined during discussion]';
+
+/** Task-tier placeholders (same enforcement for all tiers). */
+const TASK_PLACEHOLDERS = [
+  '[Define explicit coding goal before beginning implementation]',
+  '[List files to touch]',
+  '[Outline steps before coding]',
+  '[Key code shapes or signatures]',
+  '[What to verify when done]',
+] as const;
+
+/**
+ * Returns false if the planning doc content still contains placeholders (doc not filled).
+ * Used by acceptedProceed and acceptedCode to block proceeding until the agent fills the doc.
+ * All tiers (feature, phase, session, task) use the same check.
+ */
+export function isPlanningDocFilled(content: string): boolean {
+  if (content.includes(PLACEHOLDER_REFINED)) {
+    return false;
+  }
+  for (const p of TASK_PLACEHOLDERS) {
+    if (content.includes(p)) return false;
+  }
+  return true;
+}
+
+/**
+ * Build planning doc path from tier, identifier, and base path.
+ * Used by acceptedProceed and acceptedCode to locate the doc when validating before proceed/execute.
+ * All tiers (feature, phase, session, task) use the same planning-doc fill check.
+ */
+export function getPlanningDocPathForTier(
+  tier: 'feature' | 'phase' | 'session' | 'task',
+  identifier: string,
+  basePath: string
+): string {
+  if (tier === 'feature') {
+    return `${basePath}/feature-planning.md`;
+  }
+  if (tier === 'phase') {
+    return `${basePath}/phases/phase-${identifier}-planning.md`;
+  }
+  if (tier === 'task') {
+    return `${basePath}/sessions/task-${identifier}-planning.md`;
+  }
+  return `${basePath}/sessions/session-${identifier}-planning.md`;
+}
+
 /** Build planning doc path for task or session (sessions dir). */
 function getPlanningDocPath(ctx: TierStartWorkflowContext): string {
   const base = ctx.context.paths.getBasePath();
@@ -577,7 +627,7 @@ export function parsePlanningDocSections(content: string): ParsedPlanningSection
   };
 }
 
-/** Format a single context item as Insight + Proposal + Decision block (or plain question fallback). */
+/** Format a single context item as Insight + Proposal + Decision block (for chat output only). */
 function formatContextItemBlock(q: ContextQuestion, index: number): string {
   const parts: string[] = [];
   parts.push(`### ${index + 1}. ${q.insight ? 'Insight / Proposal / Decision' : 'Question'}`);
@@ -597,51 +647,9 @@ function formatContextItemBlock(q: ContextQuestion, index: number): string {
   return parts.join('\n\n');
 }
 
-/** Max characters to include from guide/handoff in planning doc so the doc stays readable. */
-const LOADED_CONTEXT_EXCERPT_MAX = 3200;
-
-function truncateForLoadedContext(text: string, maxLen: number = LOADED_CONTEXT_EXCERPT_MAX): string {
-  const t = text.trim();
-  if (t.length <= maxLen) return t;
-  return t.slice(0, maxLen) + '\n\n*(excerpt truncated)*';
-}
-
-// ---------------------------------------------------------------------------
-// Prompt contract: roles, slot order, section titles (Part 1 + 5)
-// ---------------------------------------------------------------------------
-
-/** Short header stating Loaded Context slot order and roles. */
-export const PROMPT_CONTRACT_HEADER =
-  'Below: 1) Goal (must satisfy), 2) Context policy (reference), 3) Governance (must satisfy), 4) Inventory (consult for reuse/adapt before creating new), 5) Continuity (handoff), 6) Reference (guide).';
-
-/**
- * Phase 2: Unify run output with the same contract (stepFormatOutputToContract).
- * Run output is currently built by appending in step order; to match the planning doc we would
- * store readResult/governance on ctx and build one "Loaded Context" string from buildLoadedContextBlocks
- * and replace the middle segment of ctx.output with it. Deferred so planning doc is the single source of contract first.
- */
-export const PROMPT_CONTRACT_PHASE2_RUN_OUTPUT = 'defer';
-
-/** Section titles with role in the heading. */
-export const LOADED_CONTEXT_SECTION_TITLES = {
-  goal: '### Goal (must satisfy)',
-  governance: '### Governance (must satisfy — thresholds and findings)',
-  inventory:
-    '### Inventory (reference — reuse: consult to see if we have anything built that could be directly used or adapted)',
-  continuity: '### Continuity (handoff — where we left off)',
-  referenceGuide: '### Reference (tierUp guide excerpt — do not treat as task list)',
-} as const;
-
-/** One block in the Loaded Context section; order is determined by buildLoadedContextBlocks. */
-export interface LoadedContextBlock {
-  role: 'scope_policy' | 'goal' | 'governance' | 'inventory' | 'continuity' | 'reference_guide';
-  title: string;
-  content: string;
-  truncate?: number;
-}
-
-function extractGovernanceHighlights(output: string): string[] {
-  const lines = output.split('\n');
+/** Extract a one-liner from governance context for the short planning doc Contract section. */
+function buildGovernanceOneLiner(governanceContext: string): string {
+  const lines = (governanceContext || '').split('\n');
   const findings = lines
     .map(line => line.trim())
     .filter(line =>
@@ -649,219 +657,41 @@ function extractGovernanceHighlights(output: string): string[] {
       (line.includes('P0') || line.includes('P1') || line.includes('violations') || line.includes('hotspot'))
     )
     .slice(0, 6);
-  return findings;
+  if (findings.length === 0) return 'Clean — no violations detected';
+  return `${findings.length} governance highlights — read reports before filling slots`;
 }
 
-/**
- * Enforce tierUp-only: loaded context in the planning doc is from tierUp sources only;
- * tierDown docs are excluded. Call when building planning doc in plan mode.
- */
-function getTierUpOnlyPolicyNote(
-  ctx: TierStartWorkflowContext,
-  hooks: TierStartWorkflowHooks
-): string | undefined {
-  const policy = hooks.getContextSourcePolicy?.(ctx);
-  if (!policy?.tierUpOnly) return undefined;
-  const desc = policy.allowedSourceDescription?.trim();
-  return desc
-    ? `- **Context source policy:** tierUp only. ${desc}`
-    : `- **Context source policy:** tierUp only. TierDown documents are excluded from planning.`;
-}
-
-/**
- * Build Loaded Context blocks in prompt-contract order: scope+policy, goal, governance, inventory, continuity, reference (guide).
- * Used by both planning doc and (Phase 2) run-output formatting. Governance block uses constraints-only content; inventory is built from getInventoryMatchesForFiles for task tier.
- */
-export function buildLoadedContextBlocks(
-  ctx: TierStartWorkflowContext,
-  hooks: TierStartWorkflowHooks,
-  governanceContextConstraintsOnly: string,
-  contextWorkBrief: { planningSummary: string; executionProposal: string } | undefined,
-  readResult: TierStartReadResult | undefined,
-  taskFiles: string[] | undefined
-): LoadedContextBlock[] {
-  const blocks: LoadedContextBlock[] = [];
-  const tier = ctx.config.name;
-  const policyNote = getTierUpOnlyPolicyNote(ctx, hooks);
-
-  // 1. Scope + context source policy (reference)
-  const scopePolicyContent = ['- **Scope:** ' + ctx.resolvedId].concat(
-    policyNote ? ['', policyNote] : []
-  ).join('\n');
-  blocks.push({
-    role: 'scope_policy',
-    title: '',
-    content: scopePolicyContent,
-  });
-
-  // 2. Goal (must satisfy)
-  const goalParts: string[] = [];
-  if (contextWorkBrief?.planningSummary?.trim()) {
-    goalParts.push('**What we are planning:**', '', contextWorkBrief.planningSummary.trim(), '');
-  }
-  if (contextWorkBrief?.executionProposal?.trim()) {
-    goalParts.push('', '**Proposed approach:**', '', contextWorkBrief.executionProposal.trim(), '');
-  }
-  blocks.push({
-    role: 'goal',
-    title: LOADED_CONTEXT_SECTION_TITLES.goal,
-    content: goalParts.length > 0 ? goalParts.join('\n') : '[To be filled from context]',
-  });
-
-  // 3. Governance (must satisfy) — highlights only; full digest remains in run output (Part 4 alternative)
-  const combinedForHighlights = governanceContextConstraintsOnly || '';
-  const governanceHighlights = extractGovernanceHighlights(combinedForHighlights);
-  const governanceSummary =
-    governanceHighlights.length > 0
-      ? `Loaded ${governanceHighlights.length} governance highlights from current audits.`
-      : 'No governance findings were extracted from current output.';
-  const governanceParts: string[] = ['- ' + governanceSummary];
-  if (governanceHighlights.length > 0) {
-    governanceParts.push('', ...governanceHighlights.map(g => `- ${g}`));
-  }
-  if (governanceContextConstraintsOnly?.trim()) {
-    governanceParts.push('', 'Full governance context is in the run output below.');
-  }
-  blocks.push({
-    role: 'governance',
-    title: LOADED_CONTEXT_SECTION_TITLES.governance,
-    content: governanceParts.join('\n'),
-  });
-
-  // 4. Inventory (reference — reuse): consult before creating new; use or adapt existing when possible
-  const INVENTORY_INSTRUCTION =
-    'For this tier, consult the inventory below to see if we already have structures, composables, utils, or types that could be directly used or adapted before introducing new code.';
-  let inventoryContent: string;
-  if (tier === 'task' && taskFiles && taskFiles.length > 0) {
-    const matches = getInventoryMatchesForFiles(taskFiles);
-    if (matches.length > 0) {
-      inventoryContent =
-        INVENTORY_INSTRUCTION + '\n\nBefore creating new, check:\n' + matches.map(m => `- ${m}`).join('\n');
-    } else {
-      inventoryContent = INVENTORY_INSTRUCTION + '\n\nNo file-scoped inventory matches for this task.';
-    }
-  } else {
-    inventoryContent =
-      INVENTORY_INSTRUCTION +
-      '\n\n' +
-      (tier === 'task' ? 'No task files specified — inventory skipped.' : 'No file-scoped inventory for this tier.');
-  }
-  blocks.push({
-    role: 'inventory',
-    title: LOADED_CONTEXT_SECTION_TITLES.inventory,
-    content: inventoryContent,
-  });
-
-  // 5. Continuity (handoff) — already bounded by <!-- end excerpt <tier> --> at read time
-  const handoffContent = readResult?.handoff?.trim() ?? '';
-  blocks.push({
-    role: 'continuity',
-    title: LOADED_CONTEXT_SECTION_TITLES.continuity,
-    content: handoffContent,
-  });
-
-  // 6. Reference (guide) — already bounded by <!-- end excerpt <tier> --> at read time
-  const guideContent = readResult?.guide?.trim() ?? '';
-  const guideTitle = readResult?.sectionTitle ?? 'Guide';
-  blocks.push({
-    role: 'reference_guide',
-    title: LOADED_CONTEXT_SECTION_TITLES.referenceGuide,
-    content: guideContent ? `${guideTitle}\n\n${guideContent}` : '',
-  });
-
-  return blocks;
-}
-
-/** Task design artifact shape for "Design Before Execute" section in task planning doc. */
-export interface TaskDesignArtifact {
-  codingGoal: string;
-  files: string[];
-  pseudocodeSteps: string[];
-  snippets: string;
-  acceptanceChecks: string[];
-}
-
-/** Build initial planning doc markdown. Primary content: Goals of this tier + How we build the tierDown. Then Loaded Context (prompt contract order), Goal/Files/Approach/Checkpoint, Decisions, Insight/Proposal/Decision. For task, adds Design Before Execute when taskDesign present. */
+/** Build short planning doc markdown: contract + continuity + 4 slots + reference links. */
 function buildPlanningDocContent(
   ctx: TierStartWorkflowContext,
-  hooks: TierStartWorkflowHooks,
-  questions: ContextQuestion[],
-  governanceContext?: string,
-  contextWorkBrief?: {
-    planningSummary: string;
-    executionProposal: string;
-    taskDesign?: TaskDesignArtifact;
-  },
-  tierGoals?: string,
-  tierDownBuildPlan?: string,
-  taskFiles?: string[]
+  continuity: string,
+  governanceOneLiner: string,
+  referencePaths: ReferencePaths
 ): string {
   const tier = ctx.config.name;
   const title = ctx.resolvedDescription ?? ctx.resolvedId;
-  const readResult = ctx.readResult;
-  // Governance context is constraints-only (task tier: inventory is built separately in buildLoadedContextBlocks).
-  const blocks = buildLoadedContextBlocks(
-    ctx,
-    hooks,
-    governanceContext ?? '',
-    contextWorkBrief,
-    readResult,
-    taskFiles
-  );
-  const loadedContextLines: string[] = [
-    PROMPT_CONTRACT_HEADER,
-    '',
-    ...blocks.flatMap(b => {
-      const lines: string[] = [];
-      if (b.title) lines.push(b.title, '');
-      const content = b.truncate != null ? truncateForLoadedContext(b.content, b.truncate) : b.content;
-      if (content.trim()) lines.push(content.trim(), '');
-      return lines;
-    }),
+  const scopeLine = `- **Tier:** ${tier} | **ID:** ${ctx.resolvedId}`;
+  const scopeDesc = (ctx.resolvedDescription ?? ctx.resolvedId).toString();
+  const refLines: string[] = [
+    `- TierUp guide (scope and intent): \`${referencePaths.tierUpGuide}\``,
   ];
+  if (referencePaths.handoff) {
+    refLines.push(`- Handoff (full transition context): \`${referencePaths.handoff}\``);
+  }
+  refLines.push(
+    `- Governance reports: \`${referencePaths.auditReportsDir}\` — check function-complexity, component-health, composable-health, type-escape, type-constant-inventory`
+  );
+  refLines.push(`- Playbooks: ${referencePaths.playbooks.map(p => `\`${p}\``).join(', ')}`);
 
-  const goalsSection = tierGoals?.trim() || '[To be filled from tier context]';
-  const tierDownSection = tierDownBuildPlan?.trim() || '[Enumerate and plan tierDown units here]';
+  return `# Plan: ${tier} ${ctx.resolvedId} — ${title}
 
-  const insightBlocks =
-    questions.length > 0
-      ? questions.map((q, i) => formatContextItemBlock(q, i)).join('\n\n---\n\n')
-      : 'None yet.';
+## Contract
+${scopeLine}
+- **Scope:** ${scopeDesc}
+- **Governance:** ${governanceOneLiner}
 
-  const designSection =
-    tier === 'task' && contextWorkBrief?.taskDesign
-      ? [
-          '',
-          '## Design Before Execute',
-          '',
-          '### Coding Goal',
-          contextWorkBrief.taskDesign.codingGoal.trim() || '[Define explicit coding goal before beginning implementation]',
-          '',
-          '### Files',
-          contextWorkBrief.taskDesign.files.length > 0
-            ? contextWorkBrief.taskDesign.files.map(f => `- ${f}`).join('\n')
-            : '[List files to touch]',
-          '',
-          '### Pseudocode',
-          contextWorkBrief.taskDesign.pseudocodeSteps.length > 0
-            ? contextWorkBrief.taskDesign.pseudocodeSteps.map((s, i) => `${i + 1}. ${s}`).join('\n')
-            : '[Outline steps before coding]',
-          '',
-          '### Snippets (scaffold)',
-          contextWorkBrief.taskDesign.snippets.trim() || '[Key code shapes or signatures]',
-          '',
-          '### Acceptance / Test Intent',
-          contextWorkBrief.taskDesign.acceptanceChecks.length > 0
-            ? contextWorkBrief.taskDesign.acceptanceChecks.map(c => `- ${c}`).join('\n')
-            : '[What to verify when done]',
-          '',
-        ].join('\n')
-      : '';
-
-  const goalFilesApproach =
-    tier === 'task' && contextWorkBrief?.taskDesign
-      ? ''
-      : `
+## Where we left off
+${continuity}
 
 ## Goal
 [To be refined during discussion]
@@ -874,32 +704,17 @@ function buildPlanningDocContent(
 
 ## Checkpoint
 [To be refined during discussion]
-`;
 
-  return `# Planning: ${tier} ${ctx.resolvedId} -- ${title}
-
-## Goals of this tier
-${goalsSection}
-
-## How we build the tierDown to achieve them
-${tierDownSection}
-
-## Loaded Context
-${loadedContextLines.join('\n')}
-${designSection}
-${goalFilesApproach}
-
-## Decisions Made
-[Populated as conversation progresses]
-
-## Insight / Proposal / Decisions
-${insightBlocks}
+---
+## Reference (read before filling slots — governance and inventory compliance is required)
+${refLines.join('\n')}
 `;
 }
 
 /**
  * Context gathering Q&A step. If contextGatheringComplete or hook missing or no questions, returns null.
- * Otherwise writes planning doc, sets ctx.planningDocPath, and returns early exit with reasonCode context_gathering.
+ * Writes short planning doc (contract + continuity + 4 slots + reference links), sets ctx.planningDocPath,
+ * and returns early exit with reasonCode context_gathering. Chat message has insight/proposal/decision + work brief.
  */
 export async function stepContextGathering(
   ctx: TierStartWorkflowContext,
@@ -911,6 +726,11 @@ export async function stepContextGathering(
   const questions = await hooks.getContextQuestions(ctx);
   if (!questions.length) return null;
 
+  const tier = ctx.config.name;
+  const readResult = ctx.readResult;
+  const handoffRaw = readResult?.handoff ?? '';
+  const continuity = buildContinuitySummary(handoffRaw, undefined, tier);
+
   const taskFiles = hooks.getTierDownFilePaths
     ? await hooks.getTierDownFilePaths(ctx)
     : undefined;
@@ -918,69 +738,49 @@ export async function stepContextGathering(
     tier: ctx.config.name,
     taskFiles,
   });
+  const governanceOneLiner = buildGovernanceOneLiner(governanceContext);
+  const referencePaths = buildReferencePaths(tier, ctx.identifier, ctx.context);
+
+  const planningDocPath = getPlanningDocPath(ctx);
+  const content = buildPlanningDocContent(ctx, continuity, governanceOneLiner, referencePaths);
+  await writeProjectFile(planningDocPath, content);
+  ctx.planningDocPath = planningDocPath;
+
   const contextWorkBrief = hooks.getContextWorkBrief
     ? await hooks.getContextWorkBrief(ctx)
     : undefined;
   const tierGoals = hooks.getTierGoals ? await hooks.getTierGoals(ctx) : undefined;
   const tierDownBuildPlan = hooks.getTierDownBuildPlan ? await hooks.getTierDownBuildPlan(ctx) : undefined;
 
-  const planningDocPath = getPlanningDocPath(ctx);
-  const content = buildPlanningDocContent(ctx, hooks, questions, governanceContext, contextWorkBrief, tierGoals, tierDownBuildPlan, taskFiles);
-  await writeProjectFile(planningDocPath, content);
-  ctx.planningDocPath = planningDocPath;
-
   const messageLines: string[] = [
     `Planning document created: \`${planningDocPath}\``,
     '',
+    '**REQUIRED before /accepted-proceed:**',
+    '1. Read the Reference section links in the planning doc — governance reports, inventory audits, and playbooks define the patterns and standards you must follow.',
+    '2. Fill ## Goal, ## Files, ## Approach, ## Checkpoint with concrete content.',
+    '3. Save the file.',
+    '',
+    '**Context for filling slots:**',
   ];
   if (tierGoals?.trim()) {
-    const firstLine = tierGoals.trim().split('\n')[0].slice(0, 200);
-    messageLines.push('**Goals of this tier:**', firstLine + (firstLine.length >= 200 ? '…' : ''), '');
+    messageLines.push(tierGoals.trim(), '');
   }
   if (tierDownBuildPlan?.trim()) {
-    const firstLine = tierDownBuildPlan.trim().split('\n')[0].slice(0, 200);
-    messageLines.push('**How we build the tierDown:**', firstLine + (firstLine.length >= 200 ? '…' : ''), '');
+    messageLines.push(tierDownBuildPlan.trim(), '');
   }
   if (contextWorkBrief?.planningSummary?.trim()) {
-    messageLines.push(
-      '**What the context says we are planning/building:**',
-      contextWorkBrief.planningSummary.trim(),
-      ''
-    );
+    messageLines.push(contextWorkBrief.planningSummary.trim(), '');
   }
   if (contextWorkBrief?.executionProposal?.trim()) {
-    messageLines.push(
-      '**Proposed implementation approach (project/code execution):**',
-      contextWorkBrief.executionProposal.trim(),
-      ''
-    );
+    messageLines.push(contextWorkBrief.executionProposal.trim(), '');
   }
+  messageLines.push('**From the docs (discuss before locking):**', '');
   messageLines.push(
-    '**Discussion first:** We should review/adjust the concrete work plan above before final satisfaction.',
+    ...questions.map((q, i) => formatContextItemBlock(q, i)),
     '',
-    '**From the docs (insight + proposal + decision):**',
-    ...questions.map((q, i) => {
-      const lines: string[] = [];
-      const prefix = (first: boolean) => (first ? `${i + 1}. ` : '   ');
-      let first = true;
-      if (q.insight) {
-        lines.push(`${prefix(first)}*Insight:* ${q.insight}`);
-        first = false;
-      }
-      if (q.proposal) {
-        lines.push(`${prefix(first)}*Proposal:* ${q.proposal}`);
-        first = false;
-      }
-      lines.push(`${prefix(first)}*Decision:* ${q.question}`);
-      first = false;
-      if (q.options?.length) lines.push(`   *Options:* ${q.options.join(' | ')}`);
-      if (q.context && !q.insight) lines.push(`   (${q.context})`);
-      return lines.join('\n');
-    }),
-    '',
-    "After we discuss/refine the concrete work plan, choose: **I'm satisfied with our plan and ready to begin**",
+    'When ready, run /accepted-proceed.',
   );
-  const deliverables = messageLines.join('\n');
+  const deliverables = messageLines.join('\n\n');
 
   return {
     success: true,
@@ -988,7 +788,7 @@ export async function stepContextGathering(
     outcome: {
       status: 'plan',
       reasonCode: 'context_gathering',
-      nextAction: 'Context gathering: answer questions and update the planning doc, then re-invoke with contextGatheringComplete.',
+      nextAction: 'Context gathering: you MUST fill the planning doc (Goal, Files, Approach, Checkpoint) then run /accepted-proceed; /accepted-proceed is blocked until the doc is filled.',
       deliverables,
     },
   };

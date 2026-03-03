@@ -129,10 +129,12 @@ Completed Task ${update.lastCompletedTask}
   updatedLines.push(nextActionSection);
   updatedLines.push('');
   
-  // Add/update Transition Context
+  // Add/update Transition Context, then excerpt marker so excerptUpToMarker returns only useful content
   updatedLines.push(transitionSection);
   updatedLines.push('');
-  
+  updatedLines.push(getExcerptEndMarker('session'));
+  updatedLines.push('');
+
   // Keep everything after Transition Context (or after Current Status if Transition Context didn't exist)
   if (transitionIndex !== -1) {
     for (i = transitionIndex + 1; i < lines.length; i++) {
@@ -157,11 +159,7 @@ Completed Task ${update.lastCompletedTask}
     }
   }
 
-  let finalContent = updatedLines.join('\n').trimEnd();
-  const sessionMarker = getExcerptEndMarker('session');
-  if (!finalContent.includes(sessionMarker)) {
-    finalContent = finalContent + '\n\n' + sessionMarker;
-  }
+  const finalContent = updatedLines.join('\n').trimEnd();
   await writeProjectFile(handoffPath, finalContent);
 }
 

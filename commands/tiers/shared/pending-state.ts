@@ -1,6 +1,7 @@
 /**
  * Pending state for /accepted-proceed and /accepted-code (chat-first flow).
- * Written when a tier start returns context_gathering or plan_mode; read and cleared by the proceed commands.
+ * Written when a tier start returns context_gathering (or plan_mode for backward compat); read and cleared by the proceed commands.
+ * 2-pass flow: context_gathering → fill doc → /accepted-proceed → execute (no plan_mode intermediate).
  */
 
 import { readProjectFile, writeProjectFile } from '../../utils/utils';
@@ -14,11 +15,11 @@ export type TierStartPendingParams =
   | { phaseId: string }
   | { sessionId: string; description?: string };
 
-/** State for session/phase/feature start: pass 1 = after context_gathering (run pass 2 next); pass 2 = after plan_mode (run execute next). */
+/** State for session/phase/feature start: pass 1 = after context_gathering; /accepted-proceed runs execute. */
 export interface TierStartPendingState {
   tier: 'feature' | 'phase' | 'session';
   params: TierStartPendingParams;
-  pass: 1 | 2;
+  pass: 1;
 }
 
 /** State for task start: user will run /accepted-code to run task start with execute. */
@@ -38,10 +39,10 @@ function safeParse<T>(path: string, raw: string): T | null {
 export async function readTierStartPending(): Promise<TierStartPendingState | null> {
   try {
     const raw = await readProjectFile(TIER_PENDING_PATH);
-    const state = safeParse<TierStartPendingState>(TIER_PENDING_PATH, raw);
-    if (!state?.tier || !state?.params || state.pass !== 1 && state.pass !== 2) return null;
-    if (state.tier !== 'feature' && state.tier !== 'phase' && state.tier !== 'session') return null;
-    return state;
+    const parsed = safeParse<{ tier: string; params: unknown; pass?: number }>(TIER_PENDING_PATH, raw);
+    if (!parsed?.tier || !parsed?.params || (parsed.pass !== 1 && parsed.pass !== 2)) return null;
+    if (parsed.tier !== 'feature' && parsed.tier !== 'phase' && parsed.tier !== 'session') return null;
+    return { tier: parsed.tier as TierStartPendingState['tier'], params: parsed.params as TierStartPendingParams, pass: 1 };
   } catch {
     return null;
   }

@@ -123,7 +123,7 @@ export async function runTierStart(
       await writeTierStartPending({
         tier: config.name,
         params: params as TierStartPendingParams,
-        pass: reasonCode === 'context_gathering' ? 1 : 2,
+        pass: 1,
       });
     } else if (reasonCode === 'plan_mode' && config.name === 'task') {
       const p = params as { taskId: string; featureId?: string };

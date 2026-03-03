@@ -49,7 +49,16 @@ export function handlePlanMode(outcome: ControlPlaneOutcome, ctx: ControlPlaneCo
   };
 }
 
-/** context_gathering: show questions + planning doc path; nextInvoke = same command with contextGatheringComplete + mode plan (pass 2). */
+/** planning_doc_incomplete: BLOCKED until agent fills the planning doc. Show message; no proceed until doc is filled. */
+export function handlePlanningDocIncomplete(outcome: ControlPlaneOutcome): ControlPlaneDecision {
+  return {
+    stop: true,
+    requiredMode: 'plan',
+    message: outcome.nextAction ?? 'Planning doc must be filled before proceeding. Open the doc, replace Goal/Files/Approach/Checkpoint with a concrete draft, save, then run /accepted-proceed again.',
+  };
+}
+
+/** context_gathering: show questions + planning doc path; nextInvoke = same command with mode execute (skip plan_mode intermediate). */
 export function handleContextGathering(outcome: ControlPlaneOutcome, ctx: ControlPlaneContext): ControlPlaneDecision {
   const baseParams =
     typeof ctx.originalParams === 'object' && ctx.originalParams !== null
@@ -63,10 +72,7 @@ export function handleContextGathering(outcome: ControlPlaneOutcome, ctx: Contro
     nextInvoke: {
       tier: ctx.tier,
       action: ctx.action,
-      params: buildStartReinvokeParams(baseParams, {
-        contextGatheringComplete: true,
-        mode: 'plan',
-      }),
+      params: buildStartReinvokeParams(baseParams, { mode: 'execute' }),
     },
   };
 }
