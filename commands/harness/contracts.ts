@@ -127,7 +127,8 @@ export type FlowReasonCode =
   | 'pending_push'
   | 'verification_suggested'
   | 'reopen_ok'
-  | 'uncommitted_blocking';
+  | 'uncommitted_blocking'
+  | 'guide_fill_pending';
 
 export type FailureReasonCode =
   | 'validation_failed'

@@ -77,6 +77,8 @@ export function routeByOutcome(
       return handleReopenOk(outcome);
     case 'uncommitted_blocking':
       return handleUncommittedChanges(outcome, ctx);
+    case 'guide_fill_pending':
+      return handlePlanningDocIncomplete(outcome);
     case 'start_ok':
     case 'end_ok':
       return handleSuccessWithOptionalCascade(outcome);

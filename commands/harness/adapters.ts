@@ -55,6 +55,9 @@ export function adaptTierStartOutcomeToHarness(outcome: TierStartOutcome): TierO
     nextAction: outcome.nextAction,
     ...(outcome.deliverables !== undefined && outcome.deliverables !== '' && { deliverables: outcome.deliverables }),
     ...(outcome.cascade !== undefined && { cascade: { ...outcome.cascade, tier: outcome.cascade.tier } }),
+    ...('guidePath' in outcome && typeof (outcome as { guidePath?: string }).guidePath === 'string' && {
+      guidePath: (outcome as { guidePath: string }).guidePath,
+    }),
   };
 }
 
