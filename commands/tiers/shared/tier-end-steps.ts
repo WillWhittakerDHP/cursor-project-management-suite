@@ -15,6 +15,7 @@ import { updateTierScope, clearTierScope, readTierScope, formatScopeCommitPrefix
 import { runEndAuditForTier } from '../../audit/run-end-audit-for-tier';
 import { buildTierEndOutcome } from '../../utils/tier-outcome';
 import { commitUncommittedNonCursor } from '../../git/shared/tier-branch-manager';
+import { PROJECT_ROOT } from '../../utils/utils';
 import type { TierName } from './types';
 
 /**
@@ -292,6 +293,40 @@ export async function stepVerificationCheck(
     steps: ctx.steps,
     outcome,
   };
+}
+
+/**
+ * Auto-repair config drift (path integrity + stale allowlist entries) before
+ * end-audit runs. Non-blocking: records results but never returns an early exit.
+ */
+export async function stepConfigFix(
+  ctx: TierEndWorkflowContext,
+  hooks: TierEndWorkflowHooks
+): Promise<void> {
+  if (hooks.runEndAudit !== true) return;
+
+  const { execSync } = await import('child_process');
+  const { join } = await import('path');
+  const scriptPath = join(PROJECT_ROOT, 'client/.scripts/config-fix.mjs');
+
+  try {
+    const stdout = execSync(`node "${scriptPath}"`, {
+      cwd: PROJECT_ROOT,
+      encoding: 'utf8',
+      timeout: 15_000,
+    });
+
+    const hasAutoFixes = /Total auto-fixes applied: \*\*[1-9]/.test(stdout);
+    ctx.steps.configFix = {
+      success: true,
+      output: hasAutoFixes ? stdout.trim() : 'Config health: no drift detected.',
+    };
+    if (hasAutoFixes) ctx.output.push(stdout.trim());
+  } catch (err) {
+    const msg = `Config fix failed (non-blocking): ${err instanceof Error ? err.message : String(err)}`;
+    ctx.steps.configFix = { success: false, output: msg };
+    console.warn(msg);
+  }
 }
 
 /** Run end audit via runEndAuditForTier when hook says so; append to steps and output. Returns exit on warn/fail (Option B: only tier-end stops on warnings). */

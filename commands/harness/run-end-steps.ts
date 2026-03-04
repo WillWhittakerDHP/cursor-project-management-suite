@@ -1,5 +1,5 @@
 /**
- * Canonical tier end step runner: runs plan_mode_exit → resolve_run_tests → pre_work → tests → mid_work → cleanup → git → audit → clearScope → cascade.
+ * Canonical tier end step runner: runs plan_mode_exit → resolve_run_tests → pre_work → tests → mid_work → cleanup → git → verification → config_fix → audit → clearScope → cascade.
  * Types live in tiers/shared/tier-end-workflow-types.ts; step logic in tier-end-steps.ts.
  */
 
@@ -21,6 +21,7 @@ import {
   stepCommitUncommittedNonCursor,
   stepTierGit,
   stepVerificationCheck,
+  stepConfigFix,
   stepEndAudit,
   stepAfterAudit,
   stepClearScope,
@@ -122,6 +123,10 @@ export async function runTierEndWorkflow(
   const verificationExit = await stepVerificationCheck(ctx, hooks);
   await recordEndStep(ctx, 'verification_check', verificationExit ? 'exit_success' : 'exit_success');
   if (verificationExit) return attachEndShadowPayload(ctx, verificationExit);
+
+  await recordEndStep(ctx, 'config_fix', 'enter');
+  await stepConfigFix(ctx, hooks);
+  await recordEndStep(ctx, 'config_fix', 'exit_success');
 
   await recordEndStep(ctx, 'end_audit', 'enter');
   const auditExit = await stepEndAudit(ctx, hooks);
