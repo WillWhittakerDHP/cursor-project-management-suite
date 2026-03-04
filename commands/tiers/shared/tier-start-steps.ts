@@ -394,34 +394,42 @@ export async function stepSyncGuideFromPlanningDoc(
     } catch {
       return;
     }
-    const sessionSectionRegex = new RegExp(
-      `((-?\\s*\\[[ x]\\])?\\s*### Session (\\d+\\.\\d+\\.\\d+):[^\\n]*)([\\s\\S]*?)(?=(?:-?\\s*\\[|### Session|## |$))`,
-      'g'
-    );
-    const replacements: { from: string; to: string }[] = [];
-    let match: RegExpMatchArray | null;
-    while ((match = sessionSectionRegex.exec(guideContent)) !== null) {
-      const firstLine = match[1];
-      const sessionId = match[2];
+    // WHY: Avoid catastrophic backtracking from lazy [\s\S]*? + alternation in lookahead on long guides.
+    // PATTERN: Split by "### Session " and reassemble with synced Description/Tasks per session.
+    const sessionMarker = '### Session ';
+    const idInLineRegex = /^(\d+\.\d+\.\d+):/;
+    const lines = guideContent.split('\n');
+    const outLines: string[] = [];
+    let i = 0;
+    while (i < lines.length) {
+      const line = lines[i];
+      const markerIdx = line.indexOf(sessionMarker);
+      if (markerIdx === -1) {
+        outLines.push(line);
+        i++;
+        continue;
+      }
+      const firstLine = line;
+      const afterMarker = line.slice(markerIdx + sessionMarker.length);
+      const idMatch = afterMarker.match(idInLineRegex);
+      const sessionId = idMatch ? idMatch[1] : '';
       const description = getDesc(sessionId) || tierGoal || 'See phase scope above.';
       const tasks = tierApproach || tierFiles || '[To be planned]';
-      replacements.push({
-        from: match[0],
-        to: [
-          firstLine,
-          '',
-          '**Description:** ' + description,
-          '',
-          '**Tasks:**',
-          tasks,
-        ].join('\n'),
-      });
+      outLines.push(
+        firstLine,
+        '',
+        '**Description:** ' + description,
+        '',
+        '**Tasks:**',
+        tasks,
+        ''
+      );
+      i++;
+      while (i < lines.length && lines[i].indexOf(sessionMarker) === -1 && !lines[i].startsWith('## ')) {
+        i++;
+      }
     }
-    if (replacements.length === 0) return;
-    let newContent = guideContent;
-    for (const { from, to } of replacements) {
-      newContent = newContent.replace(from, to);
-    }
+    const newContent = outLines.join('\n');
     await writeProjectFile(guidePath, newContent);
     return;
   }
@@ -600,7 +608,7 @@ export interface ParsedPlanningSections {
 /** Extract ## Goal, ## Files, ## Approach, ## Checkpoint from planning doc content. Used to sync guide and todos from planning doc at tier-start. */
 export function parsePlanningDocSections(content: string): ParsedPlanningSections | null {
   const sections: Record<string, string> = {};
-  const regex = /^##\s+(Goal|Files|Approach|Checkpoint)\s*$/im;
+  const regex = /^##\s+(Goal|Files|Approach|Checkpoint)\s*$/gim;
   let lastKey: string | null = null;
   let lastIndex = 0;
   let match: RegExpExecArray | null;

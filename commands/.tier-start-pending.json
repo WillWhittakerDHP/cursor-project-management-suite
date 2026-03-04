@@ -1,7 +1,7 @@
 {
-  "tier": "session",
+  "tier": "phase",
   "params": {
-    "sessionId": "6.5.3"
+    "phaseId": "6.5"
   },
   "pass": 1
 }
