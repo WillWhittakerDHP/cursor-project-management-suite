@@ -2,7 +2,7 @@
  * Phase-start implementation. Thin adapter: builds hooks and runs shared start workflow.
  */
 
-import { readProjectFile, writeProjectFile } from '../../../utils/utils';
+import { readProjectFile, writeProjectFile, getCurrentBranch } from '../../../utils/utils';
 import { WorkflowCommandContext } from '../../../utils/command-context';
 import { readTierUpContext, getTierContextSourcePolicy } from '../../shared/context-policy';
 import { extractFilesFromPhaseGuide, gatherFileStatuses } from '../../../utils/context-gatherer';
@@ -10,7 +10,7 @@ import { formatFileStatusList } from '../../../utils/context-templates';
 import { ensureTierBranch } from '../../../git/shared/tier-branch-manager';
 import { validatePhase, formatPhaseValidation } from './phase';
 import { PHASE_CONFIG } from '../../configs/phase';
-import { updateTierScope } from '../../../utils/tier-scope';
+import { updateTierScope, readTierScope, deriveSlugFromGuideTitle } from '../../../utils/tier-scope';
 import { derivePhaseDescription } from '../../../planning/utils/resolve-planning-description';
 import type { TierStartResult } from '../../../utils/tier-outcome';
 import type {
@@ -124,12 +124,42 @@ export async function phaseStartImpl(
     },
 
     async ensureBranch() {
-      return ensureTierBranch(PHASE_CONFIG, phase, context);
+      const scope = await readTierScope();
+      const phaseName = await derivePhaseDescription(phase, context);
+      let slug: string | undefined;
+      try {
+        const guideContent = await readProjectFile(context.paths.getPhaseGuidePath(phase));
+        const firstLine = guideContent.split('\n')[0] ?? '';
+        slug = deriveSlugFromGuideTitle(firstLine);
+      } catch {
+        slug = undefined;
+      }
+      context.scope = {
+        ...scope,
+        phase: { id: phase, name: phaseName, ...(slug && { slug }) },
+      };
+      const result = await ensureTierBranch(PHASE_CONFIG, phase, context);
+      if (result.success && result.finalBranch) {
+        await updateTierScope('phase', {
+          id: phase,
+          name: phaseName,
+          branch: result.finalBranch,
+          ...(slug && { slug }),
+        });
+      }
+      return result;
     },
 
     async afterBranch() {
       const phaseName = await derivePhaseDescription(phase, context);
-      await updateTierScope('phase', { id: phase, name: phaseName });
+      const scope = await readTierScope();
+      const entry = scope.phase?.id === phase ? scope.phase : { id: phase, name: phaseName };
+      await updateTierScope('phase', {
+        id: entry.id,
+        name: entry.name ?? phaseName,
+        ...(scope.phase?.branch && { branch: scope.phase.branch }),
+        ...(scope.phase?.slug && { slug: scope.phase.slug }),
+      });
     },
 
     /** TierUp only: feature guide (phase descriptor). Phase guide and phase handoff files are excluded from planning input. */

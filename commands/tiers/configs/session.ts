@@ -62,10 +62,15 @@ export const SESSION_CONFIG: TierConfig = {
     await appendLog(logEntry, identifier, context.paths.getFeatureName());
   },
   replanCommand: undefined, // Set by tier-change when planSession is passed
-  getParentBranchName: (ctx, id) =>
-    `${ctx.feature.name}-phase-${WorkflowId.extractPhaseId(id) ?? '1'}`,
-  getBranchName: (ctx, id) =>
-    `${ctx.feature.name}-phase-${WorkflowId.extractPhaseId(id) ?? '1'}-session-${id}`,
+  getParentBranchName: (ctx, id) => {
+    const phaseId = WorkflowId.extractPhaseId(id) ?? '1';
+    if (ctx.scope?.phase?.branch) return ctx.scope.phase.branch;
+    return `phase-${phaseId}`;
+  },
+  getBranchName: (ctx, id) => {
+    const slug = ctx.scope?.session?.slug;
+    return slug ? `session-${id}-${slug}` : `session-${id}`;
+  },
   preflight: {
     ensureAppRunning: { onStart: true, onEnd: true },
   },

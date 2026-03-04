@@ -28,6 +28,10 @@ const CHILDREN_OF: Record<TierName, TierName[]> = {
 export interface TierScopeEntry {
   id: string;
   name: string | null;
+  /** Full git branch name for this tier (e.g. phase-6.5-rescheduling-flow). Used for parent resolution. */
+  branch?: string;
+  /** Slug from guide title for branch naming (e.g. rescheduling-flow). */
+  slug?: string;
 }
 
 export interface TierScope {
@@ -66,6 +70,8 @@ function parseScopeFile(content: string): TierScope {
 
   const ids: Partial<Record<TierName, string>> = {};
   const names: Partial<Record<TierName, string>> = {};
+  const branches: Partial<Record<TierName, string>> = {};
+  const slugs: Partial<Record<TierName, string>> = {};
 
   const lines = content.split('\n');
   for (const line of lines) {
@@ -73,7 +79,7 @@ function parseScopeFile(content: string): TierScope {
     if (eq <= 0) continue;
     const key = line.slice(0, eq).trim();
     const value = line.slice(eq + 1).trim();
-    const match = key.match(/^(feature|phase|session|task)\.(id|name)$/);
+    const match = key.match(/^(feature|phase|session|task)\.(id|name|branch|slug)$/);
     if (!match) continue;
     const tier = match[1] as TierName;
     const field = match[2];
@@ -81,6 +87,10 @@ function parseScopeFile(content: string): TierScope {
       ids[tier] = value;
     } else if (field === 'name') {
       names[tier] = value || null;
+    } else if (field === 'branch' && value) {
+      branches[tier] = value;
+    } else if (field === 'slug' && value) {
+      slugs[tier] = value;
     }
   }
 
@@ -90,6 +100,8 @@ function parseScopeFile(content: string): TierScope {
       result[tier] = {
         id,
         name: names[tier] ?? null,
+        ...(branches[tier] && { branch: branches[tier] }),
+        ...(slugs[tier] && { slug: slugs[tier] }),
       };
     }
   }
@@ -104,6 +116,8 @@ function serializeScope(scope: TierScope): string {
     if (entry) {
       lines.push(`${tier}.id=${entry.id}`);
       lines.push(`${tier}.name=${entry.name ?? ''}`);
+      if (entry.branch) lines.push(`${tier}.branch=${entry.branch}`);
+      if (entry.slug) lines.push(`${tier}.slug=${entry.slug}`);
     } else {
       lines.push(`${tier}.id=`);
       lines.push(`${tier}.name=`);
@@ -182,7 +196,12 @@ export async function updateTierScope(
   };
 
   if (entry) {
-    currentScope[tier] = { id: entry.id, name: entry.name ?? null };
+    currentScope[tier] = {
+      id: entry.id,
+      name: entry.name ?? null,
+      ...(entry.branch && { branch: entry.branch }),
+      ...(entry.slug && { slug: entry.slug }),
+    };
     for (const child of CHILDREN_OF[tier]) {
       currentScope[child] = null;
       messages.push(`Cleared ${child} from scope.`);
@@ -261,4 +280,25 @@ export function formatScopeCommitPrefix(scope: TierScope, tier: TierName): strin
   if (!entry) return `[${tier}]`;
   const name = entry.name?.trim() || entry.id;
   return `[${entry.id}: ${name}]`;
+}
+
+/**
+ * Slugify a string for use in branch names (e.g. "Rescheduling Flow" -> "rescheduling-flow").
+ */
+export function slugify(text: string): string {
+  return text
+    .trim()
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '') || 'work';
+}
+
+/**
+ * Extract descriptor from guide first line and slugify (e.g. "# Phase 6.5 Guide: Rescheduling Flow" -> "rescheduling-flow").
+ */
+export function deriveSlugFromGuideTitle(firstLine: string): string {
+  const afterColon = firstLine.includes(':') ? firstLine.split(':').slice(1).join(':').trim() : firstLine.trim();
+  return slugify(afterColon) || 'work';
 }

@@ -245,7 +245,7 @@ export async function sessionStartImpl(
     },
 
     async ensureBranch() {
-      return sessionGitPolicy.ensureBranch({ context, sessionId });
+      return sessionGitPolicy.ensureBranch({ context, sessionId, resolvedDescription });
     },
 
     async afterBranch() {

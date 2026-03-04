@@ -10,7 +10,7 @@ import { WorkflowCommandContext } from '../../../utils/command-context';
 import { WorkflowId } from '../../../utils/id-utils';
 import { detectPhaseModifiedFiles } from '../../../utils/detect-modified-files';
 import { gitMerge } from '../../../git/atomic/merge';
-import { runCommand, runWithLintVerification, getCurrentDate, readProjectFile, writeProjectFile } from '../../../utils/utils';
+import { runCommand, runWithLintVerification, getCurrentDate, getCurrentBranch, readProjectFile, writeProjectFile } from '../../../utils/utils';
 import { validateTestGoals } from '../../../testing/composite/test-goal-validator';
 import { analyzeTestError } from '../../../testing/composite/test-error-analyzer';
 import { requestTestFileFixPermission } from '../../../testing/composite/test-file-fix-permission';
@@ -435,8 +435,8 @@ export async function phaseEndImpl(
           throw new Error('Cannot proceed: branch names from config are null');
         }
 
-        const sessionBranchPattern = `${phaseBranchName}-session-*`;
-        const listResult = await runCommand(`git branch --list ${sessionBranchPattern}`);
+        const sessionBranchPattern = `session-${p.phaseId}*`;
+        const listResult = await runCommand(`git branch --list "${sessionBranchPattern}"`);
         const sessionBranches = listResult.success && listResult.output
           ? listResult.output.split('\n').map(l => l.trim().replace(/^\*\s*/, '')).filter(Boolean)
           : [];
@@ -446,11 +446,12 @@ export async function phaseEndImpl(
         c.steps.ensurePhaseBranch = { success: ensureResult.success, output: ensureResult.messages.join('\n') };
         if (!ensureResult.success) throw new Error('Cannot proceed: could not ensure phase branch');
 
+        const resolvedPhaseBranch = await getCurrentBranch();
         const mergedSessions: string[] = [];
         const failedSessions: string[] = [];
         for (const sessionBranch of sessionBranches) {
           try {
-            const mergeResult = await gitMerge({ sourceBranch: sessionBranch, targetBranch: phaseBranchName });
+            const mergeResult = await gitMerge({ sourceBranch: sessionBranch, targetBranch: resolvedPhaseBranch });
             if (mergeResult.success) {
               mergedSessions.push(sessionBranch);
               const del = await runCommand(`git branch -d ${sessionBranch}`);

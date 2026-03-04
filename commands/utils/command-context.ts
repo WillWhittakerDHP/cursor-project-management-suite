@@ -15,6 +15,7 @@ import { TemplateManager } from './template-manager';
 import { FileCache } from './file-cache';
 import { WorkflowId } from './id-utils';
 import { readProjectFile, writeProjectFile } from './utils';
+import type { TierScope } from './tier-scope';
 
 /**
  * Document tier types
@@ -33,6 +34,8 @@ export class WorkflowCommandContext {
   readonly documents: DocumentManager;
   readonly templates: TemplateManager;
   readonly cache: FileCache;
+  /** Optional tier scope (e.g. from readTierScope); used by tier configs for branch naming and parent resolution. */
+  scope?: TierScope;
 
   /**
    * Create a new command context

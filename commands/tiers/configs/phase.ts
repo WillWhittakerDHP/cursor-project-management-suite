@@ -83,6 +83,9 @@ export const PHASE_CONFIG: TierConfig = {
     await writeProjectFile(phaseLogPath, logContent);
   },
   replanCommand: undefined, // Set by tier-change when planPhase is passed
-  getBranchName: (ctx, id) => `${ctx.feature.name}-phase-${id}`,
+  getBranchName: (ctx, id) => {
+    const slug = ctx.scope?.phase?.slug;
+    return slug ? `phase-${id}-${slug}` : `phase-${id}`;
+  },
   getParentBranchName: (ctx, _id) => `feature/${ctx.feature.name}`,
 };

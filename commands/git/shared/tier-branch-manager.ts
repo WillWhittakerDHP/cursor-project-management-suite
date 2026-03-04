@@ -63,6 +63,20 @@ function isRootBranch(branchName: string): boolean {
   return ROOT_BRANCH_NAMES.includes(branchName);
 }
 
+/**
+ * List local branches whose names start with the given prefix (e.g. "phase-6.5").
+ * Used to resolve short names like phase-6.5 to phase-6.5-rescheduling-flow when scope has a descriptor.
+ */
+async function listBranchesByPrefix(prefix: string): Promise<string[]> {
+  const pattern = `${prefix}*`;
+  const result = await runCommand(`git branch --list "${pattern}"`);
+  if (!result.success || !result.output.trim()) return [];
+  return result.output
+    .split('\n')
+    .map((line) => line.replace(/^\*\s*/, '').trim())
+    .filter(Boolean);
+}
+
 // ─── Pre-checkout uncommitted-changes resolver ───────────────────────
 
 interface UncommittedResolution {
@@ -417,22 +431,34 @@ export async function ensureTierBranch(
       }
     }
 
-    // Verify ancestor branch exists
-    if (!(await branchExists(link.branchName))) {
-      messages.push(
-        `Ancestor branch ${link.branchName} (${link.tier}) does not exist. ` +
-        `Run /${link.tier}-start to create it first.`
-      );
-      return { success: false, messages, finalBranch: await getCurrentBranch(), chain };
+    // Verify ancestor branch exists (exact or prefix match for descriptor-style names)
+    let ancestorBranch = link.branchName;
+    if (!(await branchExists(ancestorBranch))) {
+      const prefixMatches = await listBranchesByPrefix(link.branchName);
+      if (prefixMatches.length === 1) {
+        ancestorBranch = prefixMatches[0];
+        link.branchName = ancestorBranch;
+      } else if (prefixMatches.length > 1) {
+        ancestorBranch = prefixMatches[0];
+        link.branchName = ancestorBranch;
+        messages.push(`Multiple branches match ${link.branchName}; using ${ancestorBranch}.`);
+      } else {
+        messages.push(
+          `Ancestor branch ${link.branchName} (${link.tier}) does not exist. ` +
+          `Run /${link.tier}-start to create it first.`
+        );
+        return { success: false, messages, finalBranch: await getCurrentBranch(), chain };
+      }
     }
 
-    // Verify ancestor is based on its parent (if parent is known and exists)
-    if (parentBranch && !isRootBranch(parentBranch) && (await branchExists(parentBranch))) {
-      const isBasedOn = await isBranchBasedOn(link.branchName, parentBranch);
+    // Verify ancestor is based on its parent (use resolved parent from chain when available)
+    const resolvedParent = i > 0 ? chain[i - 1].branchName : parentBranch;
+    if (resolvedParent && !isRootBranch(resolvedParent) && (await branchExists(resolvedParent))) {
+      const isBasedOn = await isBranchBasedOn(link.branchName, resolvedParent);
       if (!isBasedOn) {
         messages.push(
-          `Branch ${link.branchName} (${link.tier}) is not based on ${parentBranch}. ` +
-          `You may need to rebase: git rebase ${parentBranch}`
+          `Branch ${link.branchName} (${link.tier}) is not based on ${resolvedParent}. ` +
+          `You may need to rebase: git rebase ${resolvedParent}`
         );
         return { success: false, messages, finalBranch: await getCurrentBranch(), chain };
       }
@@ -547,8 +573,8 @@ export async function mergeTierBranch(
   const deleteBranch = options?.deleteBranch ?? true;
   const shouldPush = options?.push ?? false;
 
-  const tierBranch = config.getBranchName(context, tierId);
-  const parentBranch = config.getParentBranchName(context, tierId);
+  let tierBranch = config.getBranchName(context, tierId);
+  let parentBranch = config.getParentBranchName(context, tierId);
 
   if (!tierBranch) {
     return { success: true, messages: ['Tier has no branch; skip merge.'], mergedInto: '', deletedBranch: false };
@@ -557,9 +583,18 @@ export async function mergeTierBranch(
     return { success: false, messages: [`No parent branch defined for ${config.name} tier.`], mergedInto: '', deletedBranch: false };
   }
 
-  // Verify on correct branch
+  // Resolve tier and parent by prefix when exact name does not exist (descriptor-style names)
+  if (!(await branchExists(tierBranch))) {
+    const tierMatches = await listBranchesByPrefix(tierBranch);
+    if (tierMatches.length >= 1) tierBranch = tierMatches[0];
+  }
+  if (!isRootBranch(parentBranch) && !(await branchExists(parentBranch))) {
+    const parentMatches = await listBranchesByPrefix(parentBranch);
+    if (parentMatches.length >= 1) parentBranch = parentMatches[0];
+  }
+
   const currentBranch = await getCurrentBranch();
-  if (currentBranch !== tierBranch && !currentBranch.endsWith(tierBranch)) {
+  if (currentBranch !== tierBranch && !currentBranch.startsWith(tierBranch + '-')) {
     messages.push(`Not on ${config.name} branch (current: ${currentBranch}). Skipping merge.`);
     return { success: true, messages, mergedInto: '', deletedBranch: false };
   }
