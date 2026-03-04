@@ -1,0 +1,81 @@
+{
+  "generatedAt": "2026-03-04T18:06:57.328Z",
+  "scope": {
+    "client": {
+      "command": "vue-tsc -b --pretty false",
+      "cwd": "client"
+    },
+    "server": {
+      "command": "tsc --noEmit --pretty false",
+      "cwd": "server"
+    }
+  },
+  "exitCode": 1,
+  "command": "vue-tsc -b --pretty false && tsc --noEmit --pretty false",
+  "exceptionSummary": {
+    "totalAllowed": 0,
+    "totalRequiresReview": 1,
+    "bySource": {
+      "inline": 0,
+      "pattern": 0,
+      "specific": 0
+    }
+  },
+  "errors": [
+    {
+      "file": "src/composables/booking/useAvailabilityOrchestrator.ts",
+      "line": 168,
+      "col": 57,
+      "code": "TS2345",
+      "message": "Argument of type 'AppointmentSlots' is not assignable to parameter of type 'TimeSlot[]'.",
+      "raw": "src/composables/booking/useAvailabilityOrchestrator.ts(168,57): error TS2345: Argument of type 'AppointmentSlots' is not assignable to parameter of type 'TimeSlot[]'.",
+      "scope": "client",
+      "repoPath": "src/composables/booking/useAvailabilityOrchestrator.ts"
+    }
+  ],
+  "allowedErrors": [],
+  "pools": [
+    {
+      "poolId": "TS2345-ts2345-arg-appointmentslots-timeslot",
+      "groupKey": "TS2345::arg:AppointmentSlots=>TimeSlot[]",
+      "errorCount": 1,
+      "fileCount": 1,
+      "severityScore": 10,
+      "blastRadiusScore": 2,
+      "repetitionScore": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 13,
+      "sample": [
+        {
+          "repoPath": "src/composables/booking/useAvailabilityOrchestrator.ts",
+          "line": 168,
+          "col": 57,
+          "code": "TS2345",
+          "message": "Argument of type 'AppointmentSlots' is not assignable to parameter of type 'TimeSlot[]'."
+        }
+      ],
+      "priority": "P1"
+    }
+  ],
+  "files": [
+    {
+      "repoPath": "src/composables/booking/useAvailabilityOrchestrator.ts",
+      "errorCount": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "errors": [
+        {
+          "file": "src/composables/booking/useAvailabilityOrchestrator.ts",
+          "line": 168,
+          "col": 57,
+          "code": "TS2345",
+          "message": "Argument of type 'AppointmentSlots' is not assignable to parameter of type 'TimeSlot[]'.",
+          "raw": "src/composables/booking/useAvailabilityOrchestrator.ts(168,57): error TS2345: Argument of type 'AppointmentSlots' is not assignable to parameter of type 'TimeSlot[]'.",
+          "scope": "client",
+          "repoPath": "src/composables/booking/useAvailabilityOrchestrator.ts"
+        }
+      ]
+    }
+  ]
+}
