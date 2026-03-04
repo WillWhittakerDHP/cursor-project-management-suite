@@ -17,6 +17,8 @@ export interface RunEndAuditParams {
   /** Tier-specific params (for modifiedFiles, testResults, etc.). */
   params: unknown;
   featureName?: string;
+  /** Pre-warmed audit promise from pipeline pre-warm step. */
+  auditsComplete?: Promise<void>;
 }
 
 export interface RunEndAuditResult {
@@ -32,7 +34,7 @@ export interface RunEndAuditResult {
  * Run the end audit for the given tier. Returns audit output and optional autofix result for runAfterAudit.
  */
 export async function runEndAuditForTier(params: RunEndAuditParams): Promise<RunEndAuditResult | string> {
-  const { tier, identifier, params: rawParams, featureName: rawFeatureName } = params;
+  const { tier, identifier, params: rawParams, featureName: rawFeatureName, auditsComplete } = params;
   const featureName = await resolveFeatureName(rawFeatureName);
 
   switch (tier) {
@@ -43,6 +45,7 @@ export async function runEndAuditForTier(params: RunEndAuditParams): Promise<Run
         featureName: name,
         modifiedFiles: p?.modifiedFiles,
         testResults: p?.testResults,
+        auditsComplete,
       });
       const status = (result as { auditResult?: { overallStatus?: AuditStatus } }).auditResult?.overallStatus;
       return {
@@ -59,6 +62,7 @@ export async function runEndAuditForTier(params: RunEndAuditParams): Promise<Run
         featureName,
         modifiedFiles: p?.modifiedFiles,
         testResults: p?.testResults,
+        auditsComplete,
       });
       const status = (result as { auditResult?: { overallStatus?: AuditStatus } }).auditResult?.overallStatus;
       return {
@@ -75,6 +79,7 @@ export async function runEndAuditForTier(params: RunEndAuditParams): Promise<Run
         featureName,
         modifiedFiles: p?.modifiedFiles,
         testResults: p?.testResults,
+        auditsComplete,
       });
       const status = (result as { auditResult?: { overallStatus?: AuditStatus } }).auditResult?.overallStatus;
       return {
@@ -91,6 +96,7 @@ export async function runEndAuditForTier(params: RunEndAuditParams): Promise<Run
         featureName,
         modifiedFiles: p?.modifiedFiles,
         testResults: p?.testResults,
+        auditsComplete,
       });
       const status = (result as { auditResult?: { overallStatus?: AuditStatus } }).auditResult?.overallStatus;
       return {

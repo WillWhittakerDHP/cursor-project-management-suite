@@ -47,21 +47,21 @@ export async function planPhaseImpl(
     output.push(`**Registered:** Phase ${phaseId} added to feature plan/guide\n`);
   }
 
-  output.push('## Planning with Checks\n');
-  output.push(planContent
-    ? '**Critique mode:** Reviewing your plan for documentation and pattern reuse.\n'
-    : '**Using planning abstraction for documentation and pattern reuse checks:**\n');
-  const phaseNum = Number(phase.split('.')[0]) || parseInt(phase, 10) || 1;
-  const planningOutput = await runPlanningWithChecks({
-    description: resolvedDescription,
-    tier: 'phase',
-    feature,
-    phase: phaseNum,
-    docCheckType: 'migration',
-  });
-  output.push(planningOutput);
   if (planContent) {
-    output.push('\n**Planning Review:** Suggestions above do not overwrite your authored plan.\n');
+    output.push('## Planning with Checks\n');
+    output.push('**Execute mode:** Plan already accepted — skipping redundant checks.\n');
+  } else {
+    output.push('## Planning with Checks\n');
+    output.push('**Using planning abstraction for documentation and pattern reuse checks:**\n');
+    const phaseNum = Number(phase.split('.')[0]) || parseInt(phase, 10) || 1;
+    const planningOutput = await runPlanningWithChecks({
+      description: resolvedDescription,
+      tier: 'phase',
+      feature,
+      phase: phaseNum,
+      docCheckType: 'migration',
+    });
+    output.push(planningOutput);
   }
   output.push('\n---\n');
 
@@ -162,7 +162,7 @@ export async function planPhaseImpl(
   output.push('- [ ] Patterns checked for reuse');
   output.push('- [ ] Phase guide reviewed');
   output.push('- [ ] Sessions identified');
-  output.push('- [ ] Learning goals set');
+  output.push('- [ ] Focus areas identified');
   output.push('- [ ] Dependencies identified');
   output.push('- [ ] Success criteria defined');
   output.push('- [ ] Phase todo created');

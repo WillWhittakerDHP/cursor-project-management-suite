@@ -209,8 +209,8 @@ async function checkMigrationDocs(): Promise<string> {
     sections.push('### Session Guide\n');
     const guideSections = [
       'Session Structure',
-      'Learning Checkpoints',
-      'Task Template' // Updated from "Sub-Session Template"
+      'Session Workflow',
+      'Task Template'
     ];
     
     for (const section of guideSections) {

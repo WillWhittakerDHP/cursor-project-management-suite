@@ -15,7 +15,7 @@
  * - client/package.json audit:tier-* scripts
  */
 
-import { execSync } from 'child_process';
+import { spawn } from 'child_process';
 import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import type { AuditParams, AuditResult, AuditFinding, AuditTier } from '../types';
@@ -43,6 +43,7 @@ interface AuditJsonOutput {
 interface TierAuditEntry {
   auditName: string;
   jsonRelativePath: string;
+  npmRun: string;
 }
 
 const TIER_AUDIT_CONFIG: Record<
@@ -53,58 +54,58 @@ const TIER_AUDIT_CONFIG: Record<
     npmScript: 'audit:tier-task',
     changedOnly: true,
     audits: [
-      { auditName: 'typecheck', jsonRelativePath: 'typecheck/typecheck-audit.json' },
-      { auditName: 'loop-mutations', jsonRelativePath: 'loop-mutation-audit.json' },
-      { auditName: 'hardcoding', jsonRelativePath: 'hardcoding-audit.json' },
-      { auditName: 'error-handling', jsonRelativePath: 'error-handling-audit.json' },
-      { auditName: 'naming-convention', jsonRelativePath: 'naming-convention-audit.json' },
-      { auditName: 'security', jsonRelativePath: 'security-audit.json' },
+      { auditName: 'typecheck', jsonRelativePath: 'typecheck/typecheck-audit.json', npmRun: 'typecheck:audit' },
+      { auditName: 'loop-mutations', jsonRelativePath: 'loop-mutation-audit.json', npmRun: 'audit:loop-mutations' },
+      { auditName: 'hardcoding', jsonRelativePath: 'hardcoding-audit.json', npmRun: 'audit:hardcoding' },
+      { auditName: 'error-handling', jsonRelativePath: 'error-handling-audit.json', npmRun: 'audit:error-handling' },
+      { auditName: 'naming-convention', jsonRelativePath: 'naming-convention-audit.json', npmRun: 'audit:naming-convention' },
+      { auditName: 'security', jsonRelativePath: 'security-audit.json', npmRun: 'audit:security' },
     ],
   },
   session: {
     npmScript: 'audit:tier-session',
     changedOnly: true,
     audits: [
-      { auditName: 'component-logic', jsonRelativePath: 'component-logic-audit.json' },
-      { auditName: 'composables-logic', jsonRelativePath: 'composables-logic-audit.json' },
-      { auditName: 'function-complexity', jsonRelativePath: 'function-complexity-audit.json' },
-      { auditName: 'constants-consolidation', jsonRelativePath: 'constants-consolidation-audit.json' },
-      { auditName: 'todo-aging', jsonRelativePath: 'todo-aging-audit.json' },
-      { auditName: 'component-health', jsonRelativePath: 'component-health-audit.json' },
-      { auditName: 'composable-health', jsonRelativePath: 'composable-health-audit.json' },
-      { auditName: 'type-escape', jsonRelativePath: 'type-escape-audit.json' },
-      { auditName: 'type-constant-inventory', jsonRelativePath: 'type-constant-inventory-audit.json' },
+      { auditName: 'component-logic', jsonRelativePath: 'component-logic-audit.json', npmRun: 'audit:component-logic' },
+      { auditName: 'composables-logic', jsonRelativePath: 'composables-logic-audit.json', npmRun: 'audit:composables-logic' },
+      { auditName: 'function-complexity', jsonRelativePath: 'function-complexity-audit.json', npmRun: 'audit:function-complexity' },
+      { auditName: 'constants-consolidation', jsonRelativePath: 'constants-consolidation-audit.json', npmRun: 'audit:constants-consolidation' },
+      { auditName: 'todo-aging', jsonRelativePath: 'todo-aging-audit.json', npmRun: 'audit:todo-aging' },
+      { auditName: 'component-health', jsonRelativePath: 'component-health-audit.json', npmRun: 'audit:component-health' },
+      { auditName: 'composable-health', jsonRelativePath: 'composable-health-audit.json', npmRun: 'audit:composable-health' },
+      { auditName: 'type-escape', jsonRelativePath: 'type-escape-audit.json', npmRun: 'audit:type-escape' },
+      { auditName: 'type-constant-inventory', jsonRelativePath: 'type-constant-inventory-audit.json', npmRun: 'audit:type-constant-inventory' },
     ],
   },
   phase: {
     npmScript: 'audit:tier-phase',
     changedOnly: false,
     audits: [
-      { auditName: 'typecheck', jsonRelativePath: 'typecheck/typecheck-audit.json' },
-      { auditName: 'type-similarity', jsonRelativePath: 'type-similarity-audit.json' },
-      { auditName: 'duplication', jsonRelativePath: 'duplication-audit.json' },
-      { auditName: 'unused-code', jsonRelativePath: 'unused-code-audit.json' },
-      { auditName: 'pattern-detection', jsonRelativePath: 'pattern-detection-audit.json' },
-      { auditName: 'import-graph', jsonRelativePath: 'import-graph-audit.json' },
-      { auditName: 'file-cohesion', jsonRelativePath: 'file-cohesion-audit.json' },
-      { auditName: 'deprecation', jsonRelativePath: 'deprecation-audit.json' },
-      { auditName: 'api-contract', jsonRelativePath: 'api-contract-audit.json' },
-      { auditName: 'data-flow', jsonRelativePath: 'data-flow-audit.json' },
-      { auditName: 'type-health', jsonRelativePath: 'type-health-audit.json' },
-      { auditName: 'data-flow-health', jsonRelativePath: 'data-flow-health-audit.json' },
+      { auditName: 'typecheck', jsonRelativePath: 'typecheck/typecheck-audit.json', npmRun: 'typecheck:audit' },
+      { auditName: 'type-similarity', jsonRelativePath: 'type-similarity-audit.json', npmRun: 'audit:type-similarity' },
+      { auditName: 'duplication', jsonRelativePath: 'duplication-audit.json', npmRun: 'audit:duplication' },
+      { auditName: 'unused-code', jsonRelativePath: 'unused-code-audit.json', npmRun: 'audit:unused-code' },
+      { auditName: 'pattern-detection', jsonRelativePath: 'pattern-detection-audit.json', npmRun: 'audit:pattern-detection' },
+      { auditName: 'import-graph', jsonRelativePath: 'import-graph-audit.json', npmRun: 'audit:import-graph' },
+      { auditName: 'file-cohesion', jsonRelativePath: 'file-cohesion-audit.json', npmRun: 'audit:file-cohesion' },
+      { auditName: 'deprecation', jsonRelativePath: 'deprecation-audit.json', npmRun: 'audit:deprecation' },
+      { auditName: 'api-contract', jsonRelativePath: 'api-contract-audit.json', npmRun: 'audit:api-contract' },
+      { auditName: 'data-flow', jsonRelativePath: 'data-flow-audit.json', npmRun: 'audit:data-flow' },
+      { auditName: 'type-health', jsonRelativePath: 'type-health-audit.json', npmRun: 'audit:type-health' },
+      { auditName: 'data-flow-health', jsonRelativePath: 'data-flow-health-audit.json', npmRun: 'audit:data-flow-health' },
     ],
   },
   feature: {
     npmScript: 'audit:tier-feature',
     changedOnly: false,
     audits: [
-      { auditName: 'test', jsonRelativePath: 'test-audit.json' },
-      { auditName: 'coverage-risk-crossref', jsonRelativePath: 'coverage-risk-crossref-audit.json' },
-      { auditName: 'bundle-size-budget', jsonRelativePath: 'bundle-size-budget-audit.json' },
-      { auditName: 'api-versioning', jsonRelativePath: 'api-versioning-audit.json' },
-      { auditName: 'dep-freshness', jsonRelativePath: 'dep-freshness-audit.json' },
-      { auditName: 'security', jsonRelativePath: 'security-audit.json' },
-      { auditName: 'meta', jsonRelativePath: 'audit-meta-report.json' },
+      { auditName: 'test', jsonRelativePath: 'test-audit.json', npmRun: 'audit:test' },
+      { auditName: 'coverage-risk-crossref', jsonRelativePath: 'coverage-risk-crossref-audit.json', npmRun: 'audit:coverage-risk-crossref' },
+      { auditName: 'bundle-size-budget', jsonRelativePath: 'bundle-size-budget-audit.json', npmRun: 'audit:bundle-size-budget' },
+      { auditName: 'api-versioning', jsonRelativePath: 'api-versioning-audit.json', npmRun: 'audit:api-versioning' },
+      { auditName: 'dep-freshness', jsonRelativePath: 'dep-freshness-audit.json', npmRun: 'audit:dep-freshness' },
+      { auditName: 'security', jsonRelativePath: 'security-audit.json', npmRun: 'audit:security' },
+      { auditName: 'meta', jsonRelativePath: 'audit-meta-report.json', npmRun: 'audit:meta' },
     ],
   },
 };
@@ -483,7 +484,41 @@ function generateFindingsFromAudit(
   return findings;
 }
 
-export async function auditTierQuality(params: AuditParams & { tier: AuditTier }): Promise<AuditResult> {
+/**
+ * Spawn a single audit script and return a promise that resolves when it exits.
+ * Non-fatal: resolves (not rejects) on non-zero exit so one failing audit
+ * doesn't prevent reading the JSONs from the others.
+ */
+function spawnAuditScript(npmRun: string, changedOnly: boolean): Promise<void> {
+  const args = ['run', npmRun];
+  if (changedOnly) args.push('--', '--changed-only');
+  return new Promise((resolve) => {
+    const child = spawn('npm', args, {
+      cwd: CLIENT_ROOT,
+      stdio: 'ignore',
+    });
+    const timer = setTimeout(() => { child.kill(); resolve(); }, 120000);
+    child.on('close', () => { clearTimeout(timer); resolve(); });
+    child.on('error', () => { clearTimeout(timer); resolve(); });
+  });
+}
+
+/**
+ * Run all audit scripts for a tier in parallel.
+ * Returns a promise that resolves when every script has finished (or timed out).
+ * Each script writes its JSON to .audit-reports/ independently.
+ */
+export function runTierAuditsParallel(tier: AuditTier): Promise<void> {
+  const config = TIER_AUDIT_CONFIG[tier];
+  if (!config) return Promise.resolve();
+  const promises = config.audits.map(a => spawnAuditScript(a.npmRun, config.changedOnly));
+  return Promise.all(promises).then(() => {});
+}
+
+export async function auditTierQuality(
+  params: AuditParams & { tier: AuditTier },
+  auditsComplete?: Promise<void>
+): Promise<AuditResult> {
   const { tier } = params;
   const findings: AuditFinding[] = [];
   const recommendations: string[] = [];
@@ -509,14 +544,11 @@ export async function auditTierQuality(params: AuditParams & { tier: AuditTier }
     };
   }
 
-  try {
-    execSync(`npm run ${config.npmScript}`, {
-      cwd: CLIENT_ROOT,
-      stdio: 'pipe',
-      timeout: 300000,
-    });
-  } catch (_error) {
-    // Non-fatal: we still read whatever JSON exists
+  if (auditsComplete) {
+    await auditsComplete;
+  } else {
+    // Fallback: run in parallel if no pre-warmed promise was provided
+    await runTierAuditsParallel(tier);
   }
 
   for (const audit of config.audits) {

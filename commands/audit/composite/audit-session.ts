@@ -24,6 +24,7 @@ export interface AuditSessionParams {
   modifiedFiles?: string[];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   testResults?: any;
+  auditsComplete?: Promise<void>;
 }
 
 /**
@@ -53,7 +54,7 @@ export async function auditSession(params: AuditSessionParams): Promise<{
   let tierQualityResult;
 
   try {
-    tierQualityResult = await auditTierQuality({ ...auditParams, tier: 'session' });
+    tierQualityResult = await auditTierQuality({ ...auditParams, tier: 'session' }, params.auditsComplete);
     results.push(tierQualityResult);
   } catch (_error) {
     errors.push(`Session tier quality audit failed: ${_error instanceof Error ? _error.message : String(_error)}`);

@@ -49,22 +49,22 @@ export async function planSessionImpl(
     }
   }
 
-  output.push('## Planning with Checks\n');
-  output.push(planContent
-    ? '**Critique mode:** Reviewing your plan for documentation and pattern reuse.\n'
-    : '**Using planning abstraction for documentation and pattern reuse checks:**\n');
-  const phaseNum = parsed ? Number(parsed.feature) : undefined;
-  const planningOutput = await runPlanningWithChecks({
-    description: resolvedDescription,
-    tier: 'session',
-    feature,
-    phase: phaseNum,
-    sessionId,
-    docCheckType: 'component',
-  });
-  output.push(planningOutput);
   if (planContent) {
-    output.push('\n**Planning Review:** Suggestions above do not overwrite your authored plan.\n');
+    output.push('## Planning with Checks\n');
+    output.push('**Execute mode:** Plan already accepted — skipping redundant checks.\n');
+  } else {
+    output.push('## Planning with Checks\n');
+    output.push('**Using planning abstraction for documentation and pattern reuse checks:**\n');
+    const phaseNum = parsed ? Number(parsed.feature) : undefined;
+    const planningOutput = await runPlanningWithChecks({
+      description: resolvedDescription,
+      tier: 'session',
+      feature,
+      phase: phaseNum,
+      sessionId,
+      docCheckType: 'component',
+    });
+    output.push(planningOutput);
   }
   output.push('\n---\n');
 

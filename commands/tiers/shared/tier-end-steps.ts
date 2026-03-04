@@ -306,6 +306,7 @@ export async function stepEndAudit(
     identifier: ctx.identifier,
     params: ctx.auditPayload ?? ctx.params,
     featureName: ctx.context.feature.name,
+    auditsComplete: ctx.auditPrewarmPromise,
   });
   const raw = typeof auditResult === 'string' ? { output: auditResult } : auditResult;
   const auditOutput = raw.output ?? '';

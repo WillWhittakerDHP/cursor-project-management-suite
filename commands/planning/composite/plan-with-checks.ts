@@ -16,7 +16,7 @@ import { checkDownstreamPlans } from '../../utils/check-downstream-plans';
 import { createScopeDocument } from '../../utils/create-scope-document';
 import { resolveFeatureName } from '../../utils/feature-context';
 import { parseNaturalLanguage } from '../../utils/planning-parser';
-import { securityAudit } from '../../security/composite/security-audit';
+
 
 export type DocCheckType = 'component' | 'transformer' | 'pattern' | 'migration';
 
@@ -178,16 +178,8 @@ export async function planWithChecks(
   
   output.push('\n---\n');
   
-  // Step 5: Security Audit (optional but recommended)
-  output.push('## Step 5: Security Validation\n');
-  try {
-    const securityResult = await securityAudit({ path: 'server/src' });
-    output.push(securityResult);
-  } catch (_error) {
-    output.push(`**WARNING:** Security check failed\n`);
-    output.push(`**Error:** ${_error instanceof Error ? _error.message : String(_error)}\n`);
-    output.push('**Note:** Security checks are optional but recommended. You can run `/security-audit` manually.\n');
-  }
+  // Security is covered by the npm-script audit (audit:tier-task, audit:tier-feature)
+  // which runs via background-audit-runner. No need for a blocking call here.
   
   output.push('\n---\n');
   output.push('## Summary\n');

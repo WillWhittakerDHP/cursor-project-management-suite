@@ -286,7 +286,7 @@ export async function taskEndImpl(
         }
       }
       if (commentSuggestions.length > 0) {
-        c.output.push('\n\n## Comment Suggestions\nReview the following files for learning-focused comments:\n' + commentSuggestions.join('\n') + '\n\nUse /comment-add to add comments based on suggestions above.');
+        c.output.push('\n\n## Comment Suggestions\nReview the following files for explanatory WHY/PATTERN comments:\n' + commentSuggestions.join('\n') + '\n\nUse /comment-add to add comments based on suggestions above.');
       }
       return null;
     },

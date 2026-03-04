@@ -20,6 +20,7 @@ export interface AuditFeatureParams {
   modifiedFiles?: string[];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   testResults?: any;
+  auditsComplete?: Promise<void>;
 }
 
 /**
@@ -48,7 +49,7 @@ export async function auditFeature(params: AuditFeatureParams): Promise<{
   let tierQualityResult;
 
   try {
-    tierQualityResult = await auditTierQuality({ ...auditParams, tier: 'feature' });
+    tierQualityResult = await auditTierQuality({ ...auditParams, tier: 'feature' }, params.auditsComplete);
     results.push(tierQualityResult);
   } catch (_error) {
     errors.push(`Feature tier quality audit failed: ${_error instanceof Error ? _error.message : String(_error)}`);

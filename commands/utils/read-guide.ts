@@ -56,7 +56,7 @@ function buildSessionSpecificGuideOutput(
     output.push(`## Tasks for Session ${sessionId}`, '', '**Warning:** No session-specific task sections found in session guide.', '');
   }
 
-  const fallbackSections = ['Learning Checkpoints', 'Task Template'];
+  const fallbackSections = ['Session Workflow', 'Task Template'];
   for (const section of fallbackSections) {
     let sectionContent = MarkdownUtils.extractSection(guideContent, section);
     let source = 'session guide';
@@ -133,7 +133,7 @@ export async function readGuide(
       '**Note:** Using template guide. Create session-specific guide for custom content.',
       '',
     ];
-    const sections = ['Session Structure', 'Learning Checkpoints', 'Task Template'];
+    const sections = ['Session Structure', 'Session Workflow', 'Task Template'];
     for (const section of sections) {
       const sectionContent = MarkdownUtils.extractSection(guideContent, section);
       if (sectionContent) output.push(sectionContent, '');

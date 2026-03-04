@@ -30,6 +30,8 @@ export interface TierEndWorkflowContext {
   shouldRunTests: boolean;
   outcome: TierEndOutcome;
   auditPayload?: unknown;
+  /** When set, tier-end audit step awaits this instead of spawning audits from scratch. */
+  auditPrewarmPromise?: Promise<void>;
   autofixResult?: AutofixResult;
   runRecorder?: RunRecorder;
   runTraceHandle?: RunTraceHandle;

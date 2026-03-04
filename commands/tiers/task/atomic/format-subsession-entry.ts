@@ -19,7 +19,7 @@ export interface TaskEntry {
   reactVueDifferences?: string[]; // Optional - only during migration phase
   keyMethodsPorted: string[];
   architectureNotes: string[];
-  learningCheckpoint: string[];
+  checkpoint: string[];
   questionsAnswered: string[];
   nextTask: string;
 }
@@ -49,8 +49,8 @@ export function formatTaskEntry(entry: TaskEntry): string {
     ? `**Architecture Notes:**\n${entry.architectureNotes.map(n => `- **${n}**: [Explanation]`).join('\n')}\n`
     : '';
   
-  const checkpointSection = entry.learningCheckpoint.length > 0
-    ? `**Learning Checkpoint:**\n${entry.learningCheckpoint.map(c => `- [x] ${c} ✅`).join('\n')}\n`
+  const checkpointSection = entry.checkpoint.length > 0
+    ? `**Checkpoint:**\n${entry.checkpoint.map(c => `- [x] ${c} ✅`).join('\n')}\n`
     : '';
   
   const questionsSection = entry.questionsAnswered.length > 0

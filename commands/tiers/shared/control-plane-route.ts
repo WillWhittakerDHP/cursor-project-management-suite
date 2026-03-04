@@ -15,6 +15,7 @@ import type { ReasonCode } from '../../harness/contracts';
 import {
   handlePlanMode,
   handleContextGathering,
+  handlePlanningDocIncomplete,
   handlePendingPushConfirmation,
   handleVerificationWorkSuggested,
   handleTaskComplete,
@@ -45,6 +46,8 @@ export function routeByOutcome(
 
   if (!success) {
     switch (reasonCode) {
+      case 'planning_doc_incomplete':
+        return handlePlanningDocIncomplete(outcome);
       case 'validation_failed':
         return handleFailure(outcome, result.output);
       case 'audit_failed':

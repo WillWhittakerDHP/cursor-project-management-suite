@@ -1,6 +1,6 @@
 # Session [SESSION_ID] Log: [DESCRIPTION]
 
-**Purpose:** Track task completion, concepts learned, and progress
+**Purpose:** Track task completion and progress
 
 **Tier:** Session (Tier 2 - Medium-Level)
 
@@ -43,7 +43,7 @@
 **Architecture Notes:**
 - **[Pattern]**: [Explanation]
 
-**Learning Checkpoint:**
+**Checkpoint:**
 - [x] [Checkpoint] ✅
 
 **Questions Answered:**
@@ -105,7 +105,7 @@
 ## Session Summary
 
 **Tasks Completed:** [X] of [Y]
-**Concepts Learned:** [List key concepts]
+**Key Decisions:** [List key decisions]
 **Blockers:** [Any blockers encountered]
 **Next Session:** [NEXT_SESSION]
 
@@ -149,7 +149,7 @@
 **Architecture Notes:**
 - **[Pattern]**: [Explanation]
 
-**Learning Checkpoint:**
+**Checkpoint:**
 - [x] [Checkpoint] ✅
 
 **Questions Answered:**
@@ -191,7 +191,7 @@
 - ✅ [Summary item]
 ```
 
-### Learning-Focused Task Template (For Planning)
+### Task Planning Template
 
 ```markdown
 ### Task [X.Y.Z]: [Name]
@@ -211,11 +211,11 @@
 - Vue: [How Vue does it]
 - Why: [Why the difference]
 
-**Learning Checkpoint:**
+**Checkpoint:**
 - [ ] Code compiles
 - [ ] Types are correct
-- [ ] I understand [concept]
-- [ ] I can explain [pattern]
+- [ ] [Concept] verified
+- [ ] [Pattern] verified
 
 **Questions to Answer:**
 - [Question 1]
@@ -241,19 +241,19 @@
 - 🔄 In Progress - Currently working on this
 - ⏸️ Paused - Temporarily stopped
 - ❌ Blocked - Waiting on something
-- 📚 Learning - Focused on understanding concepts
+- 📋 Review - Focused on understanding concepts
 
-### Learning Checkpoint Status
-- ✅ Understood - Concept is clear
+### Checkpoint Status
+- ✅ Verified - Concept/pattern verified
 - ⚠️ Partial - Need more clarification
-- ❌ Confused - Need to review/relearn
+- ❌ Blocked - Need to revisit
 
 ---
 
 ## Notes
 
 - Each session should be logged immediately after completion
-- Learning checkpoints should be honest - it's okay to need clarification
+- Checkpoints should be honest - it's okay to need clarification
 - Questions are valuable - document them for future sessions
 - Blockers should be addressed before moving forward
 

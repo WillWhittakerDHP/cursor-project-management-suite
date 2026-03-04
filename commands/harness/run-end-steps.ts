@@ -26,6 +26,8 @@ import {
   stepClearScope,
   stepBuildEndCascade,
 } from '../tiers/shared/tier-end-steps';
+import { runTierAuditsParallel } from '../audit/atomic/audit-tier-quality';
+import type { AuditTier } from '../audit/types';
 
 async function recordEndStep(
   ctx: TierEndWorkflowContext,
@@ -60,6 +62,13 @@ export async function runTierEndWorkflow(
   hooks: TierEndWorkflowHooks
 ): Promise<TierEndWorkflowResult | TierEndWorkflowResultWithShadow> {
   if (ctx.stepPath == null) ctx.stepPath = [];
+
+  // Pre-warm: spawn all tier audit scripts in parallel immediately.
+  // They run concurrently with the rest of the pipeline; stepEndAudit awaits the result.
+  if (hooks.runEndAudit === true && !ctx.auditPrewarmPromise) {
+    const tier = ctx.config.name as AuditTier;
+    ctx.auditPrewarmPromise = runTierAuditsParallel(tier);
+  }
 
   await recordEndStep(ctx, 'plan_mode_exit', 'enter');
   const planExit = stepPlanModeExit(ctx, hooks);

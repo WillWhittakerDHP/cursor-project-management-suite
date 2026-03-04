@@ -9,6 +9,7 @@ import type { ReasonCode, FlowReasonCode, FailureReasonCode } from './contracts'
 const LEGACY_TO_CHARTER: Record<string, ReasonCode> = {
   plan_mode: 'plan_mode',
   context_gathering: 'context_gathering',
+  planning_doc_incomplete: 'planning_doc_incomplete',
   pending_push_confirmation: 'pending_push',
   verification_work_suggested: 'verification_suggested',
   task_complete: 'task_complete',

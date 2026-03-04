@@ -20,6 +20,7 @@ export interface AuditTaskParams {
   modifiedFiles?: string[];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   testResults?: any;
+  auditsComplete?: Promise<void>;
 }
 
 /**
@@ -49,7 +50,7 @@ export async function auditTask(params: AuditTaskParams): Promise<{
 
   let tierQualityResult;
   try {
-    tierQualityResult = await auditTierQuality({ ...auditParams, tier: 'task' });
+    tierQualityResult = await auditTierQuality({ ...auditParams, tier: 'task' }, params.auditsComplete);
     results.push(tierQualityResult);
   } catch (_error) {
     errors.push(`Task tier quality audit failed: ${_error instanceof Error ? _error.message : String(_error)}`);

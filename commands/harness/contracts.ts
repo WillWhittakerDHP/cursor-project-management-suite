@@ -120,6 +120,7 @@ export interface TierOutcome {
 export type FlowReasonCode =
   | 'context_gathering'
   | 'plan_mode'
+  | 'planning_doc_incomplete'
   | 'start_ok'
   | 'end_ok'
   | 'task_complete'

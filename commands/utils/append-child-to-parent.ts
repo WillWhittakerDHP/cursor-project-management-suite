@@ -40,12 +40,12 @@ export async function appendChildToParentDoc(
         return { success: true, parentDocPath: guidePath, alreadyExists: true, output: [] };
       }
       const tasksPlaceholder = childSummary ?? '[To be planned]';
-      const learningPlaceholder = childSummary ?? '[To be identified during planning]';
+      const focusPlaceholder = childSummary ?? '[To be identified during planning]';
       const newEntry = `- [ ] ### Session ${childId}: ${childDescription}
 **Description:** ${childDescription}
 **Tasks:** ${tasksPlaceholder}
-**Learning Goals:**
-- ${learningPlaceholder}`;
+**Focus:**
+- ${focusPlaceholder}`;
       const lastSessionRegex = /(-?\s*\[[ x]\])?\s*###\s+Session\s+[\d.]+\s*:/g;
       let lastIndex = -1;
       let match: RegExpExecArray | null;

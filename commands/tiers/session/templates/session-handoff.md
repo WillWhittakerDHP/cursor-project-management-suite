@@ -53,7 +53,7 @@ Start Session [NEXT_SESSION]
 - Architectural notes
 - Code-reuse suggestions
 - Detailed task notes
-- Learning checkpoints
+- Checkpoints
 - Pattern explanations
 
 ### File Size Target:

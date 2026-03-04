@@ -30,16 +30,16 @@
 - [ ] ### Session [SESSION_ID]: [SESSION_NAME]
 **Description:** [What this session accomplishes]
 **Tasks:** [Number of tasks]
-**Learning Goals:**
-- [Learning goal 1]
-- [Learning goal 2]
+**Focus:**
+- [Focus area 1]
+- [Focus area 2]
 
 - [ ] ### Session [SESSION_ID+1]: [SESSION_NAME]
 **Description:** [What this session accomplishes]
 **Tasks:** [Number of tasks]
-**Learning Goals:**
-- [Learning goal 1]
-- [Learning goal 2]
+**Focus:**
+- [Focus area 1]
+- [Focus area 2]
 
 ---
 
@@ -57,7 +57,7 @@
 ## Success Criteria
 
 - [ ] All sessions completed
-- [ ] All learning goals achieved
+- [ ] All focus areas addressed
 - [ ] Code quality checks passing
 - [ ] Documentation updated
 - [ ] Ready for next phase

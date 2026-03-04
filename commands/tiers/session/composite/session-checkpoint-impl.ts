@@ -73,7 +73,7 @@ export async function sessionCheckpointImpl(
   output.push('## Session Progress Review\n');
   output.push('**Review:**\n');
   output.push('- Tasks completed in this session\n');
-  output.push('- Concepts learned\n');
+  output.push('- Key decisions and progress\n');
   output.push('- Next tasks to work on\n');
 
   return output.join('\n');

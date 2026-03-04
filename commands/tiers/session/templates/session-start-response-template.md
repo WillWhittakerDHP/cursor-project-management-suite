@@ -87,10 +87,10 @@ For each major responsibility, declare where it will live:
 - React: [How React does it - brief]
 - Vue: [How Vue does it - brief]
 
-### Learning Checkpoints
+### Key Focus
 
-- [Checkpoint 1 - what concept to understand]
-- [Checkpoint 2 - what concept to understand]
+- [Focus area 1 - what to verify/understand]
+- [Focus area 2 - what to verify/understand]
 
 Should I proceed with implementing these changes, or do you want to review the plan first? I can provide code snippets for each step if you prefer to implement incrementally.
 ```
@@ -107,7 +107,7 @@ Should I proceed with implementing these changes, or do you want to review the p
 4. **Clear objectives** - Numbered list of what needs to be accomplished
 5. **Implementation plan** - High-level steps, not detailed task breakdowns
 6. **Key differences** - React vs Vue patterns (brief, focused)
-7. **Learning checkpoints** - What concepts to understand (brief)
+7. **Key focus** - What to verify or understand (brief)
 8. **Explicit approval** - Always end with: "Should I proceed with implementing these changes, or do you want to review the plan first?"
 9. **Mode switching instructions** - Clear instructions to switch to Agent Mode after approval
 
@@ -177,7 +177,7 @@ Should I proceed with implementing these changes, or do you want to review the p
 - React: JSX conditional rendering (`{!isPrefetched && <LoadingIndicator />}`)
 - Vue: `v-if` directive for conditional rendering
 
-### Learning Checkpoints
+### Key Focus
 
 - Why prefetch before mount? Ensures global data is available immediately, avoiding loading states in child components.
 - Why extend QueryClient? Provides app-level refresh methods without prop drilling.
