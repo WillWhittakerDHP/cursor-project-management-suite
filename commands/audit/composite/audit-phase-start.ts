@@ -13,7 +13,7 @@ import { TierAuditResult, AuditParams } from '../types';
 import { auditTierQuality } from '../atomic/audit-tier-quality';
 import { WorkflowCommandContext } from '../../utils/command-context';
 import { resolveFeatureName } from '../../utils';
-import { writeAuditReport, calculateOverallStatus, getRelativePath, storeBaselineScore } from '../utils';
+import { writeAuditReport, calculateOverallStatus, getRelativePath } from '../utils';
 
 export interface AuditPhaseStartParams {
   phase: string; // Format: X.Y (e.g., "4.1")
@@ -63,20 +63,7 @@ export async function auditPhaseStart(params: AuditPhaseStartParams): Promise<{
     featureName
   };
   
-  // Store baseline scores for comparison
-  try {
-    const scores: Record<string, number> = {};
-    for (const result of results) {
-      if (result.score !== undefined) {
-        scores[result.category] = result.score;
-      }
-    }
-    await storeBaselineScore('phase', params.phase, featureName, scores);
-  } catch (_error) {
-    errors.push(`Failed to store baseline scores: ${_error instanceof Error ? _error.message : String(_error)}`);
-  }
-  
-  // Write audit report (marked as start audit)
+  // Write audit report (marked as start audit — baseline storage handled by background-audit-runner)
   let reportPath = '';
   try {
     reportPath = await writeAuditReport(auditResult, context, 'start');

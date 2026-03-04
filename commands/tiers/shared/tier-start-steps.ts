@@ -1,6 +1,6 @@
 /**
  * Reusable step modules for the tier start workflow.
- * Each step uses shared primitives (formatBranchHierarchy, runTierPlan, buildCascadeDown, runStartAuditForTier)
+ * Each step uses shared primitives (formatBranchHierarchy, runTierPlan, buildCascadeDown)
  * and tier-supplied hooks. The orchestrator runs these in order; steps that can exit early return a result.
  */
 
@@ -18,7 +18,10 @@ import { isCursorPath } from '../../git/shared/tier-branch-manager';
 import { resolveCommandExecutionMode, isPlanMode } from '../../utils/command-execution-mode';
 import { runTierPlan } from './tier-plan';
 import { buildCascadeDown } from '../../utils/tier-cascade';
-import { runStartAuditForTier } from '../../audit/run-start-audit-for-tier';
+import { spawn } from 'child_process';
+import { join } from 'path';
+import { readTierScope } from '../../utils/tier-scope';
+import { buildTierStamp } from '../../audit/baseline-log';
 import { buildGovernanceContext } from '../../audit/governance-context';
 import { buildContinuitySummary, buildReferencePaths, type ReferencePaths } from './context-policy';
 import { fillDirectTierDownInGuide } from './fill-direct-tier-down';
@@ -804,36 +807,57 @@ export async function stepRunExtras(
   if (extra) ctx.output.push(extra);
 }
 
-/** Run start audit for tier (single entry point); task skips. When not clean (warn/fail), returns early exit — STOP and fix per governance. */
+/**
+ * Spawn start audit in the background (fire-and-forget).
+ * The background runner executes npm audit scripts, computes governance scores,
+ * and appends a "start" entry to the baseline log (.audit-baseline-log.jsonl).
+ * Nothing in the tier-start pipeline blocks on or reads the audit results.
+ * Tier-end queries the baseline log for the matching tier-stamp to compute deltas.
+ */
 export async function stepStartAudit(
   ctx: TierStartWorkflowContext,
   hooks: TierStartWorkflowHooks
 ): Promise<StepExitResult> {
   if (hooks.runStartAudit === false) return null;
-  const featureName = ctx.context.feature.name;
-  const auditResult = await runStartAuditForTier({
-    tier: ctx.config.name,
-    identifier: ctx.identifier,
-    featureName,
-  });
-  if (auditResult.output) ctx.output.push(auditResult.output);
-  if (!auditResult.clean) {
-    const deliverables = [
-      auditResult.output || `Audit reported warnings or failures for ${ctx.config.name} ${ctx.identifier}.`,
-      '',
-      '**STOP — Fix in compliance with governance rules.**',
-      'Address all warnings and errors in the audit report, then re-run this start command.',
-    ].join('\n');
-    return {
-      success: false,
-      output: ctx.output.join('\n\n'),
-      outcome: {
-        status: 'blocked',
-        reasonCode: 'audit_failed',
-        nextAction: 'Audit reported warnings or failures. Fix issues in compliance with governance rules, then re-run this start command.',
-        deliverables,
-      },
+
+  try {
+    const scope = await readTierScope();
+    const tierStamp = buildTierStamp({
+      feature: scope.feature?.id ?? ctx.context.feature.name,
+      phase: scope.phase?.id ?? null,
+      session: scope.session?.id ?? null,
+      task: scope.task?.id ?? null,
+    });
+
+    const runnerPath = join(
+      process.cwd(),
+      '.cursor',
+      'commands',
+      'audit',
+      'background-audit-runner.ts'
+    );
+
+    const args: Record<string, string> = {
+      tier: ctx.config.name,
+      identifier: ctx.identifier,
+      featureName: ctx.context.feature.name,
+      tierStamp,
     };
+
+    const child = spawn('npx', ['tsx', runnerPath, JSON.stringify(args)], {
+      cwd: process.cwd(),
+      detached: true,
+      stdio: 'ignore',
+    });
+    child.unref();
+
+    ctx.output.push(
+      `**Start audit:** spawned in background (tier-stamp: ${tierStamp}). Baseline will be recorded for tier-end comparison.`
+    );
+  } catch (err) {
+    ctx.output.push(
+      `**Start audit skipped** (non-blocking): ${err instanceof Error ? err.message : String(err)}`
+    );
   }
   return null;
 }

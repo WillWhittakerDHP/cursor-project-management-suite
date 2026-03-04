@@ -13,7 +13,9 @@ import { auditDocs } from '../atomic/audit-docs';
 import { auditVueArchitecture } from '../atomic/audit-vue-architecture';
 import { WorkflowCommandContext } from '../../utils/command-context';
 import { resolveFeatureName } from '../../utils';
-import { writeAuditReport, calculateOverallStatus, getRelativePath, loadBaselineScore, compareBaselineToEnd, getTypeConstantInventoryScore, getComposableGovernanceScore, getFunctionGovernanceScore, getComponentGovernanceScore } from '../utils';
+import { writeAuditReport, calculateOverallStatus, getRelativePath, compareBaselineToEnd, getTypeConstantInventoryScore, getComposableGovernanceScore, getFunctionGovernanceScore, getComponentGovernanceScore } from '../utils';
+import { queryBaseline, buildTierStamp } from '../baseline-log';
+import { readTierScope } from '../../utils/tier-scope';
 import { importExternalAudits } from '../external/import-external-audits';
 
 export interface AuditSessionParams {
@@ -91,10 +93,17 @@ export async function auditSession(params: AuditSessionParams): Promise<{
     featureName
   };
   
-  // Load baseline scores and compare (includes type-constant-inventory from JSON)
+  // Query baseline log for the matching tier-stamp start entry
   let baselineComparison;
   try {
-    const baseline = await loadBaselineScore('session', params.sessionId, featureName);
+    const scope = await readTierScope();
+    const tierStamp = buildTierStamp({
+      feature: scope.feature?.id ?? featureName,
+      phase: scope.phase?.id ?? null,
+      session: scope.session?.id ?? params.sessionId,
+      task: null,
+    });
+    const baseline = await queryBaseline(tierStamp);
     if (baseline) {
       const endScores: Record<string, number> = {};
       for (const result of results) {
@@ -121,7 +130,6 @@ export async function auditSession(params: AuditSessionParams): Promise<{
       baselineComparison = compareBaselineToEnd(baseline, endScores);
     }
   } catch (_error) {
-    // Non-fatal - just log warning
     console.warn(`Failed to load baseline for comparison: ${_error instanceof Error ? _error.message : String(_error)}`);
   }
   

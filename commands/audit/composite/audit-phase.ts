@@ -11,7 +11,9 @@ import { auditTierQuality } from '../atomic/audit-tier-quality';
 import { runTierAutofix } from '../autofix/run-tier-autofix';
 import { WorkflowCommandContext } from '../../utils/command-context';
 import { resolveFeatureName } from '../../utils';
-import { writeAuditReport, calculateOverallStatus, getRelativePath, loadBaselineScore, compareBaselineToEnd } from '../utils';
+import { writeAuditReport, calculateOverallStatus, getRelativePath, compareBaselineToEnd } from '../utils';
+import { queryBaseline, buildTierStamp } from '../baseline-log';
+import { readTierScope } from '../../utils/tier-scope';
 import { importExternalAudits } from '../external/import-external-audits';
 
 export interface AuditPhaseParams {
@@ -77,10 +79,17 @@ export async function auditPhase(params: AuditPhaseParams): Promise<{
     featureName
   };
   
-  // Load baseline scores and compare
+  // Query baseline log for the matching tier-stamp start entry
   let baselineComparison;
   try {
-    const baseline = await loadBaselineScore('phase', params.phase, featureName);
+    const scope = await readTierScope();
+    const tierStamp = buildTierStamp({
+      feature: scope.feature?.id ?? featureName,
+      phase: scope.phase?.id ?? params.phase,
+      session: null,
+      task: null,
+    });
+    const baseline = await queryBaseline(tierStamp);
     if (baseline) {
       const endScores: Record<string, number> = {};
       for (const result of results) {
@@ -91,7 +100,6 @@ export async function auditPhase(params: AuditPhaseParams): Promise<{
       baselineComparison = compareBaselineToEnd(baseline, endScores);
     }
   } catch (_error) {
-    // Non-fatal - just log warning
     console.warn(`Failed to load baseline for comparison: ${_error instanceof Error ? _error.message : String(_error)}`);
   }
   

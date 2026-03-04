@@ -409,7 +409,8 @@ export async function getComponentGovernanceScore(): Promise<number | undefined>
 }
 
 /**
- * Store baseline scores for comparison
+ * @deprecated Use appendBaselineEntry() from baseline-log.ts instead.
+ * Kept for backward compatibility with any manual invocations.
  */
 export async function storeBaselineScore(
   tier: AuditTier,
@@ -445,7 +446,8 @@ export async function storeBaselineScore(
 }
 
 /**
- * Load baseline scores for comparison
+ * @deprecated Use queryBaseline() from baseline-log.ts instead.
+ * Kept for backward compatibility with any manual invocations.
  */
 export async function loadBaselineScore(
   tier: AuditTier,
@@ -482,7 +484,7 @@ export async function loadBaselineScore(
  * Compare baseline scores to end scores
  */
 export function compareBaselineToEnd(
-  baseline: BaselineScores | null,
+  baseline: { scores: Record<string, number> } | null,
   endScores: Record<string, number>
 ): ComparisonResult[] {
   const comparisons: ComparisonResult[] = [];

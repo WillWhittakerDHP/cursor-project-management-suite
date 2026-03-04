@@ -15,7 +15,7 @@ import { auditDocs } from '../atomic/audit-docs';
 import { auditVueArchitecture } from '../atomic/audit-vue-architecture';
 import { WorkflowCommandContext } from '../../utils/command-context';
 import { resolveFeatureName } from '../../utils';
-import { writeAuditReport, calculateOverallStatus, getRelativePath, storeBaselineScore, getTypeConstantInventoryScore, getComposableGovernanceScore, getFunctionGovernanceScore, getComponentGovernanceScore } from '../utils';
+import { writeAuditReport, calculateOverallStatus, getRelativePath, getTypeConstantInventoryScore, getComposableGovernanceScore, getFunctionGovernanceScore, getComponentGovernanceScore } from '../utils';
 
 export interface AuditSessionStartParams {
   sessionId: string; // Format: X.Y (e.g., "1.3")
@@ -77,37 +77,18 @@ export async function auditSessionStart(params: AuditSessionStartParams): Promis
     featureName
   };
   
-  // Store baseline scores for comparison (includes type-constant-inventory, composable-governance, function-governance, component-governance from JSON)
+  // Read governance scores for display (baseline storage handled by background-audit-runner)
   let typeInventoryScore: number | undefined;
   let composableGovernanceScore: number | undefined;
   let functionGovernanceScore: number | undefined;
   let componentGovernanceScore: number | undefined;
   try {
-    const scores: Record<string, number> = {};
-    for (const result of results) {
-      if (result.score !== undefined) {
-        scores[result.category] = result.score;
-      }
-    }
     typeInventoryScore = await getTypeConstantInventoryScore();
-    if (typeInventoryScore !== undefined) {
-      scores['type-constant-inventory'] = typeInventoryScore;
-    }
     composableGovernanceScore = await getComposableGovernanceScore();
-    if (composableGovernanceScore !== undefined) {
-      scores['composable-governance'] = composableGovernanceScore;
-    }
     functionGovernanceScore = await getFunctionGovernanceScore();
-    if (functionGovernanceScore !== undefined) {
-      scores['function-governance'] = functionGovernanceScore;
-    }
     componentGovernanceScore = await getComponentGovernanceScore();
-    if (componentGovernanceScore !== undefined) {
-      scores['component-governance'] = componentGovernanceScore;
-    }
-    await storeBaselineScore('session', params.sessionId, featureName, scores);
   } catch (_error) {
-    errors.push(`Failed to store baseline scores: ${_error instanceof Error ? _error.message : String(_error)}`);
+    errors.push(`Failed to read governance scores: ${_error instanceof Error ? _error.message : String(_error)}`);
   }
   
   // Write audit report (marked as start audit)
