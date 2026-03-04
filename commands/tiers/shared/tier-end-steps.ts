@@ -15,6 +15,106 @@ import { updateTierScope, clearTierScope, readTierScope, formatScopeCommitPrefix
 import { runEndAuditForTier } from '../../audit/run-end-audit-for-tier';
 import { buildTierEndOutcome } from '../../utils/tier-outcome';
 import { commitUncommittedNonCursor } from '../../git/shared/tier-branch-manager';
+import type { TierName } from './types';
+
+/**
+ * Maps audit keyword patterns to the governance playbook + cursor rule the agent
+ * MUST read before attempting fixes. Keyed by regex patterns that match audit
+ * category names or finding text in the audit output.
+ */
+interface GovernanceRef {
+  playbook: string;
+  cursorRule: string;
+  label: string;
+}
+
+const GOVERNANCE_REFS: Array<{ patterns: RegExp[]; ref: GovernanceRef }> = [
+  {
+    patterns: [/component-health/i, /component-logic/i, /component.coupling/i, /excessive.prop/i],
+    ref: {
+      playbook: '.project-manager/COMPONENT_AUTHORING_PLAYBOOK.md',
+      cursorRule: '.cursor/rules/component-governance.mdc',
+      label: 'Component governance',
+    },
+  },
+  {
+    patterns: [/composable-health/i, /composables-logic/i, /missing.return.type/i, /untyped.provide/i],
+    ref: {
+      playbook: '.project-manager/COMPOSABLE_AUTHORING_PLAYBOOK.md',
+      cursorRule: '.cursor/rules/composable-governance.mdc',
+      label: 'Composable governance',
+    },
+  },
+  {
+    patterns: [/function-complexity/i, /nesting/i, /branch/i],
+    ref: {
+      playbook: '.project-manager/FUNCTION_AUTHORING_PLAYBOOK.md',
+      cursorRule: '.cursor/rules/function-governance.mdc',
+      label: 'Function governance',
+    },
+  },
+  {
+    patterns: [/type-escape/i, /type-constant-inventory/i, /type-health/i, /type-similarity/i],
+    ref: {
+      playbook: '.project-manager/TYPE_AUTHORING_PLAYBOOK.md',
+      cursorRule: '.cursor/rules/type-governance.mdc',
+      label: 'Type governance',
+    },
+  },
+];
+
+/**
+ * Tier-level governance docs that always apply for a given tier (regardless of
+ * which specific audit categories triggered). These cover the coding standards
+ * and the Vue architecture contract.
+ */
+const TIER_BASELINE_REFS: Partial<Record<TierName, string[]>> = {
+  session: ['.cursor/rules/coding-standards.mdc'],
+  phase: ['.cursor/rules/coding-standards.mdc'],
+  task: ['.cursor/rules/coding-standards.mdc'],
+};
+
+function buildGovernanceGuidance(tier: TierName, auditOutput: string): string {
+  const matched = new Map<string, GovernanceRef>();
+
+  for (const { patterns, ref } of GOVERNANCE_REFS) {
+    if (matched.has(ref.label)) continue;
+    for (const p of patterns) {
+      if (p.test(auditOutput)) {
+        matched.set(ref.label, ref);
+        break;
+      }
+    }
+  }
+
+  if (matched.size === 0) return '';
+
+  const lines: string[] = [
+    '',
+    '---',
+    '',
+    '## Required reading before fixes',
+    '',
+    'Read these governance docs to ensure fixes comply with project patterns:',
+    '',
+  ];
+
+  for (const [label, ref] of matched) {
+    lines.push(`- **${label}**: \`${ref.playbook}\` (rules: \`${ref.cursorRule}\`)`);
+  }
+
+  const baselineRefs = TIER_BASELINE_REFS[tier];
+  if (baselineRefs) {
+    for (const path of baselineRefs) {
+      lines.push(`- **Coding standards**: \`${path}\``);
+    }
+  }
+
+  lines.push('');
+  lines.push('Read each linked file before making changes. Extract, don\'t inline. Follow thresholds exactly.');
+
+  return lines.join('\n');
+}
 
 /** If plan mode, build plan result and return it; else null. Uses same options contract as tier-start (ctx.options, default execute). */
 export function stepPlanModeExit(
@@ -220,6 +320,9 @@ export async function stepEndAudit(
   }
 
   if (!passed) {
+    const governance = buildGovernanceGuidance(ctx.config.name, auditOutput);
+    const enrichedDeliverables = (auditOutput || '') + governance;
+
     return {
       success: false,
       output: ctx.output.join('\n\n'),
@@ -227,9 +330,9 @@ export async function stepEndAudit(
       outcome: buildTierEndOutcome(
         'blocked_fix_required',
         'audit_failed',
-        'Fix audit warnings or errors per governance, then re-run this tier-end.',
+        'Fix audit warnings or errors per governance, then re-run this tier-end. Read the governance docs listed in deliverables FIRST.',
         undefined,
-        auditOutput || undefined
+        enrichedDeliverables || undefined
       ),
     };
   }
