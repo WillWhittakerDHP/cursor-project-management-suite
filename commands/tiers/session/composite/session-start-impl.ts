@@ -5,6 +5,7 @@
 import { join, resolve } from 'path';
 import { execSync } from 'child_process';
 import { readGuide } from '../../../utils/read-guide';
+import { readProjectFile } from '../../../utils/utils';
 import { WorkflowCommandContext } from '../../../utils/command-context';
 import { sessionExecutionPolicy } from '../policies/execution-policy';
 import { sessionGitPolicy } from '../policies/git-policy';
@@ -376,12 +377,32 @@ export async function sessionStartImpl(
     },
 
     async getTierDownBuildPlan(): Promise<string> {
-      const guide = ctx.readResult?.guide ?? '';
+      // Fix 1: Prefer current-tier (session) guide when it exists so planning doc is seeded from the real list.
+      const sessionGuidePath = context.paths.getSessionGuidePath(sessionId);
+      let guide = '';
+      try {
+        guide = await readProjectFile(sessionGuidePath);
+      } catch {
+        // Session guide not on disk; use tierUp context (phase guide excerpt).
+      }
+      if (!guide) guide = ctx.readResult?.guide ?? '';
       const tasks = extractTaskDetails(guide, sessionId);
       if (tasks.length === 0) {
+        // Fallback: try to parse task lines from guide (id + title only) for bullet format.
+        const taskLineRegex = /(?:^|\n)(?:-\s*\[\s*x?\s*\]\s*)?(?:####|###)\s+Task\s+(\d+\.\d+\.\d+\.\d+)[\s:]\s*([^\n]*)/gi;
+        const taskLines: string[] = [];
+        let m: RegExpExecArray | null;
+        while ((m = taskLineRegex.exec(guide)) !== null) {
+          const taskId = m[1];
+          const name = m[2].trim().slice(0, 80) || taskId;
+          taskLines.push(`- **Task ${taskId}:** ${name}`);
+        }
+        if (taskLines.length > 0) {
+          return `Build the following tasks to achieve the session goals:\n\n${taskLines.join('\n')}\n\nImplement in order; after each task run task-end and cascade to next or session-end.`;
+        }
         return `Enumerate tasks for ${sessionId} (e.g. ${sessionId}.1, ${sessionId}.2) in the session/phase guide, then implement in order with governance checks. Add task blocks (Goal, Files, Approach, Checkpoint) before execute.`;
       }
-      const lines = tasks.map(t => `- **${t.taskId}:** ${t.title}${t.goal ? ` — ${t.goal}` : ''}`);
+      const lines = tasks.map(t => `- **Task ${t.taskId}:** ${t.title}${t.goal ? ` — ${t.goal}` : ''}`);
       return `Build the following tasks to achieve the session goals:\n\n${lines.join('\n')}\n\nImplement in order; after each task run task-end and cascade to next or session-end.`;
     },
 

@@ -31,6 +31,8 @@ export interface TierStartOutcome {
   /** User-facing deliverables summary for plan-mode approval (shown in AskQuestion). */
   deliverables?: string;
   cascade?: CascadeInfo;
+  /** When reasonCode is guide_fill_pending, path to the guide file the agent must fill (relative to project). */
+  guidePath?: string;
 }
 
 export interface TierStartResult {

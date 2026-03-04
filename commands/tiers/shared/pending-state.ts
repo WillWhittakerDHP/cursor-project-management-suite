@@ -20,6 +20,10 @@ export interface TierStartPendingState {
   tier: 'feature' | 'phase' | 'session';
   params: TierStartPendingParams;
   pass: 1;
+  /** Option A: when true, Gate 2 — agent must fill the guide; next /accepted-proceed checks isGuideFilled and runs Part B. */
+  guideFillPending?: boolean;
+  /** Path to the guide file (relative to project) when guideFillPending is true. */
+  guidePath?: string;
 }
 
 /** State for task start: user will run /accepted-code to run task start with execute. */
@@ -39,10 +43,24 @@ function safeParse<T>(path: string, raw: string): T | null {
 export async function readTierStartPending(): Promise<TierStartPendingState | null> {
   try {
     const raw = await readProjectFile(TIER_PENDING_PATH);
-    const parsed = safeParse<{ tier: string; params: unknown; pass?: number }>(TIER_PENDING_PATH, raw);
+    const parsed = safeParse<{
+      tier: string;
+      params: unknown;
+      pass?: number;
+      guideFillPending?: boolean;
+      guidePath?: string;
+    }>(TIER_PENDING_PATH, raw);
     if (!parsed?.tier || !parsed?.params || (parsed.pass !== 1 && parsed.pass !== 2)) return null;
     if (parsed.tier !== 'feature' && parsed.tier !== 'phase' && parsed.tier !== 'session') return null;
-    return { tier: parsed.tier as TierStartPendingState['tier'], params: parsed.params as TierStartPendingParams, pass: 1 };
+    return {
+      tier: parsed.tier as TierStartPendingState['tier'],
+      params: parsed.params as TierStartPendingParams,
+      pass: 1,
+      ...(parsed.guideFillPending === true && parsed.guidePath != null && {
+        guideFillPending: true,
+        guidePath: String(parsed.guidePath),
+      }),
+    };
   } catch {
     return null;
   }

@@ -13,7 +13,7 @@ import {
   deleteTierStartPending,
 } from './pending-state';
 import type { ControlPlaneDecision } from './control-plane-types';
-import { getPlanningDocPathForTier, isPlanningDocFilled } from './tier-start-steps';
+import { getPlanningDocPathForTier, isPlanningDocFilled, isGuideFilled } from './tier-start-steps';
 import { readProjectFile } from '../../utils/utils';
 import { WorkflowCommandContext } from '../../utils/command-context';
 
@@ -27,6 +27,14 @@ function getIdentifierFromState(state: { tier: 'feature' | 'phase' | 'session'; 
   if (state.tier === 'feature' && typeof p.featureId === 'string') return p.featureId;
   return '';
 }
+
+const GUIDE_INCOMPLETE_MESSAGE = (path: string) =>
+  `Proceeding is BLOCKED. The guide must be filled before you can continue.
+
+1. Open the guide: \`${path}\`
+2. Replace placeholder text in each tierDown block (Session or Task) with concrete Goal, Files, Approach, and Checkpoint.
+3. Save the file.
+4. Run /accepted-proceed again.`;
 
 const PLANNING_DOC_INCOMPLETE_MESSAGE = (path: string) =>
   `Proceeding is BLOCKED. The planning doc must be filled before you can continue.
@@ -68,6 +76,39 @@ export async function acceptedProceed(): Promise<TierStartResultWithControlPlane
     };
   }
 
+  // Gate 2 (Option A): when guide_fill_pending, check guide is filled then run Part B with guideFillComplete.
+  if (state.guideFillPending && state.guidePath) {
+    const filled = await isGuideFilled(state.guidePath, state.tier);
+    if (!filled) {
+      const msg = GUIDE_INCOMPLETE_MESSAGE(state.guidePath);
+      const decision: ControlPlaneDecision = {
+        stop: true,
+        requiredMode: 'plan',
+        message: msg,
+      };
+      return {
+        success: false,
+        output: msg,
+        outcome: {
+          status: 'blocked',
+          reasonCode: 'guide_incomplete',
+          nextAction: msg,
+        },
+        controlPlaneDecision: decision,
+      };
+    }
+    const config = getConfigForTier(state.tier) as TierConfig;
+    const result = await runTierStart(config, state.params, {
+      mode: 'execute',
+      guideFillComplete: true,
+    });
+    if (result.outcome?.reasonCode === 'start_ok') {
+      await deleteTierStartPending();
+    }
+    return result;
+  }
+
+  // Gate 1: when pass 1, validate planning doc before execute.
   if (state.pass === 1) {
     const identifier = getIdentifierFromState(state);
     if (!identifier) {

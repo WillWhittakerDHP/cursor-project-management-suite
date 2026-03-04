@@ -33,6 +33,7 @@ import {
   buildPhaseSection,
   buildSessionSection,
   buildTaskSection,
+  deriveTierDownPlanItemsFromGuide,
 } from './ensure-tier-down-docs';
 import { readProjectFile, writeProjectFile } from '../../utils/utils';
 
@@ -228,8 +229,73 @@ function parseTierDownBuildPlanPerItem(
 }
 
 /**
+ * Build minimal guide content from planning-doc tierDown items when the guide is missing.
+ * Used by syncPlannedTierDownToGuide so the guide is created from the plan instead of a one-default fallback.
+ */
+function buildGuideFromPlanItems(
+  tier: 'feature' | 'phase' | 'session',
+  identifier: string,
+  description: string,
+  items: TierDownPlanItem[]
+): string {
+  if (tier === 'feature') {
+    return [
+      `# Feature ${identifier}: ${description}`,
+      '',
+      '**Purpose:** Feature-level guide.',
+      '**Tier:** Feature',
+      '',
+      '---',
+      '',
+      '## Phases Breakdown',
+      '',
+      ...items.map((i) => buildPhaseSection(i.id, i.description)),
+    ].join('\n');
+  }
+  if (tier === 'phase') {
+    return [
+      `# Phase ${identifier} Guide: ${description}`,
+      '',
+      '**Purpose:** Phase-level guide for planning and tracking.',
+      '**Tier:** Phase',
+      '',
+      '---',
+      '',
+      '## Phase Overview',
+      '',
+      `**Phase Number:** ${identifier}`,
+      `**Phase Name:** ${description}`,
+      '**Description:** [Fill in]',
+      '**Duration:** 1+ sessions',
+      '**Status:** Not Started',
+      '',
+      '---',
+      '',
+      '## Sessions Breakdown',
+      '',
+      ...items.map((i) => buildSessionSection(i.id, i.description)),
+    ].join('\n');
+  }
+  return [
+    `# Session ${identifier} Guide: ${description}`,
+    '',
+    '**Purpose:** Session-level guide with task breakdown.',
+    '**Tier:** Session',
+    '',
+    '---',
+    '',
+    '## Quick Start',
+    '',
+    '### Tasks',
+    '',
+    ...items.map((i) => buildTaskSection(i.id, i.description)),
+  ].join('\n');
+}
+
+/**
  * Sync planned tierDown IDs and descriptions from the planning doc into the current-tier guide:
  * parse "How we build the tierDown", store on ctx.tierDownPlanItems, append missing headings.
+ * When the guide is missing and parsedItems is non-empty, create the guide from the plan (instead of bailing).
  * No-op if planning doc missing or no tierDown section. Execute mode only; called before stepEnsureTierDownDocs.
  */
 async function syncPlannedTierDownToGuide(ctx: TierStartWorkflowContext): Promise<void> {
@@ -256,11 +322,28 @@ async function syncPlannedTierDownToGuide(ctx: TierStartWorkflowContext): Promis
   try {
     guideContent = await readProjectFile(guidePath);
   } catch {
-    return;
+    if (parsedItems.length === 0) return;
+    const description = ctx.resolvedDescription ?? ctx.identifier;
+    guideContent = buildGuideFromPlanItems(tier, ctx.identifier, description, parsedItems);
+    try {
+      await writeProjectFile(guidePath, guideContent);
+    } catch {
+      return;
+    }
+  }
+
+  // Fix 4: When planning doc had no parseable bullets, derive tierDown list from existing guide.
+  let itemsToAppend = parsedItems;
+  if (parsedItems.length === 0 && guideContent) {
+    const fromGuide = deriveTierDownPlanItemsFromGuide(guideContent, tier);
+    if (fromGuide.length > 0) {
+      ctx.tierDownPlanItems = fromGuide;
+      itemsToAppend = fromGuide;
+    }
   }
 
   let updated = guideContent;
-  for (const item of parsedItems) {
+  for (const item of itemsToAppend) {
     if (tier === 'feature' && !hasPhaseSection(updated, item.id)) {
       updated = updated.trimEnd() + '\n' + buildPhaseSection(item.id, item.description);
     } else if (tier === 'phase' && !hasSessionSection(updated, item.id)) {
@@ -534,6 +617,71 @@ export async function stepGovernanceContext(
 /** Placeholder strings that indicate the planning doc has not been filled by the agent. */
 export const PLACEHOLDER_REFINED = '[To be refined during discussion]';
 
+/** Placeholder for the "How we build the tierDown" section; agent must list tierDown units (phases/sessions/tasks). */
+export const PLACEHOLDER_TIERDOWN = '[List tierDown units here]';
+
+/** Fix 2: Regex for one parser-friendly bullet line (parseTierDownBuildPlanPerItem expects - **Session X.Y.Z:** or - **Phase X.Y:** or - **Task X.Y.Z.N:**). */
+const PARSER_FRIENDLY_TIERDOWN_LINE = /-\s+\*\*(?:Session|Phase|Task)\s+\d[\d.]*\*\*:/;
+
+/**
+ * Returns true if tierDownBuildPlan contains at least one parser-friendly bullet line.
+ * Used so we never seed prose into the planning doc tierDown section.
+ */
+export function hasParserFriendlyTierDownBullets(tierDownBuildPlan: string | undefined): boolean {
+  if (!tierDownBuildPlan?.trim()) return false;
+  return PARSER_FRIENDLY_TIERDOWN_LINE.test(tierDownBuildPlan);
+}
+
+/**
+ * Tier-aware single bullet placeholder when hook output is not parseable.
+ * Ensures the section is always machine-parseable and shows the agent the required format.
+ */
+function getTierDownBulletPlaceholder(
+  tier: 'feature' | 'phase' | 'session' | 'task',
+  identifier: string
+): string {
+  if (tier === 'feature') {
+    return `- **Phase ${identifier}:** [one line per phase in this feature]`;
+  }
+  if (tier === 'phase') {
+    const firstSession = `${identifier}.1`;
+    return `- **Session ${firstSession}:** [one line per session in this phase]`;
+  }
+  if (tier === 'session') {
+    const firstTask = `${identifier}.1`;
+    return `- **Task ${firstTask}:** [one line per task in this session]`;
+  }
+  return PLACEHOLDER_TIERDOWN;
+}
+
+/** Placeholder patterns in guide tierDown blocks that indicate the agent has not yet filled them (Option A Gate 2). */
+const GUIDE_TIERDOWN_PLACEHOLDERS = [
+  '[Fill in]',
+  '[To be planned]',
+  '[To be defined]',
+] as const;
+
+/**
+ * Returns true if the guide has been filled (no placeholder text in tierDown blocks).
+ * Used by /accepted-proceed for Gate 2 when state is guide_fill_pending.
+ */
+export async function isGuideFilled(
+  guidePath: string,
+  tier: 'feature' | 'phase' | 'session'
+): Promise<boolean> {
+  if (tier === 'feature') return true; // feature has no "fill guide" gate in Option A
+  let content: string;
+  try {
+    content = await readProjectFile(guidePath);
+  } catch {
+    return false;
+  }
+  for (const p of GUIDE_TIERDOWN_PLACEHOLDERS) {
+    if (content.includes(p)) return false;
+  }
+  return true;
+}
+
 /** Task-tier placeholders (same enforcement for all tiers). */
 const TASK_PLACEHOLDERS = [
   '[Define explicit coding goal before beginning implementation]',
@@ -548,9 +696,22 @@ const TASK_PLACEHOLDERS = [
  * Used by acceptedProceed and acceptedCode to block proceeding until the agent fills the doc.
  * All tiers (feature, phase, session, task) use the same check.
  */
+/** Fix 2: Bullet-format placeholders that indicate tierDown section not yet filled by agent. */
+const TIERDOWN_BULLET_PLACEHOLDERS = [
+  '[one line per session in this phase]',
+  '[one line per task in this session]',
+  '[one line per phase in this feature]',
+] as const;
+
 export function isPlanningDocFilled(content: string): boolean {
   if (content.includes(PLACEHOLDER_REFINED)) {
     return false;
+  }
+  if (content.includes(PLACEHOLDER_TIERDOWN)) {
+    return false;
+  }
+  for (const p of TIERDOWN_BULLET_PLACEHOLDERS) {
+    if (content.includes(p)) return false;
   }
   for (const p of TASK_PLACEHOLDERS) {
     if (content.includes(p)) return false;
@@ -672,12 +833,13 @@ function buildGovernanceOneLiner(governanceContext: string): string {
   return `${findings.length} governance highlights — read reports before filling slots`;
 }
 
-/** Build short planning doc markdown: contract + continuity + 4 slots + reference links. */
+/** Build short planning doc markdown: contract + continuity + 4 slots + tierDown section (when applicable) + reference links. */
 function buildPlanningDocContent(
   ctx: TierStartWorkflowContext,
   continuity: string,
   governanceOneLiner: string,
-  referencePaths: ReferencePaths
+  referencePaths: ReferencePaths,
+  tierDownBuildPlan?: string
 ): string {
   const tier = ctx.config.name;
   const title = ctx.resolvedDescription ?? ctx.resolvedId;
@@ -693,6 +855,16 @@ function buildPlanningDocContent(
     `- Governance reports: \`${referencePaths.auditReportsDir}\` — check function-complexity, component-health, composable-health, type-escape, type-constant-inventory`
   );
   refLines.push(`- Playbooks: ${referencePaths.playbooks.map(p => `\`${p}\``).join(', ')}`);
+
+  // Fix 2: Never seed prose; use hook output only when it has at least one parser-friendly bullet, else tier-aware placeholder.
+  const tierDownBody =
+    tier === 'task'
+      ? ''
+      : hasParserFriendlyTierDownBullets(tierDownBuildPlan)
+        ? (tierDownBuildPlan?.trim() ?? '')
+        : getTierDownBulletPlaceholder(tier, ctx.identifier);
+  const tierDownSection =
+    tier === 'task' ? '' : `\n## How we build the tierDown to achieve them\n${tierDownBody}\n`;
 
   return `# Plan: ${tier} ${ctx.resolvedId} — ${title}
 
@@ -715,8 +887,7 @@ ${continuity}
 
 ## Checkpoint
 [To be refined during discussion]
-
----
+${tierDownSection}---
 ## Reference (read before filling slots — governance and inventory compliance is required)
 ${refLines.join('\n')}
 `;
@@ -752,8 +923,9 @@ export async function stepContextGathering(
   const governanceOneLiner = buildGovernanceOneLiner(governanceContext);
   const referencePaths = buildReferencePaths(tier, ctx.identifier, ctx.context);
 
+  const tierDownBuildPlan = hooks.getTierDownBuildPlan ? await hooks.getTierDownBuildPlan(ctx) : undefined;
   const planningDocPath = getPlanningDocPath(ctx);
-  const content = buildPlanningDocContent(ctx, continuity, governanceOneLiner, referencePaths);
+  const content = buildPlanningDocContent(ctx, continuity, governanceOneLiner, referencePaths, tierDownBuildPlan);
   await writeProjectFile(planningDocPath, content);
   ctx.planningDocPath = planningDocPath;
 
@@ -761,15 +933,15 @@ export async function stepContextGathering(
     ? await hooks.getContextWorkBrief(ctx)
     : undefined;
   const tierGoals = hooks.getTierGoals ? await hooks.getTierGoals(ctx) : undefined;
-  const tierDownBuildPlan = hooks.getTierDownBuildPlan ? await hooks.getTierDownBuildPlan(ctx) : undefined;
 
   const messageLines: string[] = [
     `Planning document created: \`${planningDocPath}\``,
     '',
-    '**REQUIRED before /accepted-proceed:**',
+    '**REQUIRED before /accepted-proceed (Step 1 — Light collection):**',
     '1. Read the Reference section links in the planning doc — governance reports, inventory audits, and playbooks define the patterns and standards you must follow.',
-    '2. Fill ## Goal, ## Files, ## Approach, ## Checkpoint with concrete content.',
-    '3. Save the file.',
+    '2. Fill ## Goal, ## Files, ## Approach, ## Checkpoint, and ## How we build the tierDown with concrete content.',
+    '3. The ## How we build the tierDown section must be one line per phase/session/task in the format `- **Session X.Y.Z:** short name` (no paragraphs).',
+    '4. Save the file.',
     '',
     '**Context for filling slots:**',
   ];
@@ -799,7 +971,7 @@ export async function stepContextGathering(
     outcome: {
       status: 'plan',
       reasonCode: 'context_gathering',
-      nextAction: 'Context gathering: you MUST fill the planning doc (Goal, Files, Approach, Checkpoint) then run /accepted-proceed; /accepted-proceed is blocked until the doc is filled.',
+      nextAction: 'Context gathering: you MUST fill the planning doc (Goal, Files, Approach, Checkpoint, and How we build the tierDown) then run /accepted-proceed; /accepted-proceed is blocked until the doc is filled.',
       deliverables,
     },
   };

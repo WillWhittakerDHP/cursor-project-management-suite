@@ -23,6 +23,8 @@ export interface CommandExecutionOptions {
   mode?: CommandExecutionMode;
   /** When true, skip the context-gathering Q&A step and continue to plan/fill/cascade (set after user is satisfied). */
   contextGatheringComplete?: boolean;
+  /** Option A second gate: when true, skip Part A steps and run from read_start_context (guide already filled by agent). */
+  guideFillComplete?: boolean;
 }
 
 /**

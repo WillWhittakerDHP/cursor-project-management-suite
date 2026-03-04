@@ -108,6 +108,7 @@ export async function runTierStart(
       !kernelResult.success ||
       kernelResult.outcome.reasonCode === 'plan_mode' ||
       kernelResult.outcome.reasonCode === 'context_gathering' ||
+      kernelResult.outcome.reasonCode === 'guide_fill_pending' ||
       kernelResult.outcome.reasonCode === 'uncommitted_blocking';
     const enforcedMode = needsPlanFirst ? ('plan' as const) : cursorModeForExecution(executionMode);
     const enforcement = enforceModeSwitch(
@@ -124,6 +125,18 @@ export async function runTierStart(
         tier: config.name,
         params: params as TierStartPendingParams,
         pass: 1,
+      });
+    } else if (
+      reasonCode === 'guide_fill_pending' &&
+      (config.name === 'phase' || config.name === 'session') &&
+      kernelResult.outcome.guidePath
+    ) {
+      await writeTierStartPending({
+        tier: config.name,
+        params: params as TierStartPendingParams,
+        pass: 1,
+        guideFillPending: true,
+        guidePath: kernelResult.outcome.guidePath,
       });
     } else if (reasonCode === 'plan_mode' && config.name === 'task') {
       const p = params as { taskId: string; featureId?: string };

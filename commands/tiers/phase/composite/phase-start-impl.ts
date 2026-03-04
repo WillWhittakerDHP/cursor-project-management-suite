@@ -185,13 +185,32 @@ export async function phaseStartImpl(
     },
 
     async getTierDownBuildPlan(): Promise<string> {
-      const content = ctx.readResult?.guide ?? '';
-      const sessionMatches = content.matchAll(/Session\s+(\d+\.\d+\.\d+):?\s*([^\n]*)/gi);
+      // Fix 1: Prefer current-tier (phase) guide when it exists so planning doc is seeded from the real list.
+      const phaseGuidePath = context.paths.getPhaseGuidePath(phase);
+      let content = '';
+      try {
+        content = await readProjectFile(phaseGuidePath);
+      } catch {
+        // Phase guide not on disk; use tierUp context (feature guide excerpt).
+      }
+      if (!content) content = ctx.readResult?.guide ?? '';
+      // Match ### Session X.Y.Z: Name (same style as ensure-tier-down-docs).
+      const sessionMatches = content.matchAll(/(?:^|\n)(?:-\s*\[\s*x?\s*\]\s*)?###\s+Session\s+(\d+\.\d+\.\d+)[\s:]\s*([^\n]*)/gi);
       const sessionLines: string[] = [];
       for (const m of sessionMatches) {
         const sid = m[1];
         const name = m[2].trim().slice(0, 80) || sid;
         sessionLines.push(`- **Session ${sid}:** ${name}`);
+      }
+      if (sessionLines.length === 0) {
+        // Fallback: try tierUp guide (e.g. feature guide) for Session X.Y.Z lines.
+        const tierUpContent = ctx.readResult?.guide ?? '';
+        const tierUpMatches = tierUpContent.matchAll(/Session\s+(\d+\.\d+\.\d+):?\s*([^\n]*)/gi);
+        for (const m of tierUpMatches) {
+          const sid = m[1];
+          const name = m[2].trim().slice(0, 80) || sid;
+          sessionLines.push(`- **Session ${sid}:** ${name}`);
+        }
       }
       if (sessionLines.length === 0) {
         return `Add sessions for Phase ${phase} in the phase guide (e.g. ${phase}.1, ${phase}.2), then run session-start for each in order. Cascade session-end → next session or phase-end.`;

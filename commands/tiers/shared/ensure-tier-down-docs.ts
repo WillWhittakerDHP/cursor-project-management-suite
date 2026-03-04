@@ -5,7 +5,7 @@
  * tierUp/tierDown/tierAcross only; no parent/child or concrete tier names in generic prose.
  */
 
-import type { TierStartWorkflowContext } from './tier-start-workflow-types';
+import type { TierStartWorkflowContext, TierDownPlanItem } from './tier-start-workflow-types';
 import type { WorkflowCommandContext } from '../../utils/command-context';
 import { readProjectFile, writeProjectFile } from '../../utils/utils';
 import { derivePhaseDescription } from '../../planning/utils/resolve-planning-description';
@@ -72,6 +72,49 @@ function enumerateTaskIdsForSession(
     if (fromGuide.length > 0) return fromGuide;
   }
   return [`${sessionId}.1`];
+}
+
+// --- Fix 4: Derive tierDown plan items from guide content (for execute-time fallback when planning doc has no bullets) ---
+
+const PHASE_ID_NAME_IN_FEATURE = /(?:^|\n)(?:###\s+)?Phase\s+(\d+\.\d+)[\s:]\s*([^\n]*)/gi;
+const SESSION_ID_NAME_IN_PHASE = /(?:^|\n)(?:-\s*\[\s*x?\s*\]\s*)?###\s+Session\s+(\d+\.\d+\.\d+)[\s:]\s*([^\n]*)/gi;
+const TASK_ID_NAME_IN_SESSION = /(?:^|\n)(?:-\s*\[\s*x?\s*\]\s*)?(?:####|###)\s+Task\s+(\d+\.\d+\.\d+\.\d+)[\s:]\s*([^\n]*)/gi;
+
+/**
+ * Enumerate tierDown IDs and descriptions from current-tier guide content.
+ * Used when the planning doc has no parseable bullets so we can still populate ctx.tierDownPlanItems from the guide.
+ */
+export function deriveTierDownPlanItemsFromGuide(
+  content: string,
+  tier: 'feature' | 'phase' | 'session'
+): TierDownPlanItem[] {
+  const items: TierDownPlanItem[] = [];
+  if (tier === 'feature') {
+    let m: RegExpExecArray | null;
+    PHASE_ID_NAME_IN_FEATURE.lastIndex = 0;
+    while ((m = PHASE_ID_NAME_IN_FEATURE.exec(content)) !== null) {
+      const id = m[1];
+      const description = m[2].trim().slice(0, 500) || id;
+      if (id && !items.some((i) => i.id === id)) items.push({ id, description });
+    }
+  } else if (tier === 'phase') {
+    let m: RegExpExecArray | null;
+    SESSION_ID_NAME_IN_PHASE.lastIndex = 0;
+    while ((m = SESSION_ID_NAME_IN_PHASE.exec(content)) !== null) {
+      const id = m[1];
+      const description = m[2].trim().slice(0, 500) || id;
+      if (id && !items.some((i) => i.id === id)) items.push({ id, description });
+    }
+  } else {
+    let m: RegExpExecArray | null;
+    TASK_ID_NAME_IN_SESSION.lastIndex = 0;
+    while ((m = TASK_ID_NAME_IN_SESSION.exec(content)) !== null) {
+      const id = m[1];
+      const description = m[2].trim().slice(0, 500) || id;
+      if (id && !items.some((i) => i.id === id)) items.push({ id, description });
+    }
+  }
+  return items;
 }
 
 // --- Section presence checks (exported for stepSyncPlannedTierDownToGuide) ---

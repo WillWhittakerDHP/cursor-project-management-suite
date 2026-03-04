@@ -65,66 +65,92 @@ export async function runTierStartWorkflow(
 ): Promise<TierStartWorkflowResult> {
   runStartMs = Date.now();
   if (ctx.stepPath == null) ctx.stepPath = [];
-  logStepTiming('header_branch', 'enter');
-  await recordStep(ctx, 'header_branch', 'enter');
-  stepAppendHeaderAndBranchHierarchy(ctx, hooks);
-  if (hooks.ensureBranch) {
-    await stepAppendBranchHierarchy(ctx, hooks);
+
+  const guideFillComplete = ctx.options?.guideFillComplete === true;
+
+  if (!guideFillComplete) {
+    logStepTiming('header_branch', 'enter');
+    await recordStep(ctx, 'header_branch', 'enter');
+    stepAppendHeaderAndBranchHierarchy(ctx, hooks);
+    if (hooks.ensureBranch) {
+      await stepAppendBranchHierarchy(ctx, hooks);
+    }
+    await recordStep(ctx, 'header_branch', 'exit_success');
+    logStepTiming('header_branch', 'exit');
+
+    logStepTiming('validate', 'enter');
+    await recordStep(ctx, 'validate', 'enter');
+    const validationExit = await stepValidateStart(ctx, hooks);
+    await recordStep(ctx, 'validate', validationExit ? 'exit_failure' : 'exit_success');
+    logStepTiming('validate', 'exit');
+    if (validationExit) return attachShadowPayload(ctx, validationExit);
+
+    logStepTiming('read_context_light', 'enter');
+    await recordStep(ctx, 'read_context_light', 'enter');
+    await stepReadContextLight(ctx, hooks);
+    await recordStep(ctx, 'read_context_light', 'exit_success');
+    logStepTiming('read_context_light', 'exit');
+
+    logStepTiming('context_gathering', 'enter');
+    await recordStep(ctx, 'context_gathering', 'enter');
+    const contextExit = await stepContextGatheringPlanMode(ctx, hooks);
+    await recordStep(ctx, 'context_gathering', contextExit ? 'exit_success' : 'exit_success');
+    logStepTiming('context_gathering', 'exit');
+    if (contextExit) return attachShadowPayload(ctx, contextExit);
+
+    logStepTiming('plan_mode_exit', 'enter');
+    await recordStep(ctx, 'plan_mode_exit', 'enter');
+    const planExit = await stepPlanModeExit(ctx, hooks);
+    await recordStep(ctx, 'plan_mode_exit', planExit ? 'exit_success' : 'exit_success');
+    logStepTiming('plan_mode_exit', 'exit');
+    if (planExit) return attachShadowPayload(ctx, planExit);
+
+    logStepTiming('ensure_branch', 'enter');
+    await recordStep(ctx, 'ensure_branch', 'enter');
+    const branchExit = await stepEnsureStartBranch(ctx, hooks);
+    await recordStep(ctx, 'ensure_branch', branchExit ? 'exit_failure' : 'exit_success');
+    logStepTiming('ensure_branch', 'exit');
+    if (branchExit) return attachShadowPayload(ctx, branchExit);
+
+    logStepTiming('sync_planned_tier_down_to_guide', 'enter');
+    await recordStep(ctx, 'sync_planned_tier_down_to_guide', 'enter');
+    await stepSyncPlannedTierDownToGuide(ctx, hooks);
+    await recordStep(ctx, 'sync_planned_tier_down_to_guide', 'exit_success');
+    logStepTiming('sync_planned_tier_down_to_guide', 'exit');
+
+    logStepTiming('ensure_tier_down_docs', 'enter');
+    await recordStep(ctx, 'ensure_tier_down_docs', 'enter');
+    await stepEnsureTierDownDocs(ctx, hooks);
+    await recordStep(ctx, 'ensure_tier_down_docs', 'exit_success');
+    logStepTiming('ensure_tier_down_docs', 'exit');
+
+    logStepTiming('sync_guide_from_planning', 'enter');
+    await recordStep(ctx, 'sync_guide_from_planning', 'enter');
+    await stepSyncGuideFromPlanningDoc(ctx, hooks);
+    await recordStep(ctx, 'sync_guide_from_planning', 'exit_success');
+    logStepTiming('sync_guide_from_planning', 'exit');
+
+    // Option A: for phase/session return guide_fill_pending so agent fills guide, then /accepted-proceed runs Part B.
+    const tier = ctx.config.name;
+    if (tier === 'phase' || tier === 'session') {
+      const guidePath =
+        tier === 'phase'
+          ? ctx.context.paths.getPhaseGuidePath(ctx.identifier)
+          : ctx.context.paths.getSessionGuidePath(ctx.identifier);
+      return attachShadowPayload(ctx, {
+        success: true,
+        output: ctx.output.join('\n\n'),
+        outcome: {
+          status: 'plan',
+          reasonCode: 'guide_fill_pending',
+          guidePath,
+          nextAction: `Fill the guide (${guidePath}) with concrete Goal, Files, Approach, and Checkpoint for each tierDown block. Then run /accepted-proceed again.`,
+          deliverables:
+            'Step 2 — Actual planning: using the planning doc as context, fill the guide with concrete Goal, Files, Approach, and Checkpoint for each session/task. Then run /accepted-proceed again.',
+        },
+      });
+    }
   }
-  await recordStep(ctx, 'header_branch', 'exit_success');
-  logStepTiming('header_branch', 'exit');
-
-  logStepTiming('validate', 'enter');
-  await recordStep(ctx, 'validate', 'enter');
-  const validationExit = await stepValidateStart(ctx, hooks);
-  await recordStep(ctx, 'validate', validationExit ? 'exit_failure' : 'exit_success');
-  logStepTiming('validate', 'exit');
-  if (validationExit) return attachShadowPayload(ctx, validationExit);
-
-  logStepTiming('read_context_light', 'enter');
-  await recordStep(ctx, 'read_context_light', 'enter');
-  await stepReadContextLight(ctx, hooks);
-  await recordStep(ctx, 'read_context_light', 'exit_success');
-  logStepTiming('read_context_light', 'exit');
-
-  logStepTiming('context_gathering', 'enter');
-  await recordStep(ctx, 'context_gathering', 'enter');
-  const contextExit = await stepContextGatheringPlanMode(ctx, hooks);
-  await recordStep(ctx, 'context_gathering', contextExit ? 'exit_success' : 'exit_success');
-  logStepTiming('context_gathering', 'exit');
-  if (contextExit) return attachShadowPayload(ctx, contextExit);
-
-  logStepTiming('plan_mode_exit', 'enter');
-  await recordStep(ctx, 'plan_mode_exit', 'enter');
-  const planExit = await stepPlanModeExit(ctx, hooks);
-  await recordStep(ctx, 'plan_mode_exit', planExit ? 'exit_success' : 'exit_success');
-  logStepTiming('plan_mode_exit', 'exit');
-  if (planExit) return attachShadowPayload(ctx, planExit);
-
-  logStepTiming('ensure_branch', 'enter');
-  await recordStep(ctx, 'ensure_branch', 'enter');
-  const branchExit = await stepEnsureStartBranch(ctx, hooks);
-  await recordStep(ctx, 'ensure_branch', branchExit ? 'exit_failure' : 'exit_success');
-  logStepTiming('ensure_branch', 'exit');
-  if (branchExit) return attachShadowPayload(ctx, branchExit);
-
-  logStepTiming('sync_planned_tier_down_to_guide', 'enter');
-  await recordStep(ctx, 'sync_planned_tier_down_to_guide', 'enter');
-  await stepSyncPlannedTierDownToGuide(ctx, hooks);
-  await recordStep(ctx, 'sync_planned_tier_down_to_guide', 'exit_success');
-  logStepTiming('sync_planned_tier_down_to_guide', 'exit');
-
-  logStepTiming('ensure_tier_down_docs', 'enter');
-  await recordStep(ctx, 'ensure_tier_down_docs', 'enter');
-  await stepEnsureTierDownDocs(ctx, hooks);
-  await recordStep(ctx, 'ensure_tier_down_docs', 'exit_success');
-  logStepTiming('ensure_tier_down_docs', 'exit');
-
-  logStepTiming('sync_guide_from_planning', 'enter');
-  await recordStep(ctx, 'sync_guide_from_planning', 'enter');
-  await stepSyncGuideFromPlanningDoc(ctx, hooks);
-  await recordStep(ctx, 'sync_guide_from_planning', 'exit_success');
-  logStepTiming('sync_guide_from_planning', 'exit');
 
   logStepTiming('read_start_context', 'enter');
   await recordStep(ctx, 'read_start_context', 'enter');
