@@ -1,0 +1,31 @@
+{
+  "tier": "phase",
+  "identifier": "6.7",
+  "overallStatus": "pass",
+  "results": [
+    {
+      "category": "tier-quality",
+      "status": "pass",
+      "score": 100,
+      "findings": [],
+      "recommendations": [],
+      "summary": "Ran 12 phase-tier audits; found 0 error(s), 0 warning(s), 0 info signal(s)."
+    }
+  ],
+  "timestamp": "2026-03-05T16:58:28.851Z",
+  "reportPath": "",
+  "featureName": "appointment-workflow",
+  "auditType": "end",
+  "baselineComparison": [
+    {
+      "category": "tier-quality-coverage",
+      "startScore": 100,
+      "status": "missing"
+    },
+    {
+      "category": "tier-quality",
+      "endScore": 100,
+      "status": "new"
+    }
+  ]
+}

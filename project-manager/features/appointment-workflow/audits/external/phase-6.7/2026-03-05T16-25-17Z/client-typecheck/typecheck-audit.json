@@ -1,0 +1,205 @@
+{
+  "generatedAt": "2026-03-05T16:25:10.756Z",
+  "scope": {
+    "client": {
+      "command": "vue-tsc -b --pretty false",
+      "cwd": "client"
+    },
+    "server": {
+      "command": "tsc --noEmit --pretty false",
+      "cwd": "server"
+    }
+  },
+  "exitCode": 1,
+  "command": "vue-tsc -b --pretty false && tsc --noEmit --pretty false",
+  "exceptionSummary": {
+    "totalAllowed": 0,
+    "totalRequiresReview": 5,
+    "bySource": {
+      "inline": 0,
+      "pattern": 0,
+      "specific": 0
+    }
+  },
+  "errors": [
+    {
+      "file": "src/composables/admin/useEventInstancesSection.ts",
+      "line": 22,
+      "col": 9,
+      "code": "TS2322",
+      "message": "Type 'InstancesTabContext | undefined' is not assignable to type 'InstancesTabContext'.",
+      "raw": "src/composables/admin/useEventInstancesSection.ts(22,9): error TS2322: Type 'InstancesTabContext | undefined' is not assignable to type 'InstancesTabContext'.",
+      "scope": "client",
+      "repoPath": "src/composables/admin/useEventInstancesSection.ts"
+    },
+    {
+      "file": "src/views/admin/tabs/components/OverlapConstraintsPanel.vue",
+      "line": 107,
+      "col": 18,
+      "code": "TS2322",
+      "message": "Type 'ComputedRef<string>' is not assignable to type 'string'.",
+      "raw": "src/views/admin/tabs/components/OverlapConstraintsPanel.vue(107,18): error TS2322: Type 'ComputedRef<string>' is not assignable to type 'string'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/OverlapConstraintsPanel.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/OverlapConstraintsPanel.vue",
+      "line": 111,
+      "col": 18,
+      "code": "TS2322",
+      "message": "Type 'ComputedRef<string>' is not assignable to type 'string'.",
+      "raw": "src/views/admin/tabs/components/OverlapConstraintsPanel.vue(111,18): error TS2322: Type 'ComputedRef<string>' is not assignable to type 'string'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/OverlapConstraintsPanel.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/OverlapConstraintsPanel.vue",
+      "line": 186,
+      "col": 18,
+      "code": "TS2322",
+      "message": "Type 'ComputedRef<string>' is not assignable to type 'string'.",
+      "raw": "src/views/admin/tabs/components/OverlapConstraintsPanel.vue(186,18): error TS2322: Type 'ComputedRef<string>' is not assignable to type 'string'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/OverlapConstraintsPanel.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/OverlapConstraintsPanel.vue",
+      "line": 190,
+      "col": 18,
+      "code": "TS2322",
+      "message": "Type 'ComputedRef<string>' is not assignable to type 'string'.",
+      "raw": "src/views/admin/tabs/components/OverlapConstraintsPanel.vue(190,18): error TS2322: Type 'ComputedRef<string>' is not assignable to type 'string'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/OverlapConstraintsPanel.vue"
+    }
+  ],
+  "allowedErrors": [],
+  "pools": [
+    {
+      "poolId": "TS2322-ts2322-assign-computedref-string",
+      "groupKey": "TS2322::assign:ComputedRef<...>=>string",
+      "errorCount": 4,
+      "fileCount": 1,
+      "severityScore": 40,
+      "blastRadiusScore": 2,
+      "repetitionScore": 4,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 46,
+      "sample": [
+        {
+          "repoPath": "src/views/admin/tabs/components/OverlapConstraintsPanel.vue",
+          "line": 107,
+          "col": 18,
+          "code": "TS2322",
+          "message": "Type 'ComputedRef<string>' is not assignable to type 'string'."
+        },
+        {
+          "repoPath": "src/views/admin/tabs/components/OverlapConstraintsPanel.vue",
+          "line": 111,
+          "col": 18,
+          "code": "TS2322",
+          "message": "Type 'ComputedRef<string>' is not assignable to type 'string'."
+        },
+        {
+          "repoPath": "src/views/admin/tabs/components/OverlapConstraintsPanel.vue",
+          "line": 186,
+          "col": 18,
+          "code": "TS2322",
+          "message": "Type 'ComputedRef<string>' is not assignable to type 'string'."
+        }
+      ],
+      "priority": "P0"
+    },
+    {
+      "poolId": "TS2322-ts2322-assign-instancestabcontext-undefined-instancestabcontext",
+      "groupKey": "TS2322::assign:InstancesTabContext | undefined=>InstancesTabContext",
+      "errorCount": 1,
+      "fileCount": 1,
+      "severityScore": 10,
+      "blastRadiusScore": 2,
+      "repetitionScore": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 13,
+      "sample": [
+        {
+          "repoPath": "src/composables/admin/useEventInstancesSection.ts",
+          "line": 22,
+          "col": 9,
+          "code": "TS2322",
+          "message": "Type 'InstancesTabContext | undefined' is not assignable to type 'InstancesTabContext'."
+        }
+      ],
+      "priority": "P1"
+    }
+  ],
+  "files": [
+    {
+      "repoPath": "src/views/admin/tabs/components/OverlapConstraintsPanel.vue",
+      "errorCount": 4,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "errors": [
+        {
+          "file": "src/views/admin/tabs/components/OverlapConstraintsPanel.vue",
+          "line": 107,
+          "col": 18,
+          "code": "TS2322",
+          "message": "Type 'ComputedRef<string>' is not assignable to type 'string'.",
+          "raw": "src/views/admin/tabs/components/OverlapConstraintsPanel.vue(107,18): error TS2322: Type 'ComputedRef<string>' is not assignable to type 'string'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/OverlapConstraintsPanel.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/OverlapConstraintsPanel.vue",
+          "line": 111,
+          "col": 18,
+          "code": "TS2322",
+          "message": "Type 'ComputedRef<string>' is not assignable to type 'string'.",
+          "raw": "src/views/admin/tabs/components/OverlapConstraintsPanel.vue(111,18): error TS2322: Type 'ComputedRef<string>' is not assignable to type 'string'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/OverlapConstraintsPanel.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/OverlapConstraintsPanel.vue",
+          "line": 186,
+          "col": 18,
+          "code": "TS2322",
+          "message": "Type 'ComputedRef<string>' is not assignable to type 'string'.",
+          "raw": "src/views/admin/tabs/components/OverlapConstraintsPanel.vue(186,18): error TS2322: Type 'ComputedRef<string>' is not assignable to type 'string'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/OverlapConstraintsPanel.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/OverlapConstraintsPanel.vue",
+          "line": 190,
+          "col": 18,
+          "code": "TS2322",
+          "message": "Type 'ComputedRef<string>' is not assignable to type 'string'.",
+          "raw": "src/views/admin/tabs/components/OverlapConstraintsPanel.vue(190,18): error TS2322: Type 'ComputedRef<string>' is not assignable to type 'string'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/OverlapConstraintsPanel.vue"
+        }
+      ]
+    },
+    {
+      "repoPath": "src/composables/admin/useEventInstancesSection.ts",
+      "errorCount": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "errors": [
+        {
+          "file": "src/composables/admin/useEventInstancesSection.ts",
+          "line": 22,
+          "col": 9,
+          "code": "TS2322",
+          "message": "Type 'InstancesTabContext | undefined' is not assignable to type 'InstancesTabContext'.",
+          "raw": "src/composables/admin/useEventInstancesSection.ts(22,9): error TS2322: Type 'InstancesTabContext | undefined' is not assignable to type 'InstancesTabContext'.",
+          "scope": "client",
+          "repoPath": "src/composables/admin/useEventInstancesSection.ts"
+        }
+      ]
+    }
+  ]
+}

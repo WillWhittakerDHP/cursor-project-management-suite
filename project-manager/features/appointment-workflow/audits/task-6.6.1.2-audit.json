@@ -1,0 +1,24 @@
+{
+  "tier": "task",
+  "identifier": "6.6.1.2",
+  "overallStatus": "pass",
+  "results": [
+    {
+      "category": "tier-quality",
+      "status": "pass",
+      "findings": [
+        {
+          "type": "info",
+          "message": "frontend-root directory not found - skipping tier quality audits"
+        }
+      ],
+      "recommendations": [],
+      "summary": "Skipped (frontend-root not found)"
+    }
+  ],
+  "timestamp": "2026-03-05T01:18:33.163Z",
+  "reportPath": "",
+  "featureName": "appointment-workflow",
+  "auditType": "end",
+  "baselineComparison": []
+}

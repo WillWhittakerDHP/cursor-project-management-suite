@@ -1,0 +1,108 @@
+{
+  "generatedAt": "2026-03-05T16:35:29.305Z",
+  "scope": {
+    "client": {
+      "command": "vue-tsc -b --pretty false",
+      "cwd": "client"
+    },
+    "server": {
+      "command": "tsc --noEmit --pretty false",
+      "cwd": "server"
+    }
+  },
+  "exitCode": 1,
+  "command": "vue-tsc -b --pretty false && tsc --noEmit --pretty false",
+  "exceptionSummary": {
+    "totalAllowed": 0,
+    "totalRequiresReview": 2,
+    "bySource": {
+      "inline": 0,
+      "pattern": 0,
+      "specific": 0
+    }
+  },
+  "errors": [
+    {
+      "file": "src/composables/admin/useEventInstancesSection.ts",
+      "line": 41,
+      "col": 5,
+      "code": "TS18048",
+      "message": "'ctx' is possibly 'undefined'.",
+      "raw": "src/composables/admin/useEventInstancesSection.ts(41,5): error TS18048: 'ctx' is possibly 'undefined'.",
+      "scope": "client",
+      "repoPath": "src/composables/admin/useEventInstancesSection.ts"
+    },
+    {
+      "file": "src/composables/admin/useEventInstancesSection.ts",
+      "line": 41,
+      "col": 49,
+      "code": "TS18048",
+      "message": "'ctx' is possibly 'undefined'.",
+      "raw": "src/composables/admin/useEventInstancesSection.ts(41,49): error TS18048: 'ctx' is possibly 'undefined'.",
+      "scope": "client",
+      "repoPath": "src/composables/admin/useEventInstancesSection.ts"
+    }
+  ],
+  "allowedErrors": [],
+  "pools": [
+    {
+      "poolId": "TS18048-ts18048-ctx-is-possibly-undefined",
+      "groupKey": "TS18048::'ctx' is possibly 'undefined'.",
+      "errorCount": 2,
+      "fileCount": 1,
+      "severityScore": 16,
+      "blastRadiusScore": 2,
+      "repetitionScore": 2,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 20,
+      "sample": [
+        {
+          "repoPath": "src/composables/admin/useEventInstancesSection.ts",
+          "line": 41,
+          "col": 5,
+          "code": "TS18048",
+          "message": "'ctx' is possibly 'undefined'."
+        },
+        {
+          "repoPath": "src/composables/admin/useEventInstancesSection.ts",
+          "line": 41,
+          "col": 49,
+          "code": "TS18048",
+          "message": "'ctx' is possibly 'undefined'."
+        }
+      ],
+      "priority": "P0"
+    }
+  ],
+  "files": [
+    {
+      "repoPath": "src/composables/admin/useEventInstancesSection.ts",
+      "errorCount": 2,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "errors": [
+        {
+          "file": "src/composables/admin/useEventInstancesSection.ts",
+          "line": 41,
+          "col": 5,
+          "code": "TS18048",
+          "message": "'ctx' is possibly 'undefined'.",
+          "raw": "src/composables/admin/useEventInstancesSection.ts(41,5): error TS18048: 'ctx' is possibly 'undefined'.",
+          "scope": "client",
+          "repoPath": "src/composables/admin/useEventInstancesSection.ts"
+        },
+        {
+          "file": "src/composables/admin/useEventInstancesSection.ts",
+          "line": 41,
+          "col": 49,
+          "code": "TS18048",
+          "message": "'ctx' is possibly 'undefined'.",
+          "raw": "src/composables/admin/useEventInstancesSection.ts(41,49): error TS18048: 'ctx' is possibly 'undefined'.",
+          "scope": "client",
+          "repoPath": "src/composables/admin/useEventInstancesSection.ts"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,81 @@
+{
+  "generatedAt": "2026-03-05T17:44:05.953Z",
+  "scope": {
+    "client": {
+      "command": "vue-tsc -b --pretty false",
+      "cwd": "client"
+    },
+    "server": {
+      "command": "tsc --noEmit --pretty false",
+      "cwd": "server"
+    }
+  },
+  "exitCode": 1,
+  "command": "vue-tsc -b --pretty false && tsc --noEmit --pretty false",
+  "exceptionSummary": {
+    "totalAllowed": 0,
+    "totalRequiresReview": 1,
+    "bySource": {
+      "inline": 0,
+      "pattern": 0,
+      "specific": 0
+    }
+  },
+  "errors": [
+    {
+      "file": "src/routes/internal/appointments/forceCreateRouter.ts",
+      "line": 194,
+      "col": 48,
+      "code": "TS2345",
+      "message": "Argument of type 'Record<string, unknown>' is not assignable to parameter of type 'Optional<InferCreationAttributes<Appointment, { omit: never; }>, NullishPropertiesOf<InferCreationAttributes<Appointment, { omit: never; }>>>'.",
+      "raw": "src/routes/internal/appointments/forceCreateRouter.ts(194,48): error TS2345: Argument of type 'Record<string, unknown>' is not assignable to parameter of type 'Optional<InferCreationAttributes<Appointment, { omit: never; }>, NullishPropertiesOf<InferCreationAttributes<Appointment, { omit: never; }>>>'.",
+      "scope": "server",
+      "repoPath": "server/src/routes/internal/appointments/forceCreateRouter.ts"
+    }
+  ],
+  "allowedErrors": [],
+  "pools": [
+    {
+      "poolId": "TS2345-ts2345-arg-record-optional-nullishpropertiesof",
+      "groupKey": "TS2345::arg:Record<...>=>Optional<...>, NullishPropertiesOf<...>>>",
+      "errorCount": 1,
+      "fileCount": 1,
+      "severityScore": 10,
+      "blastRadiusScore": 2,
+      "repetitionScore": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 13,
+      "sample": [
+        {
+          "repoPath": "server/src/routes/internal/appointments/forceCreateRouter.ts",
+          "line": 194,
+          "col": 48,
+          "code": "TS2345",
+          "message": "Argument of type 'Record<string, unknown>' is not assignable to parameter of type 'Optional<InferCreationAttributes<Appointment, { omit: never; }>, NullishPropertiesOf<InferCreationAttributes<Appointment, { omit: never; }>>>'."
+        }
+      ],
+      "priority": "P1"
+    }
+  ],
+  "files": [
+    {
+      "repoPath": "server/src/routes/internal/appointments/forceCreateRouter.ts",
+      "errorCount": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "errors": [
+        {
+          "file": "src/routes/internal/appointments/forceCreateRouter.ts",
+          "line": 194,
+          "col": 48,
+          "code": "TS2345",
+          "message": "Argument of type 'Record<string, unknown>' is not assignable to parameter of type 'Optional<InferCreationAttributes<Appointment, { omit: never; }>, NullishPropertiesOf<InferCreationAttributes<Appointment, { omit: never; }>>>'.",
+          "raw": "src/routes/internal/appointments/forceCreateRouter.ts(194,48): error TS2345: Argument of type 'Record<string, unknown>' is not assignable to parameter of type 'Optional<InferCreationAttributes<Appointment, { omit: never; }>, NullishPropertiesOf<InferCreationAttributes<Appointment, { omit: never; }>>>'.",
+          "scope": "server",
+          "repoPath": "server/src/routes/internal/appointments/forceCreateRouter.ts"
+        }
+      ]
+    }
+  ]
+}

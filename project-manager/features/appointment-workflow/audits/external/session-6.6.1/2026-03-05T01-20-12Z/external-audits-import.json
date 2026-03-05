@@ -1,0 +1,41 @@
+{
+  "timestamp": "2026-03-05T01:20:12.967Z",
+  "feature": "appointment-workflow",
+  "tier": "session",
+  "identifier": "6.6.1",
+  "items": [
+    {
+      "sourceId": "client-typecheck",
+      "label": "Vue Typecheck Audit",
+      "copied": [],
+      "missing": [
+        "frontend-root/.audit-reports/typecheck/typecheck-audit.json",
+        "frontend-root/.audit-reports/typecheck/typecheck-audit.md",
+        "frontend-root/.audit-reports/typecheck/typecheck-audit-summary.md"
+      ],
+      "errors": []
+    },
+    {
+      "sourceId": "client-composables-logic",
+      "label": "Vue Composables Logic Audit",
+      "copied": [],
+      "missing": [
+        "frontend-root/.audit-reports/composables-logic-audit.json",
+        "frontend-root/.audit-reports/composables-logic-audit.md",
+        "frontend-root/.audit-reports/composables-logic-audit-summary.md"
+      ],
+      "errors": []
+    },
+    {
+      "sourceId": "client-component-logic",
+      "label": "Vue Component Logic Audit",
+      "copied": [],
+      "missing": [
+        "frontend-root/.audit-reports/component-logic-audit.json",
+        "frontend-root/.audit-reports/component-logic-audit.md",
+        "frontend-root/.audit-reports/component-logic-audit-summary.md"
+      ],
+      "errors": []
+    }
+  ]
+}
