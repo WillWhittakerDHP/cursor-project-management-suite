@@ -13,6 +13,7 @@ import { MarkdownUtils } from '../../utils/markdown-utils';
 import { generateCurrentStateSummary } from '../../utils/context-gatherer';
 import { formatAutoGatheredContext } from '../../utils/context-templates';
 import { getFeatureGuideFromProjectPlan } from '../../utils/project-plan-adapter';
+import { ensureGuideHasRequiredSections } from './guide-required-sections';
 
 export type TierName = 'feature' | 'phase' | 'session' | 'task';
 
@@ -80,7 +81,13 @@ export async function ensureTierScaffold(params: TierContextReadParams): Promise
           DESCRIPTION: resolvedDescription,
           DATE: new Date().toISOString().split('T')[0],
         });
-        await context.documents.writeGuide('session', identifier, rendered);
+        const sessionContent = ensureGuideHasRequiredSections(
+          rendered,
+          'session',
+          identifier,
+          resolvedDescription
+        );
+        await context.documents.writeGuide('session', identifier, sessionContent);
       } catch {
         // non-blocking
       }
@@ -479,6 +486,7 @@ const GOVERNANCE_PLAYBOOKS = [
 
 /**
  * Build tier-aware reference file paths for the planning doc Reference section.
+ * Tier-up guide path is derived from TIER_CONTEXT_SOURCES[tier].guide.
  * Paths are relative to repo root.
  */
 export function buildReferencePaths(
@@ -487,25 +495,40 @@ export function buildReferencePaths(
   context: WorkflowCommandContext
 ): ReferencePaths {
   const basePath = context.paths.getBasePath();
-  let tierUpGuide: string;
-  let handoff: string | null = null;
+  const tierUpSource = TIER_CONTEXT_SOURCES[tier].guide;
 
+  let tierUpGuide: string;
+  switch (tierUpSource) {
+    case 'project':
+      tierUpGuide = context.paths.getFeatureGuidePath();
+      break;
+    case 'feature':
+      tierUpGuide = context.paths.getFeatureGuidePath();
+      break;
+    case 'phase': {
+      const phaseId = WorkflowId.parseSessionId(identifier)?.phaseId ?? identifier.split('.').slice(0, 2).join('.');
+      tierUpGuide = context.paths.getPhaseGuidePath(phaseId);
+      break;
+    }
+    case 'session': {
+      const sessionId = WorkflowId.parseTaskId(identifier)?.sessionId ?? identifier.split('.').slice(0, 3).join('.');
+      tierUpGuide = context.paths.getSessionGuidePath(sessionId);
+      break;
+    }
+    default:
+      tierUpGuide = `${basePath}/phases/phase-?.?.?-guide.md`;
+  }
+
+  let handoff: string | null = null;
   if (tier === 'feature') {
-    tierUpGuide = context.paths.getFeatureGuidePath();
     handoff = context.paths.getFeatureHandoffPath();
   } else if (tier === 'phase') {
-    tierUpGuide = context.paths.getFeatureGuidePath();
     const prevPhaseId = WorkflowId.getPreviousSiblingId(identifier, 'phase');
     handoff = prevPhaseId ? context.paths.getPhaseHandoffPath(prevPhaseId) : null;
   } else if (tier === 'session') {
-    const parsed = WorkflowId.parseSessionId(identifier);
-    tierUpGuide = parsed ? context.paths.getPhaseGuidePath(parsed.phaseId) : `${basePath}/phases/phase-?.?.?-guide.md`;
     const prevSessionId = WorkflowId.getPreviousSiblingId(identifier, 'session');
     handoff = prevSessionId ? context.paths.getSessionHandoffPath(prevSessionId) : null;
   } else {
-    const parsed = WorkflowId.parseTaskId(identifier);
-    const sessionId = parsed?.sessionId ?? '';
-    tierUpGuide = context.paths.getSessionGuidePath(sessionId);
     const prevTaskId = WorkflowId.getPreviousSiblingId(identifier, 'task');
     handoff = prevTaskId ? context.paths.getTaskHandoffPath(prevTaskId) : null;
   }

@@ -9,6 +9,7 @@ import { auditFeature } from './composite/audit-feature';
 import { auditPhase } from './composite/audit-phase';
 import { auditSession } from './composite/audit-session';
 import { auditTask } from './composite/audit-task';
+import { commitAuditReports } from './commit-audit-reports';
 import { resolveFeatureName } from '../utils';
 
 export interface RunEndAuditParams {
@@ -32,10 +33,13 @@ export interface RunEndAuditResult {
 
 /**
  * Run the end audit for the given tier. Returns audit output and optional autofix result for runAfterAudit.
+ * After reports are emitted, commits client/.audit-reports/ and feature audits dir.
  */
 export async function runEndAuditForTier(params: RunEndAuditParams): Promise<RunEndAuditResult | string> {
   const { tier, identifier, params: rawParams, featureName: rawFeatureName, auditsComplete } = params;
   const featureName = await resolveFeatureName(rawFeatureName);
+
+  let out: RunEndAuditResult | string;
 
   switch (tier) {
     case 'feature': {
@@ -48,12 +52,13 @@ export async function runEndAuditForTier(params: RunEndAuditParams): Promise<Run
         auditsComplete,
       });
       const status = (result as { auditResult?: { overallStatus?: AuditStatus } }).auditResult?.overallStatus;
-      return {
+      out = {
         output: result.output,
         autofixResult: result.autofixResult,
         success: status === 'pass',
         overallStatus: status,
       };
+      break;
     }
     case 'phase': {
       const p = rawParams as { modifiedFiles?: string[]; testResults?: unknown };
@@ -65,12 +70,13 @@ export async function runEndAuditForTier(params: RunEndAuditParams): Promise<Run
         auditsComplete,
       });
       const status = (result as { auditResult?: { overallStatus?: AuditStatus } }).auditResult?.overallStatus;
-      return {
+      out = {
         output: result.output,
         autofixResult: result.autofixResult,
         success: status === 'pass',
         overallStatus: status,
       };
+      break;
     }
     case 'session': {
       const p = rawParams as { modifiedFiles?: string[]; testResults?: unknown };
@@ -82,12 +88,13 @@ export async function runEndAuditForTier(params: RunEndAuditParams): Promise<Run
         auditsComplete,
       });
       const status = (result as { auditResult?: { overallStatus?: AuditStatus } }).auditResult?.overallStatus;
-      return {
+      out = {
         output: result.output,
         autofixResult: result.autofixResult,
         success: status === 'pass',
         overallStatus: status,
       };
+      break;
     }
     case 'task': {
       const p = rawParams as { modifiedFiles?: string[]; testResults?: unknown };
@@ -99,14 +106,18 @@ export async function runEndAuditForTier(params: RunEndAuditParams): Promise<Run
         auditsComplete,
       });
       const status = (result as { auditResult?: { overallStatus?: AuditStatus } }).auditResult?.overallStatus;
-      return {
+      out = {
         output: result.output,
         autofixResult: result.autofixResult,
         success: status === 'pass',
         overallStatus: status,
       };
+      break;
     }
     default:
       return { output: '' };
   }
+
+  commitAuditReports({ featureName });
+  return out;
 }

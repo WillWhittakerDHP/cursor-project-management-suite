@@ -10,6 +10,7 @@ import type {
   TierStartReadResult,
   ContextQuestion,
   TierDownPlanItem,
+  ParsedPlanningSections,
 } from './tier-start-workflow-types';
 import type { TierStartResult, CascadeInfo } from '../../utils/tier-outcome';
 import type { CannotStartTier } from '../../utils/tier-start-utils';
@@ -23,7 +24,7 @@ import { join } from 'path';
 import { readTierScope } from '../../utils/tier-scope';
 import { buildTierStamp } from '../../audit/baseline-log';
 import { buildGovernanceContext } from '../../audit/governance-context';
-import { buildContinuitySummary, buildReferencePaths, type ReferencePaths } from './context-policy';
+import { buildContinuitySummary, buildReferencePaths, type ReferencePaths, TIER_CONTEXT_SOURCES } from './context-policy';
 import { fillDirectTierDownInGuide } from './fill-direct-tier-down';
 import {
   runEnsureTierDownDocsForTier,
@@ -35,7 +36,9 @@ import {
   buildTaskSection,
   deriveTierDownPlanItemsFromGuide,
 } from './ensure-tier-down-docs';
+import { ensureGuideHasRequiredSections } from './guide-required-sections';
 import { readProjectFile, writeProjectFile, PROJECT_ROOT } from '../../utils/utils';
+import { tierDown } from '../../utils/tier-navigation';
 import { existsSync } from 'fs';
 
 /** Early-exit result from a step; null means continue. */
@@ -111,7 +114,7 @@ export async function stepEnsureStartBranch(
   }
   if (!branchResult.success) {
     if (branchResult.blockedByUncommitted) {
-      // Playbook: block only on files we do not auto-commit (.cursor and .project-manager are auto-committed).
+      // Playbook: block only on files we do not auto-commit (.cursor, .project-manager, audit reports are auto-committed).
       const allFiles = branchResult.uncommittedFiles ?? [];
       const blockingFiles = allFiles.filter(f => !isAutoCommittable(f.trim()));
       if (blockingFiles.length > 0) {
@@ -127,7 +130,7 @@ export async function stepEnsureStartBranch(
           },
         };
       }
-      // Only workflow artifacts (.cursor, .project-manager) changed; auto-committed or excluded. Continue.
+      // Only workflow artifacts (.cursor, .project-manager, audit reports) changed; auto-committed or excluded. Continue.
       if (hooks.afterBranch) {
         await hooks.afterBranch(ctx);
       }
@@ -316,7 +319,7 @@ async function syncPlannedTierDownToGuide(ctx: TierStartWorkflowContext): Promis
     return;
   }
   const sectionContent = extractTierDownBuildPlanSection(planningContent);
-  const tierDownKind = tier === 'feature' ? 'phase' : tier === 'phase' ? 'session' : 'task';
+  const tierDownKind = tierDown(tier)!; // task returns early above; child tier is always phase | session | task
   const parsedItems = parseTierDownBuildPlanPerItem(sectionContent, tierDownKind);
   ctx.tierDownPlanItems = parsedItems.length > 0 ? parsedItems : undefined;
 
@@ -359,6 +362,7 @@ async function syncPlannedTierDownToGuide(ctx: TierStartWorkflowContext): Promis
         const description = ctx.resolvedDescription ?? ctx.identifier;
         guideContent = buildGuideFromPlanItems(tier, ctx.identifier, description, mergedItems);
         ctx.tierDownPlanItems = mergedItems;
+        guideContent = ensureGuideHasRequiredSections(guideContent, tier, ctx.identifier, description);
         try {
           await writeProjectFile(guidePath, guideContent);
         } catch {
@@ -366,13 +370,25 @@ async function syncPlannedTierDownToGuide(ctx: TierStartWorkflowContext): Promis
         }
       }
     } else {
-      if (parsedItems.length === 0) return;
-      const description = ctx.resolvedDescription ?? ctx.identifier;
-      guideContent = buildGuideFromPlanItems(tier, ctx.identifier, description, parsedItems);
-      try {
-        await writeProjectFile(guidePath, guideContent);
-      } catch {
-        return;
+      // Feature or phase: initial read failed. If file actually exists, use its content instead of overwriting.
+      const fullPath = join(PROJECT_ROOT, guidePath);
+      if (existsSync(fullPath)) {
+        try {
+          guideContent = await readProjectFile(guidePath);
+        } catch {
+          // Unreadable; skip overwrite to avoid losing agent-filled content.
+          return;
+        }
+      } else {
+        if (parsedItems.length === 0) return;
+        const description = ctx.resolvedDescription ?? ctx.identifier;
+        guideContent = buildGuideFromPlanItems(tier, ctx.identifier, description, parsedItems);
+        guideContent = ensureGuideHasRequiredSections(guideContent, tier, ctx.identifier, description);
+        try {
+          await writeProjectFile(guidePath, guideContent);
+        } catch {
+          return;
+        }
       }
     }
   }
@@ -387,6 +403,11 @@ async function syncPlannedTierDownToGuide(ctx: TierStartWorkflowContext): Promis
     }
   }
 
+  // Never append placeholder-heavy sections to an already-filled guide (avoids loop: proceed → add placeholders → guide_incomplete).
+  if (tier !== 'feature' && contentIsGuideFilled(guideContent)) {
+    return;
+  }
+
   let updated = guideContent;
   for (const item of itemsToAppend) {
     if (tier === 'feature' && !hasPhaseSection(updated, item.id)) {
@@ -398,6 +419,12 @@ async function syncPlannedTierDownToGuide(ctx: TierStartWorkflowContext): Promis
     }
   }
   if (updated !== guideContent) {
+    updated = ensureGuideHasRequiredSections(
+      updated,
+      tier,
+      ctx.identifier,
+      ctx.resolvedDescription ?? ctx.identifier
+    );
     try {
       await writeProjectFile(guidePath, updated);
     } catch {
@@ -555,6 +582,14 @@ const GUIDE_TIERDOWN_PLACEHOLDERS = [
   '[To be defined]',
 ] as const;
 
+/** Returns true if content has no guide-fill placeholders (used to avoid appending placeholder sections to a filled guide). */
+function contentIsGuideFilled(content: string): boolean {
+  for (const p of GUIDE_TIERDOWN_PLACEHOLDERS) {
+    if (content.includes(p)) return false;
+  }
+  return true;
+}
+
 /**
  * Returns true if the guide has been filled (no placeholder text in tierDown blocks).
  * Used by /accepted-proceed for Gate 2 when state is guide_fill_pending.
@@ -652,14 +687,6 @@ function getPlanningDocPath(ctx: TierStartWorkflowContext): string {
   return `${base}/sessions/session-${id}-planning.md`;
 }
 
-/** Parsed sections from a session/phase planning doc (Goal, Files, Approach, Checkpoint = todos). */
-export interface ParsedPlanningSections {
-  goal: string;
-  files: string;
-  approach: string;
-  checkpoint: string;
-}
-
 /** Extract ## Goal, ## Files, ## Approach, ## Checkpoint from planning doc content. Used to sync guide and todos from planning doc at tier-start. */
 export function parsePlanningDocSections(content: string): ParsedPlanningSections | null {
   const sections: Record<string, string> = {};
@@ -691,6 +718,54 @@ export function parsePlanningDocSections(content: string): ParsedPlanningSection
     approach: approach ?? '',
     checkpoint: checkpoint ?? '',
   };
+}
+
+/**
+ * Resolve the parent (tier-up) identifier for planning doc path.
+ * Derived from TIER_CONTEXT_SOURCES: feature→feature name, phase→phase id, session→session id.
+ */
+function resolveParentIdentifier(
+  ctx: TierStartWorkflowContext,
+  parentTier: 'feature' | 'phase' | 'session'
+): string {
+  switch (parentTier) {
+    case 'feature':
+      return ctx.context.feature.name;
+    case 'phase':
+      return ctx.identifier.split('.').slice(0, 2).join('.');
+    case 'session':
+      return ctx.identifier.split('.').slice(0, 3).join('.');
+    default:
+      return '';
+  }
+}
+
+/**
+ * Read tier-up planning doc and return parsed Goal/Files/Approach/Checkpoint.
+ * Tier-up source comes from TIER_CONTEXT_SOURCES[tier].guide (project, feature, phase, or session).
+ * Used by getPlanningDocSlotDraft hooks so all four tiers can seed from their parent.
+ */
+export async function getTierUpPlanningDocSections(
+  ctx: TierStartWorkflowContext
+): Promise<ParsedPlanningSections | null> {
+  const tier = ctx.config.name;
+  const basePath = ctx.context.paths.getBasePath();
+  const tierUpSource = TIER_CONTEXT_SOURCES[tier].guide;
+
+  let path: string;
+  if (tierUpSource === 'project') {
+    path = join(PROJECT_ROOT, '.project-manager', 'PROJECT_PLAN.md');
+  } else {
+    const parentId = resolveParentIdentifier(ctx, tierUpSource);
+    path = getPlanningDocPathForTier(tierUpSource, parentId, basePath);
+  }
+
+  try {
+    const content = await readProjectFile(path);
+    return parsePlanningDocSections(content);
+  } catch {
+    return null;
+  }
 }
 
 /** Format a single context item as Insight + Proposal + Decision block (for chat output only). */
@@ -727,13 +802,29 @@ function buildGovernanceOneLiner(governanceContext: string): string {
   return `${findings.length} governance highlights — read reports before filling slots`;
 }
 
+/** Context work brief shape passed into buildPlanningDocContent for pre-filling slots. */
+interface PlanningDocContextWorkBrief {
+  planningSummary: string;
+  executionProposal: string;
+  taskDesign?: {
+    codingGoal: string;
+    files: string[];
+    pseudocodeSteps: string[];
+    snippets: string;
+    acceptanceChecks: string[];
+  };
+}
+
 /** Build short planning doc markdown: contract + continuity + 4 slots + tierDown section (when applicable) + reference links. */
 function buildPlanningDocContent(
   ctx: TierStartWorkflowContext,
   continuity: string,
   governanceOneLiner: string,
   referencePaths: ReferencePaths,
-  tierDownBuildPlan?: string
+  tierDownBuildPlan?: string,
+  slotDraft?: ParsedPlanningSections | null,
+  tierGoals?: string,
+  contextWorkBrief?: PlanningDocContextWorkBrief
 ): string {
   const tier = ctx.config.name;
   const title = ctx.resolvedDescription ?? ctx.resolvedId;
@@ -749,6 +840,49 @@ function buildPlanningDocContent(
     `- Governance reports: \`${referencePaths.auditReportsDir}\` — check function-complexity, component-health, composable-health, type-escape, type-constant-inventory`
   );
   refLines.push(`- Playbooks: ${referencePaths.playbooks.map(p => `\`${p}\``).join(', ')}`);
+
+  // Pre-fill Goal: slotDraft > contextWorkBrief.planningSummary (+ executionProposal) > tierGoals > placeholder
+  let goalSection = PLACEHOLDER_REFINED;
+  if (slotDraft?.goal?.trim()) {
+    goalSection = slotDraft.goal.trim();
+  } else if (contextWorkBrief?.planningSummary?.trim()) {
+    goalSection = contextWorkBrief.planningSummary.trim();
+    if (contextWorkBrief.executionProposal?.trim()) {
+      goalSection += '\n\n' + contextWorkBrief.executionProposal.trim();
+    }
+  } else if (tierGoals?.trim()) {
+    goalSection = tierGoals.trim();
+  } else if (tier === 'task' && contextWorkBrief?.taskDesign?.codingGoal?.trim()) {
+    goalSection = contextWorkBrief.taskDesign.codingGoal.trim();
+  }
+
+  // Pre-fill Files: slotDraft > taskDesign.files (task only) > placeholder
+  let filesSection = PLACEHOLDER_REFINED;
+  if (slotDraft?.files?.trim()) {
+    filesSection = slotDraft.files.trim();
+  } else if (tier === 'task' && contextWorkBrief?.taskDesign?.files?.length) {
+    filesSection = contextWorkBrief.taskDesign.files.map(f => `- ${f}`).join('\n');
+  }
+
+  // Pre-fill Approach: slotDraft > contextWorkBrief.executionProposal > taskDesign.pseudocodeSteps (task) > placeholder
+  let approachSection = PLACEHOLDER_REFINED;
+  if (slotDraft?.approach?.trim()) {
+    approachSection = slotDraft.approach.trim();
+  } else if (contextWorkBrief?.executionProposal?.trim()) {
+    approachSection = contextWorkBrief.executionProposal.trim();
+  } else if (tier === 'task' && contextWorkBrief?.taskDesign?.pseudocodeSteps?.length) {
+    approachSection = contextWorkBrief.taskDesign.pseudocodeSteps
+      .map((s, i) => `${i + 1}. ${s}`)
+      .join('\n');
+  }
+
+  // Pre-fill Checkpoint: slotDraft > taskDesign.acceptanceChecks (task) > placeholder
+  let checkpointSection = PLACEHOLDER_REFINED;
+  if (slotDraft?.checkpoint?.trim()) {
+    checkpointSection = slotDraft.checkpoint.trim();
+  } else if (tier === 'task' && contextWorkBrief?.taskDesign?.acceptanceChecks?.length) {
+    checkpointSection = contextWorkBrief.taskDesign.acceptanceChecks.map(c => `- ${c}`).join('\n');
+  }
 
   // Fix 2: Never seed prose; use hook output only when it has at least one parser-friendly bullet, else tier-aware placeholder.
   const tierDownBody =
@@ -771,16 +905,16 @@ ${scopeLine}
 ${continuity}
 
 ## Goal
-[To be refined during discussion]
+${goalSection}
 
 ## Files
-[To be refined during discussion]
+${filesSection}
 
 ## Approach
-[To be refined during discussion]
+${approachSection}
 
 ## Checkpoint
-[To be refined during discussion]
+${checkpointSection}
 ${tierDownSection}---
 ## Reference (read before filling slots — governance and inventory compliance is required)
 ${refLines.join('\n')}
@@ -819,15 +953,36 @@ export async function stepContextGathering(
   const referencePaths = buildReferencePaths(tier, ctx.identifier, ctx.context);
 
   const tierDownBuildPlan = hooks.getTierDownBuildPlan ? await hooks.getTierDownBuildPlan(ctx) : undefined;
-  const planningDocPath = getPlanningDocPath(ctx);
-  const content = buildPlanningDocContent(ctx, continuity, governanceOneLiner, referencePaths, tierDownBuildPlan);
-  await writeProjectFile(planningDocPath, content);
-  ctx.planningDocPath = planningDocPath;
-
   const contextWorkBrief = hooks.getContextWorkBrief
     ? await hooks.getContextWorkBrief(ctx)
     : undefined;
   const tierGoals = hooks.getTierGoals ? await hooks.getTierGoals(ctx) : undefined;
+  const slotDraft = hooks.getPlanningDocSlotDraft ? await hooks.getPlanningDocSlotDraft(ctx) : undefined;
+
+  const planningDocPath = getPlanningDocPath(ctx);
+  let existingContent: string | null = null;
+  try {
+    existingContent = await readProjectFile(planningDocPath);
+  } catch {
+    /* doc missing or unreadable */
+  }
+  if (existingContent !== null && isPlanningDocFilled(existingContent)) {
+    ctx.planningDocPath = planningDocPath;
+    /* Skip write so re-running tier-start in plan mode does not overwrite the agent's filled doc. */
+  } else {
+    const content = buildPlanningDocContent(
+      ctx,
+      continuity,
+      governanceOneLiner,
+      referencePaths,
+      tierDownBuildPlan,
+      slotDraft ?? null,
+      tierGoals,
+      contextWorkBrief
+    );
+    await writeProjectFile(planningDocPath, content);
+    ctx.planningDocPath = planningDocPath;
+  }
 
   const messageLines: string[] = [
     `Planning document created: \`${planningDocPath}\``,
@@ -866,7 +1021,7 @@ export async function stepContextGathering(
     outcome: {
       status: 'plan',
       reasonCode: 'context_gathering',
-      nextAction: 'Context gathering: you MUST fill the planning doc (Goal, Files, Approach, Checkpoint, and How we build the tierDown) then run /accepted-proceed; /accepted-proceed is blocked until the doc is filled.',
+      nextAction: 'Context gathering: the agent must fill the planning doc (Goal, Files, Approach, Checkpoint, and How we build the tierDown) using provided context; then **the user** runs /accepted-proceed. /accepted-proceed is blocked until the doc is filled. Do not run or invoke the command yourself.',
       deliverables,
     },
   };

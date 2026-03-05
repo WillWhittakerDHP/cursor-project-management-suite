@@ -31,10 +31,7 @@ function getIdentifierFromState(state: { tier: 'feature' | 'phase' | 'session'; 
 const GUIDE_INCOMPLETE_MESSAGE = (path: string) =>
   `Proceeding is BLOCKED. The guide must be filled before you can continue.
 
-1. Open the guide: \`${path}\`
-2. Replace placeholder text in each tierDown block (Session or Task) with concrete Goal, Files, Approach, and Checkpoint.
-3. Save the file.
-4. Run /accepted-proceed again.`;
+The agent MUST fill the guide at \`${path}\`: open the file, replace placeholder text in each tierDown block (Session or Task) with concrete Goal, Files, Approach, and Checkpoint using provided context. Then **the user** runs /accepted-proceed again. The agent does not run the command.`;
 
 const PLANNING_DOC_INCOMPLETE_MESSAGE = (path: string) =>
   `Proceeding is BLOCKED. The planning doc must be filled before you can continue.
@@ -50,7 +47,7 @@ The agent MUST do the following (this is REQUIRED, not optional):
    - ## Checkpoint — what to verify when done
 4. Save the file.
 
-After the doc is updated, run /accepted-proceed again. The command will not proceed until the doc is filled.`;
+After the agent has updated the doc, **the user** runs /accepted-proceed again. The command will not proceed until the doc is filled.`;
 
 /**
  * Run the next pass for the pending tier start. Returns result with controlPlaneDecision for the agent to present.

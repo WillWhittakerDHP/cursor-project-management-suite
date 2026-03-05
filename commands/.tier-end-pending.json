@@ -1,0 +1,10 @@
+{
+  "tier": "session",
+  "identifier": "6.8.5",
+  "cascade": {
+    "direction": "across",
+    "tier": "session",
+    "identifier": "6.8.6",
+    "command": "/session-start 6.8.6"
+  }
+}

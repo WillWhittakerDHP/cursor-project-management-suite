@@ -9,6 +9,7 @@ import type { TierStartWorkflowContext, TierDownPlanItem } from './tier-start-wo
 import type { WorkflowCommandContext } from '../../utils/command-context';
 import { readProjectFile, writeProjectFile } from '../../utils/utils';
 import { derivePhaseDescription } from '../../planning/utils/resolve-planning-description';
+import { ensureGuideHasRequiredSections } from './guide-required-sections';
 
 // --- Enumerate tierDown IDs from current-tier guide content ---
 
@@ -284,6 +285,7 @@ async function runForFeature(ctx: TierStartWorkflowContext): Promise<void> {
   }
   if (updated !== content) {
     try {
+      updated = ensureGuideHasRequiredSections(updated, 'feature', identifier, scopeName);
       await writeProjectFile(guidePath, updated);
     } catch (err) {
       console.warn('ensure-tier-down-docs: could not write current-tier guide', err);
@@ -328,6 +330,7 @@ async function runForPhase(ctx: TierStartWorkflowContext): Promise<void> {
         '',
         '**Tasks:** [To be planned]',
       ].join('\n');
+      content = ensureGuideHasRequiredSections(content, 'phase', phaseId, phaseName);
       await writeProjectFile(guidePath, content);
     } catch (err) {
       console.warn('ensure-tier-down-docs: could not create tierDown guide', phaseId, err);
@@ -364,6 +367,7 @@ async function runForPhase(ctx: TierStartWorkflowContext): Promise<void> {
   }
   if (updated !== content) {
     try {
+      updated = ensureGuideHasRequiredSections(updated, 'phase', phaseId, scopeName);
       await writeProjectFile(guidePath, updated);
     } catch (err) {
       console.warn('ensure-tier-down-docs: could not write tierDown guide', err);
@@ -404,6 +408,7 @@ async function runForSession(ctx: TierStartWorkflowContext): Promise<void> {
   }
   if (updated !== content) {
     try {
+      updated = ensureGuideHasRequiredSections(updated, 'session', sessionId, scopeName);
       await context.documents.writeGuide('session', sessionId, updated);
     } catch (err) {
       console.warn('ensure-tier-down-docs: could not write current-tier guide', sessionId, err);

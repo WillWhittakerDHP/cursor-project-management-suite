@@ -23,6 +23,7 @@ import type {
   TierStartWorkflowResult,
 } from '../../shared/tier-start-workflow-types';
 import { runTierStartWorkflow } from '../../../harness/run-start-steps';
+import { getTierUpPlanningDocSections } from '../../shared/tier-start-steps';
 import type { RunRecorder, RunTraceHandle } from '../../../harness/contracts';
 
 const BLOCKED_STATUSES = ['complete', 'blocked'] as const;
@@ -196,6 +197,10 @@ export async function featureStartImpl(
         return `Add phases for this feature in the feature guide (e.g. Phase 1, Phase 2), then run phase-start for each in order. Cascade phase-end → next phase or feature complete.`;
       }
       return `Build the following phases to achieve the feature goals:\n\n${phaseLines.join('\n')}\n\nRun phase-start for each in order; after each phase run phase-end and cascade to next phase.`;
+    },
+
+    async getPlanningDocSlotDraft() {
+      return getTierUpPlanningDocSections(ctx);
     },
 
     async gatherContext(): Promise<string> {

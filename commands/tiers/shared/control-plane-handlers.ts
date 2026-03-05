@@ -32,7 +32,7 @@ export function handlePlanningDocIncomplete(outcome: ControlPlaneOutcome): Contr
   return {
     stop: true,
     requiredMode: 'plan',
-    message: outcome.nextAction ?? 'Planning doc must be filled before proceeding. Open the doc, replace Goal/Files/Approach/Checkpoint with a concrete draft, save, then run /accepted-proceed again.',
+    message: outcome.nextAction ?? 'Planning doc must be filled before proceeding. The agent must fill the planning doc (replace Goal/Files/Approach/Checkpoint with a concrete draft from context). Then **the user** runs /accepted-proceed again.',
   };
 }
 

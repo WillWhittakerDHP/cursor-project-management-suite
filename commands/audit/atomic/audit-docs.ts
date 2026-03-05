@@ -10,6 +10,10 @@ import { AuditResult, AuditFinding, AuditParams } from '../types';
 import { WorkflowCommandContext } from '../../utils/command-context';
 import { MarkdownUtils } from '../../utils/markdown-utils';
 import { resolveFeatureName } from '../../utils';
+import {
+  REQUIRED_GUIDE_SECTIONS,
+  REQUIRED_HANDOFF_SECTIONS,
+} from '../../tiers/shared/guide-required-sections';
 
 /**
  * Audit docs for a tier
@@ -66,15 +70,9 @@ export async function auditDocs(params: AuditParams): Promise<AuditResult> {
       score -= 20;
     }
     
-    // Check guide required sections
+    // Check guide required sections (task tier skips guide check via early return above)
     if (guideExists && guideContent) {
-      const requiredSections: Record<string, string[]> = {
-        feature: ['Overview', 'Architecture', 'Implementation Plan'],
-        phase: ['Overview', 'Objectives', 'Tasks'],
-        session: ['Quick Start', 'Tasks', 'Session Workflow']
-      };
-      
-      const sections = requiredSections[params.tier] || [];
+      const sections = params.tier === 'task' ? [] : [...REQUIRED_GUIDE_SECTIONS[params.tier]];
       const missingGuideSections: string[] = [];
       
       for (const section of sections) {
@@ -181,12 +179,11 @@ export async function auditDocs(params: AuditParams): Promise<AuditResult> {
       score -= 10;
     }
     
-    // Check handover required sections
+    // Check handover required sections (same source of truth as agent fill instructions)
     if (handoffExists && handoffContent) {
-      const requiredHandoffSections = ['Current Status', 'Next Action', 'Transition Context'];
       const missingHandoffSections: string[] = [];
       
-      for (const section of requiredHandoffSections) {
+      for (const section of REQUIRED_HANDOFF_SECTIONS) {
         const sectionContent = MarkdownUtils.extractSection(handoffContent, section);
         if (!sectionContent || sectionContent.trim().length < 20) {
           missingHandoffSections.push(section);

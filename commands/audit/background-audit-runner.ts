@@ -15,6 +15,7 @@ import { existsSync } from 'fs';
 import { readFile } from 'fs/promises';
 import { PROJECT_ROOT, FRONTEND_ROOT } from '../utils/utils';
 import { appendBaselineEntry } from './baseline-log';
+import { commitAuditReports } from './commit-audit-reports';
 import type { AuditTier } from './types';
 
 const CLIENT_ROOT = join(PROJECT_ROOT, FRONTEND_ROOT);
@@ -134,7 +135,7 @@ async function main(): Promise<void> {
   const { tier, identifier, featureName, tierStamp } = args;
   const npmScript = TIER_NPM_SCRIPTS[tier];
 
-  // 1. Run the npm audit script (writes JSON files to client/.audit-reports/)
+  // 1. Run the tier npm audit script (writes JSON files to client/.audit-reports/)
   if (existsSync(CLIENT_ROOT)) {
     try {
       execSync(`npm run ${npmScript}`, {
@@ -144,6 +145,16 @@ async function main(): Promise<void> {
       });
     } catch {
       // Non-fatal: we still read whatever JSON was produced
+    }
+    // 1b. Run allowlist-cleanup so allowlist-prune-suggestions.json and .md are emitted
+    try {
+      execSync('npm run audit:allowlist-cleanup', {
+        cwd: CLIENT_ROOT,
+        stdio: 'pipe',
+        timeout: 60_000,
+      });
+    } catch {
+      // Non-fatal: prune suggestions are optional
     }
   }
 
@@ -182,6 +193,9 @@ async function main(): Promise<void> {
     scores,
     featureName,
   });
+
+  // 5. Auto-commit all touched audit report files (including allowlist-prune-suggestions.json/.md)
+  commitAuditReports();
 }
 
 main().catch((err) => {

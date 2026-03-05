@@ -18,6 +18,14 @@ export interface TierDownPlanItem {
   description: string;
 }
 
+/** Parsed Goal, Files, Approach, Checkpoint sections from a planning doc. Used to seed child planning docs from tier-up. */
+export interface ParsedPlanningSections {
+  goal: string;
+  files: string;
+  approach: string;
+  checkpoint: string;
+}
+
 /** Context passed through the start workflow (mutable output array). */
 export interface TierStartWorkflowContext {
   config: TierConfig;
@@ -142,6 +150,11 @@ export interface TierStartWorkflowHooks {
    * Used as the primary "How we build the tierDown to achieve them" section in the planning doc.
    */
   getTierDownBuildPlan?(ctx: TierStartWorkflowContext): Promise<string>;
+  /**
+   * Optional draft for Goal/Files/Approach/Checkpoint from the tier-up planning doc.
+   * Session/task impls read parent planning doc and return parsed sections to pre-fill the current planning doc.
+   */
+  getPlanningDocSlotDraft?(ctx: TierStartWorkflowContext): Promise<ParsedPlanningSections | null>;
 }
 
 export type { TierStartResult, CascadeInfo };

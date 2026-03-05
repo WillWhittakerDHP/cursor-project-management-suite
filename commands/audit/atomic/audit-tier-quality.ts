@@ -573,6 +573,22 @@ export function runTierAuditsParallel(tier: AuditTier): Promise<void> {
   return Promise.all(promises).then(() => {});
 }
 
+/**
+ * Run allowlist-cleanup so allowlist-prune-suggestions.json and .md are emitted.
+ * Non-fatal: resolves even on failure so tier-end commit still includes other reports.
+ */
+function runAllowlistCleanup(): Promise<void> {
+  return new Promise((resolve) => {
+    const child = spawn('npm', ['run', 'audit:allowlist-cleanup'], {
+      cwd: CLIENT_ROOT,
+      stdio: 'ignore',
+    });
+    const timer = setTimeout(() => { child.kill(); resolve(); }, 60_000);
+    child.on('close', () => { clearTimeout(timer); resolve(); });
+    child.on('error', () => { clearTimeout(timer); resolve(); });
+  });
+}
+
 export async function auditTierQuality(
   params: AuditParams & { tier: AuditTier },
   auditsComplete?: Promise<void>
@@ -608,6 +624,8 @@ export async function auditTierQuality(
     // Fallback: run in parallel if no pre-warmed promise was provided
     await runTierAuditsParallel(tier);
   }
+
+  await runAllowlistCleanup();
 
   for (const audit of config.audits) {
     const absPath = join(AUDIT_DIR, audit.jsonRelativePath);

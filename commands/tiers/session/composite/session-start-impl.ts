@@ -27,6 +27,7 @@ import type {
   TierStartWorkflowResult,
 } from '../../shared/tier-start-workflow-types';
 import { runTierStartWorkflow } from '../../../harness/run-start-steps';
+import { getTierUpPlanningDocSections } from '../../shared/tier-start-steps';
 import type { RunRecorder, RunTraceHandle } from '../../../harness/contracts';
 
 export type ShadowContext = { recorder: RunRecorder; handle: RunTraceHandle };
@@ -404,6 +405,10 @@ export async function sessionStartImpl(
       }
       const lines = tasks.map(t => `- **Task ${t.taskId}:** ${t.title}${t.goal ? ` — ${t.goal}` : ''}`);
       return `Build the following tasks to achieve the session goals:\n\n${lines.join('\n')}\n\nImplement in order; after each task run task-end and cascade to next or session-end.`;
+    },
+
+    async getPlanningDocSlotDraft() {
+      return getTierUpPlanningDocSections(ctx);
     },
 
     async runExtras(): Promise<string> {

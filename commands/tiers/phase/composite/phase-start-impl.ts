@@ -22,6 +22,7 @@ import type {
   TierStartWorkflowResult,
 } from '../../shared/tier-start-workflow-types';
 import { runTierStartWorkflow } from '../../../harness/run-start-steps';
+import { getTierUpPlanningDocSections } from '../../shared/tier-start-steps';
 import { buildReuseOpportunitiesSection, type InventoryPayload } from '../helpers/inventory-reuse-check';
 import type { RunRecorder, RunTraceHandle } from '../../../harness/contracts';
 
@@ -216,6 +217,10 @@ export async function phaseStartImpl(
         return `Add sessions for Phase ${phase} in the phase guide (e.g. ${phase}.1, ${phase}.2), then run session-start for each in order. Cascade session-end → next session or phase-end.`;
       }
       return `Build the following sessions to achieve the phase goals:\n\n${sessionLines.join('\n')}\n\nRun session-start for each in order; after each session run session-end and cascade to next session or phase-end.`;
+    },
+
+    async getPlanningDocSlotDraft() {
+      return getTierUpPlanningDocSections(ctx);
     },
 
     async gatherContext(): Promise<string> {

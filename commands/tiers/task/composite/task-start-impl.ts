@@ -25,7 +25,7 @@ import type {
 import { runTierStartWorkflow } from '../../../harness/run-start-steps';
 import type { RunRecorder, RunTraceHandle } from '../../../harness/contracts';
 import { getInventoryMatchesForFiles } from '../../../audit/governance-context';
-import { getPlanningDocPathForTier, parsePlanningDocSections } from '../../shared/tier-start-steps';
+import { getPlanningDocPathForTier, getTierUpPlanningDocSections, parsePlanningDocSections } from '../../shared/tier-start-steps';
 import { readProjectFile } from '../../../utils/utils';
 
 export type ShadowContext = { recorder: RunRecorder; handle: RunTraceHandle };
@@ -309,6 +309,10 @@ export async function taskStartImpl(
       lines.push('');
       lines.push('Then run task-end and cascade to next task or session-end.');
       return lines.join('\n');
+    },
+
+    async getPlanningDocSlotDraft() {
+      return getTierUpPlanningDocSections(ctx);
     },
 
     async getContextWorkBrief() {

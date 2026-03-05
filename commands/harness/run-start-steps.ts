@@ -21,6 +21,7 @@ import {
   stepStartAudit,
   stepRunTierPlan,
   stepBuildStartCascade,
+  isGuideFilled,
 } from '../tiers/shared/tier-start-steps';
 
 async function recordStep(
@@ -108,25 +109,28 @@ export async function runTierStartWorkflow(
     await recordStep(ctx, 'ensure_guide_from_plan', 'exit_success');
     logStepTiming('ensure_guide_from_plan', 'exit');
 
-    // Option A: for phase/session return guide_fill_pending so agent fills guide, then /accepted-proceed runs Part B.
+    // Option A: for phase/session return guide_fill_pending only when the guide is not yet filled; otherwise continue to Part B.
     const tier = ctx.config.name;
     if (tier === 'phase' || tier === 'session') {
       const guidePath =
         tier === 'phase'
           ? ctx.context.paths.getPhaseGuidePath(ctx.identifier)
           : ctx.context.paths.getSessionGuidePath(ctx.identifier);
-      return attachShadowPayload(ctx, {
-        success: true,
-        output: ctx.output.join('\n\n'),
-        outcome: {
-          status: 'plan',
-          reasonCode: 'guide_fill_pending',
-          guidePath,
-          nextAction: `Fill the guide (${guidePath}) with concrete Goal, Files, Approach, and Checkpoint for each tierDown block. Then run /accepted-proceed again.`,
-          deliverables:
-            'Step 2 — Actual planning: using the planning doc as context, fill the guide with concrete Goal, Files, Approach, and Checkpoint for each session/task. Then run /accepted-proceed again.',
-        },
-      });
+      const guideAlreadyFilled = await isGuideFilled(guidePath, tier);
+      if (!guideAlreadyFilled) {
+        return attachShadowPayload(ctx, {
+          success: true,
+          output: ctx.output.join('\n\n'),
+          outcome: {
+            status: 'plan',
+            reasonCode: 'guide_fill_pending',
+            guidePath,
+            nextAction: `The agent must fill the guide (${guidePath}) with concrete Goal, Files, Approach, and Checkpoint for each tierDown block using the planning doc as context; then **the user** runs /accepted-proceed again. Do not run the command yourself.`,
+            deliverables:
+              'Step 2 — Actual planning: the agent fills the guide with concrete Goal, Files, Approach, and Checkpoint for each session/task using the planning doc as context; then **the user** runs /accepted-proceed again.',
+          },
+        });
+      }
     }
   }
 
