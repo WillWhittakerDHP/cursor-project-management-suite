@@ -6,30 +6,66 @@
 import type { ControlPlaneDecision } from './control-plane-types';
 import { QUESTION_KEYS } from './control-plane-types';
 
-/** Option labels for each questionKey (used in the instruction block). Command-gated flows (context_gathering, accepted-proceed, accepted-code, accepted-push) do not use AskQuestion. */
-const QUESTION_KEY_OPTIONS: Record<string, string> = {
-  [QUESTION_KEYS.CASCADE]: 'Yes — run cascade command | No — stop here',
-  [QUESTION_KEYS.VERIFICATION_OPTIONS]: 'Add follow-up task/session/phase | I\'ll do it manually; continue tier-end | Skip; continue tier-end',
-  [QUESTION_KEYS.FAILURE_OPTIONS]: 'Retry the command | Investigate the issue | Skip and continue manually',
-  [QUESTION_KEYS.REOPEN_OPTIONS]: 'Yes — I have a plan file | No — plan from scratch | No — just a quick fix',
-  [QUESTION_KEYS.UNCOMMITTED_CHANGES]: 'Commit changes | Skip (stash and continue)',
+interface AskQuestionOption {
+  id: string;
+  label: string;
+}
+
+const QUESTION_KEY_OPTIONS: Record<string, AskQuestionOption[]> = {
+  [QUESTION_KEYS.CASCADE]: [
+    { id: 'yes_cascade', label: 'Yes — run cascade command' },
+    { id: 'no_stop', label: 'No — stop here' },
+  ],
+  [QUESTION_KEYS.VERIFICATION_OPTIONS]: [
+    { id: 'add_followup', label: 'Add follow-up task/session/phase' },
+    { id: 'manual_continue', label: "I'll do it manually; continue tier-end" },
+    { id: 'skip_continue', label: 'Skip; continue tier-end' },
+  ],
+  [QUESTION_KEYS.FAILURE_OPTIONS]: [
+    { id: 'retry', label: 'Retry the command' },
+    { id: 'audit_fix', label: 'Fix audit with governance context (/audit-fix)' },
+    { id: 'skip', label: 'Skip and continue manually' },
+  ],
+  [QUESTION_KEYS.AUDIT_FAILED_OPTIONS]: [
+    { id: 'retry', label: 'Retry the command' },
+    { id: 'audit_fix', label: 'Fix audit with governance context (/audit-fix)' },
+    { id: 'skip', label: 'Skip and continue manually' },
+  ],
+  [QUESTION_KEYS.REOPEN_OPTIONS]: [
+    { id: 'plan_file', label: 'Yes — I have a plan file' },
+    { id: 'plan_scratch', label: 'No — plan from scratch' },
+    { id: 'quick_fix', label: 'No — just a quick fix' },
+  ],
+  [QUESTION_KEYS.UNCOMMITTED_CHANGES]: [
+    { id: 'commit', label: 'Commit changes' },
+    { id: 'stash', label: 'Skip (stash and continue)' },
+  ],
 };
 
 /**
- * When the command result requires a user choice, append this block so the agent
- * uses AskQuestion (Cursor UI) instead of echoing the question in chat.
+ * Emit a structured instruction block that the agent can parse to build an
+ * AskQuestion tool call. The cursor rule `process-workflow.mdc` tells the agent
+ * to look for ASKQUESTION_REQUIRED=true and invoke the AskQuestion tool.
  */
 export function formatAskQuestionInstruction(decision: ControlPlaneDecision): string {
   if (!decision.questionKey) return '';
-  const options = QUESTION_KEY_OPTIONS[decision.questionKey] ?? 'See playbook for options';
+  const options = QUESTION_KEY_OPTIONS[decision.questionKey];
+  if (!options) return '';
   const cascadeNote =
     decision.questionKey === QUESTION_KEYS.CASCADE && decision.cascadeCommand
-      ? ` (Yes = run: ${decision.cascadeCommand})`
+      ? `\nASKQUESTION_CASCADE_COMMAND=${decision.cascadeCommand}`
       : '';
+  const optionLines = options
+    .map((o) => `  - id: "${o.id}" label: "${o.label}"`)
+    .join('\n');
   return [
-    '**REQUIRED — Use AskQuestion (Cursor\'s question UI with clickable options).**',
     '**ASKQUESTION_REQUIRED=true**',
-    'Do NOT write the question as plain text in the chat. Present the message above via AskQuestion so the user gets clickable choices.',
-    `Options for this prompt: ${options}${cascadeNote}`,
+    `ASKQUESTION_KEY=${decision.questionKey}`,
+    `ASKQUESTION_PROMPT=How would you like to proceed?`,
+    `ASKQUESTION_OPTIONS:`,
+    optionLines,
+    cascadeNote,
+    '',
+    'AGENT DIRECTIVE: Call the AskQuestion tool now with the prompt and options above. Do NOT write these options as plain text.',
   ].join('\n');
 }

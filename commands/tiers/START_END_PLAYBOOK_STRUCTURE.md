@@ -17,6 +17,8 @@ All tier start/end commands (feature-start, feature-end, phase-start, phase-end,
 
 **Invocation:** From repo root, run the export via the project's TS runner. Example: `npx tsx -e "import('<path>').then(m => m.<export>(...)).then(r => console.log(JSON.stringify(r)))"`. Use the path and export name from the table above.
 
+**/audit-fix [report-path]:** Not a tier command. Use when the user chooses "Fix audit with governance context (/audit-fix)" after `audit_failed`. Invoke `auditFix({ reportPath })` from `.cursor/commands/audit/composite/audit-fix.ts`, or run `npx tsx .cursor/commands/audit/atomic/audit-fix-prompt.ts [report-path]` and paste the output into chat so governance docs and the report are attached.
+
 **No one-off runner scripts:** Do not create ad hoc tier wrappers like `run-task-start-*.ts`, `run-task-end-*.ts`, or `run-session-end-*.ts` (and similar `run-*-start/end-*.ts` files). Invoke composite exports directly with inline `tsx -e` imports so all tiers follow the same entrypoint pattern.
 
 ### Entry points and call chain (where things live)
@@ -116,7 +118,7 @@ Routing (use `outcome.reasonCode`):
 - **If not success (HARD STOP):**
   1. **Switch to Plan mode (Ask mode) immediately.** The `enforceModeSwitch` block prepended to the output will say "STOP — Command Failed" when `success` is false; follow it.
   2. Show `controlPlaneDecision.message` to the user. Do not paraphrase or expand.
-  3. Use **AskQuestion**: "How would you like to proceed?" with options: "Retry the command" / "Investigate the issue" / "Skip and continue manually".
+  3. Use **AskQuestion**: "How would you like to proceed?" with options: "Retry the command" / "Fix audit with governance context (/audit-fix)" / "Skip and continue manually".
   4. **Do NOT cascade.** Do not offer to start the next task, session, phase, or feature. Do not check `outcome.cascade` — on failure, cascade is never present and must never be improvised.
   5. **Do NOT improvise next steps.** Do not read session guides to find the next task. Do not offer to run a different command. Do not create documents the command was supposed to create.
   6. **Wait for the user's response** to AskQuestion before taking any action.
@@ -134,7 +136,7 @@ If the command throws, exits with non-zero code, or the result has no `outcome` 
    - Create TODO lists or plans based on what the command "would have done"
    - Offer to cascade to the next tier (start next task, end next session, etc.)
    - Stay in Agent mode and continue executing
-4. Use **AskQuestion**: "The command crashed. How would you like to proceed?" with options: "Retry" / "Investigate" / "Skip".
+4. Use **AskQuestion**: "The command crashed. How would you like to proceed?" with options: "Retry" / "Fix audit with governance context (/audit-fix)" / "Skip".
 5. The user must fix the underlying issue (missing files, broken impl, etc.) and re-run the command.
 6. If the error message suggests a specific fix (e.g. "file not found"), you may point that out, but do NOT apply the fix and silently re-run.
 
@@ -183,13 +185,13 @@ The tier start audit (baseline quality) returned **warn** or **fail** (or runtim
 2. **Present `controlPlaneDecision.message`** to the user — this includes the audit report and the instruction to fix in compliance with governance.
 3. **STOP and fix:** Address **all** warnings and errors in the audit report in compliance with the project's governance rules (function/composable/component/type rules, coding standards). Do not skip or defer fixes; do not proceed to cascade or the next tier until the audit is clean.
 4. After fixes are applied, re-run the **same** tier start command (e.g. `/session-start 6.4.4`). The audit will run again; only when it returns **pass** (no warns/fails) does the workflow continue.
-5. Use **AskQuestion** only for "How would you like to proceed?" with options: **"Retry the command"** (after user confirms fixes are done) / **"Investigate the issue"** / **"Skip and continue manually"** (not recommended — bypasses governance).
+5. Use **AskQuestion** only for "How would you like to proceed?" with options: **"Retry the command"** (after user confirms fixes are done) / **"Fix audit with governance context (/audit-fix)"** / **"Skip and continue manually"** (not recommended — bypasses governance). When the user chooses **"Fix audit with governance context (/audit-fix)"**: run `/audit-fix` with the report path from the message (or `npx tsx .cursor/commands/audit/atomic/audit-fix-prompt.ts [report-path]`), paste the command output into chat so governance docs and the report are attached, then fix findings per the playbooks. After fixes, the user can choose **"Retry the command"** to re-run the tier start/end.
 
 **Anti-pattern:** Do not ignore audit warnings or errors. Do not proceed to cascade or implementation until the audit is clean.
 
 ### `context_gathering` (start commands, all tiers)
 
-**Two-step flow (Option A):** **Step 1 — Light collection:** In plan mode, context_gathering runs first. The command creates a **short planning doc** (contract + continuity summary + Goal/Files/Approach/Checkpoint slots + How we build the tierDown + Reference links). You fill the doc (light collection), then the user runs **/accepted-proceed**. **Gate 1:** The planning doc must be filled; /accepted-proceed blocks with `planning_doc_incomplete` until it is. For **phase and session**, after the first /accepted-proceed the harness runs Part A (branch, sync plan → guide, ensure tierDown) and may return **`guide_fill_pending`**. **Step 2 — Actual planning:** You then fill the **guide** (path in the outcome) with concrete Goal, Files, Approach, and Checkpoint for each session or task. The user runs **/accepted-proceed** again. **Gate 2:** The guide must be filled; /accepted-proceed blocks with `guide_incomplete` until it is. Then execute continues (read context, audit, cascade). Feature and task use a single gate (planning doc only).
+**Two-step flow (Option A):** **Step 1 — Light collection:** In plan mode, context_gathering runs first. The command creates a **short planning doc** (contract + continuity summary + Goal/Files/Approach/Checkpoint slots + How we build the tierDown + Reference links). You fill the doc (light collection), then the user runs **/accepted-proceed**. **Gate 1:** The planning doc must be filled; /accepted-proceed blocks with `planning_doc_incomplete` until it is. For **phase and session**, after the first /accepted-proceed the harness runs Part A (branch, ensure guide from plan) and may return **`guide_fill_pending`**. **Step 2 — Actual planning:** You then fill the **guide** (path in the outcome) with concrete Goal, Files, Approach, and Checkpoint for each session or task. The user runs **/accepted-proceed** again. **Gate 2:** The guide must be filled; /accepted-proceed blocks with `guide_incomplete` until it is. Then execute continues (read context, audit, cascade). Feature and task use a single gate (planning doc only).
 
 **Pipeline order:** The command loaded context and created a planning document with **doc-grounded insight prompts** in the chat message. Context questions are based on what the tier docs say we're building: each item has an **Insight** (what the docs indicate), a **Proposal** (recommended path), and a **Decision** with explicit **Options** where possible.
 
@@ -202,7 +204,7 @@ The tier start audit (baseline quality) returned **warn** or **fail** (or runtim
 3. **Open the planning doc in the editor** so the user can watch it being built.
 4. **MUST fill the planning doc:** Read the Reference section in the doc (and linked governance/playbook files as needed), then replace ## Goal, ## Files, ## Approach, ## Checkpoint, and ## How we build the tierDown with a concrete draft. This step is **REQUIRED**. Do not invite the user to run **/accepted-proceed** until the doc is filled.
 5. Discuss the plan **in chat** with the user. Use the insight/proposal/decision blocks as conversation starters. After each answer, **update the planning doc IN-PLACE** (refine Goal/Files/Approach/Checkpoint). When the user is satisfied and the doc is filled, tell them: "When you're ready, run **/accepted-proceed** to continue." When they run it, invoke `acceptedProceed()` from `.cursor/commands/tiers/shared/accepted-proceed.ts`. If the result is `start_ok`, handle cascade per playbook. If the result is `planning_doc_incomplete`, present the message — the doc was not filled; you MUST fill it and the user must run **/accepted-proceed** again. If the result is **`guide_fill_pending`** (phase/session), present the message and **fill the guide** (path in the outcome) with concrete Goal, Files, Approach, and Checkpoint for each session/task; then tell the user to run **/accepted-proceed** again (Gate 2).
-6. **Enumerate tierDowns (session/phase) before inviting /accepted-proceed:** After the planning conversation and before telling the user to run **/accepted-proceed**, make a pass over the **session guide** (for session) or **phase guide** (for phase) so that all intended tierDown units are listed with the headings the harness uses for cascade. For **sessions:** the session guide must contain a line matching `Task X.Y.Z.N:` (e.g. `#### Task 6.4.4.1:`, `#### Task 6.4.4.2:`) for each task in that session; task-end reads this to decide whether to cascade across to the next task or up to session-end. For **phases:** the phase guide must list each session in the phase (same pattern as used by session-end for cascade across). If the guide lists only one task, task-end will not offer cascade to a second task. Add or update task/session blocks (Goal, Files, Approach, Checkpoint) so the list matches the agreed plan. **Sync the same enumerated list into the planning doc for consistency** — this is required, not optional. Use **bullet format** in the planning doc (one line per tierDown unit).
+6. **Enumerate tierDowns (session/phase) before inviting /accepted-proceed:** After the planning conversation and before telling the user to run **/accepted-proceed**, make a pass over the **session guide** (for session) or **phase guide** (for phase) so that all intended tierDown units are listed with the headings the harness uses for cascade. For **sessions:** the session guide must contain a line matching `Task X.Y.Z.N:` (e.g. `#### Task 6.4.4.1:`, `#### Task 6.4.4.2:`) for each task in that session; task-end reads this to decide whether to cascade across to the next task or up to session-end. For **phases:** the phase guide must list each session in the phase (same pattern as used by session-end for cascade across). If the guide lists only one task, task-end will not offer cascade to a second task. Add or update task/session blocks (Goal, Files, Approach, Checkpoint) so the list matches the agreed plan. **Sync the same enumerated list into the planning doc** so the planning doc’s "How we build the tierDown" lists **all** phase/session/task units from the guide (or agreed plan); the doc must not be a single-task or single-session subset. Use **bullet format** in the planning doc (one line per tierDown unit).
 
 **Anti-pattern:** Do not skip filling the planning doc. Do not invite **/accepted-proceed** until ## Goal, ## Files, ## Approach, ## Checkpoint, and ## How we build the tierDown are filled with concrete content. The command will block until the doc is filled. Do not ask generic questions when the message already provides doc-grounded insight and options. The doc IS the artifact — the user watches it being built.
 
@@ -216,20 +218,22 @@ Proceeding is **BLOCKED**. The user ran **/accepted-proceed** (feature/phase/ses
 
 ### `guide_fill_pending` (phase/session start — after first /accepted-proceed, Option A Step 2)
 
-The first /accepted-proceed completed Part A (branch, sync plan → guide). For **phase** or **session**, the agent must now fill the **guide** (actual planning) before execute continues. The outcome includes `guidePath` (path to the guide file).
+The first /accepted-proceed completed Part A (branch, ensure guide from plan). For **phase** or **session**, the agent must now fill the **guide** (actual planning) before execute continues. The outcome includes `guidePath` (path to the guide file).
 
 1. **Present `controlPlaneDecision.message`** (or the outcome’s nextAction/deliverables) — tell the user you will fill the guide with concrete Goal, Files, Approach, and Checkpoint for each session/task, then they run **/accepted-proceed** again.
-2. **Open the guide** at the path in the outcome (`outcome.guidePath`). Fill each tierDown block (Session or Task) with concrete content; remove placeholder text such as `[Fill in]`, `[To be planned]`.
-3. Save the file. Tell the user: "When you're ready, run **/accepted-proceed** again to continue."
-4. When they run **/accepted-proceed**, the command runs Gate 2 (guide filled); if the guide is filled, execute Part B runs (read context, audit, cascade). If the guide still has placeholders, the command returns **`guide_incomplete`**.
+2. **Open the guide** at the path in the outcome (`outcome.guidePath`). Fill each tierDown block (Session or Task) with concrete content; remove placeholder text such as `[Fill in]`, `[To be planned]`. **Do not remove or merge tierDown blocks.** Preserve every existing Session or Task block. If the planning doc lists fewer items than the guide, keep all guide blocks and fill the extra ones from phase/session context or with `[To be planned]`. The guide may have more tasks than the planning doc — that is allowed.
+3. **Do not replace the entire guide file.** Use targeted edits only. Preserve Quick Start, Tasks, and (for session guides) Session Workflow. If the guide is in excerpt format or missing these sections, add the missing sections from the session template (`.cursor/commands/tiers/session/templates/session-guide.md`) before filling; do not overwrite real content.
+4. Save the file. Tell the user: "When you're ready, run **/accepted-proceed** again to continue."
+5. When they run **/accepted-proceed**, the command runs Gate 2 (guide filled); if the guide is filled, execute Part B runs (read context, audit, cascade). If the guide still has placeholders, the command returns **`guide_incomplete`**.
 
 ### `guide_incomplete` (returned by /accepted-proceed when guide still has placeholders, Gate 2)
 
 Proceeding is **BLOCKED**. The user ran **/accepted-proceed** after `guide_fill_pending` but the guide has not been filled (it still contains placeholder text in tierDown blocks).
 
 1. **Present `controlPlaneDecision.message` verbatim** — it explains that the agent MUST open the guide, replace placeholder text in each tierDown block (Session or Task) with concrete Goal, Files, Approach, and Checkpoint, save, and then the user must run **/accepted-proceed** again.
-2. **You (the agent) MUST fill the guide** using the file edit tool: open the guide path from the message, and replace placeholder text (e.g. `[Fill in]`, `[To be planned]`) in each Session or Task block with concrete content. Then tell the user to run **/accepted-proceed** again.
-3. Do not suggest workarounds. The command will not proceed until the guide is filled.
+2. **You (the agent) MUST fill the guide** using the file edit tool: open the guide path from the message, and replace placeholder text (e.g. `[Fill in]`, `[To be planned]`) in each Session or Task block with concrete content. **Do not remove or merge tierDown blocks;** preserve every existing block; fill extras with `[To be planned]` or phase/session context if the planning doc lists fewer. Then tell the user to run **/accepted-proceed** again.
+3. **Do not replace the entire guide file.** Use targeted edits only. Preserve Quick Start, Tasks, and (for session guides) Session Workflow. If the guide is in excerpt format or missing these sections, add the missing sections from the session template before filling; do not overwrite real content.
+4. Do not suggest workarounds. The command will not proceed until the guide is filled.
 
 ### `pending_push_confirmation` (end commands)
 
@@ -250,7 +254,7 @@ Suggested manual verification for this tier. The checklist is for **verifying wh
 
 ### `uncommitted_changes_blocking` (start/end/reopen commands)
 
-The command detected uncommitted non-`.cursor` files that would be overwritten by a branch checkout. (Changes in the `.cursor` directory are auto-committed silently.) `controlPlaneDecision.message` contains the list of blocking files.
+The command detected uncommitted files that would be overwritten by a branch checkout and are not auto-committable. Changes under `.cursor` and `.project-manager` are auto-committed as the first step before branch switch (workflow artifacts). Any other uncommitted files are blocking; `controlPlaneDecision.message` contains the list of blocking files.
 
 1. Switch to Plan mode.
 2. **Present `controlPlaneDecision.message`** to the user — this lists the uncommitted files blocking checkout.
@@ -363,7 +367,7 @@ All mode logic lives in one file: `.cursor/commands/utils/command-execution-mode
 
 **Shared workflow only.** All tier **start** commands use a single orchestrator and reusable step modules. The workflow is defined in:
 
-- **Orchestrator:** `.cursor/commands/harness/run-start-steps.ts` — `runTierStartWorkflow(ctx, hooks)` runs the pipeline. **Start always runs in plan mode**: context_gathering (validate → read context light → context gathering: write short planning doc) runs and exits. Execute runs only when the user runs **/accepted-proceed** or **/accepted-code**: branch → ensure tierDown docs → read context → sync guide from planning → gather → governance → extras → start audit → tier plan → fill direct tierDown → trailing output (if hook provided) → cascade. **Same sequence for feature, phase, session, and task** — no tier is skipped or left "optional".
+- **Orchestrator:** `.cursor/commands/harness/run-start-steps.ts` — `runTierStartWorkflow(ctx, hooks)` runs the pipeline. **Start always runs in plan mode**: context_gathering (validate → read context light → context gathering: write short planning doc) runs and exits. Execute runs only when the user runs **/accepted-proceed** or **/accepted-code**: branch → **ensure guide from plan** (create or update current-tier guide from plan, ensure child tierDown docs; guide is never overwritten by a second sync) → read context → gather → governance → extras → start audit → tier plan → fill direct tierDown → trailing output (if hook provided) → cascade. **Same sequence for feature, phase, session, and task** — no tier is skipped or left "optional".
 - **Step modules:** `.cursor/commands/tiers/shared/tier-start-steps.ts` — Reusable steps (e.g. `stepValidateStart`, `stepEnsureStartBranch`, `stepReadStartContext`, `stepStartAudit`, `stepRunTierPlan`, `stepBuildStartCascade`) use shared primitives (`formatBranchHierarchy`, `ensureTierBranch`, `runTierPlan`, `buildCascadeDown`, `runStartAuditForTier`).
 - **Start audit entry point:** `.cursor/commands/audit/run-start-audit-for-tier.ts` — `runStartAuditForTier({ tier, identifier, featureName })` dispatches to feature/phase/session start audits; task has no start audit.
 
@@ -373,7 +377,7 @@ All mode logic lives in one file: `.cursor/commands/utils/command-execution-mode
 - Call `runTierStartWorkflow(ctx, hooks)` and return its result.
 - **Not** re-implement or inline the workflow sequence (no copying validate → branch → read → audit → plan → cascade into the impl). Any new step that belongs in the start pipeline belongs in the orchestrator or step modules, not in a single tier impl.
 
-**Anti-regression:** When adding or changing start behavior, add or change it in the shared workflow or step modules and/or in the hooks contract; do not re-inline workflow steps into `feature-start-impl.ts`, `phase-start-impl.ts`, `session-start-impl.ts`, or `task-start-impl.ts`. **All four tiers (feature, phase, session, task) get the same workflow and doc steps** — never describe or implement changes as "optional for session/phase" or "session/phase left as-is"; if a step or doc applies to one tier, it applies to all tiers that have that concept (e.g. planning doc, tierDown enumeration, sync from planning).
+**Anti-regression:** When adding or changing start behavior, add or change it in the shared workflow or step modules and/or in the hooks contract; do not re-inline workflow steps into `feature-start-impl.ts`, `phase-start-impl.ts`, `session-start-impl.ts`, or `task-start-impl.ts`. **All four tiers (feature, phase, session, task) get the same workflow and doc steps** — never describe or implement changes as "optional for session/phase" or "session/phase left as-is"; if a step or doc applies to one tier, it applies to all tiers that have that concept (e.g. planning doc, tierDown enumeration, ensure guide from plan).
 
 ### Options-passing contract (tier-start re-invokes)
 
@@ -593,7 +597,7 @@ Adjacent-tier transitions use **tierUp**, **tierAt**, and **tierDown** (see `.cu
 **Document lifecycle (planning doc → guide and todos; handoff at tier-end only):**
 
 - **Planning doc:** Created at tier-start in plan mode; updated in-place during the conversation. It is the single source for what we're building (Goal, Files, Approach, Checkpoint).
-- **Guide and todos:** At tier-start in **execute** mode, the harness syncs the session guide from the planning doc: Goal, Files, Approach, and Checkpoint (todos) are written into the first task block. So the planning doc generates the guide and the checkpoint/todo list as part of tier-start; no separate "convert and delete" step. Enumerate tierDowns (step 6 in context_gathering) still ensures all task/session blocks exist for cascade.
+- **Guide and todos:** At tier-start in **execute** mode, the harness runs a single **ensure guide from plan** step: the current-tier guide is created or updated from the planning doc (structure and initial content from plan or placeholders); the guide is then filled by the agent (Gate 2) or by placeholder-fill only—never overwritten by a second sync. Enumerate tierDowns (step 6 in context_gathering) still ensures all task/session blocks exist for cascade.
 - **Handoff:** Created and updated **only at tier-end** (session-end, phase-end, feature-end). Handoff is never generated from the planning doc at tier-start; it reflects "where we left off" after the tier completes.
 
 ---

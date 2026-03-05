@@ -289,8 +289,8 @@ describe('control-plane routeByOutcome', () => {
   });
 });
 
-describe('AskQuestion instruction (context_gathering)', () => {
-  it('context_gathering instruction includes satisfaction option and references decision options (no generic process-only)', () => {
+describe('AskQuestion instruction', () => {
+  it('context_gathering is command-gated and returns empty (uses /accepted-proceed, not AskQuestion)', () => {
     const decision = {
       stop: true,
       message: 'Planning doc path and insight/proposal/decision blocks',
@@ -298,9 +298,48 @@ describe('AskQuestion instruction (context_gathering)', () => {
       questionKey: QUESTION_KEYS.CONTEXT_GATHERING,
     };
     const instruction = formatAskQuestionInstruction(decision);
-    expect(instruction).toContain("satisfied with our plan and ready to begin");
-    expect(instruction).toMatch(/decision options|Insight|Proposal|Decision/);
-    expect(instruction).not.toMatch(/just.*open questions|any open questions/);
+    expect(instruction).toBe('');
+  });
+
+  it('cascade produces structured AskQuestion instruction with options', () => {
+    const decision = {
+      stop: true,
+      message: 'Cascade to task 6.7.1.1',
+      requiredMode: 'plan' as const,
+      questionKey: QUESTION_KEYS.CASCADE,
+      cascadeCommand: '/task-start 6.7.1.1',
+    };
+    const instruction = formatAskQuestionInstruction(decision);
+    expect(instruction).toContain('ASKQUESTION_REQUIRED=true');
+    expect(instruction).toContain('ASKQUESTION_KEY=cascade');
+    expect(instruction).toContain('yes_cascade');
+    expect(instruction).toContain('no_stop');
+    expect(instruction).toContain('ASKQUESTION_CASCADE_COMMAND=/task-start 6.7.1.1');
+  });
+
+  it('failure produces structured AskQuestion instruction with retry/investigate/skip', () => {
+    const decision = {
+      stop: true,
+      message: 'Command failed.',
+      requiredMode: 'plan' as const,
+      questionKey: QUESTION_KEYS.FAILURE_OPTIONS,
+    };
+    const instruction = formatAskQuestionInstruction(decision);
+    expect(instruction).toContain('ASKQUESTION_REQUIRED=true');
+    expect(instruction).toContain('retry');
+    expect(instruction).toContain('investigate');
+    expect(instruction).toContain('skip');
+  });
+
+  it('returns empty for unknown questionKey', () => {
+    const decision = {
+      stop: true,
+      message: 'Unknown.',
+      requiredMode: 'plan' as const,
+      questionKey: 'nonexistent_key',
+    };
+    const instruction = formatAskQuestionInstruction(decision);
+    expect(instruction).toBe('');
   });
 });
 

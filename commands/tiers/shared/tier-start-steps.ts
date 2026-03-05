@@ -14,7 +14,7 @@ import type {
 import type { TierStartResult, CascadeInfo } from '../../utils/tier-outcome';
 import type { CannotStartTier } from '../../utils/tier-start-utils';
 import { formatBranchHierarchy, formatCannotStart } from '../../utils/tier-start-utils';
-import { isCursorPath } from '../../git/shared/tier-branch-manager';
+import { isAutoCommittable } from '../../git/shared/tier-branch-manager';
 import { resolveCommandExecutionMode, isPlanMode } from '../../utils/command-execution-mode';
 import { runTierPlan } from './tier-plan';
 import { buildCascadeDown } from '../../utils/tier-cascade';
@@ -111,9 +111,9 @@ export async function stepEnsureStartBranch(
   }
   if (!branchResult.success) {
     if (branchResult.blockedByUncommitted) {
-      // Playbook: only block on non-.cursor files; .cursor changes are excluded from blocking.
+      // Playbook: block only on files we do not auto-commit (.cursor and .project-manager are auto-committed).
       const allFiles = branchResult.uncommittedFiles ?? [];
-      const blockingFiles = allFiles.filter(f => !isCursorPath(f.trim()));
+      const blockingFiles = allFiles.filter(f => !isAutoCommittable(f.trim()));
       if (blockingFiles.length > 0) {
         const fileList = blockingFiles.map(f => `- \`${f}\``).join('\n');
         return {
@@ -127,7 +127,7 @@ export async function stepEnsureStartBranch(
           },
         };
       }
-      // Only .cursor changed; do not block (playbook: .cursor auto-committed or excluded). Continue.
+      // Only workflow artifacts (.cursor, .project-manager) changed; auto-committed or excluded. Continue.
       if (hooks.afterBranch) {
         await hooks.afterBranch(ctx);
       }
@@ -242,6 +242,21 @@ function buildGuideFromPlanItems(
     '### Tasks',
     '',
     ...items.map((i) => buildTaskSection(i.id, i.description)),
+    '',
+    '---',
+    '',
+    '## Session Workflow',
+    '',
+    '### Before Starting a Session',
+    '',
+    'Use `/session-start [SESSION_ID] [description]` to load context and plan tasks.',
+    '',
+    '### During Session',
+    '',
+    '1. Work on one task at a time.',
+    '2. Document decisions inline in code.',
+    '3. Pause after each task for checkpoint before continuing.',
+    '',
   ].join('\n');
 }
 
@@ -412,6 +427,22 @@ export async function stepEnsureTierDownDocs(
   await runEnsureTierDownDocsForTier(ctx);
 }
 
+/**
+ * Single "ensure guide from plan" step: sync plan → current-tier guide (create or append only, never overwrite),
+ * then ensure child tierDown docs exist. Replaces the previous sequence of stepSyncPlannedTierDownToGuide,
+ * stepEnsureTierDownDocs, and stepSyncGuideFromPlanningDoc so the guide is generated once and only filled afterward.
+ */
+export async function stepEnsureGuideFromPlan(
+  ctx: TierStartWorkflowContext,
+  _hooks: TierStartWorkflowHooks
+): Promise<void> {
+  const executionMode = resolveCommandExecutionMode(ctx.options, 'plan');
+  if (isPlanMode(executionMode)) return;
+  if (ctx.config.name === 'task') return;
+  await syncPlannedTierDownToGuide(ctx);
+  await runEnsureTierDownDocsForTier(ctx);
+}
+
 /** Legacy: ensure child docs. Execute mode only. No hook on interface; step is no-op. Use stepEnsureTierDownDocs instead. */
 export async function stepEnsureChildDocs(
   ctx: TierStartWorkflowContext,
@@ -419,173 +450,6 @@ export async function stepEnsureChildDocs(
 ): Promise<void> {
   const executionMode = resolveCommandExecutionMode(ctx.options, 'plan');
   if (isPlanMode(executionMode)) return;
-}
-
-/**
- * Sync guide from the planning doc: fill ALL tierDown blocks with per-tierDown content from
- * ctx.tierDownPlanItems and tier-level Goal/Files/Approach/Checkpoint. Execute mode only.
- * Feature: phase blocks (Description from plan items). Phase: session blocks. Session: task blocks.
- * Handoff is not touched — handoff is a tier-end artifact.
- */
-export async function stepSyncGuideFromPlanningDoc(
-  ctx: TierStartWorkflowContext,
-  _hooks: TierStartWorkflowHooks
-): Promise<void> {
-  const executionMode = resolveCommandExecutionMode(ctx.options, 'plan');
-  if (isPlanMode(executionMode)) return;
-  if (ctx.config.name === 'task') return;
-
-  const planningPath = getPlanningDocPath(ctx);
-  let planningContent: string;
-  try {
-    planningContent = await readProjectFile(planningPath);
-  } catch {
-    return;
-  }
-  const parsed = parsePlanningDocSections(planningContent);
-  const tierGoal = parsed?.goal?.trim() ?? '';
-  const tierFiles = parsed?.files?.trim() ?? '';
-  const tierApproach = parsed?.approach?.trim() ?? '';
-  const tierCheckpoint = parsed?.checkpoint?.trim() ?? '';
-  const planItems = ctx.tierDownPlanItems ?? [];
-  const getDesc = (id: string): string => planItems.find(i => i.id === id)?.description ?? '';
-
-  if (ctx.config.name === 'session') {
-    const sessionId = ctx.identifier;
-    const guidePath = ctx.context.paths.getSessionGuidePath(sessionId);
-    let guideContent: string;
-    try {
-      guideContent = await readProjectFile(guidePath);
-    } catch {
-      return;
-    }
-    const taskSectionRegex = new RegExp(
-      `((-?\\s*\\[[ x]\\])?\\s*(?:####|###) Task (\\d+\\.\\d+\\.\\d+\\.\\d+):[^\\n]*)([\\s\\S]*?)(?=(?:-?\\s*\\[|#### Task|### Task|## |$))`,
-      'g'
-    );
-    const replacements: { from: string; to: string }[] = [];
-    let match: RegExpMatchArray | null;
-    while ((match = taskSectionRegex.exec(guideContent)) !== null) {
-      const firstLine = match[1];
-      const taskId = match[2];
-      const goal = getDesc(taskId) || tierGoal || 'Implement per session scope.';
-      const files = tierFiles || '(See session guide and phase context above.)';
-      const approach = tierApproach || 'See session scope above.';
-      const checkpoint = tierCheckpoint || 'Verify per session success criteria.';
-      replacements.push({
-        from: match[0],
-        to: [
-          firstLine,
-          '',
-          '**Goal:** ' + goal,
-          '',
-          '**Files:**',
-          files,
-          '',
-          '**Approach:** ' + approach,
-          '',
-          '**Checkpoint:**',
-          checkpoint,
-        ].join('\n'),
-      });
-    }
-    if (replacements.length === 0) return;
-    let newContent = guideContent;
-    for (const { from, to } of replacements) {
-      newContent = newContent.replace(from, to);
-    }
-    await writeProjectFile(guidePath, newContent);
-    return;
-  }
-
-  if (ctx.config.name === 'phase') {
-    const phaseId = ctx.identifier;
-    const guidePath = ctx.context.paths.getPhaseGuidePath(phaseId);
-    let guideContent: string;
-    try {
-      guideContent = await readProjectFile(guidePath);
-    } catch {
-      return;
-    }
-    // WHY: Avoid catastrophic backtracking from lazy [\s\S]*? + alternation in lookahead on long guides.
-    // PATTERN: Split by "### Session " and reassemble with synced Description/Tasks per session.
-    const sessionMarker = '### Session ';
-    const idInLineRegex = /^(\d+\.\d+\.\d+):/;
-    const lines = guideContent.split('\n');
-    const outLines: string[] = [];
-    let i = 0;
-    while (i < lines.length) {
-      const line = lines[i];
-      const markerIdx = line.indexOf(sessionMarker);
-      if (markerIdx === -1) {
-        outLines.push(line);
-        i++;
-        continue;
-      }
-      const firstLine = line;
-      const afterMarker = line.slice(markerIdx + sessionMarker.length);
-      const idMatch = afterMarker.match(idInLineRegex);
-      const sessionId = idMatch ? idMatch[1] : '';
-      const description = getDesc(sessionId) || tierGoal || 'See phase scope above.';
-      const tasks = tierApproach || tierFiles || '[To be planned]';
-      outLines.push(
-        firstLine,
-        '',
-        '**Description:** ' + description,
-        '',
-        '**Tasks:**',
-        tasks,
-        ''
-      );
-      i++;
-      while (i < lines.length && lines[i].indexOf(sessionMarker) === -1 && !lines[i].startsWith('## ')) {
-        i++;
-      }
-    }
-    const newContent = outLines.join('\n');
-    await writeProjectFile(guidePath, newContent);
-    return;
-  }
-
-  if (ctx.config.name === 'feature') {
-    const guidePath = ctx.context.paths.getFeatureGuidePath();
-    let guideContent: string;
-    try {
-      guideContent = await readProjectFile(guidePath);
-    } catch {
-      return;
-    }
-    const phaseSectionRegex = new RegExp(
-      `((-?\\s*\\[[ x]\\])?\\s*### Phase (\\d+\\.\\d+):[^\\n]*)([\\s\\S]*?)(?=(?:-?\\s*\\[|### Phase|## |$))`,
-      'g'
-    );
-    const replacements: { from: string; to: string }[] = [];
-    let match: RegExpMatchArray | null;
-    while ((match = phaseSectionRegex.exec(guideContent)) !== null) {
-      const firstLine = match[1];
-      const phaseId = match[2];
-      const description = getDesc(phaseId) || tierGoal || 'See feature scope above.';
-      replacements.push({
-        from: match[0],
-        to: [
-          firstLine,
-          '',
-          '**Description:** ' + description,
-          '',
-          '**Sessions:** [To be planned]',
-          '',
-          '**Success Criteria:**',
-          '- [To be defined]',
-        ].join('\n'),
-      });
-    }
-    if (replacements.length === 0) return;
-    let newContent = guideContent;
-    for (const { from, to } of replacements) {
-      newContent = newContent.replace(from, to);
-    }
-    await writeProjectFile(guidePath, newContent);
-  }
 }
 
 /** Read handoff/guide/label and append to output (optional step). */

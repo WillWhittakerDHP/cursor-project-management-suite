@@ -96,8 +96,24 @@ export function isCursorPath(path: string): boolean {
   return p === '.cursor' || p === 'cursor' || p.startsWith('.cursor/') || p.startsWith('cursor/');
 }
 
-function isAutoCommittable(filePath: string): boolean {
-  return isCursorPath(filePath);
+/**
+ * True if path is .project-manager or under it. Workflow-generated guides, tier-scope,
+ * and planning docs live here; we auto-commit them before branch switch so
+ * /accepted-proceed is not blocked by the planning docs it just produced.
+ */
+export function isProjectManagerPath(path: string): boolean {
+  const p = path.trim();
+  return (
+    p === '.project-manager' ||
+    p === 'project-manager' ||
+    p.startsWith('.project-manager/') ||
+    p.startsWith('project-manager/')
+  );
+}
+
+/** Paths we auto-commit before branch switch: .cursor and .project-manager. */
+export function isAutoCommittable(filePath: string): boolean {
+  return isCursorPath(filePath) || isProjectManagerPath(filePath);
 }
 
 /**
@@ -119,47 +135,60 @@ async function resolveUncommittedBeforeCheckout(): Promise<UncommittedResolution
   const blockingFiles = changedFiles.filter(f => !isAutoCommittable(f.trim()));
 
   if (autoFiles.length > 0 && blockingFiles.length === 0) {
-    const addResult = await runCommand('git add .cursor');
+    const addResult = await runCommand('git add .cursor .project-manager');
     if (!addResult.success) {
       return {
         clean: false,
         autoCommitted: false,
         blockingFiles: autoFiles,
-        message: `Failed to stage .cursor changes: ${addResult.error || addResult.output}`,
+        message: `Failed to stage workflow artifacts: ${addResult.error || addResult.output}`,
       };
     }
     const commitResult = await runCommand(
-      'git commit -m "chore: auto-commit .cursor changes before branch switch"'
+      'git commit -m "chore: auto-commit workflow artifacts (.cursor, .project-manager) before branch switch"'
     );
     if (!commitResult.success) {
       return {
         clean: false,
         autoCommitted: false,
         blockingFiles: autoFiles,
-        message: `Failed to auto-commit .cursor changes: ${commitResult.error || commitResult.output}`,
+        message: `Failed to auto-commit workflow artifacts: ${commitResult.error || commitResult.output}`,
       };
     }
-    return { clean: true, autoCommitted: true, blockingFiles: [], message: 'Auto-committed .cursor changes.' };
+    return {
+      clean: true,
+      autoCommitted: true,
+      blockingFiles: [],
+      message: 'Auto-committed workflow artifacts (.cursor, .project-manager).',
+    };
   }
 
   if (autoFiles.length > 0 && blockingFiles.length > 0) {
-    const addResult = await runCommand('git add .cursor');
+    const addResult = await runCommand('git add .cursor .project-manager');
     if (addResult.success) {
       const commitResult = await runCommand(
-        'git commit -m "chore: auto-commit .cursor changes before branch switch"'
+        'git commit -m "chore: auto-commit workflow artifacts (.cursor, .project-manager) before branch switch"'
       );
       if (commitResult.success) {
         const recheck = await runCommand('git status --porcelain');
         const remaining = (recheck.output ?? '').trim().split('\n').filter(l => l.length > 0);
-        const remainingPaths = remaining.map(l => l.slice(3).trim()).filter(f => !isCursorPath(f));
+        const remainingPaths = remaining
+          .map(l => l.slice(3).trim())
+          .filter(f => !isAutoCommittable(f));
         if (remainingPaths.length === 0) {
-          return { clean: true, autoCommitted: true, blockingFiles: [], message: 'Auto-committed .cursor changes.' };
+          return {
+            clean: true,
+            autoCommitted: true,
+            blockingFiles: [],
+            message: 'Auto-committed workflow artifacts (.cursor, .project-manager).',
+          };
         }
         return {
           clean: false,
           autoCommitted: true,
           blockingFiles: remainingPaths,
-          message: 'Auto-committed .cursor changes. Remaining uncommitted files need attention.',
+          message:
+            'Auto-committed workflow artifacts. Remaining uncommitted files need attention.',
         };
       }
     }

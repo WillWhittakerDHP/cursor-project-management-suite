@@ -12,9 +12,7 @@ import {
   stepReadContextLight,
   stepContextGathering,
   stepEnsureStartBranch,
-  stepSyncPlannedTierDownToGuide,
-  stepEnsureTierDownDocs,
-  stepSyncGuideFromPlanningDoc,
+  stepEnsureGuideFromPlan,
   stepReadStartContext,
   stepFillDirectTierDown,
   stepGatherContext,
@@ -104,23 +102,11 @@ export async function runTierStartWorkflow(
     logStepTiming('ensure_branch', 'exit');
     if (branchExit) return attachShadowPayload(ctx, branchExit);
 
-    logStepTiming('sync_planned_tier_down_to_guide', 'enter');
-    await recordStep(ctx, 'sync_planned_tier_down_to_guide', 'enter');
-    await stepSyncPlannedTierDownToGuide(ctx, hooks);
-    await recordStep(ctx, 'sync_planned_tier_down_to_guide', 'exit_success');
-    logStepTiming('sync_planned_tier_down_to_guide', 'exit');
-
-    logStepTiming('ensure_tier_down_docs', 'enter');
-    await recordStep(ctx, 'ensure_tier_down_docs', 'enter');
-    await stepEnsureTierDownDocs(ctx, hooks);
-    await recordStep(ctx, 'ensure_tier_down_docs', 'exit_success');
-    logStepTiming('ensure_tier_down_docs', 'exit');
-
-    logStepTiming('sync_guide_from_planning', 'enter');
-    await recordStep(ctx, 'sync_guide_from_planning', 'enter');
-    await stepSyncGuideFromPlanningDoc(ctx, hooks);
-    await recordStep(ctx, 'sync_guide_from_planning', 'exit_success');
-    logStepTiming('sync_guide_from_planning', 'exit');
+    logStepTiming('ensure_guide_from_plan', 'enter');
+    await recordStep(ctx, 'ensure_guide_from_plan', 'enter');
+    await stepEnsureGuideFromPlan(ctx, hooks);
+    await recordStep(ctx, 'ensure_guide_from_plan', 'exit_success');
+    logStepTiming('ensure_guide_from_plan', 'exit');
 
     // Option A: for phase/session return guide_fill_pending so agent fills guide, then /accepted-proceed runs Part B.
     const tier = ctx.config.name;

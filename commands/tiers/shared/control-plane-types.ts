@@ -92,6 +92,8 @@ export const QUESTION_KEYS = {
   PUSH_CONFIRMATION: 'push_confirmation',
   VERIFICATION_OPTIONS: 'verification_options',
   FAILURE_OPTIONS: 'failure_options',
+  /** audit_failed: Retry / Fix audit with governance context (/audit-fix) / Skip. */
+  AUDIT_FAILED_OPTIONS: 'audit_failed_options',
   REOPEN_OPTIONS: 'reopen_options',
   UNCOMMITTED_CHANGES: 'uncommitted_changes',
 } as const;

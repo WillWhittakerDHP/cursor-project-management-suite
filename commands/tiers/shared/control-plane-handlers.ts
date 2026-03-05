@@ -81,11 +81,11 @@ export function handleAuditFailed(outcome: ControlPlaneOutcome, outputFallback: 
     stop: true,
     requiredMode: 'plan',
     message,
-    questionKey: QUESTION_KEYS.FAILURE_OPTIONS,
+    questionKey: QUESTION_KEYS.AUDIT_FAILED_OPTIONS,
   };
 }
 
-/** Generic failure: Plan mode hard-stop, AskQuestion retry/investigate/skip. No cascade. */
+/** Generic failure: Plan mode hard-stop, AskQuestion retry/audit-fix/skip. No cascade. */
 export function handleFailure(outcome: ControlPlaneOutcome, outputFallback: string): ControlPlaneDecision {
   return {
     stop: true,
