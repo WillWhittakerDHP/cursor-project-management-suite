@@ -1,13 +1,15 @@
 /**
- * Pending state for /accepted-proceed and /accepted-code (chat-first flow).
- * Written when a tier start returns context_gathering (or plan_mode for backward compat); read and cleared by the proceed commands.
- * 2-pass flow: context_gathering → fill doc → /accepted-proceed → execute (no plan_mode intermediate).
+ * Pending state for /accepted-proceed, /accepted-code (start), and /accepted-push (end).
+ * Start: written when tier start returns context_gathering; read and cleared by accepted-proceed/accepted-code.
+ * End: written when tier end returns pending_push_confirmation; read and cleared by accepted-push/skip-push.
  */
 
 import { readProjectFile, writeProjectFile } from '../../utils/utils';
+import type { CascadeInfo } from '../../utils/tier-outcome';
 
 const TIER_PENDING_PATH = '.cursor/commands/.tier-start-pending.json';
 const TASK_PENDING_PATH = '.cursor/commands/.task-start-pending.json';
+const TIER_END_PENDING_PATH = '.cursor/commands/.tier-end-pending.json';
 
 /** Params shape stored for reinvoke (matches TierStartParams for feature/phase/session). */
 export type TierStartPendingParams =
@@ -102,6 +104,55 @@ export async function deleteTaskStartPending(): Promise<void> {
   const { PROJECT_ROOT } = await import('../../utils/utils');
   try {
     await unlink(join(PROJECT_ROOT, TASK_PENDING_PATH));
+  } catch {
+    // ignore
+  }
+}
+
+// --- End pending (push gate) ---
+
+/** State for tier end when push is pending; /accepted-push or /skip-push reads and clears. */
+export interface EndPendingState {
+  tier: 'feature' | 'phase' | 'session' | 'task';
+  identifier: string;
+  cascade?: CascadeInfo;
+}
+
+export async function readEndPending(): Promise<EndPendingState | null> {
+  try {
+    const raw = await readProjectFile(TIER_END_PENDING_PATH);
+    const parsed = safeParse<{ tier: string; identifier: string; cascade?: CascadeInfo }>(
+      TIER_END_PENDING_PATH,
+      raw
+    );
+    if (!parsed?.tier || !parsed?.identifier) return null;
+    if (
+      parsed.tier !== 'feature' &&
+      parsed.tier !== 'phase' &&
+      parsed.tier !== 'session' &&
+      parsed.tier !== 'task'
+    )
+      return null;
+    return {
+      tier: parsed.tier as EndPendingState['tier'],
+      identifier: String(parsed.identifier),
+      ...(parsed.cascade != null && { cascade: parsed.cascade }),
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function writeEndPending(state: EndPendingState): Promise<void> {
+  await writeProjectFile(TIER_END_PENDING_PATH, JSON.stringify(state, null, 2));
+}
+
+export async function deleteEndPending(): Promise<void> {
+  const { unlink } = await import('fs/promises');
+  const { join } = await import('path');
+  const { PROJECT_ROOT } = await import('../../utils/utils');
+  try {
+    await unlink(join(PROJECT_ROOT, TIER_END_PENDING_PATH));
   } catch {
     // ignore
   }

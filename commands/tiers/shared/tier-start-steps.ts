@@ -98,54 +98,6 @@ export async function stepReadContextLight(
   }
 }
 
-/**
- * Plan-mode-only wrapper for stepContextGathering.
- * Use at the early position (before stepPlanModeExit) so explicit execute-mode
- * calls without contextGatheringComplete do not accidentally trigger Q&A.
- */
-export async function stepContextGatheringPlanMode(
-  ctx: TierStartWorkflowContext,
-  hooks: TierStartWorkflowHooks
-): Promise<StepExitResult> {
-  const executionMode = resolveCommandExecutionMode(ctx.options, 'plan');
-  if (!isPlanMode(executionMode)) return null;
-  return stepContextGathering(ctx, hooks);
-}
-
-/** If plan mode, append plan summary and return plan result; otherwise null.
- *  - Agent sees: content summary (getPlanContentSummary) + tier-aware one-line process hint in ctx.output.
- *  - User sees: deliverables (getTierDeliverables) in AskQuestion via outcome.deliverables.
- */
-export async function stepPlanModeExit(
-  ctx: TierStartWorkflowContext,
-  hooks: TierStartWorkflowHooks
-): Promise<StepExitResult> {
-  const executionMode = resolveCommandExecutionMode(ctx.options, 'plan');
-  if (!isPlanMode(executionMode)) return null;
-  const rawSummary = await hooks.getPlanContentSummary(ctx);
-  if (rawSummary?.trim()) {
-    ctx.output.push(rawSummary.trim());
-  }
-  const processLine =
-    ctx.config.name === 'task'
-      ? 'On approval (Begin Coding), execute mode will load context and begin implementation.'
-      : 'On approval, execute mode will set up the branch, load context, run audit, and cascade to the first tierDown.';
-  ctx.output.push(processLine);
-
-  const deliverables = await hooks.getTierDeliverables(ctx);
-
-  return {
-    success: true,
-    output: ctx.output.join('\n\n'),
-    outcome: {
-      status: 'plan',
-      reasonCode: 'plan_mode',
-      nextAction: 'Plan preview complete. Awaiting approval to execute.',
-      deliverables: deliverables || undefined,
-    },
-  };
-}
-
 /** Ensure branch (optional); push messages and optionally exit on failure. */
 export async function stepEnsureStartBranch(
   ctx: TierStartWorkflowContext,
@@ -894,15 +846,16 @@ ${refLines.join('\n')}
 }
 
 /**
- * Context gathering Q&A step. If contextGatheringComplete or hook missing or no questions, returns null.
- * Writes short planning doc (contract + continuity + 4 slots + reference links), sets ctx.planningDocPath,
- * and returns early exit with reasonCode context_gathering. Chat message has insight/proposal/decision + work brief.
+ * Context gathering: plan-mode only. Writes short planning doc (contract + continuity + 4 slots + reference links),
+ * sets ctx.planningDocPath, and returns early exit with reasonCode context_gathering.
+ * When mode is execute (e.g. from /accepted-proceed), this step is skipped.
  */
 export async function stepContextGathering(
   ctx: TierStartWorkflowContext,
   hooks: TierStartWorkflowHooks
 ): Promise<StepExitResult> {
-  if (ctx.options?.contextGatheringComplete) return null;
+  const executionMode = resolveCommandExecutionMode(ctx.options, 'plan');
+  if (!isPlanMode(executionMode)) return null;
   if (!hooks.getContextQuestions) return null;
 
   const questions = await hooks.getContextQuestions(ctx);

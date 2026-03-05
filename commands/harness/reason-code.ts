@@ -5,9 +5,9 @@
 
 import type { ReasonCode, FlowReasonCode, FailureReasonCode } from './contracts';
 
-/** Legacy reason-code strings emitted by current start/end impls. */
+/** Legacy reason-code strings emitted by current start/end impls. plan_mode maps to context_gathering (retired). */
 const LEGACY_TO_CHARTER: Record<string, ReasonCode> = {
-  plan_mode: 'plan_mode',
+  plan_mode: 'context_gathering',
   context_gathering: 'context_gathering',
   planning_doc_incomplete: 'planning_doc_incomplete',
   pending_push_confirmation: 'pending_push',

@@ -21,15 +21,13 @@ export type CursorMode = 'plan' | 'agent';
 
 export interface CommandExecutionOptions {
   mode?: CommandExecutionMode;
-  /** When true, skip the context-gathering Q&A step and continue to plan/fill/cascade (set after user is satisfied). */
-  contextGatheringComplete?: boolean;
   /** Option A second gate: when true, skip Part A steps and run from read_start_context (guide already filled by agent). */
   guideFillComplete?: boolean;
 }
 
 /**
  * Resolve the execution mode from options.
- * defaultMode: used when options.mode is not set (e.g. 'plan' for tier-start, 'execute' for tier-end).
+ * defaultMode: used when options.mode is not set. Start commands default to 'plan'; execute only via /accepted-proceed or /accepted-code. End commands default to 'execute'.
  */
 export function resolveCommandExecutionMode(
   options?: CommandExecutionOptions,

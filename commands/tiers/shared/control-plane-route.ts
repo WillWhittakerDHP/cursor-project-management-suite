@@ -13,7 +13,6 @@ import type {
 import { parseReasonCode } from '../../harness/reason-code';
 import type { ReasonCode } from '../../harness/contracts';
 import {
-  handlePlanMode,
   handleContextGathering,
   handlePlanningDocIncomplete,
   handlePendingPushConfirmation,
@@ -63,8 +62,6 @@ export function routeByOutcome(
   }
 
   switch (reasonCode) {
-    case 'plan_mode':
-      return handlePlanMode(outcome, ctx);
     case 'context_gathering':
       return handleContextGathering(outcome, ctx);
     case 'pending_push':

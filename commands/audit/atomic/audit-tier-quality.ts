@@ -461,11 +461,69 @@ function generateFindingsFromAudit(
     findings.push(...tierFindings);
   }
 
+  if (auditName === 'type-similarity') {
+    const groups = jsonData.groups || [];
+    const criticalActions = groups.filter(
+      (g: { action?: string }) => g.action === 'UNIFY' || g.action === 'BRAND'
+    );
+    if (criticalActions.length > 0) {
+      findings.push({
+        type: 'info',
+        message: `${criticalActions.length} type-similarity group(s) with UNIFY/BRAND action`,
+        location: jsonPath,
+        suggestion: `Review ${toRepoPath(jsonPath)} for type consolidation`,
+      });
+    }
+  }
+
+  if (auditName === 'import-graph') {
+    const fanIn = (jsonData.fanInViolations as unknown[] | undefined)?.length ?? 0;
+    const depth = (jsonData.composableChainDepthViolations as unknown[] | undefined)?.length ?? 0;
+    const critical = fanIn > 10 || depth > 10;
+    if (critical) {
+      findings.push({
+        type: 'info',
+        message: `${fanIn} fan-in violation(s), ${depth} composable chain depth violation(s)`,
+        location: jsonPath,
+        suggestion: `Review ${toRepoPath(jsonPath)} for import structure`,
+      });
+    }
+  }
+
+  if (auditName === 'file-cohesion') {
+    const files = jsonData.files || [];
+    const p0Files = files.filter((f: { priority?: string }) => f.priority === 'P0');
+    if (p0Files.length > 2) {
+      findings.push({
+        type: 'info',
+        message: `${p0Files.length} file(s) with P0 cohesion violations`,
+        location: jsonPath,
+        suggestion: `Review ${toRepoPath(jsonPath)} for decomposition`,
+      });
+    }
+  }
+
+  if (auditName === 'deprecation') {
+    const files = jsonData.files || [];
+    const p0P1Files = files.filter(
+      (f: { priority?: string }) => f.priority === 'P0' || f.priority === 'P1'
+    );
+    if (p0P1Files.length > 0) {
+      findings.push({
+        type: 'info',
+        message: `${p0P1Files.length} file(s) with P0/P1 deprecation findings`,
+        location: jsonPath,
+        suggestion: `Review ${toRepoPath(jsonPath)} for deprecation cleanup`,
+      });
+    }
+  }
+
   // Generic: audits without specific handlers above
   const hasSpecificHandler = [
     'typecheck', 'component-logic', 'composables-logic', 'loop-mutations', 'hardcoding',
     'error-handling', 'naming-convention', 'duplication', 'test', 'unused-code', 'security',
     'type-health', 'component-health', 'composable-health', 'data-flow-health',
+    'type-similarity', 'import-graph', 'file-cohesion', 'deprecation',
   ].includes(auditName);
   if (!hasSpecificHandler && jsonData) {
     const hasFiles = (jsonData.files?.length ?? 0) > 0;
@@ -527,9 +585,9 @@ export async function auditTierQuality(
     return {
       category: 'tier-quality',
       status: 'pass',
-      findings: [{ type: 'info', message: 'client directory not found - skipping tier quality audits' }],
+      findings: [{ type: 'info', message: 'frontend-root directory not found - skipping tier quality audits' }],
       recommendations: [],
-      summary: 'Skipped (client not found)',
+      summary: 'Skipped (frontend-root not found)',
     };
   }
 

@@ -10,8 +10,7 @@ import {
   stepAppendBranchHierarchy,
   stepValidateStart,
   stepReadContextLight,
-  stepContextGatheringPlanMode,
-  stepPlanModeExit,
+  stepContextGathering,
   stepEnsureStartBranch,
   stepSyncPlannedTierDownToGuide,
   stepEnsureTierDownDocs,
@@ -93,17 +92,10 @@ export async function runTierStartWorkflow(
 
     logStepTiming('context_gathering', 'enter');
     await recordStep(ctx, 'context_gathering', 'enter');
-    const contextExit = await stepContextGatheringPlanMode(ctx, hooks);
+    const contextExit = await stepContextGathering(ctx, hooks);
     await recordStep(ctx, 'context_gathering', contextExit ? 'exit_success' : 'exit_success');
     logStepTiming('context_gathering', 'exit');
     if (contextExit) return attachShadowPayload(ctx, contextExit);
-
-    logStepTiming('plan_mode_exit', 'enter');
-    await recordStep(ctx, 'plan_mode_exit', 'enter');
-    const planExit = await stepPlanModeExit(ctx, hooks);
-    await recordStep(ctx, 'plan_mode_exit', planExit ? 'exit_success' : 'exit_success');
-    logStepTiming('plan_mode_exit', 'exit');
-    if (planExit) return attachShadowPayload(ctx, planExit);
 
     logStepTiming('ensure_branch', 'enter');
     await recordStep(ctx, 'ensure_branch', 'enter');

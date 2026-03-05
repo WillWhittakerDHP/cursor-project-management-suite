@@ -53,8 +53,8 @@ export async function runTierStart(
   params: TierStartParams,
   options?: CommandExecutionOptions
 ): Promise<TierStartResultWithControlPlane> {
-  // Default execute so first invocation runs side effects; pass options: { mode: 'plan' } for plan-only preview.
-  const executionMode = resolveCommandExecutionMode(options, 'execute');
+  // Default plan so start always creates planning doc and exits; execute only via /accepted-proceed or /accepted-code.
+  const executionMode = resolveCommandExecutionMode(options, 'plan');
   const gate = modeGateText(cursorModeForExecution(executionMode), `${config.name}-start`);
 
   const shadowRecorder = getDefaultShadowRecorder();
@@ -106,7 +106,6 @@ export async function runTierStart(
     });
     const needsPlanFirst =
       !kernelResult.success ||
-      kernelResult.outcome.reasonCode === 'plan_mode' ||
       kernelResult.outcome.reasonCode === 'context_gathering' ||
       kernelResult.outcome.reasonCode === 'guide_fill_pending' ||
       kernelResult.outcome.reasonCode === 'uncommitted_blocking';
@@ -117,15 +116,17 @@ export async function runTierStart(
       kernelResult.success ? 'normal' : 'failure'
     );
     const reasonCode = kernelResult.outcome.reasonCode;
-    if (
-      (reasonCode === 'context_gathering' || reasonCode === 'plan_mode') &&
-      (config.name === 'feature' || config.name === 'phase' || config.name === 'session')
-    ) {
-      await writeTierStartPending({
-        tier: config.name,
-        params: params as TierStartPendingParams,
-        pass: 1,
-      });
+    if (reasonCode === 'context_gathering') {
+      if (config.name === 'feature' || config.name === 'phase' || config.name === 'session') {
+        await writeTierStartPending({
+          tier: config.name,
+          params: params as TierStartPendingParams,
+          pass: 1,
+        });
+      } else if (config.name === 'task') {
+        const p = params as { taskId: string; featureId?: string };
+        await writeTaskStartPending({ taskId: p.taskId, featureId: p.featureId });
+      }
     } else if (
       reasonCode === 'guide_fill_pending' &&
       (config.name === 'phase' || config.name === 'session') &&
@@ -138,9 +139,6 @@ export async function runTierStart(
         guideFillPending: true,
         guidePath: kernelResult.outcome.guidePath,
       });
-    } else if (reasonCode === 'plan_mode' && config.name === 'task') {
-      const p = params as { taskId: string; featureId?: string };
-      await writeTaskStartPending({ taskId: p.taskId, featureId: p.featureId });
     }
 
     let finalOutput = enforcement.text + '\n\n---\n\n' + kernelResult.output;

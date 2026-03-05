@@ -30,6 +30,7 @@ import { defaultProfileDefaultsResolver } from '../../harness/spec-builder';
 import { buildSpecFromTierRun } from '../../harness/build-spec-from-tier';
 import { isHarnessDefaultForTier } from '../../harness/cutover-config';
 import { WorkflowCommandContext } from '../../utils/command-context';
+import { writeEndPending } from './pending-state';
 
 export type TierEndParams =
   | FeatureEndParams
@@ -143,6 +144,13 @@ export async function runTierEnd(
       profileDefaults: defaultProfileDefaultsResolver,
       routingContext: { tier: config.name, action: 'end', originalParams: params },
     });
+    if (kernelResult.outcome.reasonCode === 'pending_push_confirmation') {
+      await writeEndPending({
+        tier: config.name,
+        identifier,
+        cascade: kernelResult.outcome.cascade,
+      });
+    }
     const needsPlanFirst =
       !kernelResult.success ||
       kernelResult.outcome.reasonCode === 'pending_push_confirmation' ||

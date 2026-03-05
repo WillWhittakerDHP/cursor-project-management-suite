@@ -41,9 +41,13 @@ When the user prefers to **discuss the plan in chat** and then signal "ready" wi
 |---------------------|-----------------------------------------------------------|--------------------|
 | /accepted-proceed   | .cursor/commands/tiers/shared/accepted-proceed.ts         | acceptedProceed    |
 | /accepted-code      | .cursor/commands/tiers/shared/accepted-code.ts            | acceptedCode       |
+| /accepted-push      | .cursor/commands/tiers/shared/accepted-push.ts            | acceptedPush       |
+| /skip-push          | .cursor/commands/tiers/shared/skip-push.ts                | skipPush           |
 
-- **/accepted-proceed:** Runs the next pass for the pending session/phase/feature start (pass 2: plan deliverables, or pass 3: execute). Invoke `acceptedProceed()` and present `controlPlaneDecision.message`; handle outcome per reasonCode as for any tier start.
+- **/accepted-proceed:** Runs the next pass for the pending session/phase/feature start (execute or gate 2). Invoke `acceptedProceed()` and present `controlPlaneDecision.message`; handle outcome per reasonCode as for any tier start.
 - **/accepted-code:** Runs task start with execute for the pending task (Begin Coding). Invoke `acceptedCode()` and present the result.
+- **/accepted-push:** Runs git push for the pending tier end and returns cascade info. Invoke `acceptedPush()` when tier-end returns `pending_push_confirmation`.
+- **/skip-push:** Skips push, clears end-pending state, returns cascade info. Invoke `skipPush()` when tier-end returns `pending_push_confirmation` and user does not want to push.
 
 See `.cursor/commands/accepted-proceed.md` and `.cursor/commands/accepted-code.md` for invocation and behavior.
 
@@ -67,6 +71,7 @@ See `.cursor/commands/accepted-proceed.md` and `.cursor/commands/accepted-code.m
 
 - Resolve the composite file and export from the command-to-entry-point table. Invoke that export with the params you gathered (see "How to invoke" below).
 - Capture the return value.
+- **End commands** (feature-end, phase-end, session-end, task-end) run a multi-step pipeline that includes tier-quality audits and may take **several minutes**. Wait for the command to complete. Do not cancel, time out, or assume the command failed; use only the returned `result` (and `outcome` / `controlPlaneDecision`) to decide next steps.
 
 ### Handle result
 
@@ -88,23 +93,22 @@ Every start/end/reopen command returns a `controlPlaneDecision` object that tell
 | `nextInvoke` | On approval, re-invoke this command (tier, action, params with `{ mode: 'execute' }`). |
 | `cascadeCommand` | Exact command string to run on cascade confirmation. |
 
-**Options-passing (start re-invokes):** For start re-invokes, options MUST be passed as `params.options`; flat option keys (e.g. `mode`, `contextGatheringComplete` at params root) are invalid and ignored by composite invocation.
+**Options-passing (start re-invokes):** For start re-invokes, options MUST be passed as `params.options`; flat option keys (e.g. `mode` at params root) are invalid and ignored by composite invocation.
 
 **Critical rule:** `controlPlaneDecision.message` is the **user-facing content**. `result.output` is **agent context** (workflow steps, branch info, audit details) — read it for your own understanding, but present `controlPlaneDecision.message` to the user. Do not dump `result.output` verbatim to the user; it contains internal workflow steps they do not need to see.
 
-**AskQuestion = Cursor's question UI (clickable options).** When `controlPlaneDecision.questionKey` is set, you MUST use Cursor's **AskQuestion** feature so the user sees a prompt with **clickable option buttons**. Do NOT write the question and options as plain text in the chat — that does not count as AskQuestion and the user will not get the intended experience. The command output may include a "REQUIRED — Use AskQuestion" block; follow it. Present `controlPlaneDecision.message` as the body of the question and use the options specified for that `questionKey` in the per-reasonCode rules below.
+**AskQuestion = Cursor's question UI (clickable options).** When `controlPlaneDecision.questionKey` is set (and the decision is not command-gated — e.g. not context_gathering or pending_push_confirmation), you MUST use Cursor's **AskQuestion** feature so the user sees a prompt with **clickable option buttons**. Do NOT write the question and options as plain text in the chat. Present `controlPlaneDecision.message` as the body of the question and use the options specified for that `questionKey` in the per-reasonCode rules below.
 
 **Mode switching at transitions:** Each routing case below involves a mode transition. The agent MUST switch to the correct mode before performing the action: Plan mode for AskQuestion and CreatePlan; Agent mode for command execution and file writes. After the user answers an AskQuestion, switch back to Agent mode if the next step is to execute (run command, write files).
 
 Routing (use `outcome.reasonCode`):
 
-- If `outcome.reasonCode === 'plan_mode'`: see **Per-reasonCode behavioral rules → `plan_mode`** below.
 - If `outcome.reasonCode === 'context_gathering'`: see **Per-reasonCode behavioral rules → `context_gathering`** below.
 - If `outcome.reasonCode === 'planning_doc_incomplete'`: see **Per-reasonCode behavioral rules → `planning_doc_incomplete`** below. Proceeding is BLOCKED until the planning doc is filled.
 - If `outcome.reasonCode === 'guide_fill_pending'`: see **Per-reasonCode behavioral rules → `guide_fill_pending`** below. Step 2 — agent fills the guide, then run /accepted-proceed again.
 - If `outcome.reasonCode === 'guide_incomplete'`: see **Per-reasonCode behavioral rules → `guide_incomplete`** below. Proceeding is BLOCKED until the guide is filled.
 - If `outcome.reasonCode === 'audit_failed'`: see **Per-reasonCode behavioral rules → `audit_failed`** below. **STOP and fix** all warnings/errors per governance before re-running.
-- If `outcome.reasonCode === 'pending_push_confirmation'`: see **Per-reasonCode behavioral rules → `pending_push_confirmation`** below.
+- If `outcome.reasonCode === 'pending_push_confirmation'`: see **Per-reasonCode behavioral rules → `pending_push_confirmation`** below. Run **/accepted-push** or **/skip-push**; do not use AskQuestion for push.
 - If `outcome.reasonCode === 'verification_work_suggested'`: see **Per-reasonCode behavioral rules → `verification_work_suggested`** below.
 - If `outcome.reasonCode === 'uncommitted_changes_blocking'`: see **Per-reasonCode behavioral rules → `uncommitted_changes_blocking`** below.
 - **If `outcome.cascade` is present (start or end):** You MUST run **Cascade confirmation** first. Do not skip to `nextAction` or infer the next step (e.g. do not assume "session roll-up" when the cascade is to the next task). Cascade direction: `outcome.cascade.direction === 'across'` → next step is the **next tier at same level** (e.g. next task via `outcome.cascade.command`, typically `/task-start <nextTaskId>`); `'up'` → next step is **parent tier end** (e.g. `/session-end <sessionId>`). See **Per-reasonCode behavioral rules → Cascade confirmation** below.
@@ -183,17 +187,6 @@ The tier start audit (baseline quality) returned **warn** or **fail** (or runtim
 
 **Anti-pattern:** Do not ignore audit warnings or errors. Do not proceed to cascade or implementation until the audit is clean.
 
-### `plan_mode` (start commands, when `mode: 'plan'` is passed)
-
-Start commands **default to execute**; you only see this flow when the command was invoked with `options: { mode: 'plan' }` for a plan-only preview (or after context_gathering when the user chose "I'm satisfied"). The user is approving what we're about to build. `controlPlaneDecision.message` contains the **deliverables** — the concrete tasks, goals, files, and acceptance criteria the user needs to see. `result.output` contains agent context (branch hierarchy, workflow steps, audit data) — read it for your own understanding but do not show it verbatim.
-
-**Presentation rule:** For `plan_mode`, present **only** `controlPlaneDecision.message`. Do not show, quote, or summarize `result.output`. Do not add process framing ("If you approve, execute mode will...", "Planned task: ..."). The message is the full tier plan; show it as-is.
-
-1. **Switch to Plan mode** (Ask mode).
-2. **Present `controlPlaneDecision.message`** to the user — this is the deliverables summary (e.g. Session plan / Tasks in this session, Phase plan / Sessions in this phase, Feature plan / Phases, Task plan / Goal-Files-Approach). Show it as formatted text, not as a code block or raw JSON.
-3. **Chat-first (preferred):** For **session/phase/feature**: tell the user "When this plan looks good, run **/accepted-proceed** to execute (branch, docs, audit, cascade)." When they run it, invoke `acceptedProceed()` and handle the result. For **task** (task-start design approval): tell the user "When ready to begin coding, run **/accepted-code**." When they run it, invoke `acceptedCode()` from `.cursor/commands/tiers/shared/accepted-code.ts` and handle the result. Do not use AskQuestion for approval; the user signals by running the command.
-4. **AskQuestion flow:** If you use AskQuestion, use "Approve this plan and execute?" (or for task "I approve this coding design and want to begin implementation") and the usual options. On "Yes"/approve: switch to Agent mode, re-invoke using `controlPlaneDecision.nextInvoke` (params include `options: { mode: 'execute' }`). Call the composite directly so execute mode is used.
-
 ### `context_gathering` (start commands, all tiers)
 
 **Two-step flow (Option A):** **Step 1 — Light collection:** In plan mode, context_gathering runs first. The command creates a **short planning doc** (contract + continuity summary + Goal/Files/Approach/Checkpoint slots + How we build the tierDown + Reference links). You fill the doc (light collection), then the user runs **/accepted-proceed**. **Gate 1:** The planning doc must be filled; /accepted-proceed blocks with `planning_doc_incomplete` until it is. For **phase and session**, after the first /accepted-proceed the harness runs Part A (branch, sync plan → guide, ensure tierDown) and may return **`guide_fill_pending`**. **Step 2 — Actual planning:** You then fill the **guide** (path in the outcome) with concrete Goal, Files, Approach, and Checkpoint for each session or task. The user runs **/accepted-proceed** again. **Gate 2:** The guide must be filled; /accepted-proceed blocks with `guide_incomplete` until it is. Then execute continues (read context, audit, cascade). Feature and task use a single gate (planning doc only).
@@ -208,9 +201,8 @@ Start commands **default to execute**; you only see this flow when the command w
 2. **Present `controlPlaneDecision.message`** — this contains the planning doc path and the **Insight / Proposal / Decision** blocks (what the docs say, proposed path, decision needed, and explicit options).
 3. **Open the planning doc in the editor** so the user can watch it being built.
 4. **MUST fill the planning doc:** Read the Reference section in the doc (and linked governance/playbook files as needed), then replace ## Goal, ## Files, ## Approach, ## Checkpoint, and ## How we build the tierDown with a concrete draft. This step is **REQUIRED**. Do not invite the user to run **/accepted-proceed** until the doc is filled.
-5. **Chat-first (preferred):** Discuss the plan **in chat** with the user — no AskQuestion required. Use the insight/proposal/decision blocks as conversation starters. After each answer, **update the planning doc IN-PLACE** (refine Goal/Files/Approach/Checkpoint). When the user is satisfied and the doc is filled, tell them: "When you're ready, run **/accepted-proceed** to continue." When they run it, invoke `acceptedProceed()` from `.cursor/commands/tiers/shared/accepted-proceed.ts`. If the result is `start_ok`, handle cascade per playbook. If the result is `planning_doc_incomplete`, present the message — the doc was not filled; you MUST fill it and the user must run **/accepted-proceed** again. If the result is **`guide_fill_pending`** (phase/session), present the message and **fill the guide** (path in the outcome) with concrete Goal, Files, Approach, and Checkpoint for each session/task; then tell the user to run **/accepted-proceed** again (Gate 2).
-6. **AskQuestion flow:** If you use AskQuestion, include the decision options from the message plus **"I'm satisfied with our plan and ready to begin"**. On "I'm satisfied": switch to Agent mode; ensure the planning doc is filled; re-invoke using `controlPlaneDecision.nextInvoke` (params include `options: { mode: 'execute' }`).
-7. **Enumerate tierDowns (session/phase) before inviting /accepted-proceed:** After the planning conversation and before telling the user to run **/accepted-proceed**, make a pass over the **session guide** (for session) or **phase guide** (for phase) so that all intended tierDown units are listed with the headings the harness uses for cascade. For **sessions:** the session guide must contain a line matching `Task X.Y.Z.N:` (e.g. `#### Task 6.4.4.1:`, `#### Task 6.4.4.2:`) for each task in that session; task-end reads this to decide whether to cascade across to the next task or up to session-end. For **phases:** the phase guide must list each session in the phase (same pattern as used by session-end for cascade across). If the guide lists only one task, task-end will not offer cascade to a second task. Add or update task/session blocks (Goal, Files, Approach, Checkpoint) so the list matches the agreed plan. **Sync the same enumerated list into the planning doc for consistency** — this is required, not optional. Use **bullet format** in the planning doc (one line per tierDown unit).
+5. Discuss the plan **in chat** with the user. Use the insight/proposal/decision blocks as conversation starters. After each answer, **update the planning doc IN-PLACE** (refine Goal/Files/Approach/Checkpoint). When the user is satisfied and the doc is filled, tell them: "When you're ready, run **/accepted-proceed** to continue." When they run it, invoke `acceptedProceed()` from `.cursor/commands/tiers/shared/accepted-proceed.ts`. If the result is `start_ok`, handle cascade per playbook. If the result is `planning_doc_incomplete`, present the message — the doc was not filled; you MUST fill it and the user must run **/accepted-proceed** again. If the result is **`guide_fill_pending`** (phase/session), present the message and **fill the guide** (path in the outcome) with concrete Goal, Files, Approach, and Checkpoint for each session/task; then tell the user to run **/accepted-proceed** again (Gate 2).
+6. **Enumerate tierDowns (session/phase) before inviting /accepted-proceed:** After the planning conversation and before telling the user to run **/accepted-proceed**, make a pass over the **session guide** (for session) or **phase guide** (for phase) so that all intended tierDown units are listed with the headings the harness uses for cascade. For **sessions:** the session guide must contain a line matching `Task X.Y.Z.N:` (e.g. `#### Task 6.4.4.1:`, `#### Task 6.4.4.2:`) for each task in that session; task-end reads this to decide whether to cascade across to the next task or up to session-end. For **phases:** the phase guide must list each session in the phase (same pattern as used by session-end for cascade across). If the guide lists only one task, task-end will not offer cascade to a second task. Add or update task/session blocks (Goal, Files, Approach, Checkpoint) so the list matches the agreed plan. **Sync the same enumerated list into the planning doc for consistency** — this is required, not optional. Use **bullet format** in the planning doc (one line per tierDown unit).
 
 **Anti-pattern:** Do not skip filling the planning doc. Do not invite **/accepted-proceed** until ## Goal, ## Files, ## Approach, ## Checkpoint, and ## How we build the tierDown are filled with concrete content. The command will block until the doc is filled. Do not ask generic questions when the message already provides doc-grounded insight and options. The doc IS the artifact — the user watches it being built.
 
@@ -241,10 +233,7 @@ Proceeding is **BLOCKED**. The user ran **/accepted-proceed** after `guide_fill_
 
 ### `pending_push_confirmation` (end commands)
 
-1. Switch to Plan mode. Use **AskQuestion**: "All checks passed. Proceed with push to remote?" Options: "Yes — push to remote" / "No — skip push".
-2. On "Yes": switch to Agent mode, run `git push`. Then check `outcome.cascade`.
-3. On "No": skip push. Then check `outcome.cascade`.
-4. If `outcome.cascade` is present: run **cascade confirmation** (see below).
+End complete; push is pending. **Do not use AskQuestion.** Direct the user to run **/accepted-push** to push to remote, or **/skip-push** to skip. Invoke `acceptedPush()` or `skipPush()` from `.cursor/commands/tiers/shared/accepted-push.ts` or `skip-push.ts`. The command clears end-pending state and returns cascade info (if any). If cascade is present, handle per **Cascade confirmation** below.
 
 ### `verification_work_suggested` (end commands)
 
@@ -323,6 +312,8 @@ When the procedure says "call implementation", the agent:
 3. Invocation method: e.g. `npx tsx -e "import('<path-to-composite>').then(m => m.<exportedFn>({ ... })).then(r => console.log(JSON.stringify(r)))"` or the project's standard way to run a TS export and capture the return value. Path and export name come from the table.
 4. Captures the return value and proceeds to "Handle result" per the procedure.
 
+When invoking a **tier-end** command (e.g. `/phase-end 6.5`), the pipeline runs verification, git steps, and tier-quality audits. **Wait for the command to finish** and capture the return value before handling the result.
+
 ### Canonical inline examples (no temp scripts)
 
 - Feature start: `npx tsx -e "import('./.cursor/commands/tiers/feature/composite/feature.ts').then(m => m.featureStart('6')).then(r => console.log(r))"`
@@ -332,7 +323,7 @@ When the procedure says "call implementation", the agent:
 - Task start: `npx tsx -e "import('./.cursor/commands/tiers/task/composite/task.ts').then(m => m.taskStart('6.2.1.4')).then(r => console.log(JSON.stringify(r)))"`
 - Task start (plan-only): `npx tsx -e "import('./.cursor/commands/tiers/task/composite/task.ts').then(m => m.taskStart('6.2.1.4', { mode: 'plan' })).then(r => console.log(JSON.stringify(r)))"`
 
-**Start commands default to execute.** Invoking without options (e.g. `sessionStart('6.2.1')`) runs the full pipeline (branch, docs, audit, cascade). Pass **`{ mode: 'plan' }`** only when you want a plan-only preview and approval step. **Task-start:** options as second argument when no featureId: `taskStart(taskId, { mode: 'plan' })`.
+**Start commands always run in plan mode.** Invoking a start command (e.g. `sessionStart('6.2.1')`) creates the planning doc and exits with `context_gathering`. Fill the doc, then the user runs **/accepted-proceed** (or **/accepted-code** for task) to execute. Execute (branch, docs, audit, cascade) runs only via accepted commands.
 
 ---
 
@@ -353,7 +344,7 @@ All mode logic lives in one file: `.cursor/commands/utils/command-execution-mode
 
 | Generic dispatcher | Gate mode | How gate is delivered |
 |---|---|---|
-| `tier-start.ts` → `runTierStart` | Derived from `options.mode` (default execute) | `modeGate` field on result object |
+| `tier-start.ts` → `runTierStart` | Derived from `options.mode` (default plan) | `modeGate` field on result object |
 | `tier-end.ts` → `runTierEnd` | Derived from `params.mode` (default execute) | `modeGate` field on result object |
 | `tier-plan.ts` → `runTierPlan` | Always `plan` | Prepended to result string |
 | `tier-change.ts` → `runTierChange` | Always `plan` | Prepended to `output` field in result |
@@ -372,7 +363,7 @@ All mode logic lives in one file: `.cursor/commands/utils/command-execution-mode
 
 **Shared workflow only.** All tier **start** commands use a single orchestrator and reusable step modules. The workflow is defined in:
 
-- **Orchestrator:** `.cursor/commands/harness/run-start-steps.ts` — `runTierStartWorkflow(ctx, hooks)` runs the pipeline. **In plan mode**, the pipeline runs **context_gathering** (validate → read context light → context gathering: write short planning doc, Q&A in chat); then on re-invoke with **execute**: branch → ensure tierDown docs → read context → sync guide from planning → gather → governance → extras → start audit → tier plan → fill direct tierDown → trailing output (if hook provided) → cascade. There is no intermediate plan_mode pass; /accepted-proceed goes straight to execute. **Same sequence for feature, phase, session, and task** — no tier is skipped or left "optional".
+- **Orchestrator:** `.cursor/commands/harness/run-start-steps.ts` — `runTierStartWorkflow(ctx, hooks)` runs the pipeline. **Start always runs in plan mode**: context_gathering (validate → read context light → context gathering: write short planning doc) runs and exits. Execute runs only when the user runs **/accepted-proceed** or **/accepted-code**: branch → ensure tierDown docs → read context → sync guide from planning → gather → governance → extras → start audit → tier plan → fill direct tierDown → trailing output (if hook provided) → cascade. **Same sequence for feature, phase, session, and task** — no tier is skipped or left "optional".
 - **Step modules:** `.cursor/commands/tiers/shared/tier-start-steps.ts` — Reusable steps (e.g. `stepValidateStart`, `stepEnsureStartBranch`, `stepReadStartContext`, `stepStartAudit`, `stepRunTierPlan`, `stepBuildStartCascade`) use shared primitives (`formatBranchHierarchy`, `ensureTierBranch`, `runTierPlan`, `buildCascadeDown`, `runStartAuditForTier`).
 - **Start audit entry point:** `.cursor/commands/audit/run-start-audit-for-tier.ts` — `runStartAuditForTier({ tier, identifier, featureName })` dispatches to feature/phase/session start audits; task has no start audit.
 
@@ -400,11 +391,10 @@ All mode logic lives in one file: `.cursor/commands/utils/command-execution-mode
 
 | Reason code | Re-invoke params contract | Expected next |
 |-------------|---------------------------|----------------|
-| `context_gathering` | `params.options = { mode: 'execute' }` | execute (`start_ok` or `planning_doc_incomplete`) |
-| `plan_mode` | `params.options = { mode: 'execute' }` | `start_ok` (when tier-start invoked with `mode: 'plan'` directly) |
+| `context_gathering` | User runs /accepted-proceed or /accepted-code (no nextInvoke in decision) | execute (`start_ok` or `planning_doc_incomplete`) |
 | `uncommitted_changes_blocking` (start) | preserve existing `params.options` unchanged | same pass retried |
 
-**Options-passing verification matrix (all tiers):** For each of `featureStart`, `phaseStart`, `sessionStart`, `taskStart` verify: (1) `context_gathering` output: `nextInvoke.params.options` equals `{ mode: 'execute' }`; identifier fields preserved. (2) `start_ok`: no further start re-invoke required. (3) Negative: `stepContextGatheringPlanMode` returns null for explicit execute invocation without context flags.
+**Options-passing verification matrix (all tiers):** For each of `featureStart`, `phaseStart`, `sessionStart`, `taskStart` verify: (1) Start returns `context_gathering`; user runs /accepted-proceed (or /accepted-code for task). (2) `start_ok`: no further start re-invoke required. (3) Execute path: `stepContextGathering` returns null when `mode: 'execute'` (accepted commands pass execute).
 
 ---
 
@@ -415,6 +405,8 @@ All mode logic lives in one file: `.cursor/commands/utils/command-execution-mode
 - **Orchestrator:** `.cursor/commands/harness/run-end-steps.ts` — `runTierEndWorkflow(ctx, hooks)` runs the pipeline: plan exit → resolve runTests → preWork → test goal validation → runTests → midWork → comment cleanup → readme cleanup → git → end audit → clear scope → build cascade.
 - **Step modules:** `.cursor/commands/tiers/shared/tier-end-steps.ts` — Reusable steps (e.g. `stepPlanModeExit`, `stepResolveRunTests`, `stepTierPreWork`, `stepTestGoalValidation`, `stepRunTests`, `stepTierMidWork`, `stepCommentCleanup`, `stepReadmeCleanup`, `stepTierGit`, `stepEndAudit`, `stepClearScope`, `stepBuildEndCascade`) use shared primitives and tier-supplied hooks.
 - **End audit entry point:** `.cursor/commands/audit/run-end-audit-for-tier.ts` — `runEndAuditForTier({ tier, identifier, params, featureName })` dispatches to `auditFeature`, `auditCodeQuality` (phase/session), or `auditTask`.
+
+**Agents must wait for the full pipeline (including end audit) to complete;** do not treat a long run as a failure.
 
 **Impls are tier adapters only.** Each `*-end-impl.ts` (feature, phase, session, task) must:
 
@@ -432,7 +424,7 @@ Session-tier type governance is enforced via cursor rules, a reference playbook,
 
 - **Cursor rules (always-applied):** `.cursor/rules/type-governance.mdc` (inventory, Ref/ComputedRef boundaries, InjectionKey, null/undefined, type placement; session-tier type-escape and type-constant-inventory).
 - **Reference playbook:** `.project-manager/TYPE_AUTHORING_PLAYBOOK.md` — decision trees (create vs reuse vs inline), Vue reactivity boundary table, null/undefined policy, assertion policy, placement, Definition of Done, common mistakes, and audit rule mapping.
-- **Baseline comparison:** Type governance deltas are tracked through the existing session baseline. Session-start stores a `type-constant-inventory` score (derived from `client/.audit-reports/type-constant-inventory-audit.json`); session-end includes the same category in end scores. The audit report and comparison output show type-constant-inventory alongside other session categories (e.g. tier-quality, docs, vue-architecture).
+- **Baseline comparison:** Type governance deltas are tracked through the existing session baseline. Session-start stores a `type-constant-inventory` score (derived from `frontend-root/.audit-reports/type-constant-inventory-audit.json`); session-end includes the same category in end scores. The audit report and comparison output show type-constant-inventory alongside other session categories (e.g. tier-quality, docs, vue-architecture).
 - **Session-end checklist:** Immediately before the session end audit, the workflow emits a soft type-governance self-check (decision tree, no new escape hatches, Ref/ComputedRef boundaries). Enforcement remains automated via type-escape and type-constant-inventory audits in `audit:tier-session`.
 
 When creating or updating session guides (e.g. under `.project-manager/features/.../sessions/*-guide.md`), agents should follow the type-governance rule and the playbook for any new or changed types referenced in the session.
@@ -494,7 +486,7 @@ When creating or updating session guides or implementing session work, agents sh
 Start commands return **TierStartResult**: `{ success, output, outcome, modeGate? }`. End commands return a result with **outcome**: `{ status, reasonCode, nextAction, cascade? }`. Both use the same outcome shape for routing:
 
 - `status`: e.g. `'completed' | 'blocked_needs_input' | 'blocked_fix_required' | 'failed'` (or for start: `'plan'`)
-- `reasonCode`: short code (e.g. `'pending_push_confirmation'`, `'plan_mode'`)
+- `reasonCode`: short code (e.g. `'pending_push_confirmation'`, `'context_gathering'`)
 - `nextAction`: single string the agent shows or follows next
 - `cascade?`: when present, **CascadeInfo** `{ direction, tier, identifier, command }` — the command is derived generically from `tierUp`/`tierDown` (no tier-specific names in the contract)
 
@@ -662,7 +654,7 @@ Reopened tiers are **startable** (same as In Progress). When the new work is don
 - **Feature:** The start/end API uses **featureId** (string). Resolve to feature name via `resolveFeatureId(featureId)` (reads PROJECT_PLAN.md; `featureId` is the `#` column value, e.g. `"3"`). Then call `featureStart(featureId, options)`. No user-supplied title.
   - **Numeric identifier (e.g. `3`):** Pass as featureId; `resolveFeatureId("3")` returns the feature directory name from PROJECT_PLAN. Do not use directory listing or index; PROJECT_PLAN is the only source for resolution.
   - **Identifier omitted:** If `.project-manager/.tier-scope` has `feature.id` set, use it as the feature name for context; for the API, a numeric featureId is required (from PROJECT_PLAN `#` column). Otherwise treat as error (do not infer from directories).
-- **Task:** Title/description from session guide task list or handoff; next task from session guide order. task-start does not take a description parameter; task context is loaded from session guide/handoff. The session guide must list each task with a heading matching `Task X.Y.Z.N:` (e.g. `#### Task 6.4.4.2:`) so task-end can cascade across; see "Enumerate tierDowns" in the context_gathering / plan_mode flow.
+- **Task:** Title/description from session guide task list or handoff; next task from session guide order. task-start does not take a description parameter; task context is loaded from session guide/handoff. The session guide must list each task with a heading matching `Task X.Y.Z.N:` (e.g. `#### Task 6.4.4.2:`) so task-end can cascade across; see "Enumerate tierDowns" in the context_gathering flow.
 
 **Rule for context step:** Derive [title/description/next] from [doc paths]; do not ask the user.
 

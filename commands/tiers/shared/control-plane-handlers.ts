@@ -9,7 +9,6 @@ import type {
   ControlPlaneOutcome,
 } from './control-plane-types';
 import { QUESTION_KEYS } from './control-plane-types';
-import { buildStartReinvokeParams } from './control-plane-reinvoke';
 
 function baseCascadeDecision(outcome: ControlPlaneOutcome, _requiredMode: 'plan' | 'agent'): ControlPlaneDecision {
   if (outcome.cascade != null) {
@@ -28,27 +27,6 @@ function baseCascadeDecision(outcome: ControlPlaneOutcome, _requiredMode: 'plan'
   };
 }
 
-/** plan_mode: show deliverables (or fallback to nextAction), AskQuestion approve/revise; nextInvoke = same command with execute. Task uses explicit "Begin Coding" wording. */
-export function handlePlanMode(outcome: ControlPlaneOutcome, ctx: ControlPlaneContext): ControlPlaneDecision {
-  const baseParams =
-    typeof ctx.originalParams === 'object' && ctx.originalParams !== null
-      ? (ctx.originalParams as Record<string, unknown>)
-      : {};
-  const questionKey =
-    ctx.tier === 'task' ? QUESTION_KEYS.APPROVE_EXECUTE_TASK : QUESTION_KEYS.APPROVE_EXECUTE;
-  return {
-    stop: true,
-    requiredMode: 'plan',
-    message: outcome.deliverables ?? outcome.nextAction,
-    questionKey,
-    nextInvoke: {
-      tier: ctx.tier,
-      action: ctx.action,
-      params: buildStartReinvokeParams(baseParams, { mode: 'execute' }),
-    },
-  };
-}
-
 /** planning_doc_incomplete: BLOCKED until agent fills the planning doc. Show message; no proceed until doc is filled. */
 export function handlePlanningDocIncomplete(outcome: ControlPlaneOutcome): ControlPlaneDecision {
   return {
@@ -58,33 +36,25 @@ export function handlePlanningDocIncomplete(outcome: ControlPlaneOutcome): Contr
   };
 }
 
-/** context_gathering: show questions + planning doc path; nextInvoke = same command with mode execute (skip plan_mode intermediate). */
-export function handleContextGathering(outcome: ControlPlaneOutcome, ctx: ControlPlaneContext): ControlPlaneDecision {
-  const baseParams =
-    typeof ctx.originalParams === 'object' && ctx.originalParams !== null
-      ? (ctx.originalParams as Record<string, unknown>)
-      : {};
+/** context_gathering: show planning doc path and deliverables. Agent fills doc; user runs /accepted-proceed (feature/phase/session) or /accepted-code (task). */
+export function handleContextGathering(outcome: ControlPlaneOutcome, _ctx: ControlPlaneContext): ControlPlaneDecision {
   return {
     stop: true,
     requiredMode: 'plan',
     message: outcome.deliverables ?? outcome.nextAction,
-    questionKey: QUESTION_KEYS.CONTEXT_GATHERING,
-    nextInvoke: {
-      tier: ctx.tier,
-      action: ctx.action,
-      params: buildStartReinvokeParams(baseParams, { mode: 'execute' }),
-    },
   };
 }
 
-/** pending_push_confirmation: AskQuestion push/skip; then cascade if present. */
+/** pending_push_confirmation: end complete; user runs /accepted-push to push or /skip-push to skip. */
 export function handlePendingPushConfirmation(outcome: ControlPlaneOutcome): ControlPlaneDecision {
+  const cascadeHint =
+    outcome.cascade?.command != null
+      ? ` Then run **${outcome.cascade.command}** to continue.`
+      : '';
   return {
     stop: true,
     requiredMode: 'plan',
-    message: outcome.nextAction,
-    questionKey: QUESTION_KEYS.PUSH_CONFIRMATION,
-    cascadeCommand: outcome.cascade?.command,
+    message: `${outcome.nextAction ?? 'End complete.'} Run **/accepted-push** to push to remote, or **/skip-push** to skip.${cascadeHint}`,
   };
 }
 

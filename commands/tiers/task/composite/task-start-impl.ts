@@ -25,6 +25,8 @@ import type {
 import { runTierStartWorkflow } from '../../../harness/run-start-steps';
 import type { RunRecorder, RunTraceHandle } from '../../../harness/contracts';
 import { getInventoryMatchesForFiles } from '../../../audit/governance-context';
+import { getPlanningDocPathForTier, parsePlanningDocSections } from '../../shared/tier-start-steps';
+import { readProjectFile } from '../../../utils/utils';
 
 export type ShadowContext = { recorder: RunRecorder; handle: RunTraceHandle };
 
@@ -367,11 +369,31 @@ export async function taskStartImpl(
     },
 
     async getTrailingOutput(): Promise<string> {
-      const taskSectionContent = ctx.readResult?.guide ?? '';
-      const goal = extractField('Goal', taskSectionContent);
-      const files = extractField('Files', taskSectionContent);
-      const approach = extractField('Approach', taskSectionContent);
-      const checkpoint = extractField('Checkpoint', taskSectionContent);
+      const basePath = context.paths.getBasePath();
+      const planningDocPath = getPlanningDocPathForTier('task', taskId, basePath);
+      let goal = '';
+      let files = '';
+      let approach = '';
+      let checkpoint = '';
+      try {
+        const content = await readProjectFile(planningDocPath);
+        const parsed = parsePlanningDocSections(content);
+        if (parsed) {
+          goal = parsed.goal?.trim() ?? '';
+          files = parsed.files?.trim() ?? '';
+          approach = parsed.approach?.trim() ?? '';
+          checkpoint = parsed.checkpoint?.trim() ?? '';
+        }
+      } catch {
+        // planning doc missing or unreadable
+      }
+      if (!goal && !files && !approach && !checkpoint) {
+        const taskSectionContent = ctx.readResult?.guide ?? '';
+        goal = extractField('Goal', taskSectionContent);
+        files = extractField('Files', taskSectionContent);
+        approach = extractField('Approach', taskSectionContent);
+        checkpoint = extractField('Checkpoint', taskSectionContent);
+      }
       return [
         '## Implementation Orders',
         '',

@@ -6,16 +6,9 @@
 import type { ControlPlaneDecision } from './control-plane-types';
 import { QUESTION_KEYS } from './control-plane-types';
 
-/** Option labels for each questionKey (used in the instruction block). */
+/** Option labels for each questionKey (used in the instruction block). Command-gated flows (context_gathering, accepted-proceed, accepted-code, accepted-push) do not use AskQuestion. */
 const QUESTION_KEY_OPTIONS: Record<string, string> = {
-  [QUESTION_KEYS.APPROVE_EXECUTE]:
-    'Prefer: tell user to run /accepted-proceed when ready. If using AskQuestion: Yes — execute | No — revise',
-  [QUESTION_KEYS.APPROVE_EXECUTE_TASK]:
-    'Prefer: tell user to run /accepted-code when ready to begin coding. If using AskQuestion: I approve this coding design and want to begin implementation | No — revise design',
-  [QUESTION_KEYS.CONTEXT_GATHERING]:
-    'Prefer chat-first: discuss in chat and tell the user to run /accepted-proceed when ready. If using AskQuestion, use the decision options from the message (Insight / Proposal / Decision blocks) and include "I\'m satisfied with our plan and ready to begin" as a clickable option.',
   [QUESTION_KEYS.CASCADE]: 'Yes — run cascade command | No — stop here',
-  [QUESTION_KEYS.PUSH_CONFIRMATION]: 'Yes — push to remote | No — skip push',
   [QUESTION_KEYS.VERIFICATION_OPTIONS]: 'Add follow-up task/session/phase | I\'ll do it manually; continue tier-end | Skip; continue tier-end',
   [QUESTION_KEYS.FAILURE_OPTIONS]: 'Retry the command | Investigate the issue | Skip and continue manually',
   [QUESTION_KEYS.REOPEN_OPTIONS]: 'Yes — I have a plan file | No — plan from scratch | No — just a quick fix',

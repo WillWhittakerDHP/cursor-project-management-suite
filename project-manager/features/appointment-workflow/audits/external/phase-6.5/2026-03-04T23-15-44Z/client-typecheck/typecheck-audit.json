@@ -1,0 +1,155 @@
+{
+  "generatedAt": "2026-03-04T23:15:36.056Z",
+  "scope": {
+    "client": {
+      "command": "vue-tsc -b --pretty false",
+      "cwd": "client"
+    },
+    "server": {
+      "command": "tsc --noEmit --pretty false",
+      "cwd": "server"
+    }
+  },
+  "exitCode": 1,
+  "command": "vue-tsc -b --pretty false && tsc --noEmit --pretty false",
+  "exceptionSummary": {
+    "totalAllowed": 0,
+    "totalRequiresReview": 4,
+    "bySource": {
+      "inline": 0,
+      "pattern": 0,
+      "specific": 0
+    }
+  },
+  "errors": [
+    {
+      "file": "src/views/admin/tabs/components/OverlapConstraintsPanel.vue",
+      "line": 105,
+      "col": 18,
+      "code": "TS2322",
+      "message": "Type 'ComputedRef<string>' is not assignable to type 'string'.",
+      "raw": "src/views/admin/tabs/components/OverlapConstraintsPanel.vue(105,18): error TS2322: Type 'ComputedRef<string>' is not assignable to type 'string'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/OverlapConstraintsPanel.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/OverlapConstraintsPanel.vue",
+      "line": 109,
+      "col": 18,
+      "code": "TS2322",
+      "message": "Type 'ComputedRef<string>' is not assignable to type 'string'.",
+      "raw": "src/views/admin/tabs/components/OverlapConstraintsPanel.vue(109,18): error TS2322: Type 'ComputedRef<string>' is not assignable to type 'string'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/OverlapConstraintsPanel.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/OverlapConstraintsPanel.vue",
+      "line": 184,
+      "col": 18,
+      "code": "TS2322",
+      "message": "Type 'ComputedRef<string>' is not assignable to type 'string'.",
+      "raw": "src/views/admin/tabs/components/OverlapConstraintsPanel.vue(184,18): error TS2322: Type 'ComputedRef<string>' is not assignable to type 'string'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/OverlapConstraintsPanel.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/OverlapConstraintsPanel.vue",
+      "line": 188,
+      "col": 18,
+      "code": "TS2322",
+      "message": "Type 'ComputedRef<string>' is not assignable to type 'string'.",
+      "raw": "src/views/admin/tabs/components/OverlapConstraintsPanel.vue(188,18): error TS2322: Type 'ComputedRef<string>' is not assignable to type 'string'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/OverlapConstraintsPanel.vue"
+    }
+  ],
+  "allowedErrors": [],
+  "pools": [
+    {
+      "poolId": "TS2322-ts2322-assign-computedref-string",
+      "groupKey": "TS2322::assign:ComputedRef<...>=>string",
+      "errorCount": 4,
+      "fileCount": 1,
+      "severityScore": 40,
+      "blastRadiusScore": 2,
+      "repetitionScore": 4,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 46,
+      "sample": [
+        {
+          "repoPath": "src/views/admin/tabs/components/OverlapConstraintsPanel.vue",
+          "line": 105,
+          "col": 18,
+          "code": "TS2322",
+          "message": "Type 'ComputedRef<string>' is not assignable to type 'string'."
+        },
+        {
+          "repoPath": "src/views/admin/tabs/components/OverlapConstraintsPanel.vue",
+          "line": 109,
+          "col": 18,
+          "code": "TS2322",
+          "message": "Type 'ComputedRef<string>' is not assignable to type 'string'."
+        },
+        {
+          "repoPath": "src/views/admin/tabs/components/OverlapConstraintsPanel.vue",
+          "line": 184,
+          "col": 18,
+          "code": "TS2322",
+          "message": "Type 'ComputedRef<string>' is not assignable to type 'string'."
+        }
+      ],
+      "priority": "P0"
+    }
+  ],
+  "files": [
+    {
+      "repoPath": "src/views/admin/tabs/components/OverlapConstraintsPanel.vue",
+      "errorCount": 4,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "errors": [
+        {
+          "file": "src/views/admin/tabs/components/OverlapConstraintsPanel.vue",
+          "line": 105,
+          "col": 18,
+          "code": "TS2322",
+          "message": "Type 'ComputedRef<string>' is not assignable to type 'string'.",
+          "raw": "src/views/admin/tabs/components/OverlapConstraintsPanel.vue(105,18): error TS2322: Type 'ComputedRef<string>' is not assignable to type 'string'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/OverlapConstraintsPanel.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/OverlapConstraintsPanel.vue",
+          "line": 109,
+          "col": 18,
+          "code": "TS2322",
+          "message": "Type 'ComputedRef<string>' is not assignable to type 'string'.",
+          "raw": "src/views/admin/tabs/components/OverlapConstraintsPanel.vue(109,18): error TS2322: Type 'ComputedRef<string>' is not assignable to type 'string'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/OverlapConstraintsPanel.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/OverlapConstraintsPanel.vue",
+          "line": 184,
+          "col": 18,
+          "code": "TS2322",
+          "message": "Type 'ComputedRef<string>' is not assignable to type 'string'.",
+          "raw": "src/views/admin/tabs/components/OverlapConstraintsPanel.vue(184,18): error TS2322: Type 'ComputedRef<string>' is not assignable to type 'string'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/OverlapConstraintsPanel.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/OverlapConstraintsPanel.vue",
+          "line": 188,
+          "col": 18,
+          "code": "TS2322",
+          "message": "Type 'ComputedRef<string>' is not assignable to type 'string'.",
+          "raw": "src/views/admin/tabs/components/OverlapConstraintsPanel.vue(188,18): error TS2322: Type 'ComputedRef<string>' is not assignable to type 'string'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/OverlapConstraintsPanel.vue"
+        }
+      ]
+    }
+  ]
+}

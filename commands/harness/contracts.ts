@@ -59,7 +59,6 @@ export interface WorkflowSpec {
   constraints: ConstraintSet;
   userChoices?: {
     continuePastVerification?: boolean;
-    contextGatheringComplete?: boolean;
     pushConfirmed?: boolean;
     cascadeConfirmed?: boolean;
   };
@@ -119,7 +118,6 @@ export interface TierOutcome {
 // --- Reason-code taxonomy (charter §9) ---
 export type FlowReasonCode =
   | 'context_gathering'
-  | 'plan_mode'
   | 'planning_doc_incomplete'
   | 'start_ok'
   | 'end_ok'

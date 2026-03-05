@@ -44,8 +44,8 @@ import { join } from 'path';
 import { execSync } from 'child_process';
 
 export const PROJECT_ROOT = process.cwd();
-/** Frontend app root directory (Vue). Use for path construction; avoid hardcoding the frontend path. */
-export const FRONTEND_ROOT = 'client';
+/** Frontend app root directory (Vue). Use for path construction; must match the actual directory name (frontend-root). */
+export const FRONTEND_ROOT = 'frontend-root';
 
 /**
  * Read a file from the project root
