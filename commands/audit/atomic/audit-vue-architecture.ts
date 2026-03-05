@@ -20,10 +20,11 @@ import { readFile } from 'fs/promises';
 import { join, basename } from 'path';
 import { existsSync } from 'fs';
 import { readdir } from 'fs/promises';
-import { PROJECT_ROOT, FRONTEND_ROOT } from '../../utils/utils';
 import { AuditParams } from '../types';
 import { AuditResult, AuditFinding } from '../types';
+import { FRONTEND_ROOT } from '../../utils/utils';
 
+const PROJECT_ROOT = process.cwd();
 const FRONTEND_SRC_SEGMENTS: [string, string] = [FRONTEND_ROOT, 'src'];
 
 type _FileScanResult = {

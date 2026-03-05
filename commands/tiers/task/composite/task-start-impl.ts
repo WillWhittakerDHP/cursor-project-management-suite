@@ -397,6 +397,8 @@ export async function taskStartImpl(
       return [
         '## Implementation Orders',
         '',
+        '**Implement the task now** (write code, edit files per Goal/Files/Approach above). When implementation is complete, run the End command below. Do not run /task-end until code changes are done.',
+        '',
         `**Task:** ${taskId}`,
         `**Goal:** ${goal || '(see task context above)'}`,
         `**Files:**`,
@@ -409,7 +411,7 @@ export async function taskStartImpl(
     },
 
     getCompactPrompt() {
-      return `Task ${taskId} ready. End with /task-end ${taskId}.`;
+      return `Implement the task per Implementation Orders above (Goal, Files, Approach, Checkpoint). When implementation is complete, run /task-end ${taskId}. Do not run task-end until code is written.`;
     },
 
     runStartAudit: true,

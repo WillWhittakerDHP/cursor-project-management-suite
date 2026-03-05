@@ -277,12 +277,12 @@ When `outcome.cascade` is present:
 
 Task-start creates a **task planning doc** (e.g. `.project-manager/features/<feature>/sessions/task-6.4.4.1-planning.md`) during context gathering, with the same short-prompt shape as other tiers (Contract, Where we left off, Goal, Files, Approach, Checkpoint, Reference links). That doc is the **single source of truth** for the task plan. The session guide task block may be updated from it; do not overwrite a filled task block with placeholders.
 
-After task-start succeeds, the output contains **Implementation Orders** and the end command. The agent:
+After task-start succeeds (including after **/accepted-code**), the output contains **Implementation Orders** and the end command. The agent **must implement the task (write code, edit files) before running /task-end**. Do not run /task-end until the implementation is done; "Task ready" / "End with /task-end" means "ready to implement; when done, run task-end," not "run task-end now."
 
 1. Uses the **task planning doc** as the source of truth for Goal, Files, Approach, and Checkpoint (same expectation as session-start and its session planning doc).
-2. Begins implementing the task (write code, modify files) according to that plan.
+2. **Implements the task now** (write code, modify files) according to that plan.
 3. Works through the implementation orders.
-4. When complete, runs the `/task-end` command shown in the output.
+4. **Only when implementation is complete**, runs the `/task-end` command shown in the output.
 
 ### Session-start success (after execute mode)
 

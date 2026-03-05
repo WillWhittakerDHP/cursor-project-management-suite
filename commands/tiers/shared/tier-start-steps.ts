@@ -35,7 +35,8 @@ import {
   buildTaskSection,
   deriveTierDownPlanItemsFromGuide,
 } from './ensure-tier-down-docs';
-import { readProjectFile, writeProjectFile } from '../../utils/utils';
+import { readProjectFile, writeProjectFile, PROJECT_ROOT } from '../../utils/utils';
+import { existsSync } from 'fs';
 
 /** Early-exit result from a step; null means continue. */
 export type StepExitResult = TierStartResult | null;
@@ -245,9 +246,48 @@ function buildGuideFromPlanItems(
 }
 
 /**
+ * Merge task items for a session: phase guide's **Tasks:** list plus planning-doc items.
+ * Ensures we never create a session guide with only one task when the phase lists more.
+ */
+function mergeSessionTaskItemsFromPhaseAndPlan(
+  phaseGuideContent: string,
+  sessionId: string,
+  parsedItems: TierDownPlanItem[]
+): TierDownPlanItem[] {
+  const escaped = sessionId.replace(/\./g, '\\.');
+  const sessionBlockRegex = new RegExp(
+    `###\\s+Session\\s+${escaped}[\\s:\\S]*?(?=\\n###\\s+Session|\\n##\\s+|$)`,
+    'i'
+  );
+  const sessionBlock = phaseGuideContent.match(sessionBlockRegex)?.[0] ?? '';
+  const taskListMatch = sessionBlock.match(/\*\*Tasks:\*\*\s*([\s\S]*?)(?=\n\*\*|\n\n|$)/i);
+  const taskList = taskListMatch?.[1]?.trim() ?? '';
+  const phaseTaskIds: string[] = [];
+  if (taskList) {
+    const bulletOrNum = /(?:^|\n)\s*[-*]?\s*(\d+\.\d+\.\d+\.\d+)/g;
+    let tm: RegExpExecArray | null;
+    while ((tm = bulletOrNum.exec(taskList)) !== null) {
+      const tid = tm[1];
+      if (tid && !phaseTaskIds.includes(tid)) phaseTaskIds.push(tid);
+    }
+  }
+  const byId = new Map<string, string>();
+  for (const id of phaseTaskIds) {
+    byId.set(id, parsedItems.find((p) => p.id === id)?.description ?? `Task ${id}`);
+  }
+  for (const item of parsedItems) {
+    if (!byId.has(item.id)) byId.set(item.id, item.description);
+  }
+  const merged = Array.from(byId.entries(), ([id, description]) => ({ id, description }));
+  merged.sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
+  return merged;
+}
+
+/**
  * Sync planned tierDown IDs and descriptions from the planning doc into the current-tier guide:
  * parse "How we build the tierDown", store on ctx.tierDownPlanItems, append missing headings.
  * When the guide is missing and parsedItems is non-empty, create the guide from the plan (instead of bailing).
+ * Session: never overwrite an existing guide file; when creating, merge task list from phase guide so we don't lose tasks.
  * No-op if planning doc missing or no tierDown section. Execute mode only; called before stepEnsureTierDownDocs.
  */
 async function syncPlannedTierDownToGuide(ctx: TierStartWorkflowContext): Promise<void> {
@@ -274,13 +314,51 @@ async function syncPlannedTierDownToGuide(ctx: TierStartWorkflowContext): Promis
   try {
     guideContent = await readProjectFile(guidePath);
   } catch {
-    if (parsedItems.length === 0) return;
-    const description = ctx.resolvedDescription ?? ctx.identifier;
-    guideContent = buildGuideFromPlanItems(tier, ctx.identifier, description, parsedItems);
-    try {
-      await writeProjectFile(guidePath, guideContent);
-    } catch {
-      return;
+    if (tier === 'session') {
+      const fullPath = join(PROJECT_ROOT, guidePath);
+      if (existsSync(fullPath)) {
+        try {
+          guideContent = await readProjectFile(guidePath);
+        } catch (e) {
+          console.warn(
+            'syncPlannedTierDownToGuide: session guide exists but unreadable, skipping overwrite',
+            guidePath,
+            e
+          );
+          return;
+        }
+      } else {
+        let phaseGuideContent = '';
+        try {
+          const phaseId = ctx.identifier.split('.').slice(0, 2).join('.');
+          phaseGuideContent = await readProjectFile(ctx.context.paths.getPhaseGuidePath(phaseId));
+        } catch {
+          /* optional */
+        }
+        const mergedItems =
+          phaseGuideContent.trim() !== ''
+            ? mergeSessionTaskItemsFromPhaseAndPlan(phaseGuideContent, ctx.identifier, parsedItems)
+            : parsedItems.length > 0
+              ? parsedItems
+              : [{ id: `${ctx.identifier}.1`, description: `Task ${ctx.identifier}.1` }];
+        const description = ctx.resolvedDescription ?? ctx.identifier;
+        guideContent = buildGuideFromPlanItems(tier, ctx.identifier, description, mergedItems);
+        ctx.tierDownPlanItems = mergedItems;
+        try {
+          await writeProjectFile(guidePath, guideContent);
+        } catch {
+          return;
+        }
+      }
+    } else {
+      if (parsedItems.length === 0) return;
+      const description = ctx.resolvedDescription ?? ctx.identifier;
+      guideContent = buildGuideFromPlanItems(tier, ctx.identifier, description, parsedItems);
+      try {
+        await writeProjectFile(guidePath, guideContent);
+      } catch {
+        return;
+      }
     }
   }
 
