@@ -20,11 +20,10 @@ import { readFile } from 'fs/promises';
 import { join, basename } from 'path';
 import { existsSync } from 'fs';
 import { readdir } from 'fs/promises';
+import { PROJECT_ROOT, FRONTEND_ROOT } from '../../utils/utils';
 import { AuditParams } from '../types';
 import { AuditResult, AuditFinding } from '../types';
 
-const PROJECT_ROOT = process.cwd();
-const FRONTEND_ROOT = 'client';
 const FRONTEND_SRC_SEGMENTS: [string, string] = [FRONTEND_ROOT, 'src'];
 
 type _FileScanResult = {
@@ -218,5 +217,4 @@ export async function auditVueArchitecture(_params: AuditParams): Promise<AuditR
     summary: `Scanned ${vueFiles.length} .vue file(s); found ${errorCount} error(s), ${warningCount} warning(s).`,
   };
 }
-
 

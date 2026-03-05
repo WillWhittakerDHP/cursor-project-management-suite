@@ -144,7 +144,8 @@ export async function runTierEnd(
       profileDefaults: defaultProfileDefaultsResolver,
       routingContext: { tier: config.name, action: 'end', originalParams: params },
     });
-    if (kernelResult.outcome.reasonCode === 'pending_push_confirmation') {
+    // Kernel returns charter reasonCode 'pending_push' (adapters map pending_push_confirmation → pending_push)
+    if (kernelResult.outcome.reasonCode === 'pending_push') {
       await writeEndPending({
         tier: config.name,
         identifier,
@@ -153,7 +154,7 @@ export async function runTierEnd(
     }
     const needsPlanFirst =
       !kernelResult.success ||
-      kernelResult.outcome.reasonCode === 'pending_push_confirmation' ||
+      kernelResult.outcome.reasonCode === 'pending_push' ||
       kernelResult.outcome.cascade != null;
     const enforcedMode = needsPlanFirst ? ('plan' as const) : cursorModeForExecution(executionMode);
     const enforcement = enforceModeSwitch(

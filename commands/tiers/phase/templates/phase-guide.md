@@ -9,8 +9,8 @@
 ## Phase Overview
 
 **Phase Number:** [N]
-**Phase Name:** [Name]
-**Description:** [Brief description of phase objectives]
+**Phase Name:** [NAME]
+**Description:** [DESCRIPTION]
 
 **Duration:** [Estimated weeks/months]
 **Status:** [Not Started / In Progress / Complete]

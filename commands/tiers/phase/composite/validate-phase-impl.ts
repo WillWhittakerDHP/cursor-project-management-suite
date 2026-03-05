@@ -49,19 +49,8 @@ export async function validatePhaseImpl(phase: string): Promise<ValidatePhaseRes
       };
     }
 
-    try {
-      await readProjectFile(phaseGuidePath);
-    } catch (err) {
-      console.warn('Validate phase: phase guide not found', phaseGuidePath, err);
-      return {
-        canStart: false,
-        reason: 'Phase guide not found',
-        details: [
-          `Phase guide does not exist at: ${phaseGuidePath}`,
-          `Create the phase guide first using /phase-plan ${phase}`,
-        ],
-      };
-    }
+    // When phase is documented (feature guide or log/handoff) but phase guide file is missing,
+    // allow start; phase-start will create the guide from template (see ensureTierScaffold).
 
     const status = await PHASE_CONFIG.controlDoc.readStatus(context, phase);
     if (status !== null) {
@@ -155,7 +144,7 @@ export async function validatePhaseImpl(phase: string): Promise<ValidatePhaseRes
       canStart: true,
       reason: 'Phase can be started',
       details: [
-        `Phase ${phase} guide exists`,
+        hasPhaseGuideFile ? `Phase ${phase} guide exists` : `Phase ${phase} guide will be created from template on start`,
         `Phase ${phase} status: Not Started`,
         phaseNum > 1 ? `Previous phase (${phaseNum - 1}) is complete` : 'This is the first phase',
         `Ready to start with /phase-start ${phase}`,

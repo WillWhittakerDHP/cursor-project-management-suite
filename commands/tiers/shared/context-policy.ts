@@ -6,7 +6,9 @@
 import type { WorkflowCommandContext } from '../../utils/command-context';
 import type { TierStartReadResult } from './tier-start-workflow-types';
 import { WorkflowId } from '../../utils/id-utils';
-import { readProjectFile, writeProjectFile } from '../../utils/utils';
+import { readProjectFile, writeProjectFile, PROJECT_ROOT } from '../../utils/utils';
+import { mkdir } from 'fs/promises';
+import { join, dirname } from 'path';
 import { MarkdownUtils } from '../../utils/markdown-utils';
 import { generateCurrentStateSummary } from '../../utils/context-gatherer';
 import { formatAutoGatheredContext } from '../../utils/context-templates';
@@ -37,11 +39,34 @@ export interface TierContextReadParams {
 }
 
 /**
- * Ensure tier scaffold exists before reading (session: guide + log from template; others no-op).
+ * Ensure tier scaffold exists before reading (phase/session: guide from template when missing; feature/task no-op).
  */
 export async function ensureTierScaffold(params: TierContextReadParams): Promise<void> {
   const { tier, identifier, resolvedDescription, context } = params;
-  if (tier === 'feature' || tier === 'phase' || tier === 'task') return;
+  if (tier === 'feature' || tier === 'task') return;
+
+  // Phase: create phase guide from template when missing (so phase-start works without /phase-plan first).
+  if (tier === 'phase') {
+    try {
+      await context.readPhaseGuide(identifier);
+    } catch {
+      try {
+        const template = await context.templates.loadTemplate('phase', 'guide');
+        const rendered = context.templates.render(template, {
+          N: identifier,
+          NAME: resolvedDescription,
+          DESCRIPTION: resolvedDescription,
+        });
+        const phaseGuidePath = context.paths.getPhaseGuidePath(identifier);
+        const fullPath = join(PROJECT_ROOT, phaseGuidePath);
+        await mkdir(dirname(fullPath), { recursive: true });
+        await context.documents.writeGuide('phase', identifier, rendered);
+      } catch {
+        // non-blocking
+      }
+    }
+    return;
+  }
 
   // Session: create session guide and log if missing
   if (tier === 'session') {

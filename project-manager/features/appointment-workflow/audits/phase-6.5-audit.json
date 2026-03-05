@@ -6,38 +6,17 @@
     {
       "category": "tier-quality",
       "status": "pass",
-      "score": 92,
       "findings": [
         {
           "type": "info",
-          "message": "type-similarity audit produced output (review JSON for details)",
-          "location": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/.audit-reports/type-similarity-audit.json",
-          "suggestion": "Review client/.audit-reports/type-similarity-audit.json for findings"
-        },
-        {
-          "type": "info",
-          "message": "import-graph audit produced output (review JSON for details)",
-          "location": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/.audit-reports/import-graph-audit.json",
-          "suggestion": "Review client/.audit-reports/import-graph-audit.json for findings"
-        },
-        {
-          "type": "info",
-          "message": "file-cohesion audit produced output (review JSON for details)",
-          "location": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/.audit-reports/file-cohesion-audit.json",
-          "suggestion": "Review client/.audit-reports/file-cohesion-audit.json for findings"
-        },
-        {
-          "type": "info",
-          "message": "deprecation audit produced output (review JSON for details)",
-          "location": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/.audit-reports/deprecation-audit.json",
-          "suggestion": "Review client/.audit-reports/deprecation-audit.json for findings"
+          "message": "frontend-root directory not found - skipping tier quality audits"
         }
       ],
       "recommendations": [],
-      "summary": "Ran 12 phase-tier audits; found 0 error(s), 0 warning(s), 4 info signal(s)."
+      "summary": "Skipped (frontend-root not found)"
     }
   ],
-  "timestamp": "2026-03-05T00:27:56.292Z",
+  "timestamp": "2026-03-05T00:52:11.843Z",
   "reportPath": "",
   "featureName": "appointment-workflow",
   "auditType": "end",
@@ -46,11 +25,6 @@
       "category": "tier-quality-coverage",
       "startScore": 100,
       "status": "missing"
-    },
-    {
-      "category": "tier-quality",
-      "endScore": 92,
-      "status": "new"
     }
   ]
 }

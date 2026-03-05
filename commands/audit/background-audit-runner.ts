@@ -13,11 +13,10 @@ import { execSync } from 'child_process';
 import { join } from 'path';
 import { existsSync } from 'fs';
 import { readFile } from 'fs/promises';
+import { PROJECT_ROOT, FRONTEND_ROOT } from '../utils/utils';
 import { appendBaselineEntry } from './baseline-log';
 import type { AuditTier } from './types';
 
-const PROJECT_ROOT = process.cwd();
-const FRONTEND_ROOT = 'client';
 const CLIENT_ROOT = join(PROJECT_ROOT, FRONTEND_ROOT);
 const AUDIT_DIR = join(CLIENT_ROOT, '.audit-reports');
 
