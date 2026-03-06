@@ -24,6 +24,7 @@ import {
   handleSuccessWithOptionalCascade,
   handleReopenOk,
   handleUncommittedChanges,
+  handleWrongBranchBeforeCommit,
 } from './control-plane-handlers';
 
 /**
@@ -54,6 +55,9 @@ export function routeByOutcome(
       case 'test_failed':
       case 'preflight_failed':
       case 'git_failed':
+        return handleFailure(outcome, result.output);
+      case 'wrong_branch_before_commit':
+        return handleWrongBranchBeforeCommit(outcome);
       case 'unhandled_error':
         return handleFailure(outcome, result.output);
       default:

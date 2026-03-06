@@ -1,7 +1,7 @@
 /**
  * Shared control-plane contract for tier workflows.
  * Single routing contract consumed by start, end, and reopen flows.
- * Behavioral rules (mode switch, AskQuestion, re-invoke) are keyed by reasonCode.
+ * Behavioral rules (mode switch, present choices in chat, re-invoke) are keyed by reasonCode.
  */
 
 import type { TierName } from './types';
@@ -24,7 +24,7 @@ export type StartReinvokeParams = Record<string, unknown> & {
 export interface ControlPlaneOutcome {
   reasonCode: string;
   nextAction: string;
-  /** User-facing deliverables summary for plan-mode approval (shown in AskQuestion). */
+  /** User-facing deliverables summary for plan-mode display in chat. */
   deliverables?: string;
   cascade?: CascadeInfo;
 }
@@ -53,11 +53,11 @@ export interface ControlPlaneContext {
 export interface ControlPlaneDecision {
   stop: boolean;
   message: string;
-  /** Required mode for the agent before showing message / AskQuestion. */
+  /** Required mode for the agent before showing message / choices in chat. */
   requiredMode: 'plan' | 'agent';
   /**
-   * When present, agent should AskQuestion; key identifies the question template.
-   * Templates: 'approve_execute' | 'cascade' | 'push_confirmation' | 'verification_options' | 'failure_options'
+   * When present, command output includes message + options; agent presents in chat.
+   * Key identifies the choice set (cascade, verification_options, failure_options, etc.).
    */
   questionKey?: string;
   /** For cascade: exact command string to run on "Yes". */
@@ -80,9 +80,10 @@ export const REASON_CODE = {
   UNHANDLED_ERROR: 'unhandled_error',
   REOPEN_OK: 'reopen_ok',
   UNCOMMITTED_CHANGES_BLOCKING: 'uncommitted_changes_blocking',
+  WRONG_BRANCH_BEFORE_COMMIT: 'wrong_branch_before_commit',
 } as const;
 
-/** Question template keys used by the agent to render AskQuestion. */
+/** Choice-set keys for message + options (presented in chat). */
 export const QUESTION_KEYS = {
   APPROVE_EXECUTE: 'approve_execute',
   /** Task tier: explicit "Begin Coding" confirmation after design artifact. */
@@ -97,3 +98,4 @@ export const QUESTION_KEYS = {
   REOPEN_OPTIONS: 'reopen_options',
   UNCOMMITTED_CHANGES: 'uncommitted_changes',
 } as const;
+

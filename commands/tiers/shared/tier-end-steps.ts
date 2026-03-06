@@ -14,7 +14,11 @@ import { workflowCleanupReadmes } from '../../readme/composite/readme-workflow-c
 import { updateTierScope, clearTierScope, readTierScope, formatScopeCommitPrefix } from '../../utils/tier-scope';
 import { runEndAuditForTier } from '../../audit/run-end-audit-for-tier';
 import { buildTierEndOutcome } from '../../utils/tier-outcome';
-import { commitUncommittedNonCursor } from '../../git/shared/tier-branch-manager';
+import {
+  commitUncommittedNonCursor,
+  getExpectedBranchForTier,
+  DEFAULT_ALLOWED_COMMIT_PREFIXES,
+} from '../../git/shared/tier-branch-manager';
 import { PROJECT_ROOT } from '../../utils/utils';
 import type { TierName } from './types';
 
@@ -218,13 +222,15 @@ export async function stepReadmeCleanup(
 }
 
 /**
- * Commit any uncommitted non-.cursor changes with a tier-scoped message so they are
- * included in the final push. Uses git layer (tier-branch-manager.commitUncommittedNonCursor).
- * Runs before stepTierGit; no-op if working tree clean or only .cursor changed.
+ * Commit only in-scope touched files (frontend-root/, server/) with a tier-scoped message.
+ * Verifies current branch matches expected tier branch before committing; if wrong branch, returns early exit.
+ * Never commits .cursor, .project-manager, or audit reports. Runs before stepTierGit.
  */
 export async function stepCommitUncommittedNonCursor(
   ctx: TierEndWorkflowContext
-): Promise<void> {
+): Promise<StepExitResult> {
+  const expectedBranch = getExpectedBranchForTier(ctx.config, ctx.identifier, ctx.context);
+
   let scopeConfig;
   try {
     scopeConfig = await readTierScope();
@@ -234,10 +240,31 @@ export async function stepCommitUncommittedNonCursor(
   const prefix = formatScopeCommitPrefix(scopeConfig, ctx.config.name);
   const commitMessage = `${prefix} tier-end: commit remaining work`;
 
-  const result = await commitUncommittedNonCursor(commitMessage);
-  if (!result.committed && !result.output) return;
+  const result = await commitUncommittedNonCursor(commitMessage, {
+    expectedBranch: expectedBranch ?? undefined,
+    allowedPrefixes: [...DEFAULT_ALLOWED_COMMIT_PREFIXES],
+  });
+
+  if (!result.success && result.output.includes('Wrong branch')) {
+    const outcome = buildTierEndOutcome(
+      'blocked_fix_required',
+      'wrong_branch_before_commit',
+      result.output,
+      undefined,
+      result.output
+    );
+    return {
+      success: false,
+      output: ctx.output.join('\n\n'),
+      steps: ctx.steps,
+      outcome,
+    };
+  }
+
+  if (!result.committed && !result.output) return null;
   ctx.steps.commitRemaining = { success: result.success, output: result.output };
   ctx.output.push(result.output);
+  return null;
 }
 
 /** Call hook runGit; return its result or null. */
@@ -250,7 +277,7 @@ export async function stepTierGit(
 }
 
 const VERIFICATION_NEXT_ACTION =
-  'Verification checklist suggested. See steps.verificationCheck. Use AskQuestion: add follow-up task/session/phase, do manually, or skip; then re-run this tier-end with continuePastVerification: true to run audits.';
+  'Verification checklist suggested. See steps.verificationCheck. Present options in chat: add follow-up task/session/phase, do manually, or skip; then re-run this tier-end with continuePastVerification: true to run audits.';
 
 /** Call hook runVerificationCheck; when suggested and not continuePastVerification, return early with reasonCode verification_work_suggested. */
 export async function stepVerificationCheck(

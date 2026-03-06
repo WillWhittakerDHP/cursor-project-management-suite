@@ -21,6 +21,7 @@ import {
   stepStartAudit,
   stepRunTierPlan,
   stepBuildStartCascade,
+  getPlanningDocPathForTier,
   isGuideFilled,
 } from '../tiers/shared/tier-start-steps';
 
@@ -53,9 +54,28 @@ function logStepTiming(stepId: string, phase: 'enter' | 'exit'): void {
 }
 let runStartMs: number | undefined;
 
+/** Step order for resume: when resumeAfterStep is set, we skip all steps before this one (proceed without starting over). */
+const START_WORKFLOW_STEP_IDS = [
+  'header_branch',
+  'validate',
+  'read_context_light',
+  'context_gathering',
+  'ensure_branch',
+  'ensure_guide_from_plan',
+  'read_start_context',
+  'gather_context',
+  'governance',
+  'extras',
+  'audit',
+  'plan',
+  'fill_tier_down',
+  'cascade',
+] as const;
+
 /**
  * Run the shared start workflow. Tier impls supply context and hooks; steps run in order.
  * When ctx.runRecorder and ctx.runTraceHandle are set, step events and stepPath are recorded (shadow mode).
+ * When options.resumeAfterStep is set, steps before that step are skipped so the command can proceed past a gate without re-running from the top.
  */
 export async function runTierStartWorkflow(
   ctx: TierStartWorkflowContext,
@@ -65,49 +85,91 @@ export async function runTierStartWorkflow(
   if (ctx.stepPath == null) ctx.stepPath = [];
 
   const guideFillComplete = ctx.options?.guideFillComplete === true;
+  const resumeAfterStep = ctx.options?.resumeAfterStep;
+  const firstStepIndex =
+    resumeAfterStep != null
+      ? Math.max(0, START_WORKFLOW_STEP_IDS.indexOf(resumeAfterStep as (typeof START_WORKFLOW_STEP_IDS)[number]))
+      : 0;
+
+  const partAStepIds = new Set([
+    'header_branch',
+    'validate',
+    'read_context_light',
+    'context_gathering',
+    'ensure_branch',
+    'ensure_guide_from_plan',
+  ]);
+  const shouldRunStep = (stepId: string): boolean => {
+    if (guideFillComplete && partAStepIds.has(stepId)) return false;
+    const idx = START_WORKFLOW_STEP_IDS.indexOf(stepId as (typeof START_WORKFLOW_STEP_IDS)[number]);
+    return idx >= 0 && idx >= firstStepIndex;
+  };
+
+  // When resuming past context_gathering, set planning doc path so later steps have it.
+  if (resumeAfterStep && firstStepIndex > START_WORKFLOW_STEP_IDS.indexOf('context_gathering')) {
+    if (!ctx.planningDocPath) {
+      ctx.planningDocPath = getPlanningDocPathForTier(
+        ctx.config.name,
+        ctx.identifier,
+        ctx.context.paths.getBasePath()
+      );
+    }
+  }
 
   if (!guideFillComplete) {
-    logStepTiming('header_branch', 'enter');
-    await recordStep(ctx, 'header_branch', 'enter');
-    stepAppendHeaderAndBranchHierarchy(ctx, hooks);
-    if (hooks.ensureBranch) {
-      await stepAppendBranchHierarchy(ctx, hooks);
+    if (shouldRunStep('header_branch')) {
+      logStepTiming('header_branch', 'enter');
+      await recordStep(ctx, 'header_branch', 'enter');
+      stepAppendHeaderAndBranchHierarchy(ctx, hooks);
+      if (hooks.ensureBranch) {
+        await stepAppendBranchHierarchy(ctx, hooks);
+      }
+      await recordStep(ctx, 'header_branch', 'exit_success');
+      logStepTiming('header_branch', 'exit');
     }
-    await recordStep(ctx, 'header_branch', 'exit_success');
-    logStepTiming('header_branch', 'exit');
 
-    logStepTiming('validate', 'enter');
-    await recordStep(ctx, 'validate', 'enter');
-    const validationExit = await stepValidateStart(ctx, hooks);
-    await recordStep(ctx, 'validate', validationExit ? 'exit_failure' : 'exit_success');
-    logStepTiming('validate', 'exit');
-    if (validationExit) return attachShadowPayload(ctx, validationExit);
+    if (shouldRunStep('validate')) {
+      logStepTiming('validate', 'enter');
+      await recordStep(ctx, 'validate', 'enter');
+      const validationExit = await stepValidateStart(ctx, hooks);
+      await recordStep(ctx, 'validate', validationExit ? 'exit_failure' : 'exit_success');
+      logStepTiming('validate', 'exit');
+      if (validationExit) return attachShadowPayload(ctx, validationExit);
+    }
 
-    logStepTiming('read_context_light', 'enter');
-    await recordStep(ctx, 'read_context_light', 'enter');
-    await stepReadContextLight(ctx, hooks);
-    await recordStep(ctx, 'read_context_light', 'exit_success');
-    logStepTiming('read_context_light', 'exit');
+    if (shouldRunStep('read_context_light')) {
+      logStepTiming('read_context_light', 'enter');
+      await recordStep(ctx, 'read_context_light', 'enter');
+      await stepReadContextLight(ctx, hooks);
+      await recordStep(ctx, 'read_context_light', 'exit_success');
+      logStepTiming('read_context_light', 'exit');
+    }
 
-    logStepTiming('context_gathering', 'enter');
-    await recordStep(ctx, 'context_gathering', 'enter');
-    const contextExit = await stepContextGathering(ctx, hooks);
-    await recordStep(ctx, 'context_gathering', contextExit ? 'exit_success' : 'exit_success');
-    logStepTiming('context_gathering', 'exit');
-    if (contextExit) return attachShadowPayload(ctx, contextExit);
+    if (shouldRunStep('context_gathering')) {
+      logStepTiming('context_gathering', 'enter');
+      await recordStep(ctx, 'context_gathering', 'enter');
+      const contextExit = await stepContextGathering(ctx, hooks);
+      await recordStep(ctx, 'context_gathering', contextExit ? 'exit_success' : 'exit_success');
+      logStepTiming('context_gathering', 'exit');
+      if (contextExit) return attachShadowPayload(ctx, contextExit);
+    }
 
-    logStepTiming('ensure_branch', 'enter');
-    await recordStep(ctx, 'ensure_branch', 'enter');
-    const branchExit = await stepEnsureStartBranch(ctx, hooks);
-    await recordStep(ctx, 'ensure_branch', branchExit ? 'exit_failure' : 'exit_success');
-    logStepTiming('ensure_branch', 'exit');
-    if (branchExit) return attachShadowPayload(ctx, branchExit);
+    if (shouldRunStep('ensure_branch')) {
+      logStepTiming('ensure_branch', 'enter');
+      await recordStep(ctx, 'ensure_branch', 'enter');
+      const branchExit = await stepEnsureStartBranch(ctx, hooks);
+      await recordStep(ctx, 'ensure_branch', branchExit ? 'exit_failure' : 'exit_success');
+      logStepTiming('ensure_branch', 'exit');
+      if (branchExit) return attachShadowPayload(ctx, branchExit);
+    }
 
-    logStepTiming('ensure_guide_from_plan', 'enter');
-    await recordStep(ctx, 'ensure_guide_from_plan', 'enter');
-    await stepEnsureGuideFromPlan(ctx, hooks);
-    await recordStep(ctx, 'ensure_guide_from_plan', 'exit_success');
-    logStepTiming('ensure_guide_from_plan', 'exit');
+    if (shouldRunStep('ensure_guide_from_plan')) {
+      logStepTiming('ensure_guide_from_plan', 'enter');
+      await recordStep(ctx, 'ensure_guide_from_plan', 'enter');
+      await stepEnsureGuideFromPlan(ctx, hooks);
+      await recordStep(ctx, 'ensure_guide_from_plan', 'exit_success');
+      logStepTiming('ensure_guide_from_plan', 'exit');
+    }
 
     // Option A: for phase/session return guide_fill_pending only when the guide is not yet filled; otherwise continue to Part B.
     const tier = ctx.config.name;
@@ -134,48 +196,62 @@ export async function runTierStartWorkflow(
     }
   }
 
-  logStepTiming('read_start_context', 'enter');
-  await recordStep(ctx, 'read_start_context', 'enter');
-  await stepReadStartContext(ctx, hooks);
-  await recordStep(ctx, 'read_start_context', 'exit_success');
-  logStepTiming('read_start_context', 'exit');
+  if (shouldRunStep('read_start_context')) {
+    logStepTiming('read_start_context', 'enter');
+    await recordStep(ctx, 'read_start_context', 'enter');
+    await stepReadStartContext(ctx, hooks);
+    await recordStep(ctx, 'read_start_context', 'exit_success');
+    logStepTiming('read_start_context', 'exit');
+  }
 
-  logStepTiming('gather_context', 'enter');
-  await recordStep(ctx, 'gather_context', 'enter');
-  await stepGatherContext(ctx, hooks);
-  await recordStep(ctx, 'gather_context', 'exit_success');
-  logStepTiming('gather_context', 'exit');
+  if (shouldRunStep('gather_context')) {
+    logStepTiming('gather_context', 'enter');
+    await recordStep(ctx, 'gather_context', 'enter');
+    await stepGatherContext(ctx, hooks);
+    await recordStep(ctx, 'gather_context', 'exit_success');
+    logStepTiming('gather_context', 'exit');
+  }
 
-  logStepTiming('governance', 'enter');
-  await recordStep(ctx, 'governance', 'enter');
-  await stepGovernanceContext(ctx, hooks);
-  await recordStep(ctx, 'governance', 'exit_success');
-  logStepTiming('governance', 'exit');
+  if (shouldRunStep('governance')) {
+    logStepTiming('governance', 'enter');
+    await recordStep(ctx, 'governance', 'enter');
+    await stepGovernanceContext(ctx, hooks);
+    await recordStep(ctx, 'governance', 'exit_success');
+    logStepTiming('governance', 'exit');
+  }
 
-  logStepTiming('extras', 'enter');
-  await recordStep(ctx, 'extras', 'enter');
-  await stepRunExtras(ctx, hooks);
-  await recordStep(ctx, 'extras', 'exit_success');
-  logStepTiming('extras', 'exit');
+  if (shouldRunStep('extras')) {
+    logStepTiming('extras', 'enter');
+    await recordStep(ctx, 'extras', 'enter');
+    await stepRunExtras(ctx, hooks);
+    await recordStep(ctx, 'extras', 'exit_success');
+    logStepTiming('extras', 'exit');
+  }
 
-  logStepTiming('audit', 'enter');
-  await recordStep(ctx, 'audit', 'enter');
-  const auditExit = await stepStartAudit(ctx, hooks);
-  await recordStep(ctx, 'audit', auditExit ? 'exit_failure' : 'exit_success');
-  logStepTiming('audit', 'exit');
-  if (auditExit) return attachShadowPayload(ctx, auditExit);
+  if (shouldRunStep('audit')) {
+    logStepTiming('audit', 'enter');
+    await recordStep(ctx, 'audit', 'enter');
+    const auditExit = await stepStartAudit(ctx, hooks);
+    await recordStep(ctx, 'audit', auditExit ? 'exit_failure' : 'exit_success');
+    logStepTiming('audit', 'exit');
+    if (auditExit) return attachShadowPayload(ctx, auditExit);
+  }
 
-  logStepTiming('plan', 'enter');
-  await recordStep(ctx, 'plan', 'enter');
-  await stepRunTierPlan(ctx, hooks);
-  await recordStep(ctx, 'plan', 'exit_success');
-  logStepTiming('plan', 'exit');
+  if (shouldRunStep('plan')) {
+    logStepTiming('plan', 'enter');
+    await recordStep(ctx, 'plan', 'enter');
+    await stepRunTierPlan(ctx, hooks);
+    await recordStep(ctx, 'plan', 'exit_success');
+    logStepTiming('plan', 'exit');
+  }
 
-  logStepTiming('fill_tier_down', 'enter');
-  await recordStep(ctx, 'fill_tier_down', 'enter');
-  await stepFillDirectTierDown(ctx, hooks);
-  await recordStep(ctx, 'fill_tier_down', 'exit_success');
-  logStepTiming('fill_tier_down', 'exit');
+  if (shouldRunStep('fill_tier_down')) {
+    logStepTiming('fill_tier_down', 'enter');
+    await recordStep(ctx, 'fill_tier_down', 'enter');
+    await stepFillDirectTierDown(ctx, hooks);
+    await recordStep(ctx, 'fill_tier_down', 'exit_success');
+    logStepTiming('fill_tier_down', 'exit');
+  }
 
   if (hooks.getTrailingOutput) {
     const trailing = await hooks.getTrailingOutput(ctx);

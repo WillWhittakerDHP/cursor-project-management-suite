@@ -28,7 +28,7 @@ export interface TierStartOutcome {
   status: TierStartStatus;
   reasonCode: string;
   nextAction: string;
-  /** User-facing deliverables summary for plan-mode approval (shown in AskQuestion). */
+  /** User-facing deliverables summary for plan-mode display in chat. */
   deliverables?: string;
   cascade?: CascadeInfo;
   /** When reasonCode is guide_fill_pending, path to the guide file the agent must fill (relative to project). */
@@ -47,7 +47,7 @@ export interface TierEndOutcome {
   status: TierEndStatus;
   reasonCode: string;
   nextAction: string;
-  /** User-facing verification checklist or deliverables summary (shown in AskQuestion). */
+  /** User-facing verification checklist or deliverables summary (for display in chat). */
   deliverables?: string;
   cascade?: CascadeInfo;
 }

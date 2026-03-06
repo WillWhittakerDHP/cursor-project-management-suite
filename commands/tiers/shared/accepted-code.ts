@@ -1,7 +1,7 @@
 /**
- * /accepted-code: run task start with execute (Begin Coding) for the pending task (chat-first flow).
- * Reads .task-start-pending.json written by task-start on plan_mode; reinvokes with mode: 'execute'.
- * BLOCKS until the task planning doc is filled (same enforcement as acceptedProceed for session/phase/feature).
+ * /accepted-code: allow the pending task start to proceed past the gate (Begin Coding) without re-running from the top.
+ * Reads .task-start-pending.json written by task-start on plan_mode; continues the workflow from ensure_branch
+ * (resumeAfterStep). BLOCKS until the task planning doc is filled (same enforcement as acceptedProceed).
  */
 
 import { runTierStart, type TierStartResultWithControlPlane } from './tier-start';
@@ -96,7 +96,7 @@ export async function acceptedCode(): Promise<TierStartResultWithControlPlane> {
   const result = await runTierStart(
     TASK_CONFIG,
     { taskId: state.taskId, featureId: state.featureId },
-    { mode: 'execute' }
+    { mode: 'execute', resumeAfterStep: 'ensure_branch' }
   );
 
   await deleteTaskStartPending();

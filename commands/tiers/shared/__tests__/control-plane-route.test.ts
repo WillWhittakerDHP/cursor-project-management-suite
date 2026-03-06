@@ -6,7 +6,7 @@
 import { describe, it, expect } from 'vitest';
 import { routeByOutcome } from '../control-plane-route';
 import { reinvokeStartExecute } from '../control-plane-reinvoke';
-import { formatAskQuestionInstruction } from '../control-plane-askquestion-instruction';
+import { formatChoiceForChat } from '../control-plane-choice-display';
 import { REASON_CODE, QUESTION_KEYS } from '../control-plane-types';
 import type { CommandResultForRouting, ControlPlaneContext } from '../control-plane-types';
 
@@ -17,7 +17,7 @@ const baseCtx: ControlPlaneContext = {
 };
 
 describe('control-plane routeByOutcome', () => {
-  it('plan_mode returns approve_execute question and nextInvoke for same command with execute', () => {
+  it('plan_mode maps to context_gathering (command-gated: no questionKey)', () => {
     const result: CommandResultForRouting = {
       success: true,
       output: 'Plan preview',
@@ -29,18 +29,12 @@ describe('control-plane routeByOutcome', () => {
     const decision = routeByOutcome(result, baseCtx);
     expect(decision.stop).toBe(true);
     expect(decision.requiredMode).toBe('plan');
-    expect(decision.questionKey).toBe(QUESTION_KEYS.APPROVE_EXECUTE);
-    expect(decision.nextInvoke).toBeDefined();
-    expect(decision.nextInvoke?.tier).toBe('session');
-    expect(decision.nextInvoke?.action).toBe('start');
-    expect(decision.nextInvoke?.params).toEqual({
-      sessionId: '6.2.1',
-      description: undefined,
-      options: { mode: 'execute' },
-    });
+    // Command-gated: user runs /accepted-proceed or /accepted-code; no choice block
+    expect(decision.questionKey).toBeUndefined();
+    expect(decision.message).toBe('Plan preview complete. Awaiting approval to execute.');
   });
 
-  it('plan_mode with deliverables shows deliverables in message instead of nextAction', () => {
+  it('plan_mode with deliverables shows deliverables in message', () => {
     const result: CommandResultForRouting = {
       success: true,
       output: 'Plan preview',
@@ -52,10 +46,10 @@ describe('control-plane routeByOutcome', () => {
     };
     const decision = routeByOutcome(result, baseCtx);
     expect(decision.message).toBe('**Task 6.2.1.1:** Add validation\n**Goal:** Implement Zod schema');
-    expect(decision.questionKey).toBe(QUESTION_KEYS.APPROVE_EXECUTE);
+    expect(decision.questionKey).toBeUndefined();
   });
 
-  it('plan_mode for task tier returns approve_execute_task (Begin Coding)', () => {
+  it('plan_mode for task tier maps to context_gathering (command-gated)', () => {
     const taskCtx = { ...baseCtx, tier: 'task' as const, originalParams: { taskId: '6.4.4.1' } };
     const result: CommandResultForRouting = {
       success: true,
@@ -66,8 +60,8 @@ describe('control-plane routeByOutcome', () => {
       },
     };
     const decision = routeByOutcome(result, taskCtx);
-    expect(decision.questionKey).toBe(QUESTION_KEYS.APPROVE_EXECUTE_TASK);
-    expect(decision.nextInvoke?.params).toEqual({ taskId: '6.4.4.1', options: { mode: 'execute' } });
+    expect(decision.questionKey).toBeUndefined();
+    expect(decision.message).toBe('Approve design to begin coding.');
   });
 
   it('plan_mode without deliverables falls back to nextAction for message', () => {
@@ -148,7 +142,7 @@ describe('control-plane routeByOutcome', () => {
     expect(decision.questionKey).toBe(QUESTION_KEYS.FAILURE_OPTIONS);
   });
 
-  it('pending_push_confirmation returns push_confirmation question', () => {
+  it('pending_push_confirmation is command-gated (no questionKey)', () => {
     const result: CommandResultForRouting = {
       success: true,
       output: 'Checks passed',
@@ -159,8 +153,8 @@ describe('control-plane routeByOutcome', () => {
       },
     };
     const decision = routeByOutcome(result, baseCtx);
-    expect(decision.questionKey).toBe(QUESTION_KEYS.PUSH_CONFIRMATION);
-    expect(decision.cascadeCommand).toBe('/session-end 6.2.1');
+    expect(decision.questionKey).toBeUndefined();
+    expect(decision.message).toContain('/accepted-push');
   });
 
   it('verification_work_suggested returns verification_options question', () => {
@@ -256,14 +250,9 @@ describe('control-plane routeByOutcome', () => {
     const decision = routeByOutcome(result, baseCtx);
     expect(decision.stop).toBe(true);
     expect(decision.requiredMode).toBe('plan');
-    expect(decision.questionKey).toBe(QUESTION_KEYS.CONTEXT_GATHERING);
+    // Command-gated: user runs /accepted-proceed; no choice block
+    expect(decision.questionKey).toBeUndefined();
     expect(decision.message).toBe(deliverables);
-    expect(decision.nextInvoke).toBeDefined();
-    // Options are nested under params.options (buildStartReinvokeParams contract)
-    expect(
-      (decision.nextInvoke?.params as { options?: { contextGatheringComplete?: boolean } })?.options
-        ?.contextGatheringComplete
-    ).toBe(true);
   });
 
   it('context_gathering deliverables include doc-grounded insight and satisfaction option (regression guard)', () => {
@@ -285,23 +274,23 @@ describe('control-plane routeByOutcome', () => {
     const decision = routeByOutcome(result, baseCtx);
     expect(decision.message).toContain('Insight');
     expect(decision.message).toContain("I'm satisfied with our plan and ready to begin");
-    expect(decision.questionKey).toBe(QUESTION_KEYS.CONTEXT_GATHERING);
+    expect(decision.questionKey).toBeUndefined();
   });
 });
 
-describe('AskQuestion instruction', () => {
-  it('context_gathering is command-gated and returns empty (uses /accepted-proceed, not AskQuestion)', () => {
+describe('Choice display for chat', () => {
+  it('context_gathering has no QUESTION_KEY_OPTIONS so returns empty', () => {
     const decision = {
       stop: true,
       message: 'Planning doc path and insight/proposal/decision blocks',
       requiredMode: 'plan' as const,
       questionKey: QUESTION_KEYS.CONTEXT_GATHERING,
     };
-    const instruction = formatAskQuestionInstruction(decision);
-    expect(instruction).toBe('');
+    const block = formatChoiceForChat(decision);
+    expect(block).toBe('');
   });
 
-  it('cascade produces structured AskQuestion instruction with options', () => {
+  it('cascade produces message and options block with cascade command hint', () => {
     const decision = {
       stop: true,
       message: 'Cascade to task 6.7.1.1',
@@ -309,26 +298,25 @@ describe('AskQuestion instruction', () => {
       questionKey: QUESTION_KEYS.CASCADE,
       cascadeCommand: '/task-start 6.7.1.1',
     };
-    const instruction = formatAskQuestionInstruction(decision);
-    expect(instruction).toContain('ASKQUESTION_REQUIRED=true');
-    expect(instruction).toContain('ASKQUESTION_KEY=cascade');
-    expect(instruction).toContain('yes_cascade');
-    expect(instruction).toContain('no_stop');
-    expect(instruction).toContain('ASKQUESTION_CASCADE_COMMAND=/task-start 6.7.1.1');
+    const block = formatChoiceForChat(decision);
+    expect(block).toContain('User choice required');
+    expect(block).toContain('Yes — run cascade command');
+    expect(block).toContain('No — stop here');
+    expect(block).toContain('/task-start 6.7.1.1');
   });
 
-  it('failure produces structured AskQuestion instruction with retry/investigate/skip', () => {
+  it('failure produces message and options block with retry/audit-fix/skip', () => {
     const decision = {
       stop: true,
       message: 'Command failed.',
       requiredMode: 'plan' as const,
       questionKey: QUESTION_KEYS.FAILURE_OPTIONS,
     };
-    const instruction = formatAskQuestionInstruction(decision);
-    expect(instruction).toContain('ASKQUESTION_REQUIRED=true');
-    expect(instruction).toContain('retry');
-    expect(instruction).toContain('investigate');
-    expect(instruction).toContain('skip');
+    const block = formatChoiceForChat(decision);
+    expect(block).toContain('User choice required');
+    expect(block).toContain('Retry the command');
+    expect(block).toContain('Fix audit with governance context');
+    expect(block).toContain('Skip and continue manually');
   });
 
   it('returns empty for unknown questionKey', () => {
@@ -338,8 +326,8 @@ describe('AskQuestion instruction', () => {
       requiredMode: 'plan' as const,
       questionKey: 'nonexistent_key',
     };
-    const instruction = formatAskQuestionInstruction(decision);
-    expect(instruction).toBe('');
+    const block = formatChoiceForChat(decision);
+    expect(block).toBe('');
   });
 });
 

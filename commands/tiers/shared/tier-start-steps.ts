@@ -114,7 +114,7 @@ export async function stepEnsureStartBranch(
   }
   if (!branchResult.success) {
     if (branchResult.blockedByUncommitted) {
-      // Playbook: block only on files we do not auto-commit (.cursor, .project-manager, audit reports are auto-committed).
+      // Playbook: block only on files we do not treat as non-blocking (.cursor, .project-manager, audit reports are stashed then popped on target).
       const allFiles = branchResult.uncommittedFiles ?? [];
       const blockingFiles = allFiles.filter(f => !isAutoCommittable(f.trim()));
       if (blockingFiles.length > 0) {
@@ -130,7 +130,7 @@ export async function stepEnsureStartBranch(
           },
         };
       }
-      // Only workflow artifacts (.cursor, .project-manager, audit reports) changed; auto-committed or excluded. Continue.
+      // Only workflow artifacts (.cursor, .project-manager, audit reports) changed; stashed (non-blocking). Continue.
       if (hooks.afterBranch) {
         await hooks.afterBranch(ctx);
       }

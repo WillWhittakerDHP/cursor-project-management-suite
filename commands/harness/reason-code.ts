@@ -15,6 +15,7 @@ const LEGACY_TO_CHARTER: Record<string, ReasonCode> = {
   task_complete: 'task_complete',
   reopen_ok: 'reopen_ok',
   uncommitted_changes_blocking: 'uncommitted_blocking',
+  wrong_branch_before_commit: 'wrong_branch_before_commit',
   guide_fill_pending: 'guide_fill_pending',
   unhandled_error: 'unhandled_error',
   // Charter-only codes (impls may emit these in future)
@@ -36,6 +37,7 @@ const FAILURE_CODES: FailureReasonCode[] = [
   'test_failed',
   'preflight_failed',
   'git_failed',
+  'wrong_branch_before_commit',
   'unhandled_error',
 ];
 

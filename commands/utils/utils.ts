@@ -42,6 +42,12 @@
 import { readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { execSync } from 'child_process';
+import {
+  isProjectManagerProtectedPath,
+  shouldBlockProjectManagerWrite,
+  getCallerFromStack,
+  logProjectManagerWrite,
+} from './project-manager-write-guard';
 
 export const PROJECT_ROOT = process.cwd();
 /** Frontend app root directory (Vue). Use for path construction; must match the actual directory name (e.g. client or frontend-root). */
@@ -56,10 +62,23 @@ export async function readProjectFile(filename: string): Promise<string> {
 }
 
 /**
- * Write a file to the project root
+ * Write a file to the project root.
+ * For paths under .project-manager that are *-planning.md or *-guide.md:
+ * - Audit: logs path, timestamp, and caller to stderr (and to .project-manager/.write-log when TIER_LOG_WRITES=1 or when a write is blocked).
+ * - Lock: skips the write and logs "BLOCKED overwrite" if the file already exists and is "filled" (no placeholders).
+ * Set TIER_LOG_WRITES=1 to capture all protected-path writes in .project-manager/.write-log.
  */
 export async function writeProjectFile(filename: string, content: string): Promise<void> {
   const filePath = join(PROJECT_ROOT, filename);
+  if (isProjectManagerProtectedPath(filename)) {
+    const caller = getCallerFromStack();
+    const blocked = await shouldBlockProjectManagerWrite(PROJECT_ROOT, filename);
+    if (blocked) {
+      logProjectManagerWrite({ path: filename, blocked: true, caller });
+      return;
+    }
+    logProjectManagerWrite({ path: filename, blocked: false, caller });
+  }
   await writeFile(filePath, content, 'utf-8');
 }
 

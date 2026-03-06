@@ -5,7 +5,6 @@
  */
 
 import type { TierConfig } from './types';
-import { modeGateText, cursorModeForExecution, enforceModeSwitch } from '../../utils/command-execution-mode';
 import type { TierReopenParams, TierReopenResult } from './tier-reopen-workflow';
 import { featureReopenImpl } from '../feature/composite/feature-reopen-impl';
 import { phaseReopenImpl } from '../phase/composite/phase-reopen-impl';
@@ -13,7 +12,7 @@ import { sessionReopenImpl } from '../session/composite/session-reopen-impl';
 import { routeByOutcome } from './control-plane-route';
 import { REASON_CODE } from './control-plane-types';
 import type { ControlPlaneDecision, CommandResultForRouting } from './control-plane-types';
-import { formatAskQuestionInstruction } from './control-plane-askquestion-instruction';
+import { formatChoiceForChat } from './control-plane-choice-display';
 
 export type { TierReopenParams, TierReopenResult };
 
@@ -22,23 +21,23 @@ export type TierReopenResultWithControlPlane = TierReopenResult & {
   controlPlaneDecision: ControlPlaneDecision;
 };
 
+const GATE_PLACEHOLDER = '';
+
 export async function runTierReopen(
   config: TierConfig,
   params: TierReopenParams
 ): Promise<TierReopenResultWithControlPlane> {
-  const gate = modeGateText(cursorModeForExecution('execute'), `${config.name}-reopen`);
-
   let result: TierReopenResult;
   try {
     switch (config.name) {
       case 'feature':
-        result = await featureReopenImpl(params, gate);
+        result = await featureReopenImpl(params, GATE_PLACEHOLDER);
         break;
       case 'phase':
-        result = await phaseReopenImpl(params, gate);
+        result = await phaseReopenImpl(params, GATE_PLACEHOLDER);
         break;
       case 'session':
-        result = await sessionReopenImpl(params, gate);
+        result = await sessionReopenImpl(params, GATE_PLACEHOLDER);
         break;
       case 'task':
         result = {
@@ -46,7 +45,7 @@ export async function runTierReopen(
           output: 'Task reopen is not supported. Reopen the session to add or change tasks.',
           previousStatus: '',
           newStatus: '',
-          modeGate: gate,
+          modeGate: GATE_PLACEHOLDER,
         };
         break;
       default:
@@ -55,7 +54,7 @@ export async function runTierReopen(
           output: `Unknown tier: ${config.name}`,
           previousStatus: '',
           newStatus: '',
-          modeGate: gate,
+          modeGate: GATE_PLACEHOLDER,
         };
     }
   } catch (err) {
@@ -65,17 +64,9 @@ export async function runTierReopen(
       output: `Reopen failed: ${message}`,
       previousStatus: '',
       newStatus: '',
-      modeGate: gate,
+      modeGate: GATE_PLACEHOLDER,
     };
   }
-
-  const enforcedMode = 'plan' as const;
-  const enforcement = enforceModeSwitch(
-    enforcedMode,
-    `${config.name}-reopen`,
-    result.success ? 'normal' : 'failure'
-  );
-  const outputWithEnforcement = enforcement.text + '\n\n---\n\n' + result.output;
 
   const forRouting: CommandResultForRouting = result.success
     ? {
@@ -85,7 +76,6 @@ export async function runTierReopen(
           reasonCode: REASON_CODE.REOPEN_OK,
           nextAction: result.output || 'Reopen complete. Plan next step or quick fix.',
         },
-        modeGate: gate,
       }
     : {
         success: false,
@@ -94,7 +84,6 @@ export async function runTierReopen(
           reasonCode: 'unhandled_error',
           nextAction: result.output || 'Reopen failed.',
         },
-        modeGate: gate,
       };
   const ctx = {
     tier: config.name,
@@ -103,12 +92,10 @@ export async function runTierReopen(
   };
   const controlPlaneDecision = routeByOutcome(forRouting, ctx);
 
-  let finalOutput = outputWithEnforcement;
+  let finalOutput = result.output;
   if (controlPlaneDecision.stop && controlPlaneDecision.questionKey) {
-    const askInstruction = formatAskQuestionInstruction(controlPlaneDecision);
-    if (askInstruction) {
-      finalOutput = finalOutput + '\n\n---\n\n' + askInstruction;
-    }
+    const choiceBlock = formatChoiceForChat(controlPlaneDecision);
+    if (choiceBlock) finalOutput = finalOutput + '\n\n---\n\n' + choiceBlock;
   }
 
   return {

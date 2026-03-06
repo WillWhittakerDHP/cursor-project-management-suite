@@ -6,8 +6,6 @@
  * Tier-agnostic: one ensure function keyed by tier for guides.
  */
 
-import { MarkdownUtils } from '../../utils/markdown-utils';
-
 export type GuideTier = 'feature' | 'phase' | 'session';
 
 /** Section titles the docs audit expects; guides must include these (or equivalent) with sufficient content. */
@@ -26,14 +24,25 @@ export const REQUIRED_HANDOFF_SECTIONS: readonly string[] = [
 
 const MIN_SECTION_LENGTH = 30;
 
-/** First line index of a heading whose title includes sectionTitle. */
+/**
+ * Match section heading: for "Tasks" use exact title only so "#### Task 6.8.6.1: ..." never matches.
+ * WHY: includes("Tasks") would match headings containing "Tasks"; task blocks use "Task" + id, but
+ * we must only match the canonical "### Tasks" / "## Tasks" section to avoid replacing task blocks.
+ */
+function sectionTitleMatches(headingTitle: string, sectionTitle: string): boolean {
+  const t = headingTitle.trim();
+  if (sectionTitle === 'Tasks') return t === 'Tasks';
+  return t.includes(sectionTitle);
+}
+
+/** First line index of the section heading; uses exact match for "Tasks" to avoid matching #### Task X.Y.Z.N. */
 function findSectionStartLine(lines: string[], sectionTitle: string): number {
   return lines.findIndex((line) => {
     const trimmed = line.trim();
     if (!trimmed.startsWith('#')) return false;
     const titleMatch = trimmed.match(/^#+\s+(.+)$/);
     if (!titleMatch) return false;
-    return titleMatch[1].trim().includes(sectionTitle);
+    return sectionTitleMatches(titleMatch[1].trim(), sectionTitle);
   });
 }
 
@@ -48,6 +57,18 @@ function findSectionEndLine(lines: string[], startLine: number): number {
     }
   }
   return lines.length;
+}
+
+/** Count of #### Task or ### Task X.Y.Z.N blocks in content (session guide task blocks). */
+function countTaskBlocksInSection(sectionContent: string): number {
+  const taskHeadingRegex = /(?:^|\n)(?:-\s*\[\s*x?\s*\]\s*)?(?:####|###)\s+Task\s+\d+\.\d+\.\d+\.\d+[\s:]/im;
+  let count = 0;
+  let m: RegExpExecArray | null;
+  while ((m = taskHeadingRegex.exec(sectionContent)) !== null) {
+    count++;
+    if (count >= 2) return 2; // safeguard only needs to know "more than one"
+  }
+  return count;
 }
 
 // --- Minimal content builders (each yields a block so extractSection returns >= MIN_SECTION_LENGTH) ---
@@ -175,6 +196,8 @@ function buildMinimalSection(
 /**
  * Ensure content has all REQUIRED_GUIDE_SECTIONS for the tier, each with at least MIN_SECTION_LENGTH
  * characters. Replaces short or missing sections with minimal content; appends if section not found.
+ * Uses the same bounds for "short?" check and replacement so we never replace a range we didn't deem short.
+ * Session "Tasks": never replace if the section already has 2+ task blocks (preserve tierDown list).
  */
 export function ensureGuideHasRequiredSections(
   content: string,
@@ -186,24 +209,36 @@ export function ensureGuideHasRequiredSections(
   if (!sections.length) return content;
 
   let result = content;
+  const currentLines = result.split('\n');
 
   for (const sectionTitle of sections) {
-    const sectionContent = MarkdownUtils.extractSection(result, sectionTitle);
-    if (sectionContent.trim().length >= MIN_SECTION_LENGTH) continue;
-
-    const minimal = buildMinimalSection(tier, sectionTitle, identifier, description);
-    const currentLines = result.split('\n');
     const startIdx = findSectionStartLine(currentLines, sectionTitle);
 
     if (startIdx === -1) {
+      const minimal = buildMinimalSection(tier, sectionTitle, identifier, description);
       result = result.trimEnd() + '\n\n---\n\n' + minimal;
+      // Refresh lines after append so next section uses updated content
+      currentLines.length = 0;
+      currentLines.push(...result.split('\n'));
       continue;
     }
 
     const endIdx = findSectionEndLine(currentLines, startIdx);
+    const sectionContent = currentLines.slice(startIdx, endIdx).join('\n');
+
+    // Session "Tasks": preserve section if it already has multiple task blocks (tierDown list from tierUp).
+    if (tier === 'session' && sectionTitle === 'Tasks' && countTaskBlocksInSection(sectionContent) >= 2) {
+      continue;
+    }
+
+    if (sectionContent.trim().length >= MIN_SECTION_LENGTH) continue;
+
+    const minimal = buildMinimalSection(tier, sectionTitle, identifier, description);
     const before = currentLines.slice(0, startIdx).join('\n');
     const after = currentLines.slice(endIdx).join('\n');
     result = (before ? before + '\n\n' : '') + minimal + (after ? '\n\n' + after : '');
+    currentLines.length = 0;
+    currentLines.push(...result.split('\n'));
   }
 
   return result;

@@ -111,8 +111,9 @@ export async function runTierEndWorkflow(
   await recordEndStep(ctx, 'readme_cleanup', 'exit_success');
 
   await recordEndStep(ctx, 'commit_remaining', 'enter');
-  await stepCommitUncommittedNonCursor(ctx);
-  await recordEndStep(ctx, 'commit_remaining', 'exit_success');
+  const commitExit = await stepCommitUncommittedNonCursor(ctx);
+  await recordEndStep(ctx, 'commit_remaining', commitExit ? 'exit_failure' : 'exit_success');
+  if (commitExit) return attachEndShadowPayload(ctx, commitExit);
 
   await recordEndStep(ctx, 'git', 'enter');
   const gitExit = await stepTierGit(ctx, hooks);

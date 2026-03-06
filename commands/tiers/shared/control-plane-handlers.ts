@@ -9,6 +9,7 @@ import type {
   ControlPlaneOutcome,
 } from './control-plane-types';
 import { QUESTION_KEYS } from './control-plane-types';
+import { buildStartReinvokeParams } from './control-plane-reinvoke';
 
 function baseCascadeDecision(outcome: ControlPlaneOutcome, _requiredMode: 'plan' | 'agent'): ControlPlaneDecision {
   if (outcome.cascade != null) {
@@ -58,7 +59,7 @@ export function handlePendingPushConfirmation(outcome: ControlPlaneOutcome): Con
   };
 }
 
-/** verification_work_suggested: show verification checklist (deliverables), AskQuestion (add follow-up / do manually / skip). */
+/** verification_work_suggested: show verification checklist (deliverables), present choices in chat (add follow-up / do manually / skip). */
 export function handleVerificationWorkSuggested(outcome: ControlPlaneOutcome): ControlPlaneDecision {
   return {
     stop: true,
@@ -68,7 +69,7 @@ export function handleVerificationWorkSuggested(outcome: ControlPlaneOutcome): C
   };
 }
 
-/** task_complete: if cascade present, AskQuestion cascade; else continue. */
+/** task_complete: if cascade present, present choices in chat; else continue. */
 export function handleTaskComplete(outcome: ControlPlaneOutcome): ControlPlaneDecision {
   return baseCascadeDecision(outcome, 'agent');
 }
@@ -85,7 +86,7 @@ export function handleAuditFailed(outcome: ControlPlaneOutcome, outputFallback: 
   };
 }
 
-/** Generic failure: Plan mode hard-stop, AskQuestion retry/audit-fix/skip. No cascade. */
+/** Generic failure: Plan mode hard-stop, present choices in chat (retry/audit-fix/skip). No cascade. */
 export function handleFailure(outcome: ControlPlaneOutcome, outputFallback: string): ControlPlaneDecision {
   return {
     stop: true,
@@ -105,12 +106,12 @@ export function handleMissingOutcome(output: string): ControlPlaneDecision {
   };
 }
 
-/** Success with optional cascade: if cascade, AskQuestion; else continue. */
+/** Success with optional cascade: if cascade, present choices in chat; else continue. */
 export function handleSuccessWithOptionalCascade(outcome: ControlPlaneOutcome): ControlPlaneDecision {
   return baseCascadeDecision(outcome, 'agent');
 }
 
-/** reopen_ok: Plan mode, AskQuestion (plan file / plan from scratch / quick fix). */
+/** reopen_ok: Plan mode, present choices in chat (plan file / plan from scratch / quick fix). */
 export function handleReopenOk(outcome: ControlPlaneOutcome): ControlPlaneDecision {
   return {
     stop: true,
@@ -121,15 +122,23 @@ export function handleReopenOk(outcome: ControlPlaneOutcome): ControlPlaneDecisi
 }
 
 /**
- * uncommitted_changes_blocking: AskQuestion commit / stash.
+ * uncommitted_changes_blocking: present choices in chat (commit / stash).
  * Agent should:
  *   "Commit" → git add -A && git commit -m "chore: commit changes before branch switch" → re-invoke command
  *   "Skip"   → git stash --include-untracked → re-invoke command (agent should git stash pop after command completes)
+ * For start: re-invoke params include options so workflow continues from the gate (resumeAfterStep), not from the top.
  */
 export function handleUncommittedChanges(
   outcome: ControlPlaneOutcome,
   ctx: ControlPlaneContext
 ): ControlPlaneDecision {
+  const params =
+    ctx.action === 'start'
+      ? buildStartReinvokeParams(ctx.originalParams as Record<string, unknown>, {
+          mode: 'execute',
+          resumeAfterStep: 'ensure_branch',
+        })
+      : ctx.originalParams;
   return {
     stop: true,
     requiredMode: 'plan',
@@ -138,7 +147,16 @@ export function handleUncommittedChanges(
     nextInvoke: {
       tier: ctx.tier,
       action: ctx.action,
-      params: ctx.originalParams,
+      params,
     },
+  };
+}
+
+/** wrong_branch_before_commit: tier-end aborted because current git branch does not match the tier. User must checkout correct branch and re-run. */
+export function handleWrongBranchBeforeCommit(outcome: ControlPlaneOutcome): ControlPlaneDecision {
+  return {
+    stop: true,
+    requiredMode: 'plan',
+    message: outcome.deliverables ?? outcome.nextAction ?? 'Wrong branch. Checkout the correct tier branch and re-run tier-end.',
   };
 }

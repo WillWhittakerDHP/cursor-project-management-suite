@@ -1,17 +1,19 @@
 /**
- * Emits an explicit instruction block so the agent uses Cursor's AskQuestion UI
- * (clickable options) instead of writing the question as plain chat text.
+ * Format control-plane message and options for display in chat.
+ * When a tier result requires a user choice, the command output includes this block;
+ * the agent presents it in chat and the user runs the appropriate command or replies.
+ * No external "AskQuestion" tool — choices are shown as markdown in the command output.
  */
 
 import type { ControlPlaneDecision } from './control-plane-types';
 import { QUESTION_KEYS } from './control-plane-types';
 
-interface AskQuestionOption {
+interface ChoiceOption {
   id: string;
   label: string;
 }
 
-const QUESTION_KEY_OPTIONS: Record<string, AskQuestionOption[]> = {
+const QUESTION_KEY_OPTIONS: Record<string, ChoiceOption[]> = {
   [QUESTION_KEYS.CASCADE]: [
     { id: 'yes_cascade', label: 'Yes — run cascade command' },
     { id: 'no_stop', label: 'No — stop here' },
@@ -43,29 +45,28 @@ const QUESTION_KEY_OPTIONS: Record<string, AskQuestionOption[]> = {
 };
 
 /**
- * Emit a structured instruction block that the agent can parse to build an
- * AskQuestion tool call. The cursor rule `process-workflow.mdc` tells the agent
- * to look for ASKQUESTION_REQUIRED=true and invoke the AskQuestion tool.
+ * Format message and options as markdown for the agent to present in chat.
+ * When decision has questionKey, returns a block to append to command output.
  */
-export function formatAskQuestionInstruction(decision: ControlPlaneDecision): string {
+export function formatChoiceForChat(decision: ControlPlaneDecision): string {
   if (!decision.questionKey) return '';
   const options = QUESTION_KEY_OPTIONS[decision.questionKey];
   if (!options) return '';
+  const prompt = decision.message?.trim() ? decision.message : 'How would you like to proceed?';
+  const optionLines = options.map((o, i) => `${i + 1}. **${o.label}**`).join('\n');
   const cascadeNote =
     decision.questionKey === QUESTION_KEYS.CASCADE && decision.cascadeCommand
-      ? `\nASKQUESTION_CASCADE_COMMAND=${decision.cascadeCommand}`
+      ? `\n\n**If you choose "Yes":** run \`${decision.cascadeCommand}\``
       : '';
-  const optionLines = options
-    .map((o) => `  - id: "${o.id}" label: "${o.label}"`)
-    .join('\n');
   return [
-    '**ASKQUESTION_REQUIRED=true**',
-    `ASKQUESTION_KEY=${decision.questionKey}`,
-    `ASKQUESTION_PROMPT=How would you like to proceed?`,
-    `ASKQUESTION_OPTIONS:`,
+    '**User choice required**',
+    '',
+    prompt,
+    '',
+    '**Options:**',
     optionLines,
     cascadeNote,
     '',
-    'AGENT DIRECTIVE: Call the AskQuestion tool now with the prompt and options above. Do NOT write these options as plain text.',
+    'Present this in chat and direct the user to run the corresponding command or reply with their choice.',
   ].join('\n');
 }

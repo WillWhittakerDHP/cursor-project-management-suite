@@ -23,6 +23,8 @@ export interface CommandExecutionOptions {
   mode?: CommandExecutionMode;
   /** Option A second gate: when true, skip Part A steps and run from read_start_context (guide already filled by agent). */
   guideFillComplete?: boolean;
+  /** When set, the start workflow skips all steps before this one (proceed past a gate without re-running from the top). */
+  resumeAfterStep?: string;
 }
 
 /**
@@ -69,7 +71,7 @@ export function cursorModeForExecution(executionMode: CommandExecutionMode): Cur
 export function modeGateText(cursorMode: CursorMode, commandName?: string): string {
   const cmd = commandName ? ` \`/${commandName}\`` : '';
   if (cursorMode === 'plan') {
-    return `**Mode gate:** Ensure Plan mode (Ask mode) before running${cmd} so CreatePlan and AskQuestion are available.`;
+    return `**Mode gate:** Ensure Plan mode (Ask mode) before running${cmd} so the user can respond in chat (e.g. CreatePlan, choices).`;
   }
   return `**Mode gate:** Ensure Agent mode before executing changes${cmd}.`;
 }

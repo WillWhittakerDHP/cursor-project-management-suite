@@ -1,7 +1,6 @@
 /**
  * Shared tier end: dispatches to feature/phase/session/task end implementations.
  * Single entry point for tier end pipeline; each tier's logic remains in its composite.
- * Mode gate is applied here (generic); tier impls do not add mode messages.
  * Control-plane routing runs after the command; result includes controlPlaneDecision.
  */
 
@@ -12,16 +11,13 @@ import type { SessionEndParams } from '../session/composite/session-end-impl';
 import type { TaskEndParams } from '../task/composite/task-end-impl';
 import {
   resolveCommandExecutionMode,
-  cursorModeForExecution,
-  modeGateText,
   isPlanMode,
-  enforceModeSwitch,
   getOptionsFromParams,
 } from '../../utils/command-execution-mode';
 import { verifyApp } from '../../utils/verify-app';
 import { routeByOutcome } from './control-plane-route';
 import type { ControlPlaneDecision, CommandResultForRouting } from './control-plane-types';
-import { formatAskQuestionInstruction } from './control-plane-askquestion-instruction';
+import { formatChoiceForChat } from './control-plane-choice-display';
 import { getDefaultShadowRecorder } from '../../harness/run-recorder-shadow';
 import { createContextInjector } from '../../harness/context-injector';
 import { defaultKernel } from '../../harness/kernel';
@@ -43,7 +39,7 @@ export type TierEndResult = {
   output: string;
   steps: Record<string, { success: boolean; output: string }>;
   outcome: import('../../utils/tier-outcome').TierEndOutcome;
-  modeGate: string;
+  modeGate?: string;
 };
 
 /** Result of runTierEnd including control-plane decision. */
@@ -72,7 +68,6 @@ export async function runTierEnd(
   params: TierEndParams
 ): Promise<TierEndResultWithControlPlane> {
   const executionMode = resolveCommandExecutionMode(getOptionsFromParams(params), 'execute');
-  const gate = modeGateText(cursorModeForExecution(executionMode), `${config.name}-end`);
 
   const shadowRecorder = getDefaultShadowRecorder();
   const runId = `run_${config.name}_end_${Date.now()}`;
@@ -106,10 +101,10 @@ export async function runTierEnd(
   if (config.preflight?.ensureAppRunning?.onEnd && !isPlanMode(executionMode)) {
     const appCheck = await verifyApp();
     if (!appCheck.success) {
-      const failedResult = {
+      const failedResult: TierEndResult = {
         success: false,
         output: appCheck.output,
-        modeGate: gate,
+        steps: {},
         outcome: { reasonCode: 'app_not_running', nextAction: appCheck.output },
       };
       const decision = routeByOutcome(
@@ -118,7 +113,7 @@ export async function runTierEnd(
       );
       return {
         ...failedResult,
-        output: enforceModeSwitch('plan', `${config.name}-end`, 'failure').text + '\n\n---\n\n' + appCheck.output,
+        output: appCheck.output,
         controlPlaneDecision: decision,
       } as TierEndResultWithControlPlane;
     }
@@ -152,47 +147,42 @@ export async function runTierEnd(
         cascade: kernelResult.outcome.cascade,
       });
     }
-    const needsPlanFirst =
-      !kernelResult.success ||
-      kernelResult.outcome.reasonCode === 'pending_push' ||
-      kernelResult.outcome.cascade != null;
-    const enforcedMode = needsPlanFirst ? ('plan' as const) : cursorModeForExecution(executionMode);
-    const enforcement = enforceModeSwitch(
-      enforcedMode,
-      `${config.name}-end`,
-      kernelResult.success ? 'normal' : 'failure'
-    );
-    let finalOutput = enforcement.text + '\n\n---\n\n' + kernelResult.output;
+    let finalOutput = kernelResult.output;
     if (kernelResult.controlPlaneDecision.stop && kernelResult.controlPlaneDecision.questionKey) {
-      const askInstruction = formatAskQuestionInstruction(kernelResult.controlPlaneDecision);
-      if (askInstruction) finalOutput = finalOutput + '\n\n---\n\n' + askInstruction;
+      const choiceBlock = formatChoiceForChat(kernelResult.controlPlaneDecision);
+      if (choiceBlock) finalOutput = finalOutput + '\n\n---\n\n' + choiceBlock;
     }
     return {
       success: kernelResult.success,
       output: finalOutput,
       steps: {},
       outcome: kernelResult.outcome as TierEndResult['outcome'],
-      modeGate: gate,
       controlPlaneDecision: kernelResult.controlPlaneDecision,
     } as TierEndResultWithControlPlane;
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    const failedResult = {
+    const failedResult: TierEndResult = {
       success: false,
       output: `**${config.name}-end failed:**\n\n\`\`\`\n${message}\n\`\`\``,
+      steps: {},
       outcome: {
         status: 'failed' as const,
         reasonCode: 'unhandled_error',
         nextAction: `Unhandled error in ${config.name}-end. See playbook: "On command crash".`,
       },
-      modeGate: gate,
     };
     const decision = routeByOutcome(
       failedResult as CommandResultForRouting,
       { tier: config.name, action: 'end', originalParams: params }
     );
+    let failedOutput = failedResult.output;
+    if (decision.stop && decision.questionKey) {
+      const choiceBlock = formatChoiceForChat(decision);
+      if (choiceBlock) failedOutput = failedOutput + '\n\n---\n\n' + choiceBlock;
+    }
     return {
       ...failedResult,
+      output: failedOutput,
       controlPlaneDecision: decision,
     } as TierEndResultWithControlPlane;
   }

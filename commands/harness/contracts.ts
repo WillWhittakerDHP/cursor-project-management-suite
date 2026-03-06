@@ -134,6 +134,7 @@ export type FailureReasonCode =
   | 'test_failed'
   | 'preflight_failed'
   | 'git_failed'
+  | 'wrong_branch_before_commit'
   | 'unhandled_error';
 
 export type ReasonCode = FlowReasonCode | FailureReasonCode;

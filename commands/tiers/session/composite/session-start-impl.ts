@@ -133,10 +133,11 @@ export async function sessionStartImpl(
   shadow?: ShadowContext
 ): Promise<TierStartResult | TierStartWorkflowResult> {
   const context = await WorkflowCommandContext.getCurrent();
-  const resolvedDescription =
-    description !== undefined && description !== ''
+  const rawDescription =
+    description != null && description !== ''
       ? description
       : await deriveSessionDescription(sessionId, context);
+  const resolvedDescription = typeof rawDescription === 'string' ? rawDescription : String(rawDescription ?? sessionId);
   const output: string[] = [];
 
   const ctx: TierStartWorkflowContext = {

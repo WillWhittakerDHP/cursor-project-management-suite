@@ -8,18 +8,11 @@
  * feature-start, phase-start, session-start, session-end, phase-end, and tier-reopen.
  */
 
-import { join } from 'path';
 import type { TierConfig, TierName } from '../../tiers/shared/types';
 import type { WorkflowCommandContext } from '../../utils/command-context';
 import { tierUp } from '../../utils/tier-navigation';
 import { getConfigForTier } from '../../tiers/configs/index';
-import {
-  getCurrentBranch,
-  branchExists,
-  isBranchBasedOn,
-  runCommand,
-  PROJECT_ROOT,
-} from '../../utils/utils';
+import { getCurrentBranch, branchExists, isBranchBasedOn, runCommand } from '../../utils/utils';
 import { createBranch } from '../atomic/create-branch';
 import { gitMerge } from '../atomic/merge';
 import { gitPush } from '../atomic/push';
@@ -88,7 +81,8 @@ async function listBranchesByPrefix(prefix: string): Promise<string[]> {
 
 interface UncommittedResolution {
   clean: boolean;
-  autoCommitted: boolean;
+  /** True when we stashed workflow artifacts (no commit); caller should pop after checkout. */
+  stashedWorkflowArtifacts?: boolean;
   /** Non-auto-committable files (need user decision). */
   blockingFiles: string[];
   message: string;
@@ -120,8 +114,8 @@ export function isProjectManagerPath(path: string): boolean {
 
 /**
  * True if path is under client/.audit-reports (or frontend-root/.audit-reports).
- * Audit reports are workflow artifacts; we auto-commit them before branch switch
- * so /accepted-proceed is not blocked by audit output.
+ * Audit reports are workflow artifacts; we stash them before branch switch so
+ * /accepted-proceed is not blocked.
  */
 export function isAuditReportsPath(path: string): boolean {
   const p = path.trim();
@@ -133,7 +127,7 @@ export function isAuditReportsPath(path: string): boolean {
   );
 }
 
-/** Paths we auto-commit before branch switch: .cursor, .project-manager, and audit reports. */
+/** Paths we treat as non-blocking: stash before checkout, pop after (no commit). */
 export function isAutoCommittable(filePath: string): boolean {
   return (
     isCursorPath(filePath) ||
@@ -142,95 +136,31 @@ export function isAutoCommittable(filePath: string): boolean {
   );
 }
 
-/** Paths in main repo staged as workflow artifacts (excludes .cursor when it is a nested repo). */
-const MAIN_REPO_AUTO_COMMIT_PATHS = '.project-manager client/.audit-reports';
-/** Paths in main repo when .cursor is not a nested repo (single-commit fallback). */
-const MAIN_REPO_AUTO_COMMIT_PATHS_WITH_CURSOR = '.cursor .project-manager client/.audit-reports';
-const MAIN_REPO_COMMIT_MESSAGE =
-  'chore: auto-commit workflow artifacts (.project-manager, audit reports) before branch switch';
-const MAIN_REPO_COMMIT_MESSAGE_WITH_CURSOR =
-  'chore: auto-commit workflow artifacts (.cursor, .project-manager, audit reports) before branch switch';
-const CURSOR_COMMIT_MESSAGE =
-  'chore: auto-commit workflow artifacts before branch switch';
-
-/** True if .cursor has its own .git (nested repo / submodule); commits for .cursor go there. */
-async function isCursorNestedRepo(): Promise<boolean> {
-  const result = await runCommand('test -d .cursor/.git');
-  return result.success;
-}
-
-/**
- * Commit auto-committable changes in the .cursor repo (when it is a nested repo).
- * Returns true if committed or nothing to commit; false on failure.
- */
-async function autoCommitInCursorRepo(): Promise<{ committed: boolean; success: boolean }> {
-  const cursorRoot = join(PROJECT_ROOT, '.cursor');
-  const addResult = await runCommand('git add -A', cursorRoot);
-  if (!addResult.success) {
-    return { committed: false, success: false };
-  }
-  const diffResult = await runCommand('git diff --cached --quiet', cursorRoot);
-  if (diffResult.success) {
-    return { committed: false, success: true };
-  }
-  const commitResult = await runCommand(
-    `git commit -m "${CURSOR_COMMIT_MESSAGE}"`,
-    cursorRoot
+/** Paths we never auto-commit in tier-end (same as non-blocking at checkout: .cursor, .project-manager, audit reports). */
+export function isNeverCommitPath(filePath: string): boolean {
+  return (
+    isCursorPath(filePath) ||
+    isProjectManagerPath(filePath) ||
+    isAuditReportsPath(filePath)
   );
-  return { committed: true, success: commitResult.success };
 }
 
-/**
- * Commit auto-committable changes in the main repo. When cursorIsNested and there are
- * .cursor changes, stage .cursor (submodule pointer) so the main repo records the current ref.
- */
-async function autoCommitInMainRepo(
-  cursorIsNested: boolean,
-  includeCursorRef: boolean
-): Promise<{ success: boolean; message: string }> {
-  const pathsToAdd =
-    cursorIsNested && includeCursorRef
-      ? `.cursor ${MAIN_REPO_AUTO_COMMIT_PATHS}`
-      : cursorIsNested
-        ? MAIN_REPO_AUTO_COMMIT_PATHS
-        : MAIN_REPO_AUTO_COMMIT_PATHS_WITH_CURSOR;
-  const message =
-    cursorIsNested && includeCursorRef
-      ? 'chore: auto-commit workflow artifacts (update .cursor ref, .project-manager, audit reports) before branch switch'
-      : cursorIsNested
-        ? MAIN_REPO_COMMIT_MESSAGE
-        : MAIN_REPO_COMMIT_MESSAGE_WITH_CURSOR;
+/** Default path prefixes for tier-end "commit remaining": only app code under these is auto-committed. */
+export const DEFAULT_ALLOWED_COMMIT_PREFIXES = ['frontend-root/', 'server/'] as const;
 
-  const addResult = await runCommand(`git add ${pathsToAdd}`);
-  if (!addResult.success) {
-    return {
-      success: false,
-      message: `Failed to stage workflow artifacts: ${addResult.error || addResult.output}`,
-    };
-  }
-  const diffResult = await runCommand('git diff --cached --quiet');
-  if (diffResult.success) {
-    return { success: true, message: 'Nothing to commit in main repo (already clean).' };
-  }
-  const commitResult = await runCommand(`git commit -m "${message}"`);
-  return {
-    success: commitResult.success,
-    message: commitResult.success
-      ? 'Auto-committed workflow artifacts in main repo.'
-      : `Failed to commit: ${commitResult.error || commitResult.output}`,
-  };
-}
+/** Paths to stash when only workflow artifacts are uncommitted (non-blocking flow). */
+const WORKFLOW_ARTIFACT_STASH_PATHS = '.cursor .project-manager client/.audit-reports';
 
 /**
  * Check for uncommitted changes and resolve them before checkout:
  * - No changes → clean
- * - Only workflow artifacts → commit in correct repo: .cursor changes in .cursor repo (if nested), .project-manager and audit reports in main repo
+ * - Only workflow artifacts (.cursor, .project-manager, audit reports) → stash them (non-blocking); pop after checkout
  * - Other files present → return unresolved with the blocking file list
  */
 async function resolveUncommittedBeforeCheckout(): Promise<UncommittedResolution> {
   const status = await runCommand('git status --porcelain');
   if (!status.success || !status.output.trim()) {
-    return { clean: true, autoCommitted: false, blockingFiles: [], message: '' };
+    return { clean: true, blockingFiles: [], message: '' };
   }
 
   const lines = status.output.trim().split('\n').filter(l => l.length > 0);
@@ -240,119 +170,90 @@ async function resolveUncommittedBeforeCheckout(): Promise<UncommittedResolution
   const blockingFiles = changedFiles.filter(f => !isAutoCommittable(f.trim()));
 
   if (autoFiles.length > 0 && blockingFiles.length === 0) {
-    const cursorFiles = autoFiles.filter(f => isCursorPath(f.trim()));
-    const cursorIsNested = await isCursorNestedRepo();
-
-    let cursorCommitted = false;
-    if (cursorFiles.length > 0 && cursorIsNested) {
-      const cursorResult = await autoCommitInCursorRepo();
-      cursorCommitted = cursorResult.committed;
-      if (!cursorResult.success) {
-        return {
-          clean: false,
-          autoCommitted: false,
-          blockingFiles: autoFiles,
-          message:
-            'Failed to auto-commit in .cursor repo (nested repo). Resolve .cursor changes manually or commit from .cursor directory.',
-        };
-      }
-    }
-
-    const includeCursorRef = cursorIsNested && cursorFiles.length > 0;
-    const mainResult = await autoCommitInMainRepo(cursorIsNested, includeCursorRef);
-    if (!mainResult.success) {
+    const stashResult = await runCommand(
+      `git stash push -m "workflow artifacts (non-blocking)" -- ${WORKFLOW_ARTIFACT_STASH_PATHS}`
+    );
+    if (!stashResult.success) {
       return {
         clean: false,
-        autoCommitted: false,
         blockingFiles: autoFiles,
-        message: mainResult.message,
+        message: `Failed to stash workflow artifacts: ${stashResult.error || stashResult.output}`,
       };
     }
     return {
       clean: true,
-      autoCommitted: true,
+      stashedWorkflowArtifacts: true,
       blockingFiles: [],
       message:
-        cursorIsNested && cursorFiles.length > 0
-          ? 'Auto-committed workflow artifacts (.cursor in nested repo, .project-manager and audit reports in main).'
-          : 'Auto-committed workflow artifacts (.cursor, .project-manager, audit reports).',
+        'Stashed workflow artifacts (.cursor, .project-manager, audit reports) so we can switch branches. ' +
+        'Planning docs and other open files under .project-manager will briefly disappear from the working tree (e.g. show as deleted/red in the editor) and will be restored automatically after checkout. No files were deleted.',
     };
-  }
-
-  if (autoFiles.length > 0 && blockingFiles.length > 0) {
-    const cursorFiles = autoFiles.filter(f => isCursorPath(f.trim()));
-    const cursorIsNested = await isCursorNestedRepo();
-
-    if (cursorFiles.length > 0 && cursorIsNested) {
-      await autoCommitInCursorRepo();
-    }
-
-    const includeCursorRef = cursorIsNested && cursorFiles.length > 0;
-    const mainResult = await autoCommitInMainRepo(cursorIsNested, includeCursorRef);
-    if (mainResult.success) {
-      const recheck = await runCommand('git status --porcelain');
-      const remaining = (recheck.output ?? '').trim().split('\n').filter(l => l.length > 0);
-      const remainingPaths = remaining
-        .map(l => l.slice(3).trim())
-        .filter(f => !isAutoCommittable(f));
-      if (remainingPaths.length === 0) {
-        return {
-          clean: true,
-          autoCommitted: true,
-          blockingFiles: [],
-          message:
-            cursorIsNested && cursorFiles.length > 0
-              ? 'Auto-committed workflow artifacts (.cursor in nested repo, .project-manager and audit reports in main).'
-              : 'Auto-committed workflow artifacts (.cursor, .project-manager, audit reports).',
-        };
-      }
-      return {
-        clean: false,
-        autoCommitted: true,
-        blockingFiles: remainingPaths,
-        message:
-          'Auto-committed workflow artifacts. Remaining uncommitted files need attention.',
-      };
-    }
   }
 
   return {
     clean: false,
-    autoCommitted: false,
     blockingFiles,
     message: `Uncommitted changes in: ${blockingFiles.join(', ')}`,
   };
 }
 
+export interface CommitUncommittedOptions {
+  /** If set, commit is aborted when current branch does not match (wrong branch). */
+  expectedBranch?: string;
+  /** Only paths under these prefixes are staged; default is frontend-root/ and server/. Never-commit paths are always excluded. */
+  allowedPrefixes?: string[];
+}
+
 /**
- * Commit any uncommitted non-.cursor changes with the given message (e.g. tier-end "remaining work").
- * Uses same status/parsing strategy as resolveUncommittedBeforeCheckout; does not touch .cursor.
+ * Commit only in-scope, touched files (no .cursor, .project-manager, or audit reports).
+ * Optionally verifies current branch matches expectedBranch before committing.
  * Use from tier-end before runGit so the final push includes this commit.
  */
-export async function commitUncommittedNonCursor(commitMessage: string): Promise<{
-  committed: boolean;
-  success: boolean;
-  output: string;
-}> {
+export async function commitUncommittedNonCursor(
+  commitMessage: string,
+  options?: CommitUncommittedOptions
+): Promise<{ committed: boolean; success: boolean; output: string }> {
+  const allowedPrefixes = options?.allowedPrefixes ?? [...DEFAULT_ALLOWED_COMMIT_PREFIXES];
+
+  if (options?.expectedBranch != null) {
+    const current = await getCurrentBranch();
+    if (current !== options.expectedBranch) {
+      return {
+        committed: false,
+        success: false,
+        output: `Wrong branch. Current: ${current}. Expected: ${options.expectedBranch}. Checkout the correct branch and re-run tier-end.`,
+      };
+    }
+  }
+
   const status = await runCommand('git status --porcelain');
   if (!status.success || !status.output.trim()) {
     return { committed: false, success: true, output: '' };
   }
 
-  const lines = status.output.trim().split('\n').filter(l => l.length > 0);
-  const changedPaths = lines.map(l => l.slice(3).trim());
-  const nonCursorPaths = changedPaths.filter(p => !isCursorPath(p.trim()));
-  if (nonCursorPaths.length === 0) {
+  const lines = status.output.trim().split('\n').filter((l) => l.length > 0);
+  const changedPaths = lines.map((l) => l.slice(3).trim()).filter((p) => p.length > 0);
+
+  const inScopePaths = changedPaths.filter((p) => {
+    const trimmed = p.trim();
+    if (isNeverCommitPath(trimmed)) return false;
+    return allowedPrefixes.some((prefix) => trimmed === prefix || trimmed.startsWith(prefix));
+  });
+
+  if (inScopePaths.length === 0) {
     return { committed: false, success: true, output: '' };
   }
 
-  const addResult = await runCommand('git add -A');
-  if (!addResult.success) {
-    return { committed: false, success: false, output: `Failed to stage: ${addResult.error || addResult.output}` };
-  }
-  const resetResult = await runCommand('git reset -- .cursor');
-  if (!resetResult.success) {
-    return { committed: false, success: false, output: `Failed to unstage .cursor: ${resetResult.error || resetResult.output}` };
+  for (const path of inScopePaths) {
+    const safePath = path.replace(/'/g, "'\\''");
+    const addResult = await runCommand(`git add -- '${safePath}'`);
+    if (!addResult.success) {
+      return {
+        committed: false,
+        success: false,
+        output: `Failed to stage ${path}: ${addResult.error || addResult.output}`,
+      };
+    }
   }
 
   const diffStaged = await runCommand('git diff --cached --quiet');
@@ -363,8 +264,8 @@ export async function commitUncommittedNonCursor(commitMessage: string): Promise
   const safeMessage = commitMessage.replace(/'/g, "'\\''");
   const commitResult = await runCommand(`git commit -m '${safeMessage}'`);
   const output = commitResult.success
-    ? `Committed remaining uncommitted (non-.cursor) work: ${commitMessage}`
-    : `Commit remaining work failed: ${commitResult.error || commitResult.output}`;
+    ? `Committed in-scope changes (${inScopePaths.length} path(s)): ${commitMessage}`
+    : `Commit failed: ${commitResult.error || commitResult.output}`;
   return { committed: true, success: commitResult.success, output };
 }
 
@@ -435,6 +336,19 @@ export function buildBranchChain(
   }
 
   return chain;
+}
+
+/**
+ * Return the expected branch name for the given tier (leaf of branch chain).
+ * Used before commit to verify we are on the correct branch. Returns null for tiers with no branch (e.g. task).
+ */
+export function getExpectedBranchForTier(
+  config: TierConfig,
+  tierId: string,
+  context: WorkflowCommandContext
+): string | null {
+  const chain = buildBranchChain(config, tierId, context);
+  return chain.length > 0 ? chain[chain.length - 1].branchName : null;
 }
 
 // ─── Scope Coherence ──────────────────────────────────────────────────
@@ -509,9 +423,10 @@ export async function ensureTierBranch(
   const createIfMissing = options?.createIfMissing ?? true;
   const pullRoot = options?.pullRoot ?? false;
 
-  // Step 0a: Resolve uncommitted changes before any checkout
+  // Step 0a: Resolve uncommitted changes before any checkout (stash workflow artifacts only; no commit)
   const uncommitted = await resolveUncommittedBeforeCheckout();
-  if (uncommitted.autoCommitted) {
+  const needStashPop = uncommitted.clean && uncommitted.stashedWorkflowArtifacts === true;
+  if (needStashPop) {
     messages.push(uncommitted.message);
   }
   if (!uncommitted.clean) {
@@ -688,6 +603,21 @@ export async function ensureTierBranch(
   } else {
     messages.push(`Target branch ${targetLink.branchName} does not exist and createIfMissing is false.`);
     return { success: false, messages, finalBranch: await getCurrentBranch(), chain };
+  }
+
+  // If we stashed workflow artifacts before checkout, restore them on the target branch
+  if (needStashPop) {
+    const popResult = await runCommand('git stash pop');
+    if (popResult.success) {
+      messages.push(
+        'Restored stashed workflow artifacts (.cursor, .project-manager, audit reports) on current branch. Planning docs and other .project-manager files are back in the working tree.'
+      );
+    } else {
+      messages.push(
+        `Stash pop had issues (e.g. conflicts): ${popResult.error || popResult.output}. ` +
+          'Resolve manually if needed; workflow artifacts remain in stash.'
+      );
+    }
   }
 
   return {

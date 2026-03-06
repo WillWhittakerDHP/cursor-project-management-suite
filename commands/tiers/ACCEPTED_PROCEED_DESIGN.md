@@ -2,7 +2,7 @@
 
 ## Goal
 
-- **Planning = chat.** After a tier start (or task start) returns a planning doc and context questions, the agent and user **talk in chat** with the doc in view. No AskQuestion for "what to lock in" or "which modal."
+- **Planning = chat.** After a tier start (or task start) returns a planning doc and context questions, the agent and user **talk in chat** with the doc in view. No separate tool for "what to lock in" or "which modal" — choices are presented in chat.
 - **"I'm done, go" = a command.** When the user is satisfied, they run a slash command instead of clicking an option. The command triggers the same re-invoke the playbook previously tied to "I'm satisfied with our plan and ready to begin" or "Begin Coding."
 
 ## Commands
@@ -25,7 +25,7 @@
 
 ## Playbook
 
-- **context_gathering:** Prefer chat-first; tell user to run `/accepted-proceed` when ready. Optional AskQuestion flow still supported.
+- **context_gathering:** Prefer chat-first; tell user to run `/accepted-proceed` when ready.
 - **plan_mode (session/phase/feature):** Prefer telling user to run `/accepted-proceed`; for task, run `/accepted-code` when ready to begin coding.
 - See START_END_PLAYBOOK_STRUCTURE.md "Proceed commands" table and per-reasonCode sections.
 

@@ -1,7 +1,8 @@
 /**
- * /accepted-proceed: run the next pass for the pending session/phase/feature start (chat-first flow).
- * Reads .tier-start-pending.json written by tier-start on context_gathering/plan_mode; reinvokes with pass 2 or execute.
- * When pass === 1, BLOCKS until the planning doc is filled (no placeholders); agent MUST fill doc before proceeding.
+ * /accepted-proceed: allow the pending session/phase/feature start to proceed past the gate (chat-first flow).
+ * Reads .tier-start-pending.json written by tier-start on context_gathering/plan_mode; continues the workflow from
+ * ensure_branch (resumeAfterStep) so the command does not re-run from the top. When pass === 1, BLOCKS until the
+ * planning doc is filled (no placeholders); agent MUST fill doc before proceeding.
  */
 
 import { runTierStart, type TierStartResultWithControlPlane } from './tier-start';
@@ -170,7 +171,7 @@ export async function acceptedProceed(): Promise<TierStartResultWithControlPlane
   }
 
   const config = getConfigForTier(state.tier) as TierConfig;
-  const options = { mode: 'execute' as const };
+  const options = { mode: 'execute' as const, resumeAfterStep: 'ensure_branch' as const };
 
   const result = await runTierStart(config, state.params, options);
 

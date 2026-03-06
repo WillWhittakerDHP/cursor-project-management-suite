@@ -29,4 +29,4 @@ Or from Agent: call `acceptedCode()` from the module above and capture the retur
 
 - Present `result.controlPlaneDecision.message` to the user.
 - Use `result.outcome` and `result.controlPlaneDecision` for routing per START_END_PLAYBOOK_STRUCTURE.md (cascade, etc.).
-- Do not use AskQuestion for "Begin Coding" when using this flow; the user signals by running this command.
+- The user signals "Begin Coding" by running this command; present the result message and route per playbook.

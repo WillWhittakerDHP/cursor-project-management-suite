@@ -67,9 +67,8 @@ export const SESSION_CONFIG: TierConfig = {
     if (ctx.scope?.phase?.branch) return ctx.scope.phase.branch;
     return `phase-${phaseId}`;
   },
-  getBranchName: (ctx, id) => {
-    const slug = ctx.scope?.session?.slug;
-    return slug ? `session-${id}-${slug}` : `session-${id}`;
+  getBranchName: (_ctx, id) => {
+    return `session-${id}`;
   },
   preflight: {
     ensureAppRunning: { onStart: true, onEnd: true },

@@ -9,27 +9,18 @@
 
 When responding to a `/session-start` command, follow this concise, focused structure:
 
-**⚠️ IMPORTANT: Mode and switching gate**
-
-- The **mode gate** (e.g. "Ensure Plan mode before running /session-start…") is **injected by the generic tier-start dispatcher** (`tier-start.ts`), not by the session impl. All mode logic lives in `.cursor/commands/utils/command-execution-mode.ts` (`modeGateText`, `CursorMode`, `CommandExecutionMode`). See START_END_PLAYBOOK_STRUCTURE.md → "Mode and switching gate."
-- Start commands **default to execute**: invoking `sessionStart(sessionId, description)` (no options) runs the full pipeline (branch, docs, audit, cascade). Use **`options: { mode: 'plan' }`** only when you want a plan-only preview and approval step.
-- The command performs setup operations (branch creation, validation, context loading); in execute mode it runs them directly.
+**Workflow:** Start commands first run in plan mode: they create the planning doc and return with `context_gathering`. Present the plan and message; when the user is ready they run **/accepted-proceed** to continue. Execute (branch, docs, audit, cascade) runs only when the user runs that command. See START_END_PLAYBOOK_STRUCTURE.md for the full procedure.
 
 ```
 ## Session: [X.Y] - [Description]
 
-### ⚠️ Plan Mode Workflow
+### Plan and next steps
 
-**Current Mode:** Plan Mode (or should be)
 - ✅ Safe operations completed (branch setup, validation, context loading)
 - 📋 Plan generation next
-- ⏸️ Implementation paused until approval
+- ⏸️ Implementation runs after the user approves (e.g. runs /accepted-proceed)
 
-**Next Steps:**
-1. Review the plan below
-2. Approve the plan explicitly
-3. Switch to Agent Mode
-4. Begin implementation
+**Next steps:** Review the plan below; when the user approves, run the next command as specified in the playbook (e.g. /accepted-proceed), then continue with implementation.
 
 ### Current State
 
@@ -101,20 +92,19 @@ Should I proceed with implementing these changes, or do you want to review the p
 
 ### ✅ DO:
 
-1. **Enforce plan mode** - Always remind about plan mode workflow at the start
+1. **Present the plan first** - Show the plan and deliverables; when the user approves (e.g. runs /accepted-proceed), continue with the next step per playbook.
 2. **Keep it concise** - Focus on what's needed to start, not exhaustive details
 3. **Show current state** - What's done ✅ vs what's missing ❌ (be specific)
 4. **Clear objectives** - Numbered list of what needs to be accomplished
 5. **Implementation plan** - High-level steps, not detailed task breakdowns
 6. **Key differences** - React vs Vue patterns (brief, focused)
 7. **Key focus** - What to verify or understand (brief)
-8. **Explicit approval** - Always end with: "Should I proceed with implementing these changes, or do you want to review the plan first?"
-9. **Mode switching instructions** - Clear instructions to switch to Agent Mode after approval
+8. **Explicit approval** - Always end with: "Should I proceed with implementing these changes, or do you want to review the plan first?" Direct the user to run /accepted-proceed when ready.
 
 ### ❌ DON'T:
 
-- Implement changes in Plan Mode (wait for approval and mode switch)
-- Skip mode enforcement reminders
+- Implement or run execute steps before the user has approved (e.g. run /accepted-proceed)
+- Skip presenting the plan and choices
 - Redundant sections (e.g., multiple "Session Overview" sections)
 - Excessive detail in task breakdowns (save detailed task info for actual task work)
 - Long code examples in initial response (provide snippets only if user requests)
@@ -183,16 +173,7 @@ Should I proceed with implementing these changes, or do you want to review the p
 - Why extend QueryClient? Provides app-level refresh methods without prop drilling.
 - When to use composables vs components? Composables for logic reuse; components for UI.
 
-**⚠️ Plan Mode Enforcement:**
-
-This plan has been generated in Plan Mode. Before implementation:
-
-1. **Review this plan** - Ensure all steps are clear and correct
-2. **Approve explicitly** - Say "proceed", "implement", "go ahead", etc.
-3. **Switch to Agent Mode** - Only then should implementation begin
-4. **Implement the approved plan** - Follow the steps above
-
-**Do NOT implement in Plan Mode** - Wait for approval and mode switch.
+**Next:** When the user is ready, they run **/accepted-proceed** (or reply with approval). Then present the result and continue with implementation per the playbook.
 
 Should I proceed with implementing these changes, or do you want to review the plan first? I can provide code snippets for each step if you prefer to implement incrementally.
 ```
@@ -254,6 +235,6 @@ import { defineStore } from 'pinia'
 ## Related Documents
 
 - Session Guide Template: `.cursor/commands/tiers/session/templates/session-guide.md`
-- Session Start Command: `.cursor/commands/tiers/session/composite/session.ts` (exports `sessionStart`). Invoke `sessionStart(sessionId, description?, options)`. Default (no options) runs in **execute** mode. Pass **`options: { mode: 'plan' }`** for plan-only preview. The mode gate text is injected by the generic `tier-start.ts` dispatcher via `modeGateText` from `command-execution-mode.ts`, not by the session impl.
+- Session Start Command: `.cursor/commands/tiers/session/composite/session.ts` (exports `sessionStart`). Invoke `sessionStart(sessionId, description?, options)`. First run creates the planning doc and returns `context_gathering`; execute runs when the user runs **/accepted-proceed**. See START_END_PLAYBOOK_STRUCTURE.md.
 - Workflow Rules: `.cursor/rules/USER_CODING_RULES.md` (Rule 19)
 
