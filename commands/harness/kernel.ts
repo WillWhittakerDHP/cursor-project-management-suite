@@ -15,12 +15,16 @@ import type {
   RunTraceHandle,
   ControlPlaneDecision,
   PluginStepResult,
+  StepRunResult,
+  PolicyPlugin,
 } from './contracts';
 import { getStepGraph } from './step-graph';
 import { routeByOutcome } from '../tiers/shared/control-plane-route';
 import type { CommandResultForRouting, ControlPlaneContext } from '../tiers/shared/control-plane-types';
 
 const clock = (): number => (typeof Date.now === 'function' ? Date.now() : 0);
+
+type StepLoopResult = { success: boolean; output: string; outcome: TierOutcome } | null;
 
 function defaultOutcome(success: boolean): TierOutcome {
   return {
@@ -43,6 +47,233 @@ function createContext(spec: WorkflowSpec, traceHandle: RunTraceHandle): Harness
   };
 }
 
+async function runPluginBeforeStep(
+  ctx: HarnessContext,
+  stepId: StepId,
+  activePlugins: PolicyPlugin[]
+): Promise<{ lastResult: StepLoopResult; breakStepLoop: boolean }> {
+  let lastResult: StepLoopResult = null;
+  let breakStepLoop = false;
+  for (const plugin of activePlugins) {
+    if (!plugin.beforeStep) continue;
+    try {
+      const res: PluginStepResult = await plugin.beforeStep(ctx, stepId);
+      if (res.action === 'abort_run') {
+        lastResult = {
+          success: false,
+          output: ctx.output.join('\n\n'),
+          outcome: { status: 'failed', reasonCode: 'preflight_failed', nextAction: res.diagnostic ?? 'Plugin aborted run.' },
+        };
+        breakStepLoop = true;
+        break;
+      }
+      if (res.action === 'skip_step') continue;
+    } catch (_e) {
+      ctx.diagnostics.push({ plugin: plugin.name, step: stepId, message: 'beforeStep threw (ignored)' });
+    }
+  }
+  return { lastResult, breakStepLoop };
+}
+
+async function recordStepFailure(
+  handle: RunTraceHandle,
+  stepId: StepId,
+  stepStart: number,
+  deps: HarnessDeps,
+  stepPath: string[],
+  ctx: HarnessContext,
+  activePlugins: PolicyPlugin[],
+  err: unknown
+): Promise<{ stepResult: null; lastResult: StepLoopResult }> {
+  for (const plugin of activePlugins) {
+    if (!plugin.onFailure) continue;
+    try {
+      await plugin.onFailure(ctx, stepId, err);
+    } catch (_e) {
+      ctx.diagnostics.push({ plugin: plugin.name, step: stepId, message: 'onFailure threw (ignored)' });
+    }
+  }
+  const message = err instanceof Error ? err.message : String(err);
+  await deps.recorder.step(handle, {
+    step: stepId,
+    phase: 'exit_failure',
+    ts: new Date().toISOString(),
+    reasonCode: 'unhandled_error',
+    details: { error: message },
+  });
+  stepPath.push(stepId);
+  ctx.stepResults[stepId] = { success: false, output: message, durationMs: (deps.clock?.() ?? clock()) - stepStart };
+  const lastResult: StepLoopResult = {
+    success: false,
+    output: ctx.output.join('\n\n'),
+    outcome: {
+      status: 'failed',
+      reasonCode: 'unhandled_error',
+      nextAction: `Step ${stepId} failed: ${message}`,
+    },
+  };
+  return { stepResult: null, lastResult };
+}
+
+async function runStepWithAdapter(
+  ctx: HarnessContext,
+  stepId: StepId,
+  stepStart: number,
+  deps: HarnessDeps,
+  stepPath: string[],
+  activePlugins: PolicyPlugin[]
+): Promise<{ stepResult: StepRunResult | null; lastResult: StepLoopResult }> {
+  try {
+    const stepResult = await deps.adapter.runStep(ctx, stepId);
+    return { stepResult, lastResult: null };
+  } catch (err) {
+    return recordStepFailure(ctx.traceHandle!, stepId, stepStart, deps, stepPath, ctx, activePlugins, err);
+  }
+}
+
+async function recordStepCompletion(
+  handle: RunTraceHandle,
+  stepId: StepId,
+  stepResult: StepRunResult | null,
+  stepStart: number,
+  deps: HarnessDeps,
+  stepPath: string[],
+  ctx: HarnessContext
+): Promise<{ lastResult: StepLoopResult; exitEarly: boolean }> {
+  const durationMs = (deps.clock?.() ?? clock()) - stepStart;
+  if (stepResult !== null) {
+    const success = stepResult.success;
+    await deps.recorder.step(handle, {
+      step: stepId,
+      phase: success ? 'exit_success' : 'exit_failure',
+      ts: new Date().toISOString(),
+      durationMs,
+      reasonCode: stepResult.outcome.reasonCode,
+    });
+    stepPath.push(stepId);
+    ctx.stepResults[stepId] = {
+      success,
+      output: stepResult.output,
+      durationMs,
+    };
+    if (stepResult.output) ctx.output.push(stepResult.output);
+    const lastResult: StepLoopResult = {
+      success: stepResult.success,
+      output: ctx.output.join('\n\n'),
+      outcome: stepResult.outcome,
+    };
+    return { lastResult, exitEarly: stepResult.exitEarly };
+  }
+  await deps.recorder.step(handle, {
+    step: stepId,
+    phase: 'exit_success',
+    ts: new Date().toISOString(),
+    durationMs,
+  });
+  stepPath.push(stepId);
+  return { lastResult: null, exitEarly: false };
+}
+
+async function runPluginAfterStep(
+  ctx: HarnessContext,
+  stepId: StepId,
+  activePlugins: PolicyPlugin[],
+  lastResult: StepLoopResult
+): Promise<{ lastResult: StepLoopResult; breakStepLoop: boolean }> {
+  let breakStepLoop = false;
+  for (const plugin of activePlugins) {
+    if (!plugin.afterStep) continue;
+    try {
+      const res: PluginStepResult = await plugin.afterStep(ctx, stepId);
+      if (res.action === 'abort_run' && lastResult == null) {
+        lastResult = {
+          success: false,
+          output: ctx.output.join('\n\n'),
+          outcome: { status: 'failed', reasonCode: 'preflight_failed', nextAction: res.diagnostic ?? 'Plugin aborted run.' },
+        };
+        breakStepLoop = true;
+        break;
+      }
+    } catch (_e) {
+      ctx.diagnostics.push({ plugin: plugin.name, step: stepId, message: 'afterStep threw (ignored)' });
+    }
+  }
+  return { lastResult, breakStepLoop };
+}
+
+function applyPluginOutcomeContributions(
+  ctx: HarnessContext,
+  activePlugins: PolicyPlugin[],
+  finalResult: { success: boolean; output: string; outcome: TierOutcome }
+): { success: boolean; output: string; outcome: TierOutcome } {
+  let result = finalResult;
+  for (const plugin of activePlugins) {
+    if (!plugin.contributeOutcome) continue;
+    try {
+      const partial = plugin.contributeOutcome(ctx);
+      if (partial && typeof partial === 'object') {
+        result = {
+          ...result,
+          outcome: { ...result.outcome, ...partial },
+        };
+      }
+    } catch (_e) {
+      ctx.diagnostics.push({ plugin: plugin.name, step: '', message: 'contributeOutcome threw (ignored)' });
+    }
+  }
+  return result;
+}
+
+async function buildAndRecordDecision(
+  handle: RunTraceHandle,
+  finalResult: { success: boolean; output: string; outcome: TierOutcome },
+  deps: HarnessDeps,
+  stepPath: string[]
+): Promise<HarnessRunResult> {
+  const forRouting: CommandResultForRouting = {
+    success: finalResult.success,
+    output: finalResult.output,
+    outcome: {
+      reasonCode: finalResult.outcome.reasonCode,
+      nextAction: finalResult.outcome.nextAction,
+      ...(finalResult.outcome.deliverables !== undefined && { deliverables: finalResult.outcome.deliverables }),
+      ...(finalResult.outcome.cascade !== undefined && { cascade: finalResult.outcome.cascade }),
+    },
+  };
+  const controlPlaneDecision: ControlPlaneDecision = deps.routingContext
+    ? (routeByOutcome(forRouting, deps.routingContext as ControlPlaneContext) as unknown as ControlPlaneDecision)
+    : {
+        requiredMode: 'plan' as const,
+        stop: !finalResult.success,
+        message: finalResult.outcome.nextAction,
+      } as ControlPlaneDecision;
+
+  await deps.recorder.decision(handle, {
+    requiredMode: controlPlaneDecision.requiredMode,
+    stop: controlPlaneDecision.stop,
+    message: controlPlaneDecision.message,
+    questionKey: controlPlaneDecision.questionKey,
+    cascadeCommand: controlPlaneDecision.cascadeCommand,
+  });
+  await deps.recorder.end(handle, {
+    success: finalResult.success,
+    output: finalResult.output,
+    outcome: finalResult.outcome,
+    controlPlaneDecision,
+    traceId: handle.traceId,
+    stepPath: stepPath as StepId[],
+  });
+
+  return {
+    success: finalResult.success,
+    output: finalResult.output,
+    outcome: finalResult.outcome,
+    controlPlaneDecision,
+    traceId: handle.traceId,
+    stepPath: stepPath as StepId[],
+  };
+}
+
 /** Default kernel implementation: getStepGraph + run loop. */
 export const defaultKernel: HarnessKernel = {
   getStepGraph(spec: WorkflowSpec): StepDefinition[] {
@@ -50,7 +281,6 @@ export const defaultKernel: HarnessKernel = {
   },
 
   async run(spec: WorkflowSpec, deps: HarnessDeps): Promise<HarnessRunResult> {
-    const startMs = deps.clock?.() ?? clock();
     const handle = await deps.recorder.begin({
       runId: spec.runId,
       tier: spec.tier,
@@ -60,184 +290,44 @@ export const defaultKernel: HarnessKernel = {
     const ctx = createContext(spec, handle);
     const graph = getStepGraph(spec);
     const stepPath: string[] = [];
-    let lastResult: { success: boolean; output: string; outcome: TierOutcome } | null = null;
+    let lastResult: StepLoopResult = null;
     const activePlugins = deps.plugins ? deps.plugins.getForSpec(spec).filter((p) => spec.constraints.allowWrites || !p.capabilities.includes('write_context')) : [];
 
     stepLoop: for (const stepDef of graph) {
-        const stepId = stepDef.id;
-        const stepStart = deps.clock?.() ?? clock();
-        await deps.recorder.step(handle, {
-          step: stepId,
-          phase: 'enter',
-          ts: new Date().toISOString(),
-        });
+      const stepId = stepDef.id;
+      const stepStart = deps.clock?.() ?? clock();
+      await deps.recorder.step(handle, {
+        step: stepId,
+        phase: 'enter',
+        ts: new Date().toISOString(),
+      });
 
-        for (const plugin of activePlugins) {
-          if (!plugin.beforeStep) continue;
-          try {
-            const res: PluginStepResult = await plugin.beforeStep(ctx, stepId);
-            if (res.action === 'abort_run') {
-              lastResult = {
-                success: false,
-                output: ctx.output.join('\n\n'),
-                outcome: { status: 'failed', reasonCode: 'preflight_failed', nextAction: res.diagnostic ?? 'Plugin aborted run.' },
-              };
-              break stepLoop;
-            }
-            if (res.action === 'skip_step') continue;
-          } catch (_e) {
-            ctx.diagnostics.push({ plugin: plugin.name, step: stepId, message: 'beforeStep threw (ignored)' });
-          }
-        }
-        if (lastResult !== null) break;
+      const before = await runPluginBeforeStep(ctx, stepId, activePlugins);
+      if (before.breakStepLoop) break stepLoop;
+      lastResult = before.lastResult;
+      if (lastResult !== null) break;
 
-        let stepResult: import('./contracts').StepRunResult | null = null;
-        try {
-          stepResult = await deps.adapter.runStep(ctx, stepId);
-        } catch (err) {
-          for (const plugin of activePlugins) {
-            if (plugin.onFailure) {
-              try {
-                await plugin.onFailure(ctx, stepId, err);
-              } catch (_e) {
-                ctx.diagnostics.push({ plugin: plugin.name, step: stepId, message: 'onFailure threw (ignored)' });
-              }
-            }
-          }
-          const message = err instanceof Error ? err.message : String(err);
-          await deps.recorder.step(handle, {
-            step: stepId,
-            phase: 'exit_failure',
-            ts: new Date().toISOString(),
-            reasonCode: 'unhandled_error',
-            details: { error: message },
-          });
-          stepPath.push(stepId);
-          ctx.stepResults[stepId] = { success: false, output: message, durationMs: (deps.clock?.() ?? clock()) - stepStart };
-          lastResult = {
-            success: false,
-            output: ctx.output.join('\n\n'),
-            outcome: {
-              status: 'failed',
-              reasonCode: 'unhandled_error',
-              nextAction: `Step ${stepId} failed: ${message}`,
-            },
-          };
-          break;
-        }
+      const stepOut = await runStepWithAdapter(ctx, stepId, stepStart, deps, stepPath, activePlugins);
+      lastResult = stepOut.lastResult;
+      if (lastResult !== null) break;
 
-        for (const plugin of activePlugins) {
-          if (!plugin.afterStep) continue;
-          try {
-            const res: PluginStepResult = await plugin.afterStep(ctx, stepId);
-            if (res.action === 'abort_run' && lastResult == null) {
-              lastResult = {
-                success: false,
-                output: ctx.output.join('\n\n'),
-                outcome: { status: 'failed', reasonCode: 'preflight_failed', nextAction: res.diagnostic ?? 'Plugin aborted run.' },
-              };
-              break stepLoop;
-            }
-          } catch (_e) {
-            ctx.diagnostics.push({ plugin: plugin.name, step: stepId, message: 'afterStep threw (ignored)' });
-          }
-        }
-        if (lastResult !== null && !lastResult.success) break;
+      const after = await runPluginAfterStep(ctx, stepId, activePlugins, lastResult);
+      lastResult = after.lastResult;
+      if (after.breakStepLoop) break stepLoop;
+      if (lastResult !== null && !lastResult.success) break;
 
-        const durationMs = (deps.clock?.() ?? clock()) - stepStart;
-        if (stepResult !== null) {
-          const success = stepResult.success;
-          await deps.recorder.step(handle, {
-            step: stepId,
-            phase: success ? 'exit_success' : 'exit_failure',
-            ts: new Date().toISOString(),
-            durationMs,
-            reasonCode: stepResult.outcome.reasonCode,
-          });
-          stepPath.push(stepId);
-          ctx.stepResults[stepId] = {
-            success,
-            output: stepResult.output,
-            durationMs,
-          };
-          if (stepResult.output) ctx.output.push(stepResult.output);
-          lastResult = {
-            success: stepResult.success,
-            output: ctx.output.join('\n\n'),
-            outcome: stepResult.outcome,
-          };
-          if (stepResult.exitEarly) break;
-        } else {
-          await deps.recorder.step(handle, {
-            step: stepId,
-            phase: 'exit_success',
-            ts: new Date().toISOString(),
-            durationMs,
-          });
-          stepPath.push(stepId);
-        }
-      }
+      const stepResult = stepOut.stepResult;
+      const completion = await recordStepCompletion(handle, stepId, stepResult, stepStart, deps, stepPath, ctx);
+      if (completion.lastResult !== null) lastResult = completion.lastResult;
+      if (completion.exitEarly) break;
+    }
 
-    let finalResult = lastResult ?? {
+    let finalResult: StepLoopResult = lastResult ?? {
       success: false,
       output: ctx.output.join('\n\n'),
       outcome: defaultOutcome(false),
     };
-    for (const plugin of activePlugins) {
-      if (!plugin.contributeOutcome) continue;
-      try {
-        const partial = plugin.contributeOutcome(ctx);
-        if (partial && typeof partial === 'object') {
-          finalResult = {
-            ...finalResult,
-            outcome: { ...finalResult.outcome, ...partial },
-          };
-        }
-      } catch (_e) {
-        ctx.diagnostics.push({ plugin: plugin.name, step: '', message: 'contributeOutcome threw (ignored)' });
-      }
-    }
-    const forRouting: CommandResultForRouting = {
-      success: finalResult.success,
-      output: finalResult.output,
-      outcome: {
-        reasonCode: finalResult.outcome.reasonCode,
-        nextAction: finalResult.outcome.nextAction,
-        ...(finalResult.outcome.deliverables !== undefined && { deliverables: finalResult.outcome.deliverables }),
-        ...(finalResult.outcome.cascade !== undefined && { cascade: finalResult.outcome.cascade }),
-      },
-    };
-    const controlPlaneDecision: ControlPlaneDecision = deps.routingContext
-      ? (routeByOutcome(forRouting, deps.routingContext as ControlPlaneContext) as unknown as ControlPlaneDecision)
-      : {
-          requiredMode: 'plan' as const,
-          stop: !finalResult.success,
-          message: finalResult.outcome.nextAction,
-        } as ControlPlaneDecision;
-
-    await deps.recorder.decision(handle, {
-      requiredMode: controlPlaneDecision.requiredMode,
-      stop: controlPlaneDecision.stop,
-      message: controlPlaneDecision.message,
-      questionKey: controlPlaneDecision.questionKey,
-      cascadeCommand: controlPlaneDecision.cascadeCommand,
-    });
-    await deps.recorder.end(handle, {
-      success: finalResult.success,
-      output: finalResult.output,
-      outcome: finalResult.outcome,
-      controlPlaneDecision,
-      traceId: handle.traceId,
-      stepPath: stepPath as StepId[],
-    });
-
-    return {
-      success: finalResult.success,
-      output: finalResult.output,
-      outcome: finalResult.outcome,
-      controlPlaneDecision,
-      traceId: handle.traceId,
-      stepPath: stepPath as StepId[],
-    };
+    finalResult = applyPluginOutcomeContributions(ctx, activePlugins, finalResult);
+    return buildAndRecordDecision(handle, finalResult, deps, stepPath);
   },
 };

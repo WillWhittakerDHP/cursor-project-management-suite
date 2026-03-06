@@ -3,7 +3,7 @@
  * Reduces duplication of branch hierarchy display, plan-mode preview, and "cannot start" messaging.
  */
 
-import { formatBranchHierarchyFromConfig } from '../git/shared/tier-branch-manager';
+import { formatBranchHierarchyFromConfig } from '../git/shared/git-manager';
 import { WorkflowCommandContext } from './command-context';
 
 export interface FormatBranchHierarchyOptions {

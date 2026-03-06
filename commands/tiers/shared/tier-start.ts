@@ -21,7 +21,7 @@ import { defaultKernel } from '../../harness/kernel';
 import { createTierAdapter } from '../../harness/tier-adapter';
 import { defaultProfileDefaultsResolver } from '../../harness/spec-builder';
 import { buildSpecFromTierRun } from '../../harness/build-spec-from-tier';
-import { WorkflowCommandContext } from '../../utils/command-context';
+import { WorkflowCommandContext, type TierParamsBag } from '../../utils/command-context';
 import {
   writeTierStartPending,
   writeTaskStartPending,
@@ -55,6 +55,37 @@ export async function runTierStart(
   const shadowRecorder = getDefaultShadowRecorder();
   const identifier = getIdentifierFromParams(config, params);
 
+  // Resolve F/P/S/T context first; fail fast before any preflight or steps.
+  let context: WorkflowCommandContext;
+  try {
+    context = await WorkflowCommandContext.contextFromParams(config.name, params as TierParamsBag);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    const failedResult: TierStartResult = {
+      success: false,
+      output: `**${config.name}-start failed:**\n\n\`\`\`\n${message}\n\`\`\``,
+      outcome: {
+        status: 'failed',
+        reasonCode: 'unhandled_error',
+        nextAction: `Context resolution failed. Check tier identifier and feature.`,
+      },
+    };
+    const decision = routeByOutcome(
+      failedResult,
+      { tier: config.name, action: 'start', originalParams: params }
+    );
+    let failedOutput = failedResult.output;
+    if (decision.stop && decision.questionKey) {
+      const choiceBlock = formatChoiceForChat(decision);
+      if (choiceBlock) failedOutput = failedOutput + '\n\n---\n\n' + choiceBlock;
+    }
+    return {
+      ...failedResult,
+      output: failedOutput,
+      controlPlaneDecision: decision,
+    };
+  }
+
   if (config.preflight?.ensureAppRunning?.onStart && !isPlanMode(executionMode)) {
     const appCheck = await verifyApp();
     if (!appCheck.success) {
@@ -81,16 +112,16 @@ export async function runTierStart(
   }
 
   try {
-    const context = await WorkflowCommandContext.getCurrent();
+    const featureName = context.feature.name;
     const spec = buildSpecFromTierRun({
       tier: config.name,
       action: 'start',
       identifier,
-      featureContext: { featureId: context.feature.name, featureName: context.feature.name },
+      featureContext: { featureId: featureName, featureName },
       mode: executionMode,
       userChoices: options,
     });
-    const adapter = createTierAdapter({ config, params, options });
+    const adapter = createTierAdapter({ config, params, options, context });
     const kernelResult = await defaultKernel.run(spec, {
       contextInjector: createContextInjector(),
       recorder: shadowRecorder,

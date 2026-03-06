@@ -8,10 +8,8 @@ import { WorkflowId } from '../../../utils/id-utils';
 import { readTierUpContext, getTierContextSourcePolicy } from '../../shared/context-policy';
 import { extractFilePaths, gatherFileStatuses } from '../../../utils/context-gatherer';
 import { formatFileStatusList } from '../../../utils/context-templates';
-import { resolveFeatureName, resolveFeatureId } from '../../../utils/feature-context';
 import { TASK_CONFIG } from '../../configs/task';
 import { validateTask, formatTaskValidation } from './task';
-import { updateTierScope } from '../../../utils/tier-scope';
 import { deriveTaskDescription } from '../../../planning/utils/resolve-planning-description';
 import type { TierStartResult } from '../../../utils/tier-outcome';
 import type {
@@ -74,14 +72,18 @@ async function readSessionHandoffExcerpt(
 }
 
 export async function taskStartImpl(
-  taskId: string,
-  featureId?: string,
+  context: WorkflowCommandContext,
   options?: import('../../../utils/command-execution-mode').CommandExecutionOptions,
   shadow?: ShadowContext
 ): Promise<TierStartResult | TierStartWorkflowResult> {
-  const resolvedFeatureName =
-    featureId != null && featureId.trim() !== '' ? await resolveFeatureId(featureId) : await resolveFeatureName();
-  const context = new WorkflowCommandContext(resolvedFeatureName);
+  const taskId = context.identifier;
+  if (!taskId) {
+    return {
+      success: false,
+      output: '# Task Start\n---\n\nError: Context has no identifier. Use contextFromParams to build context.',
+      outcome: { status: 'failed', reasonCode: 'invalid_context', nextAction: 'Context must have identifier set.' },
+    };
+  }
   const output: string[] = [];
 
   const parsed = WorkflowId.parseTaskId(taskId);
@@ -252,13 +254,11 @@ export async function taskStartImpl(
     },
 
     async afterBranch() {
-      const taskName = await deriveTaskDescription(taskId, context);
-      await updateTierScope('task', { id: taskId, name: taskName });
+      await deriveTaskDescription(taskId, context);
     },
 
     async runExtras(): Promise<string> {
-      const taskName = await deriveTaskDescription(taskId, context);
-      await updateTierScope('task', { id: taskId, name: taskName });
+      await deriveTaskDescription(taskId, context);
       return '';
     },
 

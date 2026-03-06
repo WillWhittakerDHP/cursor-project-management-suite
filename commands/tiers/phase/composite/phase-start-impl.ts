@@ -10,8 +10,13 @@ import { formatFileStatusList } from '../../../utils/context-templates';
 import { ensureTierBranch } from '../../../git/shared/tier-branch-manager';
 import { validatePhase, formatPhaseValidation } from './phase';
 import { PHASE_CONFIG } from '../../configs/phase';
-import { updateTierScope, readTierScope, deriveSlugFromGuideTitle } from '../../../utils/tier-scope';
 import { derivePhaseDescription } from '../../../planning/utils/resolve-planning-description';
+
+/** Inline slug from phase guide first line (e.g. "# Phase 6.10 Guide" -> "6.10"). */
+function deriveSlugFromGuideTitle(firstLine: string): string | undefined {
+  const m = firstLine.match(/(\d+(?:\.\d+)*)/);
+  return m ? m[1] : undefined;
+}
 import type { TierStartResult } from '../../../utils/tier-outcome';
 import type {
   TierStartWorkflowContext,
@@ -28,12 +33,14 @@ import type { RunRecorder, RunTraceHandle } from '../../../harness/contracts';
 
 export type ShadowContext = { recorder: RunRecorder; handle: RunTraceHandle };
 
+/** When provided (e.g. from harness), use this context instead of re-resolving from git. */
 export async function phaseStartImpl(
   phaseId: string,
   options?: import('../../../utils/command-execution-mode').CommandExecutionOptions,
-  shadow?: ShadowContext
+  shadow?: ShadowContext,
+  resolvedContext?: WorkflowCommandContext
 ): Promise<TierStartResult | TierStartWorkflowResult> {
-  const context = await WorkflowCommandContext.getCurrent();
+  const context = resolvedContext ?? (await WorkflowCommandContext.getCurrent());
   const phase = phaseId;
   const output: string[] = [];
 
@@ -125,7 +132,6 @@ export async function phaseStartImpl(
     },
 
     async ensureBranch() {
-      const scope = await readTierScope();
       const phaseName = await derivePhaseDescription(phase, context);
       let slug: string | undefined;
       try {
@@ -135,32 +141,13 @@ export async function phaseStartImpl(
       } catch {
         slug = undefined;
       }
-      context.scope = {
-        ...scope,
-        phase: { id: phase, name: phaseName, ...(slug && { slug }) },
-      };
       const result = await ensureTierBranch(PHASE_CONFIG, phase, context);
-      if (result.success && result.finalBranch) {
-        await updateTierScope('phase', {
-          id: phase,
-          name: phaseName,
-          branch: result.finalBranch,
-          ...(slug && { slug }),
-        });
-      }
       return result;
     },
 
     async afterBranch() {
-      const phaseName = await derivePhaseDescription(phase, context);
-      const scope = await readTierScope();
-      const entry = scope.phase?.id === phase ? scope.phase : { id: phase, name: phaseName };
-      await updateTierScope('phase', {
-        id: entry.id,
-        name: entry.name ?? phaseName,
-        ...(scope.phase?.branch && { branch: scope.phase.branch }),
-        ...(scope.phase?.slug && { slug: scope.phase.slug }),
-      });
+      await derivePhaseDescription(phase, context);
+      // Scope derived from context (tier + identifier) per command.
     },
 
     /** TierUp only: feature guide (phase descriptor). Phase guide and phase handoff files are excluded from planning input. */

@@ -126,13 +126,15 @@ function buildSessionExecutionProposal(
   ].join('\n');
 }
 
+/** When provided (e.g. from harness), use this context instead of re-resolving from git. */
 export async function sessionStartImpl(
   sessionId: string,
   description?: string,
   options?: import('../../../utils/command-execution-mode').CommandExecutionOptions,
-  shadow?: ShadowContext
+  shadow?: ShadowContext,
+  resolvedContext?: WorkflowCommandContext
 ): Promise<TierStartResult | TierStartWorkflowResult> {
-  const context = await WorkflowCommandContext.getCurrent();
+  const context = resolvedContext ?? (await WorkflowCommandContext.getCurrent());
   const rawDescription =
     description != null && description !== ''
       ? description

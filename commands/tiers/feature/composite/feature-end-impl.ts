@@ -54,15 +54,20 @@ export interface FeatureEndResult {
 const CLEANUP_FILE_THRESHOLD = 100;
 const CLEANUP_COMMENT_THRESHOLD = 500;
 
+/** When provided (e.g. from harness), use this context instead of re-resolving feature. */
 export async function featureEndImpl(
   params: FeatureEndParams,
-  shadow?: EndShadowContext
+  shadow?: EndShadowContext,
+  resolvedContext?: WorkflowCommandContext
 ): Promise<FeatureEndResult | (FeatureEndResult & TierEndWorkflowResultWithShadow)> {
-  const featureName =
-    (params.featureId != null && params.featureId.trim() !== ''
-      ? await resolveFeatureId(params.featureId)
-      : null) ?? params.featureName ?? '';
-  const context = new WorkflowCommandContext(featureName);
+  const context =
+    resolvedContext ??
+    new WorkflowCommandContext(
+      (params.featureId != null && params.featureId.trim() !== ''
+        ? await resolveFeatureId(params.featureId)
+        : null) ?? params.featureName ?? ''
+    );
+  const featureName = context.feature.name;
 
   const ctx: TierEndWorkflowContext = {
     config: FEATURE_CONFIG,

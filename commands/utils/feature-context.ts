@@ -10,16 +10,15 @@
  */
 
 import { WorkflowPathResolver } from './path-resolver';
-import { readFile, readdir } from 'fs/promises';
+import { readFile, readdir, access } from 'fs/promises';
 import { join } from 'path';
 import { execSync } from 'child_process';
-import { readTierScope, resolveTierId } from './tier-scope';
 
 /**
  * FeatureContext class
  * 
  * Provides feature context including name and path resolver.
- * Can be created explicitly or detected from git branch/config file.
+ * Can be created explicitly or from git branch when no explicit feature is passed.
  */
 export class FeatureContext {
   readonly name: string;
@@ -44,53 +43,95 @@ export class FeatureContext {
   }
 
   /**
-   * Get current feature context
-   *
-   * Detection order:
-   * 1. Read `.project-manager/.tier-scope` (feature.id)
-   * 2. Fall back to git branch name (removes common prefixes)
-   *
-   * Throws error if detection fails - no fallback to 'vue-migration'
+   * Get current feature context from git branch only.
+   * Scope is explicit per invocation (F/P/S/T in the command); no shared config file is read.
    *
    * @returns FeatureContext instance
-   * @throws Error if feature cannot be detected
+   * @throws Error if not on a feature branch or feature cannot be detected
    */
   static async getCurrent(): Promise<FeatureContext> {
-    const scope = await readTierScope();
-    if (scope.feature?.id) {
-      return new FeatureContext(scope.feature.id);
-    }
-
-    // Fall back to git branch detection
     try {
       const branchName = execSync('git branch --show-current', { encoding: 'utf-8' }).trim();
-      
-      // Remove common prefixes (feature/, feat/, etc.)
       const featureName = branchName
         .replace(/^(feature|feat|fix|bugfix)\//, '')
-        .replace(/^.*\//, '') // Remove any remaining path separators
+        .replace(/^.*\//, '')
         .trim();
-      
       if (featureName) {
         return new FeatureContext(featureName);
       }
     } catch (_error) {
-      // Git command failed - throw error with available features
       const availableFeatures = await FeatureContext.listAvailableFeatures();
       throw new Error(
         `Could not auto-detect feature from git branch.\n` +
         `Error: ${_error instanceof Error ? _error.message : String(_error)}\n\n` +
         `Available features: ${availableFeatures.length > 0 ? availableFeatures.join(', ') : 'none found'}\n` +
-        `Please specify feature name explicitly or set .project-manager/.tier-scope config file.`
+        `Pass feature explicitly in the command or run from a feature branch.`
       );
     }
-
-    // If we get here, detection failed - throw error
     const availableFeatures = await FeatureContext.listAvailableFeatures();
     throw new Error(
-      `Could not auto-detect feature. No scope in .tier-scope and git branch detection failed.\n\n` +
+      `Could not auto-detect feature from git branch.\n\n` +
       `Available features: ${availableFeatures.length > 0 ? availableFeatures.join(', ') : 'none found'}\n` +
-      `Please specify feature name explicitly or set .project-manager/.tier-scope (e.g. run /feature-start).`
+      `Pass feature explicitly in the command or run from a feature branch.`
+    );
+  }
+
+  /**
+   * Resolve feature name from tier + identifier by finding which feature dir contains that doc.
+   * Use when scope is explicit (e.g. from command) and you have tier + id but not feature.
+   *
+   * @param tier 'phase' | 'session' | 'task'
+   * @param identifier Phase id (e.g. 6.5), session id (X.Y), or task id (X.Y.Z.N)
+   * @returns Feature name (directory under .project-manager/features/)
+   * @throws Error if no feature directory contains the corresponding file
+   */
+  static async featureNameFromTierAndId(
+    tier: 'phase' | 'session' | 'task',
+    identifier: string
+  ): Promise<string> {
+    const PROJECT_ROOT = process.cwd();
+    const featuresDir = join(PROJECT_ROOT, '.project-manager/features');
+    const entries = await readdir(featuresDir, { withFileTypes: true });
+    const candidates = entries.filter((e) => e.isDirectory()).map((e) => e.name);
+    let relPath: string;
+    let searchDir: string;
+    if (tier === 'task') {
+      relPath = `sessions/task-${identifier}-planning.md`;
+      searchDir = 'sessions';
+    } else if (tier === 'session') {
+      relPath = `sessions/session-${identifier}-guide.md`;
+      searchDir = 'sessions';
+    } else {
+      relPath = `phases/phase-${identifier}-guide.md`;
+      searchDir = 'phases';
+    }
+    for (const name of candidates) {
+      const full = join(featuresDir, name, relPath);
+      try {
+        await access(full);
+        return name;
+      } catch {
+        // continue
+      }
+    }
+    // Task fallback: planning doc may not exist yet (created during task-start). Resolve via session guide.
+    if (tier === 'task') {
+      const sessionId = identifier.split('.').slice(0, 3).join('.');
+      if (sessionId && sessionId !== identifier) {
+        const sessionRelPath = `sessions/session-${sessionId}-guide.md`;
+        for (const name of candidates) {
+          const full = join(featuresDir, name, sessionRelPath);
+          try {
+            await access(full);
+            return name;
+          } catch {
+            // continue
+          }
+        }
+      }
+    }
+    throw new Error(
+      `featureNameFromTierAndId: no feature found containing ${tier} ${identifier}. Check .project-manager/features/*/${searchDir}/.`
     );
   }
 
@@ -115,17 +156,17 @@ export class FeatureContext {
 }
 
 /**
- * Resolve feature name: use override if provided, otherwise current context
- * (.project-manager/.tier-scope or git branch). Use this instead of any
- * hardcoded default feature name.
+ * Resolve feature name: use override if provided (feature id or directory name), otherwise git branch.
+ * Scope is explicit per invocation (identifier in the command).
  *
- * @param override Explicit feature name (e.g. from command args)
- * @returns Resolved feature name
- * @throws Error if no override and current context cannot be detected
+ * @param override Explicit feature id or name (e.g. from command args)
+ * @returns Resolved feature name (directory under .project-manager/features/)
+ * @throws Error if no override and git branch cannot be used
  */
 export async function resolveFeatureName(override?: string): Promise<string> {
-  const id = await resolveTierId('feature', override);
-  if (id) return id;
+  if (override?.trim()) {
+    return resolveFeatureId(override.trim());
+  }
   const context = await FeatureContext.getCurrent();
   return context.name;
 }
@@ -137,7 +178,7 @@ const FEATURE_SUMMARY_HEADER = '| # | Feature | Status | Directory | Key Dates |
  * Resolve feature ID to feature name (directory name). Accepts either:
  * - Numeric string (e.g. "3", "17") → looked up in PROJECT_PLAN.md # column.
  * - Feature directory name (e.g. "appointment-workflow") → returned as-is when it appears
- *   in PROJECT_PLAN Directory column or in .project-manager/features/ (e.g. from .tier-scope feature.id).
+ *   in PROJECT_PLAN Directory column or in .project-manager/features/.
  *
  * @param featureId Numeric # or feature directory name
  * @returns Feature name (directory name under .project-manager/features/)

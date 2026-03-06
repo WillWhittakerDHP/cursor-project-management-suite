@@ -1,8 +1,8 @@
 /**
  * Guard and audit for writes to .project-manager planning docs and guides.
- * - Audit: log every protected write (path, timestamp, caller) when TIER_LOG_WRITES=1 or always for blocked writes.
+ * - Audit: log every protected write (path, timestamp, caller) to stderr and to .project-manager/.write-log so you can see WHEN/WHY overwrites happen.
  * - Lock: block overwriting files that are already "filled" (no placeholders).
- * Used by writeProjectFile in utils.ts so all callers get the same behavior.
+ * Used by writeProjectFile in utils.ts; DocumentManager also uses it for guide writes.
  */
 
 import { readFile } from 'fs/promises';
@@ -83,9 +83,7 @@ export function getCallerFromStack(): string {
   return '(unknown)';
 }
 
-const TIER_LOG_WRITES = typeof process !== 'undefined' && process.env.TIER_LOG_WRITES === '1';
-
-/** Log a protected-path write (or blocked overwrite) to stderr and optionally to .project-manager/.write-log. */
+/** Log a protected-path write (or blocked overwrite) to stderr and to .project-manager/.write-log so you can see WHEN/WHY. */
 export function logProjectManagerWrite(opts: {
   path: string;
   blocked: boolean;
@@ -98,9 +96,7 @@ export function logProjectManagerWrite(opts: {
   if (typeof process !== 'undefined' && process.stderr?.write) {
     process.stderr.write(line);
   }
-  if (TIER_LOG_WRITES || opts.blocked) {
-    appendToWriteLog(line).catch(() => {});
-  }
+  appendToWriteLog(line).catch(() => {});
 }
 
 async function appendToWriteLog(line: string): Promise<void> {

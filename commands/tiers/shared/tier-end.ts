@@ -25,7 +25,7 @@ import { createTierAdapter } from '../../harness/tier-adapter';
 import { defaultProfileDefaultsResolver } from '../../harness/spec-builder';
 import { buildSpecFromTierRun } from '../../harness/build-spec-from-tier';
 import { isHarnessDefaultForTier } from '../../harness/cutover-config';
-import { WorkflowCommandContext } from '../../utils/command-context';
+import { WorkflowCommandContext, type TierParamsBag } from '../../utils/command-context';
 import { writeEndPending } from './pending-state';
 
 export type TierEndParams =
@@ -58,20 +58,48 @@ function getIdentifierFromEndParams(config: TierConfig, params: TierEndParams): 
   }
 }
 
-async function getFeatureContextForEnd(params: TierEndParams): Promise<{ featureId: string; featureName: string }> {
-  const context = await WorkflowCommandContext.getCurrent();
-  return { featureId: context.feature.name, featureName: context.feature.name };
-}
-
 export async function runTierEnd(
   config: TierConfig,
   params: TierEndParams
 ): Promise<TierEndResultWithControlPlane> {
   const executionMode = resolveCommandExecutionMode(getOptionsFromParams(params), 'execute');
 
+  const identifier = getIdentifierFromEndParams(config, params);
+
+  // Resolve F/P/S/T context first; fail fast before any recorder, injector, or preflight.
+  let context: WorkflowCommandContext;
+  try {
+    context = await WorkflowCommandContext.contextFromParams(config.name, params as TierParamsBag);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    const failedResult: TierEndResult = {
+      success: false,
+      output: `**${config.name}-end failed:**\n\n\`\`\`\n${message}\n\`\`\``,
+      steps: {},
+      outcome: {
+        status: 'failed' as const,
+        reasonCode: 'unhandled_error',
+        nextAction: `Context resolution failed. Check tier identifier and feature.`,
+      },
+    };
+    const decision = routeByOutcome(
+      failedResult as CommandResultForRouting,
+      { tier: config.name, action: 'end', originalParams: params }
+    );
+    let failedOutput = failedResult.output;
+    if (decision.stop && decision.questionKey) {
+      const choiceBlock = formatChoiceForChat(decision);
+      if (choiceBlock) failedOutput = failedOutput + '\n\n---\n\n' + choiceBlock;
+    }
+    return {
+      ...failedResult,
+      output: failedOutput,
+      controlPlaneDecision: decision,
+    } as TierEndResultWithControlPlane;
+  }
+
   const shadowRecorder = getDefaultShadowRecorder();
   const runId = `run_${config.name}_end_${Date.now()}`;
-  const identifier = getIdentifierFromEndParams(config, params);
   const handle = await shadowRecorder.begin({
     runId,
     tier: config.name,
@@ -79,13 +107,12 @@ export async function runTierEnd(
     identifier,
     harnessCutoverTier: isHarnessDefaultForTier(config.name),
   });
-  const shadowContext = { recorder: shadowRecorder, handle };
 
   const minimalSpec: Pick<WorkflowSpec, 'tier' | 'action' | 'identifier' | 'featureContext' | 'contextBudget'> = {
     tier: config.name,
     action: 'end',
     identifier,
-    featureContext: { featureId: identifier, featureName: identifier },
+    featureContext: { featureId: context.feature.name, featureName: context.feature.name },
     contextBudget: { maxTokens: 8000, maxArtifacts: 15, maxFiles: 10, includeHistory: 'recent' },
   };
   try {
@@ -120,8 +147,7 @@ export async function runTierEnd(
   }
 
   try {
-    const featureContext = await getFeatureContextForEnd(params);
-    const identifier = getIdentifierFromEndParams(config, params);
+    const featureContext = { featureId: context.feature.name, featureName: context.feature.name };
     const spec = buildSpecFromTierRun({
       tier: config.name,
       action: 'end',
@@ -130,8 +156,7 @@ export async function runTierEnd(
       mode: resolveCommandExecutionMode(getOptionsFromParams(params), 'execute'),
       userChoices: getOptionsFromParams(params) != null ? { continuePastVerification: (params as Record<string, unknown>).continuePastVerification as boolean | undefined } : undefined,
     });
-    const adapter = createTierAdapter({ config, params });
-    const shadowRecorder = getDefaultShadowRecorder();
+    const adapter = createTierAdapter({ config, params, context });
     const kernelResult = await defaultKernel.run(spec, {
       contextInjector: createContextInjector(),
       recorder: shadowRecorder,

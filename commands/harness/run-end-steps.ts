@@ -1,5 +1,5 @@
 /**
- * Canonical tier end step runner: runs plan_mode_exit → resolve_run_tests → pre_work → tests → mid_work → cleanup → git → verification → config_fix → audit → clearScope → cascade.
+ * Canonical tier end step runner: runs plan_mode_exit → resolve_run_tests → pre_work → tests → mid_work → cleanup → git → verification → config_fix → audit → cascade.
  * Types live in tiers/shared/tier-end-workflow-types.ts; step logic in tier-end-steps.ts.
  */
 
@@ -24,7 +24,6 @@ import {
   stepConfigFix,
   stepEndAudit,
   stepAfterAudit,
-  stepClearScope,
   stepBuildEndCascade,
 } from '../tiers/shared/tier-end-steps';
 import { runTierAuditsParallel } from '../audit/atomic/audit-tier-quality';
@@ -138,10 +137,6 @@ export async function runTierEndWorkflow(
   const afterAuditExit = await stepAfterAudit(ctx, hooks);
   await recordEndStep(ctx, 'after_audit', afterAuditExit ? 'exit_failure' : 'exit_success');
   if (afterAuditExit) return attachEndShadowPayload(ctx, afterAuditExit);
-
-  await recordEndStep(ctx, 'clear_scope', 'enter');
-  await stepClearScope(ctx);
-  await recordEndStep(ctx, 'clear_scope', 'exit_success');
 
   await recordEndStep(ctx, 'cascade', 'enter');
   await stepBuildEndCascade(ctx, hooks);

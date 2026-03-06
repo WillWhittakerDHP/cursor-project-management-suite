@@ -1,48 +1,42 @@
 # /audit-fix
 
-**When to use:** After a tier start or end returns `audit_failed`, the user can choose "Fix audit with governance context (/audit-fix)". Run this command (with the report path from the message) to generate a prompt that includes @ refs to the governance playbooks, **tier-appropriate context** (current tier's guide + planning doc from `.tier-scope`), and the audit report. The instruction directs the agent to **read the attached context first** and **reuse existing patterns** to avoid duplication and maintain governance. Paste the output into chat.
+**When to use:** After a tier start or end returns `audit_failed`, the user can choose "Fix audit with governance context (/audit-fix)". The agent should **read the context and fix directly**—do not output a prompt for the user to paste.
 
 ## Entry point
 
 | Command     | Composite file (from repo root)                    | Export to invoke |
 |-------------|----------------------------------------------------|-------------------|
-| /audit-fix  | .cursor/commands/audit/composite/audit-fix.ts       | auditFix          |
+| /audit-fix  | .cursor/commands/audit/composite/audit-fix.ts       | auditFixWithPaths (preferred), auditFix |
 
-CLI alternative (same output): `npx tsx .cursor/commands/audit/atomic/audit-fix-prompt.ts [report-path]`
+CLI (prompt string): `npx tsx .cursor/commands/audit/atomic/audit-fix-prompt.ts [report-path]`
 
-## Invocation
+## Agent instructions (direct execution)
 
-**With report path (from tier-end or start failure message):**
+When the user runs `/audit-fix` or chooses "Fix audit with governance context (/audit-fix)" after `audit_failed`:
 
-From repo root:
+1. **Call `auditFixWithPaths({ reportPath, featureName?, tier?, identifier? })`** from `.cursor/commands/audit/composite/audit-fix.ts` with the report path from the failure message (and tier/identifier if known). You get `{ instruction, paths }` (repo-relative paths).
+2. **Read each path** (e.g. with your read/file tools) to load the governance playbooks, tier guide/planning, and audit report.
+3. **Fix only what the report calls out:** address the findings listed in the audit report using the playbooks; fix code or config so the next audit run would pass. Reuse existing patterns, no duplicate logic. Do not run typecheck, regenerate audit JSON, or inspect raw audit files unless the report explicitly says the fix is to regenerate or fix the audit pipeline. Do not ask the user to paste anything—you already have the context from step 2.
+4. After fixes, the user can choose "Retry the command" to re-run the tier start/end.
+
+**Do not** output a prompt for the user to paste. Inject context by reading the paths and then fix. **Do not** run unrelated checks or regenerate audit outputs unless the report says to.
+
+If no report path is available, call `auditFixWithPaths({})`; you still get tier-appropriate paths and can @ mention or read the report separately if needed.
+
+## Invocation (programmatic)
+
+**Direct execution (agent):** `auditFixWithPaths({ reportPath, tier?, identifier? })` → `{ instruction, paths }`. Read each path, then fix.
+
+**Prompt string (CLI / manual paste):** `auditFix({ reportPath, ... })` → string. Use when a human wants to paste the line into chat.
+
+From repo root (prompt string):
 
 ```bash
 npx tsx -e "import('./.cursor/commands/audit/composite/audit-fix.ts').then(m => m.auditFix({ reportPath: 'client/.audit-reports/component-health-audit.md' })).then(s => console.log(s))"
 ```
 
-Or CLI:
-
-```bash
-npx tsx .cursor/commands/audit/atomic/audit-fix-prompt.ts client/.audit-reports/component-health-audit.md
-```
-
-**Without report path (governance refs only):**
-
-```bash
-npx tsx .cursor/commands/audit/atomic/audit-fix-prompt.ts
-```
-
-From Agent: call `auditFix({ reportPath })` from `.cursor/commands/audit/composite/audit-fix.ts` with the report path from the audit_failed message (if any). Capture the returned string and paste it into chat (or present it so the user can paste).
-
 ## Behavior
 
-1. Loads the copy-paste block of @ refs from `.project-manager/AUDIT_FIX_CONTEXT.md` (governance playbooks + audit-global-config.json).
-2. Reads `.project-manager/.tier-scope` and adds **tier-appropriate @ refs** (current tier's guide + planning doc) so the agent has the right scope.
-3. Builds a prompt: instruction line (read context first, fix per playbooks, reuse patterns, no duplication) + blank line + @ refs line (governance + tier context + optional report path).
-4. Returns the prompt string. Output is intended to be pasted into chat so Cursor attaches the referenced files.
-
-## Agent instructions
-
-- When the user runs `/audit-fix` or chooses "Fix audit with governance context (/audit-fix)" after `audit_failed`, invoke `auditFix({ reportPath, featureName?, tier?, identifier? })` with the report path from the failure message. If you have the current tier (e.g. from the command that failed), pass `tier` and `identifier` so tier-appropriate context is included; otherwise the command reads `.tier-scope` and injects it automatically.
-- Paste the returned prompt into chat so the governance docs, tier context (guide + planning doc), and report are attached. **Read the attached context before making changes.** Fix findings per the playbooks' thresholds and decision trees; reuse existing patterns and do not duplicate logic. After fixes, the user can choose "Retry the command" to re-run the tier start/end.
-- If no report path is available, call `auditFix({})` to get governance + tier context; the user can @ mention the report manually.
+- **auditFixWithPaths:** Returns `{ instruction, paths }`. Paths are repo-relative (governance playbooks from tier-context-config or AUDIT_FIX_CONTEXT; tier guide + planning only when explicit `featureName`, `tier`, and `identifier` are passed; plus report path). Agent reads them and fixes.
+- **auditFix:** Returns a single string (instruction + @ refs line) for CLI or manual paste.
+- Governance and tier context are tier/report-pertinent when tier or reportPath is passed (see `.project-manager/AUDIT_FIX_CONTEXT.md`).

@@ -13,7 +13,6 @@ import { WorkflowCommandContext } from '../../utils/command-context';
 import { resolveFeatureName } from '../../utils';
 import { writeAuditReport, calculateOverallStatus, getRelativePath, compareBaselineToEnd } from '../utils';
 import { queryBaseline, buildTierStamp } from '../baseline-log';
-import { readTierScope } from '../../utils/tier-scope';
 import { importExternalAudits } from '../external/import-external-audits';
 
 export interface AuditPhaseParams {
@@ -83,10 +82,9 @@ export async function auditPhase(params: AuditPhaseParams): Promise<{
   // Query baseline log for the matching tier-stamp start entry
   let baselineComparison;
   try {
-    const scope = await readTierScope();
     const tierStamp = buildTierStamp({
-      feature: scope.feature?.id ?? featureName,
-      phase: scope.phase?.id ?? params.phase,
+      feature: featureName,
+      phase: params.phase,
       session: null,
       task: null,
     });

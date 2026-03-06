@@ -10,6 +10,7 @@ import type { TierConfig } from '../tiers/shared/types';
 import type { TierStartParams } from '../tiers/shared/tier-start';
 import type { TierEndParams } from '../tiers/shared/tier-end';
 import type { CommandExecutionOptions } from '../utils/command-execution-mode';
+import type { WorkflowCommandContext } from '../utils/command-context';
 import { featureStartImpl } from '../tiers/feature/composite/feature-start-impl';
 import { phaseStartImpl } from '../tiers/phase/composite/phase-start-impl';
 import { sessionStartImpl } from '../tiers/session/composite/session-start-impl';
@@ -26,11 +27,13 @@ export interface TierAdapterOptions {
   config: TierConfig;
   params: TierStartParams | TierEndParams;
   options?: CommandExecutionOptions;
+  /** When present (tier-start/tier-end), impls that accept context use it instead of re-resolving from params. */
+  context?: WorkflowCommandContext;
 }
 
 /** Create a tier adapter that delegates to the legacy start/end impls. Runs full workflow on first step. */
 export function createTierAdapter(opts: TierAdapterOptions): ITierAdapter {
-  const { config, params, options } = opts;
+  const { config, params, options, context } = opts;
   const recorder = getDefaultShadowRecorder();
   let ran = false;
 
@@ -45,24 +48,33 @@ export function createTierAdapter(opts: TierAdapterOptions): ITierAdapter {
       const spec = ctx.spec;
       if (spec.action === 'start') {
         const startParams = params as TierStartParams;
+        const resolvedCtx = context ?? undefined;
         let result: { success: boolean; output: string; outcome: { reasonCode: string; nextAction: string; deliverables?: string; cascade?: import('./contracts').CascadeInfo } };
         switch (config.name) {
           case 'feature':
-            result = await featureStartImpl((startParams as { featureId: string }).featureId, options, shadowContext);
+            result = await featureStartImpl(
+              (startParams as { featureId: string }).featureId,
+              options,
+              shadowContext,
+              resolvedCtx
+            );
             break;
           case 'phase':
-            result = await phaseStartImpl((startParams as { phaseId: string }).phaseId, options, shadowContext);
+            result = await phaseStartImpl(
+              (startParams as { phaseId: string }).phaseId,
+              options,
+              shadowContext,
+              resolvedCtx
+            );
             break;
           case 'session': {
             const p = startParams as { sessionId: string; description?: string };
-            result = await sessionStartImpl(p.sessionId, p.description, options, shadowContext);
+            result = await sessionStartImpl(p.sessionId, p.description, options, shadowContext, resolvedCtx);
             break;
           }
-          case 'task': {
-            const p = startParams as { taskId: string; featureId?: string };
-            result = await taskStartImpl(p.taskId, p.featureId, options, shadowContext);
+          case 'task':
+            result = await taskStartImpl(context!, options, shadowContext);
             break;
-          }
           default:
             result = { success: false, output: '', outcome: { reasonCode: 'unknown_tier', nextAction: 'Unknown tier.' } };
         }
@@ -73,19 +85,36 @@ export function createTierAdapter(opts: TierAdapterOptions): ITierAdapter {
 
       if (spec.action === 'end') {
         const endParams = params as TierEndParams;
+        const resolvedCtx = context ?? undefined;
         let result: { success: boolean; output: string; outcome: { reasonCode: string; nextAction: string; deliverables?: string; cascade?: import('./contracts').CascadeInfo } };
         switch (config.name) {
           case 'feature':
-            result = await featureEndImpl(endParams as import('../tiers/feature/composite/feature-end-impl').FeatureEndParams, shadowContext);
+            result = await featureEndImpl(
+              endParams as import('../tiers/feature/composite/feature-end-impl').FeatureEndParams,
+              shadowContext,
+              resolvedCtx
+            );
             break;
           case 'phase':
-            result = await phaseEndImpl(endParams as import('../tiers/phase/composite/phase-end-impl').PhaseEndParams, shadowContext);
+            result = await phaseEndImpl(
+              endParams as import('../tiers/phase/composite/phase-end-impl').PhaseEndParams,
+              shadowContext,
+              resolvedCtx
+            );
             break;
           case 'session':
-            result = await sessionEndImpl(endParams as import('../tiers/session/composite/session-end-impl').SessionEndParams, shadowContext);
+            result = await sessionEndImpl(
+              endParams as import('../tiers/session/composite/session-end-impl').SessionEndParams,
+              shadowContext,
+              resolvedCtx
+            );
             break;
           case 'task':
-            result = await taskEndImpl(endParams as import('../tiers/task/composite/task-end-impl').TaskEndParams, shadowContext);
+            result = await taskEndImpl(
+              endParams as import('../tiers/task/composite/task-end-impl').TaskEndParams,
+              shadowContext,
+              resolvedCtx
+            );
             break;
           default:
             result = { success: false, output: '', outcome: { reasonCode: 'unknown_tier', nextAction: 'Unknown tier.' } };

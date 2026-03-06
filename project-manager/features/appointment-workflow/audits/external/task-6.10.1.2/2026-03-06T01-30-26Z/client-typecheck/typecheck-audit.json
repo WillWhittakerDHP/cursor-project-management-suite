@@ -1,0 +1,150 @@
+{
+  "generatedAt": "2026-03-05T23:51:17.847Z",
+  "scope": {
+    "client": {
+      "command": "vue-tsc -b --pretty false",
+      "cwd": "client"
+    },
+    "server": {
+      "command": "tsc --noEmit --pretty false",
+      "cwd": "server"
+    }
+  },
+  "exitCode": 1,
+  "command": "vue-tsc -b --pretty false && tsc --noEmit --pretty false",
+  "exceptionSummary": {
+    "totalAllowed": 0,
+    "totalRequiresReview": 3,
+    "bySource": {
+      "inline": 0,
+      "pattern": 0,
+      "specific": 0
+    }
+  },
+  "errors": [
+    {
+      "file": "src/composables/booking/useAvailabilityOrchestrator.ts",
+      "line": 189,
+      "col": 7,
+      "code": "TS2339",
+      "message": "Property 'hasMoveablePartsGated' does not exist on type 'UseMoveablePartsSchedulingReturn'.",
+      "raw": "src/composables/booking/useAvailabilityOrchestrator.ts(189,7): error TS2339: Property 'hasMoveablePartsGated' does not exist on type 'UseMoveablePartsSchedulingReturn'.",
+      "scope": "client",
+      "repoPath": "src/composables/booking/useAvailabilityOrchestrator.ts"
+    },
+    {
+      "file": "src/composables/booking/useAvailabilityOrchestrator.ts",
+      "line": 189,
+      "col": 7,
+      "code": "TS2451",
+      "message": "Cannot redeclare block-scoped variable 'hasMoveablePartsGated'.",
+      "raw": "src/composables/booking/useAvailabilityOrchestrator.ts(189,7): error TS2451: Cannot redeclare block-scoped variable 'hasMoveablePartsGated'.",
+      "scope": "client",
+      "repoPath": "src/composables/booking/useAvailabilityOrchestrator.ts"
+    },
+    {
+      "file": "src/composables/booking/useAvailabilityOrchestrator.ts",
+      "line": 205,
+      "col": 9,
+      "code": "TS2451",
+      "message": "Cannot redeclare block-scoped variable 'hasMoveablePartsGated'.",
+      "raw": "src/composables/booking/useAvailabilityOrchestrator.ts(205,9): error TS2451: Cannot redeclare block-scoped variable 'hasMoveablePartsGated'.",
+      "scope": "client",
+      "repoPath": "src/composables/booking/useAvailabilityOrchestrator.ts"
+    }
+  ],
+  "allowedErrors": [],
+  "pools": [
+    {
+      "poolId": "TS2451-ts2451-cannot-redeclare-block-scoped-variable-hasmoveablepartsgated",
+      "groupKey": "TS2451::Cannot redeclare block-scoped variable 'hasMoveablePartsGated'.",
+      "errorCount": 2,
+      "fileCount": 1,
+      "severityScore": 20,
+      "blastRadiusScore": 2,
+      "repetitionScore": 2,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 24,
+      "sample": [
+        {
+          "repoPath": "src/composables/booking/useAvailabilityOrchestrator.ts",
+          "line": 189,
+          "col": 7,
+          "code": "TS2451",
+          "message": "Cannot redeclare block-scoped variable 'hasMoveablePartsGated'."
+        },
+        {
+          "repoPath": "src/composables/booking/useAvailabilityOrchestrator.ts",
+          "line": 205,
+          "col": 9,
+          "code": "TS2451",
+          "message": "Cannot redeclare block-scoped variable 'hasMoveablePartsGated'."
+        }
+      ],
+      "priority": "P0"
+    },
+    {
+      "poolId": "TS2339-ts2339-prop-hasmoveablepartsgated-usemoveablepartsschedulingreturn",
+      "groupKey": "TS2339::prop:hasMoveablePartsGated@UseMoveablePartsSchedulingReturn",
+      "errorCount": 1,
+      "fileCount": 1,
+      "severityScore": 10,
+      "blastRadiusScore": 2,
+      "repetitionScore": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 13,
+      "sample": [
+        {
+          "repoPath": "src/composables/booking/useAvailabilityOrchestrator.ts",
+          "line": 189,
+          "col": 7,
+          "code": "TS2339",
+          "message": "Property 'hasMoveablePartsGated' does not exist on type 'UseMoveablePartsSchedulingReturn'."
+        }
+      ],
+      "priority": "P1"
+    }
+  ],
+  "files": [
+    {
+      "repoPath": "src/composables/booking/useAvailabilityOrchestrator.ts",
+      "errorCount": 3,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "errors": [
+        {
+          "file": "src/composables/booking/useAvailabilityOrchestrator.ts",
+          "line": 189,
+          "col": 7,
+          "code": "TS2339",
+          "message": "Property 'hasMoveablePartsGated' does not exist on type 'UseMoveablePartsSchedulingReturn'.",
+          "raw": "src/composables/booking/useAvailabilityOrchestrator.ts(189,7): error TS2339: Property 'hasMoveablePartsGated' does not exist on type 'UseMoveablePartsSchedulingReturn'.",
+          "scope": "client",
+          "repoPath": "src/composables/booking/useAvailabilityOrchestrator.ts"
+        },
+        {
+          "file": "src/composables/booking/useAvailabilityOrchestrator.ts",
+          "line": 189,
+          "col": 7,
+          "code": "TS2451",
+          "message": "Cannot redeclare block-scoped variable 'hasMoveablePartsGated'.",
+          "raw": "src/composables/booking/useAvailabilityOrchestrator.ts(189,7): error TS2451: Cannot redeclare block-scoped variable 'hasMoveablePartsGated'.",
+          "scope": "client",
+          "repoPath": "src/composables/booking/useAvailabilityOrchestrator.ts"
+        },
+        {
+          "file": "src/composables/booking/useAvailabilityOrchestrator.ts",
+          "line": 205,
+          "col": 9,
+          "code": "TS2451",
+          "message": "Cannot redeclare block-scoped variable 'hasMoveablePartsGated'.",
+          "raw": "src/composables/booking/useAvailabilityOrchestrator.ts(205,9): error TS2451: Cannot redeclare block-scoped variable 'hasMoveablePartsGated'.",
+          "scope": "client",
+          "repoPath": "src/composables/booking/useAvailabilityOrchestrator.ts"
+        }
+      ]
+    }
+  ]
+}

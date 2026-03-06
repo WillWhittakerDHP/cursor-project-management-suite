@@ -22,7 +22,6 @@ import { buildCascadeUp, buildCascadeAcross } from '../../../utils/tier-cascade'
 import { isLastPhaseInFeature } from '../../../utils/phase-session-utils';
 import { PHASE_CONFIG } from '../../configs/phase';
 import { FEATURE_CONFIG } from '../../configs/feature';
-import { readTierScope, formatScopeCommitPrefix } from '../../../utils/tier-scope';
 import { phaseCommentCleanup } from '../../../comments/commentCleanup';
 import { testEndWorkflow } from '../../../testing/composite/test-end-workflow';
 import type {
@@ -64,11 +63,13 @@ export interface PhaseEndResult {
 const CLEANUP_FILE_THRESHOLD = 100;
 const CLEANUP_COMMENT_THRESHOLD = 500;
 
+/** When provided (e.g. from harness), use this context instead of re-resolving from git. */
 export async function phaseEndImpl(
   params: PhaseEndParams,
-  shadow?: EndShadowContext
+  shadow?: EndShadowContext,
+  resolvedContext?: WorkflowCommandContext
 ): Promise<PhaseEndResult | (PhaseEndResult & TierEndWorkflowResultWithShadow)> {
-  const context = await WorkflowCommandContext.getCurrent();
+  const context = resolvedContext ?? (await WorkflowCommandContext.getCurrent());
   const steps: Record<string, { success: boolean; output: string }> = {};
   const outcome = buildTierEndOutcome('completed', 'pending_push_confirmation', '');
 
@@ -463,8 +464,7 @@ export async function phaseEndImpl(
         }
         c.steps.mergeSessionBranches = { success: failedSessions.length === 0, output: `Merged ${mergedSessions.length}/${sessionBranches.length} session branch(es).` };
 
-        const scopeConfig = await readTierScope();
-        const commitPrefix = formatScopeCommitPrefix(scopeConfig, 'phase');
+        const commitPrefix = `[phase ${p.phaseId}]`;
         const phaseCommitMessage = p.commitMessage || `${commitPrefix} completion`;
         const phaseCommitResult = await gitCommit(phaseCommitMessage);
         c.steps.gitCommitPhase = { success: phaseCommitResult.success, output: phaseCommitResult.output };

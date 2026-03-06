@@ -1,0 +1,354 @@
+{
+  "generatedAt": "2026-03-05T21:24:27.152Z",
+  "scope": {
+    "client": {
+      "command": "vue-tsc -b --pretty false",
+      "cwd": "client"
+    },
+    "server": {
+      "command": "tsc --noEmit --pretty false",
+      "cwd": "server"
+    }
+  },
+  "exitCode": 1,
+  "command": "vue-tsc -b --pretty false && tsc --noEmit --pretty false",
+  "exceptionSummary": {
+    "totalAllowed": 0,
+    "totalRequiresReview": 11,
+    "bySource": {
+      "inline": 0,
+      "pattern": 0,
+      "specific": 0
+    }
+  },
+  "errors": [
+    {
+      "file": "src/composables/booking/useListForAdminEntry.ts",
+      "line": 30,
+      "col": 5,
+      "code": "TS2322",
+      "message": "Type 'Ref<undefined, undefined> | Ref<AdminEntryAppointmentItem[], AdminEntryAppointmentItem[]>' is not assignable to type 'ComputedRef<AdminEntryAppointmentItem[] | undefined>'.",
+      "raw": "src/composables/booking/useListForAdminEntry.ts(30,5): error TS2322: Type 'Ref<undefined, undefined> | Ref<AdminEntryAppointmentItem[], AdminEntryAppointmentItem[]>' is not assignable to type 'ComputedRef<AdminEntryAppointmentItem[] | undefined>'.",
+      "scope": "client",
+      "repoPath": "src/composables/booking/useListForAdminEntry.ts"
+    },
+    {
+      "file": "src/composables/booking/useListForAdminEntry.ts",
+      "line": 31,
+      "col": 5,
+      "code": "TS2322",
+      "message": "Type 'Ref<boolean, boolean> | Ref<false, false> | Ref<true, true>' is not assignable to type 'ComputedRef<boolean>'.",
+      "raw": "src/composables/booking/useListForAdminEntry.ts(31,5): error TS2322: Type 'Ref<boolean, boolean> | Ref<false, false> | Ref<true, true>' is not assignable to type 'ComputedRef<boolean>'.",
+      "scope": "client",
+      "repoPath": "src/composables/booking/useListForAdminEntry.ts"
+    },
+    {
+      "file": "src/composables/booking/useListForAdminEntry.ts",
+      "line": 32,
+      "col": 5,
+      "code": "TS2322",
+      "message": "Type 'Ref<Error, Error> | Ref<null, null>' is not assignable to type 'ComputedRef<unknown>'.",
+      "raw": "src/composables/booking/useListForAdminEntry.ts(32,5): error TS2322: Type 'Ref<Error, Error> | Ref<null, null>' is not assignable to type 'ComputedRef<unknown>'.",
+      "scope": "client",
+      "repoPath": "src/composables/booking/useListForAdminEntry.ts"
+    },
+    {
+      "file": "src/views/admin/AdminBookingEntryView.vue",
+      "line": 114,
+      "col": 45,
+      "code": "TS2339",
+      "message": "Property 'raw' does not exist on type '{ clientName: string; agentName: string; id: string; address: string; clientUserId: string | null; agentUserId: string | null; }'.",
+      "raw": "src/views/admin/AdminBookingEntryView.vue(114,45): error TS2339: Property 'raw' does not exist on type '{ clientName: string; agentName: string; id: string; address: string; clientUserId: string | null; agentUserId: string | null; }'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/AdminBookingEntryView.vue"
+    },
+    {
+      "file": "src/views/admin/AdminBookingEntryView.vue",
+      "line": 116,
+      "col": 39,
+      "code": "TS2339",
+      "message": "Property 'raw' does not exist on type '{ clientName: string; agentName: string; id: string; address: string; clientUserId: string | null; agentUserId: string | null; }'.",
+      "raw": "src/views/admin/AdminBookingEntryView.vue(116,39): error TS2339: Property 'raw' does not exist on type '{ clientName: string; agentName: string; id: string; address: string; clientUserId: string | null; agentUserId: string | null; }'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/AdminBookingEntryView.vue"
+    },
+    {
+      "file": "src/views/admin/AdminBookingEntryView.vue",
+      "line": 116,
+      "col": 82,
+      "code": "TS2339",
+      "message": "Property 'raw' does not exist on type '{ clientName: string; agentName: string; id: string; address: string; clientUserId: string | null; agentUserId: string | null; }'.",
+      "raw": "src/views/admin/AdminBookingEntryView.vue(116,82): error TS2339: Property 'raw' does not exist on type '{ clientName: string; agentName: string; id: string; address: string; clientUserId: string | null; agentUserId: string | null; }'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/AdminBookingEntryView.vue"
+    },
+    {
+      "file": "src/views/admin/AdminBookingEntryView.vue",
+      "line": 121,
+      "col": 33,
+      "code": "TS2339",
+      "message": "Property 'raw' does not exist on type '{ clientName: string; agentName: string; id: string; address: string; clientUserId: string | null; agentUserId: string | null; }'.",
+      "raw": "src/views/admin/AdminBookingEntryView.vue(121,33): error TS2339: Property 'raw' does not exist on type '{ clientName: string; agentName: string; id: string; address: string; clientUserId: string | null; agentUserId: string | null; }'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/AdminBookingEntryView.vue"
+    },
+    {
+      "file": "src/views/admin/AdminBookingEntryView.vue",
+      "line": 122,
+      "col": 36,
+      "code": "TS2339",
+      "message": "Property 'raw' does not exist on type '{ clientName: string; agentName: string; id: string; address: string; clientUserId: string | null; agentUserId: string | null; }'.",
+      "raw": "src/views/admin/AdminBookingEntryView.vue(122,36): error TS2339: Property 'raw' does not exist on type '{ clientName: string; agentName: string; id: string; address: string; clientUserId: string | null; agentUserId: string | null; }'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/AdminBookingEntryView.vue"
+    },
+    {
+      "file": "src/views/admin/AdminBookingEntryView.vue",
+      "line": 122,
+      "col": 60,
+      "code": "TS2339",
+      "message": "Property 'raw' does not exist on type '{ clientName: string; agentName: string; id: string; address: string; clientUserId: string | null; agentUserId: string | null; }'.",
+      "raw": "src/views/admin/AdminBookingEntryView.vue(122,60): error TS2339: Property 'raw' does not exist on type '{ clientName: string; agentName: string; id: string; address: string; clientUserId: string | null; agentUserId: string | null; }'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/AdminBookingEntryView.vue"
+    },
+    {
+      "file": "src/views/admin/AdminBookingEntryView.vue",
+      "line": 123,
+      "col": 30,
+      "code": "TS2339",
+      "message": "Property 'raw' does not exist on type '{ clientName: string; agentName: string; id: string; address: string; clientUserId: string | null; agentUserId: string | null; }'.",
+      "raw": "src/views/admin/AdminBookingEntryView.vue(123,30): error TS2339: Property 'raw' does not exist on type '{ clientName: string; agentName: string; id: string; address: string; clientUserId: string | null; agentUserId: string | null; }'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/AdminBookingEntryView.vue"
+    },
+    {
+      "file": "src/views/admin/AdminBookingEntryView.vue",
+      "line": 123,
+      "col": 59,
+      "code": "TS2339",
+      "message": "Property 'raw' does not exist on type '{ clientName: string; agentName: string; id: string; address: string; clientUserId: string | null; agentUserId: string | null; }'.",
+      "raw": "src/views/admin/AdminBookingEntryView.vue(123,59): error TS2339: Property 'raw' does not exist on type '{ clientName: string; agentName: string; id: string; address: string; clientUserId: string | null; agentUserId: string | null; }'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/AdminBookingEntryView.vue"
+    }
+  ],
+  "allowedErrors": [],
+  "pools": [
+    {
+      "poolId": "TS2339-ts2339-prop-raw",
+      "groupKey": "TS2339::prop:raw@{...}",
+      "errorCount": 8,
+      "fileCount": 1,
+      "severityScore": 80,
+      "blastRadiusScore": 2,
+      "repetitionScore": 8,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 90,
+      "sample": [
+        {
+          "repoPath": "src/views/admin/AdminBookingEntryView.vue",
+          "line": 114,
+          "col": 45,
+          "code": "TS2339",
+          "message": "Property 'raw' does not exist on type '{ clientName: string; agentName: string; id: string; address: string; clientUserId: string | null; agentUserId: string | null; }'."
+        },
+        {
+          "repoPath": "src/views/admin/AdminBookingEntryView.vue",
+          "line": 116,
+          "col": 39,
+          "code": "TS2339",
+          "message": "Property 'raw' does not exist on type '{ clientName: string; agentName: string; id: string; address: string; clientUserId: string | null; agentUserId: string | null; }'."
+        },
+        {
+          "repoPath": "src/views/admin/AdminBookingEntryView.vue",
+          "line": 116,
+          "col": 82,
+          "code": "TS2339",
+          "message": "Property 'raw' does not exist on type '{ clientName: string; agentName: string; id: string; address: string; clientUserId: string | null; agentUserId: string | null; }'."
+        }
+      ],
+      "priority": "P0"
+    },
+    {
+      "poolId": "TS2322-ts2322-assign-ref-ref-computedref",
+      "groupKey": "TS2322::assign:Ref<...> | Ref<...>=>ComputedRef<...>",
+      "errorCount": 2,
+      "fileCount": 1,
+      "severityScore": 20,
+      "blastRadiusScore": 2,
+      "repetitionScore": 2,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 24,
+      "sample": [
+        {
+          "repoPath": "src/composables/booking/useListForAdminEntry.ts",
+          "line": 30,
+          "col": 5,
+          "code": "TS2322",
+          "message": "Type 'Ref<undefined, undefined> | Ref<AdminEntryAppointmentItem[], AdminEntryAppointmentItem[]>' is not assignable to type 'ComputedRef<AdminEntryAppointmentItem[] | undefined>'."
+        },
+        {
+          "repoPath": "src/composables/booking/useListForAdminEntry.ts",
+          "line": 32,
+          "col": 5,
+          "code": "TS2322",
+          "message": "Type 'Ref<Error, Error> | Ref<null, null>' is not assignable to type 'ComputedRef<unknown>'."
+        }
+      ],
+      "priority": "P0"
+    },
+    {
+      "poolId": "TS2322-ts2322-assign-ref-ref-ref-computedref",
+      "groupKey": "TS2322::assign:Ref<...> | Ref<...> | Ref<...>=>ComputedRef<...>",
+      "errorCount": 1,
+      "fileCount": 1,
+      "severityScore": 10,
+      "blastRadiusScore": 2,
+      "repetitionScore": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 13,
+      "sample": [
+        {
+          "repoPath": "src/composables/booking/useListForAdminEntry.ts",
+          "line": 31,
+          "col": 5,
+          "code": "TS2322",
+          "message": "Type 'Ref<boolean, boolean> | Ref<false, false> | Ref<true, true>' is not assignable to type 'ComputedRef<boolean>'."
+        }
+      ],
+      "priority": "P1"
+    }
+  ],
+  "files": [
+    {
+      "repoPath": "src/views/admin/AdminBookingEntryView.vue",
+      "errorCount": 8,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "errors": [
+        {
+          "file": "src/views/admin/AdminBookingEntryView.vue",
+          "line": 114,
+          "col": 45,
+          "code": "TS2339",
+          "message": "Property 'raw' does not exist on type '{ clientName: string; agentName: string; id: string; address: string; clientUserId: string | null; agentUserId: string | null; }'.",
+          "raw": "src/views/admin/AdminBookingEntryView.vue(114,45): error TS2339: Property 'raw' does not exist on type '{ clientName: string; agentName: string; id: string; address: string; clientUserId: string | null; agentUserId: string | null; }'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/AdminBookingEntryView.vue"
+        },
+        {
+          "file": "src/views/admin/AdminBookingEntryView.vue",
+          "line": 116,
+          "col": 39,
+          "code": "TS2339",
+          "message": "Property 'raw' does not exist on type '{ clientName: string; agentName: string; id: string; address: string; clientUserId: string | null; agentUserId: string | null; }'.",
+          "raw": "src/views/admin/AdminBookingEntryView.vue(116,39): error TS2339: Property 'raw' does not exist on type '{ clientName: string; agentName: string; id: string; address: string; clientUserId: string | null; agentUserId: string | null; }'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/AdminBookingEntryView.vue"
+        },
+        {
+          "file": "src/views/admin/AdminBookingEntryView.vue",
+          "line": 116,
+          "col": 82,
+          "code": "TS2339",
+          "message": "Property 'raw' does not exist on type '{ clientName: string; agentName: string; id: string; address: string; clientUserId: string | null; agentUserId: string | null; }'.",
+          "raw": "src/views/admin/AdminBookingEntryView.vue(116,82): error TS2339: Property 'raw' does not exist on type '{ clientName: string; agentName: string; id: string; address: string; clientUserId: string | null; agentUserId: string | null; }'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/AdminBookingEntryView.vue"
+        },
+        {
+          "file": "src/views/admin/AdminBookingEntryView.vue",
+          "line": 121,
+          "col": 33,
+          "code": "TS2339",
+          "message": "Property 'raw' does not exist on type '{ clientName: string; agentName: string; id: string; address: string; clientUserId: string | null; agentUserId: string | null; }'.",
+          "raw": "src/views/admin/AdminBookingEntryView.vue(121,33): error TS2339: Property 'raw' does not exist on type '{ clientName: string; agentName: string; id: string; address: string; clientUserId: string | null; agentUserId: string | null; }'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/AdminBookingEntryView.vue"
+        },
+        {
+          "file": "src/views/admin/AdminBookingEntryView.vue",
+          "line": 122,
+          "col": 36,
+          "code": "TS2339",
+          "message": "Property 'raw' does not exist on type '{ clientName: string; agentName: string; id: string; address: string; clientUserId: string | null; agentUserId: string | null; }'.",
+          "raw": "src/views/admin/AdminBookingEntryView.vue(122,36): error TS2339: Property 'raw' does not exist on type '{ clientName: string; agentName: string; id: string; address: string; clientUserId: string | null; agentUserId: string | null; }'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/AdminBookingEntryView.vue"
+        },
+        {
+          "file": "src/views/admin/AdminBookingEntryView.vue",
+          "line": 122,
+          "col": 60,
+          "code": "TS2339",
+          "message": "Property 'raw' does not exist on type '{ clientName: string; agentName: string; id: string; address: string; clientUserId: string | null; agentUserId: string | null; }'.",
+          "raw": "src/views/admin/AdminBookingEntryView.vue(122,60): error TS2339: Property 'raw' does not exist on type '{ clientName: string; agentName: string; id: string; address: string; clientUserId: string | null; agentUserId: string | null; }'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/AdminBookingEntryView.vue"
+        },
+        {
+          "file": "src/views/admin/AdminBookingEntryView.vue",
+          "line": 123,
+          "col": 30,
+          "code": "TS2339",
+          "message": "Property 'raw' does not exist on type '{ clientName: string; agentName: string; id: string; address: string; clientUserId: string | null; agentUserId: string | null; }'.",
+          "raw": "src/views/admin/AdminBookingEntryView.vue(123,30): error TS2339: Property 'raw' does not exist on type '{ clientName: string; agentName: string; id: string; address: string; clientUserId: string | null; agentUserId: string | null; }'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/AdminBookingEntryView.vue"
+        },
+        {
+          "file": "src/views/admin/AdminBookingEntryView.vue",
+          "line": 123,
+          "col": 59,
+          "code": "TS2339",
+          "message": "Property 'raw' does not exist on type '{ clientName: string; agentName: string; id: string; address: string; clientUserId: string | null; agentUserId: string | null; }'.",
+          "raw": "src/views/admin/AdminBookingEntryView.vue(123,59): error TS2339: Property 'raw' does not exist on type '{ clientName: string; agentName: string; id: string; address: string; clientUserId: string | null; agentUserId: string | null; }'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/AdminBookingEntryView.vue"
+        }
+      ]
+    },
+    {
+      "repoPath": "src/composables/booking/useListForAdminEntry.ts",
+      "errorCount": 3,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "errors": [
+        {
+          "file": "src/composables/booking/useListForAdminEntry.ts",
+          "line": 30,
+          "col": 5,
+          "code": "TS2322",
+          "message": "Type 'Ref<undefined, undefined> | Ref<AdminEntryAppointmentItem[], AdminEntryAppointmentItem[]>' is not assignable to type 'ComputedRef<AdminEntryAppointmentItem[] | undefined>'.",
+          "raw": "src/composables/booking/useListForAdminEntry.ts(30,5): error TS2322: Type 'Ref<undefined, undefined> | Ref<AdminEntryAppointmentItem[], AdminEntryAppointmentItem[]>' is not assignable to type 'ComputedRef<AdminEntryAppointmentItem[] | undefined>'.",
+          "scope": "client",
+          "repoPath": "src/composables/booking/useListForAdminEntry.ts"
+        },
+        {
+          "file": "src/composables/booking/useListForAdminEntry.ts",
+          "line": 31,
+          "col": 5,
+          "code": "TS2322",
+          "message": "Type 'Ref<boolean, boolean> | Ref<false, false> | Ref<true, true>' is not assignable to type 'ComputedRef<boolean>'.",
+          "raw": "src/composables/booking/useListForAdminEntry.ts(31,5): error TS2322: Type 'Ref<boolean, boolean> | Ref<false, false> | Ref<true, true>' is not assignable to type 'ComputedRef<boolean>'.",
+          "scope": "client",
+          "repoPath": "src/composables/booking/useListForAdminEntry.ts"
+        },
+        {
+          "file": "src/composables/booking/useListForAdminEntry.ts",
+          "line": 32,
+          "col": 5,
+          "code": "TS2322",
+          "message": "Type 'Ref<Error, Error> | Ref<null, null>' is not assignable to type 'ComputedRef<unknown>'.",
+          "raw": "src/composables/booking/useListForAdminEntry.ts(32,5): error TS2322: Type 'Ref<Error, Error> | Ref<null, null>' is not assignable to type 'ComputedRef<unknown>'.",
+          "scope": "client",
+          "repoPath": "src/composables/booking/useListForAdminEntry.ts"
+        }
+      ]
+    }
+  ]
+}

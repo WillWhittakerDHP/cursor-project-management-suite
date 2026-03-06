@@ -30,23 +30,19 @@ export async function validateTaskImpl(taskId: string): Promise<ValidateTaskResu
   const sessionId = parsed.sessionId;
   const taskNum = parseInt(parsed.task, 10);
 
-  const featureName = await (async () => {
-    try {
-      const ctx = await WorkflowCommandContext.getCurrent();
-      return ctx.feature.name;
-    } catch {
-      return undefined;
-    }
-  })();
-  if (!featureName) {
+  // Resolve feature from task id (same as task-start). Do not use git branch so validation uses the task's session feature.
+  let context: WorkflowCommandContext;
+  try {
+    context = await WorkflowCommandContext.contextFromParams('task', { taskId });
+  } catch {
     return {
       canStart: false,
       reason: 'Feature context not available',
-      details: ['Could not resolve feature context. Ensure .current-feature or branch is set.'],
+      details: [
+        'Could not resolve feature from task id. Ensure the session guide exists for this task\'s session (e.g. run /session-start first).',
+      ],
     };
   }
-
-  const context = new WorkflowCommandContext(featureName);
 
   try {
     const sessionGuidePath = context.paths.getSessionGuidePath(sessionId);

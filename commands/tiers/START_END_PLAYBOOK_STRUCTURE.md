@@ -60,7 +60,7 @@ See `.cursor/commands/accepted-proceed.md` and `.cursor/commands/accepted-code.m
 ### Context
 
 - User supplies only the identifier (F/P/S/T: feature number or name, phase number, session X.Y, task X.Y.Z). The agent never asks the user for a title or description.
-- Where to get feature/phase/session/task (e.g. `.project-manager/.tier-scope`, command args).
+- Where to get feature/phase/session/task: **explicit in the command** (F/P/S/T identifiers in the slash command or params). No shared config file is read.
 - Context loading and derivation supply titles/descriptions/next identifiers from existing docs (see "Identifier-only input and context-derived titles" below).
 
 ### Prompts (use when the workflow requires a user choice)
@@ -246,7 +246,7 @@ Suggested manual verification for this tier. The checklist is for **verifying wh
 
 ### `uncommitted_changes_blocking` (start/end/reopen commands)
 
-The command detected uncommitted files that would be overwritten by a branch checkout. Workflow artifacts (`.cursor`, `.project-manager`, `client/.audit-reports`) are non-blocking: they are stashed before checkout and restored (stash pop) on the target branch; they are never auto-committed by the tier-end commit step. Any other uncommitted files are blocking; `controlPlaneDecision.message` contains the list of blocking files. **Tier-end commit behavior:** Before committing, the workflow verifies the current git branch matches the tier's expected branch. Only touched files under `frontend-root/` and `server/` are staged and committed; .cursor, .project-manager, and audit reports are never committed.
+The command detected uncommitted files that would be overwritten by a branch checkout. Workflow artifacts (`.cursor`, `.project-manager`, `client/.audit-reports`) are non-blocking: they are stashed before checkout and restored (stash pop) on the target branch; they are never auto-committed by the tier-end commit step. Any other uncommitted files are blocking; `controlPlaneDecision.message` contains the list of blocking files. **Tier-end commit behavior:** All git operations for tier workflows go through **gitManager** (`.cursor/commands/git/shared/git-manager.ts`). Before committing, the workflow ensures the repo is on the tier's expected branch: if the current branch is wrong (e.g. two threads), it switches to the expected branch (stashing only workflow artifacts, then checkout, then stash pop) then commits. Only touched files under `frontend-root/` and `server/` are staged and committed; .cursor, .project-manager, and audit reports are never committed.
 
 **When only workflow artifacts were uncommitted:** The workflow auto-stashes them and proceeds with checkout, then runs stash pop on the target branch. The user may see planning doc (or other .project-manager) tabs show as deleted/red in the editor during that window — the file was **not** deleted by the agent; it was stashed and is restored when the workflow runs stash pop. The command output will include messages to that effect. If the user asks "why was the planning doc deleted?", explain: it was stashed for the branch switch and has been restored; no delete was run.
 
@@ -387,8 +387,8 @@ Mode logic lives in `.cursor/commands/utils/command-execution-mode.ts`. Tier-spe
 
 **Shared workflow only.** All tier **end** commands use a single orchestrator and reusable step modules. The workflow is defined in:
 
-- **Orchestrator:** `.cursor/commands/harness/run-end-steps.ts` — `runTierEndWorkflow(ctx, hooks)` runs the pipeline: plan exit → resolve runTests → preWork → test goal validation → runTests → midWork → comment cleanup → readme cleanup → git → end audit → clear scope → build cascade.
-- **Step modules:** `.cursor/commands/tiers/shared/tier-end-steps.ts` — Reusable steps (e.g. `stepPlanModeExit`, `stepResolveRunTests`, `stepTierPreWork`, `stepTestGoalValidation`, `stepRunTests`, `stepTierMidWork`, `stepCommentCleanup`, `stepReadmeCleanup`, `stepTierGit`, `stepEndAudit`, `stepClearScope`, `stepBuildEndCascade`) use shared primitives and tier-supplied hooks.
+- **Orchestrator:** `.cursor/commands/harness/run-end-steps.ts` — `runTierEndWorkflow(ctx, hooks)` runs the pipeline: plan exit → resolve runTests → preWork → test goal validation → runTests → midWork → comment cleanup → readme cleanup → git → end audit → build cascade.
+- **Step modules:** `.cursor/commands/tiers/shared/tier-end-steps.ts` — Reusable steps (e.g. `stepPlanModeExit`, `stepResolveRunTests`, `stepTierPreWork`, `stepTestGoalValidation`, `stepRunTests`, `stepTierMidWork`, `stepCommentCleanup`, `stepReadmeCleanup`, `stepCommitUncommittedNonCursor`, `stepTierGit`, `stepEndAudit`, `stepBuildEndCascade`) use shared primitives and tier-supplied hooks. Git operations (commit remaining, merge, getCurrentBranch) go through **gitManager** (`.cursor/commands/git/shared/git-manager.ts`); do not import from `tier-branch-manager` or `git/atomic` directly.
 - **End audit entry point:** `.cursor/commands/audit/run-end-audit-for-tier.ts` — `runEndAuditForTier({ tier, identifier, params, featureName })` dispatches to `auditFeature`, `auditCodeQuality` (phase/session), or `auditTask`.
 
 **Agents must wait for the full pipeline (including end audit) to complete;** do not treat a long run as a failure.
@@ -502,35 +502,16 @@ Each tier has a strict dotted-number ID format. No "or" conditions — reject ID
 
 ---
 
-## Tier scope config (.tier-scope)
+## Scope: explicit per command (context from params)
 
-The file `.project-manager/.tier-scope` is the single source of truth for the current feature, phase, session, and task. It replaces the legacy `.current-feature` file.
+**Scope is explicit in every command.** Commands receive F/P/S/T via the slash command (e.g. `/session-start 6.9.2`, `/task-start 6.10.1.3`) or via params. Context is built once with **`WorkflowCommandContext.contextFromParams(tier, params)`**; the returned context carries **tier** and **identifier** so it is the single carrier of "what param" was used. Entry points (tier-start, tier-end, accepted-code, validate) pass this context through; impls and steps read from context (e.g. `context.identifier`, `context.feature.name`) and do not re-resolve from params.
 
-**File format:** Dotted keys per tier; each tier has `id` (hierarchical identifier for commands/branches) and `name` (human-readable for display/commits).
+**How scope is supplied:**
+- **Start/end:** The command includes the tier identifier. Entry calls `contextFromParams(config.name, params)` and passes context to the adapter and impls. Feature is derived from the identifier (which feature dir contains that session/task doc) or from explicit featureId when available.
+- **/audit-fix:** Pass explicit `featureName`, `tier`, and `identifier` to get tier-appropriate refs (guide + planning). Omit them to get governance refs only (no tier context).
+- **/accepted-code:** Uses pending task state (taskId; optional featureId). Builds context via `contextFromParams('task', { taskId, featureId: state.featureId })`.
 
-```
-feature.id=calendar-appointment-availability
-feature.name=Calendar Appointment Availability
-phase.id=3.6
-phase.name=Google Calendar Sync
-session.id=3.6.2
-session.name=Slot Calculation Refactor
-task.id=3.6.2.1
-task.name=Update Time Slot Composable
-```
-
-**Lifecycle:**
-- **Start commands** write scope after successful branch/setup: feature-start writes `feature`, phase-start writes `phase` (and clears session/task), session-start writes `session` (and clears task), task-start writes `task`.
-- **End commands** clear scope: feature-end calls `clearTierScope()`; phase-end, session-end, and task-end call `updateTierScope(tier, null)` for their tier (clearing that tier and all children).
-- **Tier reopen** writes scope when reopening a tier (derives name from parent guide, then `updateTierScope(tier, { id, name })`).
-
-**Naming rule (parents name children):** The naming event happens during **parent planning**. `appendChildToParentDoc` (used by plan-feature, plan-phase, plan-session) writes entries like `### Phase 3.6: Google Calendar Sync` into the parent's guide. When the **child** tier starts, it derives its name from the parent guide via `derivePhaseDescription`, `deriveSessionDescription`, or `deriveTaskDescription` and writes `{ id, name }` to scope.
-
-**Hierarchy clearing:** When a tier is updated, all child tiers are cleared (e.g. updating `phase` clears `session` and `task`). When a tier is set to `null` at end, that tier and its children are cleared.
-
-**Display and commits:** Use `formatScopeDisplay(scope)` for command output. Use `formatScopeCommitPrefix(scope, tier)` for commit messages (e.g. `[3.6.2: Slot Calculation Refactor] completion`). Branch names continue to use numbers only (e.g. `-phase-3.6-session-3.6.2`).
-
-**Backward compatibility:** `FeatureContext.getCurrent()` and `resolveFeatureName()` read from `.tier-scope` (feature.id). On first read, if `.tier-scope` is missing but `.current-feature` exists, it is migrated and the legacy file is removed.
+**Display and commits:** Commit message prefix and any scope display are derived from the current context (tier + identifier) in the command, e.g. `ctx.identifier` in end steps. Branch names use numbers only (e.g. `-phase-3.6-session-3.6.2`).
 
 ---
 
@@ -640,9 +621,20 @@ Reopened tiers are **startable** (same as In Progress). When the new work is don
 - **Phase:** Title/description from phase guide (Phase Name, Description). Next phase from feature guide phase list if needed. phase-start does not take a title parameter.
 - **Feature:** The start/end API uses **featureId** (string). Resolve to feature name via `resolveFeatureId(featureId)` (reads PROJECT_PLAN.md; `featureId` is the `#` column value, e.g. `"3"`). Then call `featureStart(featureId, options)`. No user-supplied title.
   - **Numeric identifier (e.g. `3`):** Pass as featureId; `resolveFeatureId("3")` returns the feature directory name from PROJECT_PLAN. Do not use directory listing or index; PROJECT_PLAN is the only source for resolution.
-  - **Identifier omitted:** If `.project-manager/.tier-scope` has `feature.id` set, use it as the feature name for context; for the API, a numeric featureId is required (from PROJECT_PLAN `#` column). Otherwise treat as error (do not infer from directories).
+  - **Identifier omitted:** Scope is explicit; derive or require feature from command/params. For the API, a numeric featureId is required (from PROJECT_PLAN `#` column). Do not infer from directories.
 - **Task:** Title/description from session guide task list or handoff; next task from session guide order. task-start does not take a description parameter; task context is loaded from session guide/handoff. The session guide must list each task with a heading matching `Task X.Y.Z.N:` (e.g. `#### Task 6.4.4.2:`) so task-end can cascade across; see "Enumerate tierDowns" in the context_gathering flow.
 
 **Rule for context step:** Derive [title/description/next] from [doc paths]; do not ask the user.
 
 **Planning commands:** No plan-* command requires a description. `/plan-phase`, `/plan-session`, `/plan-feature`, and `/plan-task` all accept identifier-only; description is derived in shared utils (`resolve-planning-description.ts`, `run-planning-pipeline.ts`).
+
+---
+
+## Debugging: protected writes and .write-log
+
+To see **when and why** guides or planning docs are written (and to track overwrites):
+
+- **`.project-manager/.write-log`** — Every protected write (`*-guide.md`, `*-planning.md` under `.project-manager`) is appended here with a timestamp and caller (file:line). Lines are either `WRITE <path> (caller: ...)` or `BLOCKED overwrite <path> (caller: ...)`. Use this to see which step or rerun wrote a file (e.g. after a workflow rerun that replaced a filled guide).
+- **stderr** — The same lines are written to stderr when the write (or block) happens. To reduce noise when running commands, redirect stderr or run in a context where stderr is captured.
+
+All protected writes go through `writeProjectFile` (in `.cursor/commands/utils/utils.ts`) or, when using DocumentManager, through the same guard. The guard blocks overwriting files that are already "filled" (no placeholders). Implementation: `.cursor/commands/utils/project-manager-write-guard.ts`.

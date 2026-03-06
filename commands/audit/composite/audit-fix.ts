@@ -1,27 +1,43 @@
 /**
  * Composite Command: /audit-fix [report-path]
- * Generate a prompt with @ refs to governance docs, tier-appropriate context (guide + planning doc), and optional audit report.
- * Instruction directs the agent to read context first and maintain governance patterns.
+ * Governance + tier context + audit report. Prefer auditFixWithPaths so the agent reads paths and fixes directly.
  *
- * Invocation: auditFix({ reportPath?, featureName?, tier?, identifier? }) returns the prompt string. Print it so the user can paste into chat.
- * CLI alternative: npx tsx .cursor/commands/audit/atomic/audit-fix-prompt.ts [report-path]
+ * auditFixWithPaths: returns { instruction, paths }; agent reads each path then fixes per the instruction (no paste step).
+ * auditFix: returns prompt string (for CLI or manual paste).
+ * CLI: npx tsx .cursor/commands/audit/atomic/audit-fix-prompt.ts [report-path]
  */
 
-import { auditFixPrompt } from '../atomic/audit-fix-prompt';
+import { auditFixPrompt, getAuditFixContext } from '../atomic/audit-fix-prompt';
+import type { AuditFixContext } from '../atomic/audit-fix-prompt';
+
+export type { AuditFixContext };
 
 export interface AuditFixParams {
   /** Optional path to the audit report (e.g. from tier-end message). */
   reportPath?: string;
-  /** Optional: feature name for tier context (otherwise from .tier-scope). */
+  /** Feature name for tier context (required for tier refs; scope is explicit per command). */
   featureName?: string;
-  /** Optional: tier for tier-appropriate refs (otherwise from .tier-scope). */
+  /** Tier for tier-appropriate refs (required for tier refs). */
   tier?: 'feature' | 'phase' | 'session' | 'task';
-  /** Optional: tier identifier (e.g. session 6.10.1, task 6.9.1.1). */
+  /** Tier identifier, e.g. session 6.10.1, task 6.9.1.1 (required for tier refs). */
   identifier?: string;
 }
 
 /**
- * Build the audit-fix prompt (instruction + governance + tier context + report @ refs). Use when the user chooses "Fix audit with governance context (/audit-fix)" after audit_failed.
+ * Direct execution: instruction + repo-relative paths. Agent should read each path, then fix findings per the instruction.
+ * Do not output a prompt for the user to paste—read the context and fix directly.
+ */
+export async function auditFixWithPaths(params: AuditFixParams = {}): Promise<AuditFixContext> {
+  return getAuditFixContext({
+    reportPath: params.reportPath,
+    featureName: params.featureName,
+    tier: params.tier,
+    identifier: params.identifier,
+  });
+}
+
+/**
+ * Build the audit-fix prompt string (instruction + @ refs). Use for CLI or when manual paste is desired.
  */
 export async function auditFix(params: AuditFixParams = {}): Promise<string> {
   return auditFixPrompt({

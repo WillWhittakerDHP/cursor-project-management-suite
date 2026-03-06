@@ -24,7 +24,6 @@ import { resolveRunTests } from '../../../utils/tier-end-utils';
 import { buildTierEndOutcome, type TierEndOutcome } from '../../../utils/tier-outcome';
 import { buildCascadeUp, buildCascadeAcross } from '../../../utils/tier-cascade';
 import { gitCommit } from '../../../git/atomic/commit';
-import { readTierScope, formatScopeCommitPrefix } from '../../../utils/tier-scope';
 import type {
   TierEndWorkflowContext,
   TierEndWorkflowHooks,
@@ -51,9 +50,14 @@ export interface TaskEndParams {
   vueArchitectureOverride?: { reason: string; followUpTaskId: string };
 }
 
+/**
+ * When provided (e.g. from harness), use this context instead of re-resolving feature.
+ * Enforces single source of truth: harness resolves once, impl uses it.
+ */
 export async function taskEndImpl(
   params: TaskEndParams,
-  shadow?: EndShadowContext
+  shadow?: EndShadowContext,
+  resolvedContext?: WorkflowCommandContext
 ): Promise<{
   success: boolean;
   output: string;
@@ -63,10 +67,13 @@ export async function taskEndImpl(
   output: string;
   outcome: TierEndOutcome;
 } & TierEndWorkflowResultWithShadow)> {
-  const featureName = params.featureId != null && params.featureId.trim() !== ''
-    ? await resolveFeatureId(params.featureId)
-    : await resolveFeatureName();
-  const context = new WorkflowCommandContext(featureName);
+  const context =
+    resolvedContext ??
+    new WorkflowCommandContext(
+      params.featureId != null && params.featureId.trim() !== ''
+        ? await resolveFeatureId(params.featureId)
+        : await resolveFeatureName()
+    );
 
   const parsed = WorkflowId.parseTaskId(params.taskId);
   if (!parsed) {
@@ -179,7 +186,11 @@ export async function taskEndImpl(
 
       let markCompleteOutput = '';
       try {
-        markCompleteOutput = await markTaskComplete({ taskId: p.taskId, entry: p.taskEntry, featureId: p.featureId });
+        markCompleteOutput = await markTaskComplete({
+          taskId: p.taskId,
+          entry: p.taskEntry,
+          featureId: p.featureId ?? c.context.feature.name,
+        });
         await TASK_CONFIG.controlDoc.writeStatus(c.context, p.taskId, 'Complete');
       } catch (_error) {
         markCompleteOutput = `Warning: Failed to mark task complete in session guide: ${_error instanceof Error ? _error.message : String(_error)}`;
@@ -293,8 +304,8 @@ export async function taskEndImpl(
 
     async runGit(c): Promise<StepExitResult> {
       try {
-        const scopeConfig = await readTierScope();
-        const commitPrefix = formatScopeCommitPrefix(scopeConfig, 'task');
+        const taskId = c.identifier ?? (c.params as { taskId?: string }).taskId ?? 'task';
+        const commitPrefix = `[task ${taskId}]`;
         const commitMessage = `${commitPrefix} completion`;
         const commitResult = await gitCommit(commitMessage);
         c.steps.gitCommitTask = {

@@ -11,14 +11,13 @@ import type {
 import { resolveCommandExecutionMode, isPlanMode } from '../../utils/command-execution-mode';
 import { resolveRunTests, buildPlanModeResult } from '../../utils/tier-end-utils';
 import { workflowCleanupReadmes } from '../../readme/composite/readme-workflow-cleanup';
-import { updateTierScope, clearTierScope, readTierScope, formatScopeCommitPrefix } from '../../utils/tier-scope';
 import { runEndAuditForTier } from '../../audit/run-end-audit-for-tier';
 import { buildTierEndOutcome } from '../../utils/tier-outcome';
 import {
-  commitUncommittedNonCursor,
+  commitRemaining,
   getExpectedBranchForTier,
   DEFAULT_ALLOWED_COMMIT_PREFIXES,
-} from '../../git/shared/tier-branch-manager';
+} from '../../git/shared/git-manager';
 import { PROJECT_ROOT } from '../../utils/utils';
 import type { TierName } from './types';
 
@@ -222,30 +221,27 @@ export async function stepReadmeCleanup(
 }
 
 /**
- * Commit only in-scope touched files (frontend-root/, server/) with a tier-scoped message.
+ * Commit only in-scope touched files (frontend-root/, server/) with a scope-from-context message.
  * Verifies current branch matches expected tier branch before committing; if wrong branch, returns early exit.
  * Never commits .cursor, .project-manager, or audit reports. Runs before stepTierGit.
  */
+function commitPrefixFromContext(identifier: string): string {
+  return `[${identifier}]`;
+}
+
 export async function stepCommitUncommittedNonCursor(
   ctx: TierEndWorkflowContext
 ): Promise<StepExitResult> {
   const expectedBranch = getExpectedBranchForTier(ctx.config, ctx.identifier, ctx.context);
-
-  let scopeConfig;
-  try {
-    scopeConfig = await readTierScope();
-  } catch {
-    scopeConfig = { feature: null, phase: null, session: null, task: null };
-  }
-  const prefix = formatScopeCommitPrefix(scopeConfig, ctx.config.name);
+  const prefix = commitPrefixFromContext(ctx.identifier);
   const commitMessage = `${prefix} tier-end: commit remaining work`;
 
-  const result = await commitUncommittedNonCursor(commitMessage, {
+  const result = await commitRemaining(commitMessage, {
     expectedBranch: expectedBranch ?? undefined,
     allowedPrefixes: [...DEFAULT_ALLOWED_COMMIT_PREFIXES],
   });
 
-  if (!result.success && result.output.includes('Wrong branch')) {
+  if (!result.success) {
     const outcome = buildTierEndOutcome(
       'blocked_fix_required',
       'wrong_branch_before_commit',
@@ -409,18 +405,6 @@ export async function stepAfterAudit(
 ): Promise<StepExitResult> {
   if (!hooks.runAfterAudit) return null;
   return hooks.runAfterAudit(ctx);
-}
-
-/** Clear tier scope (feature: clearTierScope; others: updateTierScope(tier, null)). */
-export async function stepClearScope(ctx: TierEndWorkflowContext): Promise<void> {
-  if (ctx.config.name === 'feature') {
-    await clearTierScope();
-  } else {
-    await updateTierScope(ctx.config.name, null);
-  }
-  const msg = `Scope cleared for ${ctx.config.name} tier.`;
-  ctx.steps.clearScope = { success: true, output: msg };
-  ctx.output.push(msg);
 }
 
 /** Build cascade from hook and set ctx.outcome.cascade. */

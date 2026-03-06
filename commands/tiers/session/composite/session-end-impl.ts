@@ -8,13 +8,12 @@ import { formatTaskEntry, TaskEntry } from '../../task/atomic/format-task-entry'
 import { appendLog } from '../../../utils/append-log';
 import { updateHandoffMinimal, MinimalHandoffUpdate } from '../../../utils/update-handoff-minimal';
 import { updateGuide, GuideUpdate } from '../../../utils/update-guide';
-import { gitCommit } from '../../../git/atomic/commit';
-import { readTierScope, formatScopeCommitPrefix } from '../../../utils/tier-scope';
+import { gitCommit } from '../../../git/shared/git-manager';
 import { markSessionComplete, MarkSessionCompleteParams } from './session';
 import { WorkflowCommandContext } from '../../../utils/command-context';
 import { detectSessionModifiedFiles } from '../../../utils/detect-modified-files';
-import { mergeTierBranch } from '../../../git/shared/tier-branch-manager';
-import { getCurrentBranch, readProjectFile, writeProjectFile } from '../../../utils/utils';
+import { mergeTierBranch, getCurrentBranch } from '../../../git/shared/git-manager';
+import { readProjectFile, writeProjectFile } from '../../../utils/utils';
 import { validateTestGoals } from '../../../testing/composite/test-goal-validator';
 import { analyzeTestError } from '../../../testing/composite/test-error-analyzer';
 import { requestTestFileFixPermission } from '../../../testing/composite/test-file-fix-permission';
@@ -156,11 +155,13 @@ export interface SessionEndResult {
   outcome: SessionEndOutcome;
 }
 
+/** When provided (e.g. from harness), use this context instead of re-resolving from git. */
 export async function sessionEndImpl(
   params: SessionEndParams,
-  shadow?: EndShadowContext
+  shadow?: EndShadowContext,
+  resolvedContext?: WorkflowCommandContext
 ): Promise<SessionEndResult | (SessionEndResult & TierEndWorkflowResultWithShadow)> {
-  const context = await WorkflowCommandContext.getCurrent();
+  const context = resolvedContext ?? (await WorkflowCommandContext.getCurrent());
   const description = params.description !== undefined
     ? params.description
     : await deriveSessionDescription(params.sessionId, context);
@@ -216,8 +217,7 @@ export async function sessionEndImpl(
 
       if (!p.skipGit) {
         try {
-          const scopeConfig = await readTierScope();
-          const commitPrefix = formatScopeCommitPrefix(scopeConfig, 'session');
+          const commitPrefix = `[session ${p.sessionId}]`;
           const featureCommitMessage = p.commitMessage || `${commitPrefix} ${p.description}`;
           const featureCommitResult = await gitCommit(featureCommitMessage);
           c.steps.gitCommitFeature = {

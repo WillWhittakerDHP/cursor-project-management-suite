@@ -16,7 +16,6 @@ import { getCurrentBranch, branchExists, isBranchBasedOn, runCommand } from '../
 import { createBranch } from '../atomic/create-branch';
 import { gitMerge } from '../atomic/merge';
 import { gitPush } from '../atomic/push';
-import { readTierScope } from '../../utils/tier-scope';
 
 // ─── Types ───────────────────────────────────────────────────────────
 
@@ -98,8 +97,8 @@ export function isCursorPath(path: string): boolean {
 }
 
 /**
- * True if path is .project-manager or under it. Workflow-generated guides, tier-scope,
- * and planning docs live here; we auto-commit them before branch switch so
+ * True if path is .project-manager or under it. Workflow-generated guides and
+ * planning docs live here; we auto-commit them before branch switch so
  * /accepted-proceed is not blocked by the planning docs it just produced.
  */
 export function isProjectManagerPath(path: string): boolean {
@@ -151,24 +150,45 @@ export const DEFAULT_ALLOWED_COMMIT_PREFIXES = ['frontend-root/', 'server/'] as 
 /** Paths to stash when only workflow artifacts are uncommitted (non-blocking flow). */
 const WORKFLOW_ARTIFACT_STASH_PATHS = '.cursor .project-manager client/.audit-reports';
 
+/** Normalize path from git status for classification (strip leading ./ and surrounding quotes). */
+function normalizeStatusPath(path: string): string {
+  let p = path.trim();
+  if (p.startsWith('./')) p = p.slice(2);
+  if (p.length >= 2 && p.startsWith('"') && p.endsWith('"')) p = p.slice(1, -1);
+  return p.trim();
+}
+
 /**
- * Check for uncommitted changes and resolve them before checkout:
+ * Check for uncommitted changes and resolve them before checkout.
+ *
+ * When theirBranch is provided (target for start, expected for end):
+ * - Block only when current branch === theirBranch and there are non-workflow uncommitted files.
+ * - When current !== theirBranch and there are non-workflow files: stash them ("uncommitted (other branch)"),
+ *   then stash workflow artifacts if any; do not block. After checkout, pop once to restore workflow only.
+ *
+ * When theirBranch is not provided: block on any non-workflow uncommitted files (legacy behavior).
+ *
+ * Resolution:
  * - No changes → clean
- * - Only workflow artifacts (.cursor, .project-manager, audit reports) → stash them (non-blocking); pop after checkout
- * - Other files present → return unresolved with the blocking file list
+ * - Only workflow artifacts → stash them; pop after checkout
+ * - Blocking files and (no theirBranch or current === theirBranch) → return unresolved
+ * - Blocking files and theirBranch and current !== theirBranch → stash blocking, then workflow if any; clean
  */
-async function resolveUncommittedBeforeCheckout(): Promise<UncommittedResolution> {
+async function resolveUncommittedBeforeCheckout(
+  theirBranch?: string | null
+): Promise<UncommittedResolution> {
   const status = await runCommand('git status --porcelain');
   if (!status.success || !status.output.trim()) {
     return { clean: true, blockingFiles: [], message: '' };
   }
 
   const lines = status.output.trim().split('\n').filter(l => l.length > 0);
-  const changedFiles = lines.map(l => l.slice(3).trim());
+  const changedFiles = lines.map((l) => normalizeStatusPath(l.slice(3).trim()));
 
-  const autoFiles = changedFiles.filter(isAutoCommittable);
-  const blockingFiles = changedFiles.filter(f => !isAutoCommittable(f.trim()));
+  const autoFiles = changedFiles.filter((f) => isAutoCommittable(f));
+  const blockingFiles = changedFiles.filter((f) => !isAutoCommittable(f));
 
+  // Only workflow artifacts uncommitted: stash and allow checkout
   if (autoFiles.length > 0 && blockingFiles.length === 0) {
     const stashResult = await runCommand(
       `git stash push -m "workflow artifacts (non-blocking)" -- ${WORKFLOW_ARTIFACT_STASH_PATHS}`
@@ -190,11 +210,98 @@ async function resolveUncommittedBeforeCheckout(): Promise<UncommittedResolution
     };
   }
 
-  return {
-    clean: false,
-    blockingFiles,
-    message: `Uncommitted changes in: ${blockingFiles.join(', ')}`,
-  };
+  // Non-workflow (blocking) files present
+  if (blockingFiles.length > 0) {
+    const currentBranch = theirBranch != null ? await getCurrentBranch() : null;
+    const blockBecauseOnTheirBranch =
+      theirBranch != null && currentBranch != null && currentBranch === theirBranch;
+
+    if (blockBecauseOnTheirBranch || theirBranch == null) {
+      return {
+        clean: false,
+        blockingFiles,
+        message: `Uncommitted changes in: ${blockingFiles.join(', ')}`,
+      };
+    }
+
+    // current !== theirBranch: stash blocking first, then workflow if any; do not block
+    const blockingPathsSafe = blockingFiles
+      .map((p) => `'${p.replace(/'/g, "'\\''")}'`)
+      .join(' ');
+    const stashBlockingResult = await runCommand(
+      `git stash push -u -m "uncommitted (other branch)" -- ${blockingPathsSafe}`
+    );
+    if (!stashBlockingResult.success) {
+      return {
+        clean: false,
+        blockingFiles,
+        message: `Failed to stash uncommitted (other branch): ${stashBlockingResult.error || stashBlockingResult.output}`,
+      };
+    }
+
+    let stashedWorkflow = false;
+    if (autoFiles.length > 0) {
+      const stashWorkflowResult = await runCommand(
+        `git stash push -m "workflow artifacts (non-blocking)" -- ${WORKFLOW_ARTIFACT_STASH_PATHS}`
+      );
+      if (!stashWorkflowResult.success) {
+        await runCommand('git stash pop'); // restore blocking stash
+        return {
+          clean: false,
+          blockingFiles,
+          message: `Failed to stash workflow after stashing other branch work: ${stashWorkflowResult.error || stashWorkflowResult.output}`,
+        };
+      }
+      stashedWorkflow = true;
+    }
+
+    return {
+      clean: true,
+      stashedWorkflowArtifacts: stashedWorkflow,
+      blockingFiles: [],
+      message:
+        'Uncommitted work is on another branch; stashed it so we can switch to the command branch. ' +
+        (stashedWorkflow
+          ? 'Workflow artifacts were also stashed and will be restored after checkout. '
+          : '') +
+        'Apply the "uncommitted (other branch)" stash on that branch when you switch back.',
+    };
+  }
+
+  return { clean: true, blockingFiles: [], message: '' };
+}
+
+/**
+ * Ensure working tree is on expectedBranch. Stashes only workflow artifacts if needed, then checkout, then stash pop.
+ * Used by commitUncommittedNonCursor when current branch does not match expected (e.g. tier-end on wrong branch).
+ */
+async function ensureOnBranch(expectedBranch: string): Promise<{ success: boolean; output: string }> {
+  const uncommitted = await resolveUncommittedBeforeCheckout(expectedBranch);
+  if (!uncommitted.clean) {
+    const fileList = uncommitted.blockingFiles.length > 0
+      ? ` Blocking files: ${uncommitted.blockingFiles.join(', ')}.`
+      : '';
+    return { success: false, output: uncommitted.message + fileList };
+  }
+  const needStashPop = uncommitted.stashedWorkflowArtifacts === true;
+  const checkoutResult = await runCommand(`git checkout ${expectedBranch}`);
+  if (!checkoutResult.success) {
+    if (needStashPop) await runCommand('git stash pop');
+    return {
+      success: false,
+      output: `Failed to checkout ${expectedBranch}: ${checkoutResult.error || checkoutResult.output}`,
+    };
+  }
+  if (needStashPop) {
+    const popResult = await runCommand('git stash pop');
+    if (!popResult.success) {
+      return {
+        success: true,
+        output: `Switched to ${expectedBranch}. Stash pop had issues: ${popResult.error || popResult.output}. Resolve manually if needed.`,
+      };
+    }
+  }
+  return { success: true, output: `Switched to expected branch: ${expectedBranch}.` };
 }
 
 export interface CommitUncommittedOptions {
@@ -218,11 +325,11 @@ export async function commitUncommittedNonCursor(
   if (options?.expectedBranch != null) {
     const current = await getCurrentBranch();
     if (current !== options.expectedBranch) {
-      return {
-        committed: false,
-        success: false,
-        output: `Wrong branch. Current: ${current}. Expected: ${options.expectedBranch}. Checkout the correct branch and re-run tier-end.`,
-      };
+      const ensureResult = await ensureOnBranch(options.expectedBranch);
+      if (!ensureResult.success) {
+        return { committed: false, success: false, output: ensureResult.output };
+      }
+      // Fall through to status/stage/commit (now on expected branch).
     }
   }
 
@@ -232,12 +339,13 @@ export async function commitUncommittedNonCursor(
   }
 
   const lines = status.output.trim().split('\n').filter((l) => l.length > 0);
-  const changedPaths = lines.map((l) => l.slice(3).trim()).filter((p) => p.length > 0);
+  const changedPaths = lines
+    .map((l) => normalizeStatusPath(l.slice(3).trim()))
+    .filter((p) => p.length > 0);
 
   const inScopePaths = changedPaths.filter((p) => {
-    const trimmed = p.trim();
-    if (isNeverCommitPath(trimmed)) return false;
-    return allowedPrefixes.some((prefix) => trimmed === prefix || trimmed.startsWith(prefix));
+    if (isNeverCommitPath(p)) return false;
+    return allowedPrefixes.some((prefix) => p === prefix || p.startsWith(prefix));
   });
 
   if (inScopePaths.length === 0) {
@@ -354,43 +462,18 @@ export function getExpectedBranchForTier(
 // ─── Scope Coherence ──────────────────────────────────────────────────
 
 /**
- * Verify .tier-scope feature matches the feature the command is operating on.
- * Call before any branch operations to catch mismatches early.
+ * Scope coherence check. Always coherent (scope derived from context per command).
  */
 export async function checkScopeCoherence(
   context: WorkflowCommandContext
 ): Promise<ScopeCoherenceResult> {
   const commandFeature = context.feature.name;
-  try {
-    const scopeConfig = await readTierScope();
-    const detectedFeature = scopeConfig.feature?.id ?? null;
-
-    if (detectedFeature !== null && detectedFeature !== commandFeature) {
-      return {
-        coherent: false,
-        configFeature: commandFeature,
-        branchFeature: detectedFeature,
-        message:
-          `Feature mismatch: .tier-scope indicates "${detectedFeature}" ` +
-          `but this command is operating on "${commandFeature}". ` +
-          `Update .project-manager/.tier-scope or switch branches before proceeding.`,
-      };
-    }
-
-    return {
-      coherent: true,
-      configFeature: commandFeature,
-      branchFeature: detectedFeature,
-      message: `Scope coherence verified: ${commandFeature}`,
-    };
-  } catch {
-    return {
-      coherent: true,
-      configFeature: commandFeature,
-      branchFeature: null,
-      message: 'Could not read tier scope; proceeding with command feature.',
-    };
-  }
+  return {
+    coherent: true,
+    configFeature: commandFeature,
+    branchFeature: null,
+    message: `Scope derived from context: ${commandFeature}`,
+  };
 }
 
 // ─── ensureTierBranch (for start commands) ───────────────────────────
@@ -423,28 +506,7 @@ export async function ensureTierBranch(
   const createIfMissing = options?.createIfMissing ?? true;
   const pullRoot = options?.pullRoot ?? false;
 
-  // Step 0a: Resolve uncommitted changes before any checkout (stash workflow artifacts only; no commit)
-  const uncommitted = await resolveUncommittedBeforeCheckout();
-  const needStashPop = uncommitted.clean && uncommitted.stashedWorkflowArtifacts === true;
-  if (needStashPop) {
-    messages.push(uncommitted.message);
-  }
-  if (!uncommitted.clean) {
-    return {
-      success: false,
-      messages: [
-        ...messages,
-        uncommitted.message,
-        'Branch checkout blocked by uncommitted changes.',
-      ],
-      finalBranch: await getCurrentBranch(),
-      chain: [],
-      blockedByUncommitted: true,
-      uncommittedFiles: uncommitted.blockingFiles,
-    };
-  }
-
-  // Step 0b: Feature coherence
+  // Step 0a: Feature coherence
   const coherence = await checkScopeCoherence(context);
   if (!coherence.coherent) {
     return {
@@ -455,10 +517,9 @@ export async function ensureTierBranch(
     };
   }
 
-  // Step 1: Build chain
+  // Step 0b: Build chain so we know target branch for branch-aware uncommitted resolution
   const chain = buildBranchChain(config, tierId, context);
   if (chain.length === 0) {
-    // Tier has no branch (e.g. task) - nothing to do
     return {
       success: true,
       messages: ['Tier has no branch; inheriting current branch.'],
@@ -468,8 +529,35 @@ export async function ensureTierBranch(
   }
 
   const targetLink = chain[chain.length - 1];
+  if (!(await branchExists(targetLink.branchName))) {
+    const prefixMatches = await listBranchesByPrefix(targetLink.branchName);
+    if (prefixMatches.length === 1) targetLink.branchName = prefixMatches[0];
+    else if (prefixMatches.length > 1) targetLink.branchName = prefixMatches[0];
+  }
+  const targetBranch = targetLink.branchName;
 
-  // Step 2: Walk ancestors (everything except the last = target)
+  // Step 0c: Resolve uncommitted: block only when current === target and there are non-workflow files
+  const uncommitted = await resolveUncommittedBeforeCheckout(targetBranch);
+  const needStashPop = uncommitted.clean && uncommitted.stashedWorkflowArtifacts === true;
+  if (needStashPop && uncommitted.message) {
+    messages.push(uncommitted.message);
+  }
+  if (!uncommitted.clean) {
+    return {
+      success: false,
+      messages: [
+        ...messages,
+        uncommitted.message,
+        'Branch checkout blocked by uncommitted changes on this branch.',
+      ],
+      finalBranch: await getCurrentBranch(),
+      chain: [],
+      blockedByUncommitted: true,
+      uncommittedFiles: uncommitted.blockingFiles,
+    };
+  }
+
+  // Walk ancestors (everything except the last = target)
   for (let i = 0; i < chain.length - 1; i++) {
     const link = chain[i];
     const parentBranch = link.parentBranchName;

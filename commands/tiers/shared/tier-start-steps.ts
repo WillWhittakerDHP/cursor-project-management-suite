@@ -15,13 +15,12 @@ import type {
 import type { TierStartResult, CascadeInfo } from '../../utils/tier-outcome';
 import type { CannotStartTier } from '../../utils/tier-start-utils';
 import { formatBranchHierarchy, formatCannotStart } from '../../utils/tier-start-utils';
-import { isAutoCommittable } from '../../git/shared/tier-branch-manager';
+import { isAutoCommittable } from '../../git/shared/git-manager';
 import { resolveCommandExecutionMode, isPlanMode } from '../../utils/command-execution-mode';
 import { runTierPlan } from './tier-plan';
 import { buildCascadeDown } from '../../utils/tier-cascade';
 import { spawn } from 'child_process';
 import { join } from 'path';
-import { readTierScope } from '../../utils/tier-scope';
 import { buildTierStamp } from '../../audit/baseline-log';
 import { buildGovernanceContext } from '../../audit/governance-context';
 import { buildContinuitySummary, buildReferencePaths, type ReferencePaths, TIER_CONTEXT_SOURCES } from './context-policy';
@@ -1051,12 +1050,13 @@ export async function stepStartAudit(
   if (hooks.runStartAudit === false) return null;
 
   try {
-    const scope = await readTierScope();
+    const tier = ctx.context.tier;
+    const id = ctx.context.identifier ?? null;
     const tierStamp = buildTierStamp({
-      feature: scope.feature?.id ?? ctx.context.feature.name,
-      phase: scope.phase?.id ?? null,
-      session: scope.session?.id ?? null,
-      task: scope.task?.id ?? null,
+      feature: ctx.context.feature.name,
+      phase: tier === 'phase' ? id : null,
+      session: tier === 'session' ? id : null,
+      task: tier === 'task' ? id : null,
     });
 
     const runnerPath = join(

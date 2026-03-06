@@ -51,29 +51,22 @@ function stepDef(
   };
 }
 
+function getStepMeta(id: StepId): { phase: 'pre' | 'main' | 'post'; canFail: boolean } {
+  const phase: 'pre' | 'main' | 'post' =
+    id === 'validate_identifier' || id === 'preflight' ? 'pre' : id === 'finalize' ? 'post' : 'main';
+  const canFail = id === 'preflight' || id === 'scope_update';
+  return { phase, canFail };
+}
+
 /** Build deterministic step graph for the given spec. Same spec always returns same graph. */
 export function getStepGraph(spec: WorkflowSpec): StepDefinition[] {
   const action = spec.action;
+  const stepIds = action === 'start' ? START_STEPS : END_STEPS;
   const steps: StepDefinition[] = [];
-
-  if (action === 'start') {
-    for (const id of START_STEPS) {
-      steps.push(
-        stepDef(id, id === 'validate_identifier' || id === 'preflight' ? 'pre' : id === 'finalize' ? 'post' : 'main', ['start'], id === 'preflight' || id === 'scope_update')
-      );
-    }
-    return steps;
+  for (const id of stepIds) {
+    const { phase, canFail } = getStepMeta(id);
+    steps.push(stepDef(id, phase, [action], canFail));
   }
-
-  if (action === 'end') {
-    for (const id of END_STEPS) {
-      steps.push(
-        stepDef(id, id === 'validate_identifier' || id === 'preflight' ? 'pre' : id === 'finalize' ? 'post' : 'main', ['end'], id === 'preflight' || id === 'scope_update')
-      );
-    }
-    return steps;
-  }
-
   return steps;
 }
 

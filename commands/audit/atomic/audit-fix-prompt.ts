@@ -4,18 +4,24 @@
  * Instructs the agent to read the attached context first to avoid duplication and maintain governance patterns.
  *
  * Tier: N/A (utility for audit-fix workflow)
- * Reads: .project-manager/AUDIT_FIX_CONTEXT.md for the copy-paste block of @ paths; .project-manager/.tier-scope for tier context when not passed.
+ * Reads: .project-manager/AUDIT_FIX_CONTEXT.md for the copy-paste block of @ paths.
+ * Tier context requires explicit scope (featureName + tier + identifier) in the command.
  */
 
 import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { PROJECT_ROOT } from '../../utils/utils';
-import { readTierScope } from '../../utils/tier-scope';
+import {
+  getPlaybooksForAudit,
+  getPlaybooksForTier,
+  reportPathToAuditName,
+} from '../../utils/tier-context-config';
+import type { TierName } from '../../tiers/shared/types';
 
 const AUDIT_FIX_CONTEXT_PATH = join(PROJECT_ROOT, '.project-manager', 'AUDIT_FIX_CONTEXT.md');
 
 const DEFAULT_INSTRUCTION =
-  'Read the attached governance and audit context before making changes. Fix the audit findings per the playbooks\' thresholds and decision trees. Reuse existing patterns in the codebase and playbooks; do not duplicate logic or introduce patterns that conflict with governance.';
+  'Read the attached governance and audit context before making changes. Fix only the issues called out in the audit report (using playbooks\' thresholds and decision trees). Reuse existing patterns; do not duplicate logic or introduce patterns that conflict with governance. Do not run typecheck, regenerate audit JSON, or inspect raw audit files unless the report explicitly says the fix is to regenerate or fix the audit pipeline.';
 
 /** Build paths for tier-appropriate context (guide + planning doc) so the agent has current scope. */
 function buildTierContextPaths(
@@ -79,6 +85,39 @@ export function buildAuditFixPrompt(
 const FALLBACK_REFS =
   '@.project-manager/COMPONENT_AUTHORING_PLAYBOOK.md @.project-manager/COMPOSABLE_AUTHORING_PLAYBOOK.md @.project-manager/FUNCTION_AUTHORING_PLAYBOOK.md @.project-manager/TYPE_AUTHORING_PLAYBOOK.md @client/.audit-reports/audit-global-config.json';
 
+/** Governance @ refs from tier-context-config (sync). Returns empty string when tier/reportPath resolve to no paths. */
+function getGovernanceRefsFromConfig(tier?: TierName, reportPath?: string): string {
+  if (reportPath) {
+    const auditName = reportPathToAuditName(reportPath);
+    if (auditName) {
+      const paths = getPlaybooksForAudit(auditName);
+      if (paths.length > 0) return paths.map((p) => `@${p}`).join(' ');
+    }
+  }
+  if (tier) {
+    const paths = getPlaybooksForTier(tier);
+    if (paths.length > 0) return paths.map((p) => `@${p}`).join(' ');
+  }
+  return '';
+}
+
+/**
+ * Governance refs for the prompt: tier/report-pertinent from config when tier or reportPath present;
+ * otherwise full list from AUDIT_FIX_CONTEXT. When tier is feature, use full list (feature fixes are rare).
+ */
+async function getGovernanceRefsForPrompt(params: {
+  tier?: TierName;
+  reportPath?: string;
+}): Promise<string> {
+  const { tier, reportPath } = params;
+  if (tier === 'feature') return loadGovernanceRefs();
+  if (tier != null || (reportPath != null && reportPath.trim() !== '')) {
+    const refs = getGovernanceRefsFromConfig(tier, reportPath);
+    if (refs) return refs;
+  }
+  return loadGovernanceRefs();
+}
+
 export async function loadGovernanceRefs(): Promise<string> {
   try {
     const content = await readFile(AUDIT_FIX_CONTEXT_PATH, 'utf-8');
@@ -89,32 +128,13 @@ export async function loadGovernanceRefs(): Promise<string> {
   }
 }
 
-/** Load tier-appropriate @ refs (guide + planning doc) from .tier-scope or from explicit params. */
+/** Load tier-appropriate @ refs (guide + planning doc). Requires explicit scope (featureName + tier + identifier). */
 export async function loadTierContextRefs(params: {
   featureName?: string;
   tier?: 'feature' | 'phase' | 'session' | 'task';
   identifier?: string;
 }): Promise<string> {
-  let featureName = params.featureName;
-  let tier = params.tier;
-  let identifier = params.identifier;
-  if (!featureName || !tier || !identifier) {
-    const scope = await readTierScope();
-    featureName = featureName ?? scope.feature?.id ?? '';
-    if (!tier && scope.task?.id) {
-      tier = 'task';
-      identifier = scope.task.id;
-    } else if (!tier && scope.session?.id) {
-      tier = 'session';
-      identifier = scope.session.id;
-    } else if (!tier && scope.phase?.id) {
-      tier = 'phase';
-      identifier = scope.phase.id;
-    } else if (!tier && scope.feature?.id) {
-      tier = 'feature';
-      identifier = scope.feature.id;
-    }
-  }
+  const { featureName, tier, identifier } = params;
   if (!featureName || !tier || !identifier) return '';
   const paths = buildTierContextPaths(featureName, tier, identifier);
   return paths.map((p) => `@${p}`).join(' ');
@@ -123,11 +143,11 @@ export async function loadTierContextRefs(params: {
 export interface AuditFixPromptParams {
   /** Optional path to the audit report (e.g. client/.audit-reports/component-health-audit.md) */
   reportPath?: string;
-  /** Optional: feature name for tier context (otherwise from .tier-scope) */
+  /** Feature name for tier context (required for tier refs). */
   featureName?: string;
-  /** Optional: tier for tier-appropriate context (otherwise from .tier-scope) */
+  /** Tier for tier-appropriate context (required for tier refs). */
   tier?: 'feature' | 'phase' | 'session' | 'task';
-  /** Optional: tier identifier (e.g. session 6.10.1, task 6.9.1.1) */
+  /** Tier identifier, e.g. session 6.10.1, task 6.9.1.1 (required for tier refs). */
   identifier?: string;
 }
 
@@ -137,7 +157,7 @@ export interface AuditFixPromptParams {
  */
 export async function auditFixPrompt(params: AuditFixPromptParams = {}): Promise<string> {
   const [governanceRefs, tierContextRefs] = await Promise.all([
-    loadGovernanceRefs(),
+    getGovernanceRefsForPrompt({ tier: params.tier, reportPath: params.reportPath }),
     loadTierContextRefs({
       featureName: params.featureName,
       tier: params.tier,
@@ -148,6 +168,37 @@ export async function auditFixPrompt(params: AuditFixPromptParams = {}): Promise
     reportPath: params.reportPath,
     tierContextRefs,
   });
+}
+
+/** Result for direct execution: agent reads these paths then fixes per the instruction. */
+export interface AuditFixContext {
+  instruction: string;
+  /** Repo-relative paths to read (governance playbooks, tier guide/planning, audit report). */
+  paths: string[];
+}
+
+/**
+ * Return instruction + paths for direct execution. Agent should read each path, then fix findings
+ * per the instruction. Use this instead of pasting the prompt—read the context and fix directly.
+ */
+export async function getAuditFixContext(params: AuditFixPromptParams = {}): Promise<AuditFixContext> {
+  const [governanceRefs, tierContextRefs] = await Promise.all([
+    getGovernanceRefsForPrompt({ tier: params.tier, reportPath: params.reportPath }),
+    loadTierContextRefs({
+      featureName: params.featureName,
+      tier: params.tier,
+      identifier: params.identifier,
+    }),
+  ]);
+  const refsLine = [governanceRefs, tierContextRefs, params.reportPath ? `@${params.reportPath.replace(/^@/, '').trim()}` : '']
+    .filter(Boolean)
+    .join(' ');
+  const paths = refsLine
+    .split(/\s+/)
+    .map((s) => s.replace(/^@/, '').trim())
+    .filter(Boolean);
+  const dedup = [...new Set(paths)];
+  return { instruction: DEFAULT_INSTRUCTION, paths: dedup };
 }
 
 /**

@@ -28,10 +28,10 @@ const TYPECHECK_DIR = join(CLIENT_ROOT, '.audit-reports', 'typecheck');
 interface AuditJsonOutput {
   generatedAt?: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  files?: Array<{ repoPath: string; score?: number; [key: string]: any }>;
+  files?: Array<{ repoPath: string; score?: number; priority?: string; [key: string]: any }>;
   errors?: Array<{ repoPath: string; code: string; message: string }>;
   pools?: Array<{ priority: string; totalScore: number; errorCount: number }>;
-  groups?: Array<{ uniqueFiles: number; occurrences: number; lineCount?: number }>;
+  groups?: Array<{ uniqueFiles: number; occurrences: number; lineCount?: number; action?: string }>;
   summary?: { totalErrors?: number; totalWarnings?: number; untestedSourceFiles?: number; orphanedTestFiles?: number; coveragePercentage?: number };
   issues?: Array<{ severity: string }>;
   categories?: Array<{ id?: string; priority?: string; errors?: unknown[] }>;
@@ -109,6 +109,11 @@ const TIER_AUDIT_CONFIG: Record<
     ],
   },
 };
+
+/** Returns the list of audit names that run at the given tier. Used by tier-context-config for tier → playbooks. */
+export function getAuditNamesForTier(tier: AuditTier): string[] {
+  return TIER_AUDIT_CONFIG[tier].audits.map((a) => a.auditName);
+}
 
 function toRepoPath(absPath: string): string {
   return absPath.replace(PROJECT_ROOT + '/', '');
@@ -464,7 +469,7 @@ function generateFindingsFromAudit(
   if (auditName === 'type-similarity') {
     const groups = jsonData.groups || [];
     const criticalActions = groups.filter(
-      (g: { action?: string }) => g.action === 'UNIFY' || g.action === 'BRAND'
+      (g) => g.action === 'UNIFY' || g.action === 'BRAND'
     );
     if (criticalActions.length > 0) {
       findings.push({
@@ -492,7 +497,7 @@ function generateFindingsFromAudit(
 
   if (auditName === 'file-cohesion') {
     const files = jsonData.files || [];
-    const p0Files = files.filter((f: { priority?: string }) => f.priority === 'P0');
+    const p0Files = files.filter((f) => f.priority === 'P0');
     if (p0Files.length > 2) {
       findings.push({
         type: 'info',
@@ -506,7 +511,7 @@ function generateFindingsFromAudit(
   if (auditName === 'deprecation') {
     const files = jsonData.files || [];
     const p0P1Files = files.filter(
-      (f: { priority?: string }) => f.priority === 'P0' || f.priority === 'P1'
+      (f) => f.priority === 'P0' || f.priority === 'P1'
     );
     if (p0P1Files.length > 0) {
       findings.push({

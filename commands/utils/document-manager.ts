@@ -17,6 +17,8 @@ import { WorkflowId } from './id-utils';
 import { readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { access } from 'fs/promises';
+import { writeProjectFile } from './utils';
+import { isProjectManagerProtectedPath } from './project-manager-write-guard';
 
 /**
  * Document tier types
@@ -281,14 +283,17 @@ export class DocumentManager {
   }
 
   /**
-   * Write file and invalidate cache
+   * Write file and invalidate cache.
+   * Protected paths (guides/planning under .project-manager) go through writeProjectFile for guard and audit.
    * @private
    */
   private async writeFile(path: string, content: string): Promise<void> {
-    const fullPath = join(this.PROJECT_ROOT, path);
-    await writeFile(fullPath, content, 'utf-8');
-    
-    // Invalidate cache for this file
+    if (isProjectManagerProtectedPath(path)) {
+      await writeProjectFile(path, content);
+    } else {
+      const fullPath = join(this.PROJECT_ROOT, path);
+      await writeFile(fullPath, content, 'utf-8');
+    }
     this.cache.invalidate(path);
   }
 }

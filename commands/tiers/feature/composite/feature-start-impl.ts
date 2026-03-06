@@ -10,7 +10,6 @@ import { formatFileStatusList } from '../../../utils/context-templates';
 import { resolveFeatureId } from '../../../utils/feature-context';
 import { FEATURE_CONFIG } from '../../configs/feature';
 import { ensureTierBranch } from '../../../git/shared/tier-branch-manager';
-import { updateTierScope } from '../../../utils/tier-scope';
 import { deriveFeatureDescription } from '../../../planning/utils/resolve-planning-description';
 import { readTierUpContext, getTierContextSourcePolicy } from '../../shared/context-policy';
 import type { TierStartResult } from '../../../utils/tier-outcome';
@@ -30,20 +29,26 @@ const BLOCKED_STATUSES = ['complete', 'blocked'] as const;
 
 export type ShadowContext = { recorder: RunRecorder; handle: RunTraceHandle };
 
+/** When provided (e.g. from harness), use this context instead of re-resolving feature. */
 export async function featureStartImpl(
   featureId: string,
   options?: import('../../../utils/command-execution-mode').CommandExecutionOptions,
-  shadow?: ShadowContext
+  shadow?: ShadowContext,
+  resolvedContext?: WorkflowCommandContext
 ): Promise<TierStartResult | TierStartWorkflowResult> {
-  const featureName = await resolveFeatureId(featureId);
-  const normalizedFeatureName = featureName.toLowerCase().replace(/\s+/g, '-');
-  const context = new WorkflowCommandContext(normalizedFeatureName);
+  const context =
+    resolvedContext ??
+    new WorkflowCommandContext(
+      (await resolveFeatureId(featureId)).toLowerCase().replace(/\s+/g, '-')
+    );
+  const featureName = context.feature.name;
+  const normalizedFeatureName = featureName;
   const output: string[] = [];
 
   const ctx: TierStartWorkflowContext = {
     config: FEATURE_CONFIG,
     identifier: featureId,
-    resolvedId: featureName,
+    resolvedId: normalizedFeatureName,
     options,
     context,
     output,
@@ -158,8 +163,8 @@ export async function featureStartImpl(
     },
 
     async afterBranch() {
-      const featureDisplayName = await deriveFeatureDescription(normalizedFeatureName, context);
-      await updateTierScope('feature', { id: normalizedFeatureName, name: featureDisplayName });
+      await deriveFeatureDescription(normalizedFeatureName, context);
+      // Scope derived from context (tier + identifier) per command.
     },
 
     /** TierUp only: feature guide. No phase/session/task docs as planning input. */

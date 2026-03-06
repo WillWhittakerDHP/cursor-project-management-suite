@@ -3,7 +3,6 @@
  */
 
 import { getCurrentDate } from '../../utils/utils';
-import { updateTierScope } from '../../utils/tier-scope';
 import type {
   TierReopenWorkflowContext,
   TierReopenWorkflowHooks,
@@ -53,13 +52,12 @@ export async function stepEnsureBranch(
   if (hooks.ensureBranch) await hooks.ensureBranch(ctx);
 }
 
-/** Resolve scope via getScope, call updateTierScope, push "**{tier} {id} reopened.**" */
+/** Push reopen message (scope derived from context). */
 export async function stepUpdateScope(
   ctx: TierReopenWorkflowContext,
   hooks: TierReopenWorkflowHooks
 ): Promise<void> {
   const scope = await hooks.getScope(ctx);
-  await updateTierScope(ctx.config.name, scope);
   ctx.output.push(`\n**${ctx.config.name.charAt(0).toUpperCase() + ctx.config.name.slice(1)} ${scope.id} reopened.**`);
 }
 

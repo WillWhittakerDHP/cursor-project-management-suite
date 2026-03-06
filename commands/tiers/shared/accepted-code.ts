@@ -51,7 +51,10 @@ export async function acceptedCode(): Promise<TierStartResultWithControlPlane> {
     };
   }
 
-  const context = await WorkflowCommandContext.getCurrent();
+  const context = await WorkflowCommandContext.contextFromParams('task', {
+    taskId: state.taskId,
+    featureId: state.featureId,
+  });
   const basePath = context.paths.getBasePath();
   const planningDocPath = getPlanningDocPathForTier('task', state.taskId, basePath);
   try {
