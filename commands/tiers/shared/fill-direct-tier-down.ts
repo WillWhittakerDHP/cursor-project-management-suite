@@ -23,11 +23,13 @@ function needsFill(value: string): boolean {
 
 /**
  * Fill tierDown sections: Goal, Files, Approach, Checkpoint from tierUp scope.
+ * When mode is 'light', uses minimal placeholders; 'moderate'/'explicit' use fuller text.
  */
 async function fillTaskSectionsInSessionGuide(
   sessionId: string,
   scopeDescription: string,
-  context: WorkflowCommandContext
+  context: WorkflowCommandContext,
+  mode: DecompositionModeForFill
 ): Promise<void> {
   const guidePath = context.paths.getSessionGuidePath(sessionId);
   let content = await readProjectFile(guidePath);
@@ -46,10 +48,11 @@ async function fillTaskSectionsInSessionGuide(
     const approach = extractField('Approach', taskBody);
     const checkpoint = extractField('Checkpoint', taskBody);
     if (!needsFill(goal) && !needsFill(files) && !needsFill(approach) && !needsFill(checkpoint)) continue;
-    const newGoal = needsFill(goal) ? (scopeDescription || 'Implement per tierUp scope above.') : goal;
-    const newFiles = needsFill(files) ? '(See tierUp guide and context above.)' : files;
-    const newApproach = needsFill(approach) ? 'See tierUp scope above.' : approach;
-    const newCheckpoint = needsFill(checkpoint) ? 'Verify per tierUp success criteria.' : checkpoint;
+    const isLight = mode === 'light';
+    const newGoal = needsFill(goal) ? (scopeDescription || (isLight ? 'Implement per tierUp.' : 'Implement per tierUp scope above.')) : goal;
+    const newFiles = needsFill(files) ? (isLight ? '(See tierUp.)' : '(See tierUp guide and context above.)') : files;
+    const newApproach = needsFill(approach) ? (isLight ? 'See tierUp.' : 'See tierUp scope above.') : approach;
+    const newCheckpoint = needsFill(checkpoint) ? (isLight ? 'Verify per tierUp.' : 'Verify per tierUp success criteria.') : checkpoint;
     const newSection = [
       firstLine,
       '',
@@ -76,7 +79,8 @@ async function fillTaskSectionsInSessionGuide(
 async function fillSessionSectionsInPhaseGuide(
   phaseId: string,
   scopeDescription: string,
-  context: WorkflowCommandContext
+  context: WorkflowCommandContext,
+  mode: DecompositionModeForFill
 ): Promise<void> {
   const guidePath = context.paths.getPhaseGuidePath(phaseId);
   let content = await readProjectFile(guidePath);
@@ -93,7 +97,8 @@ async function fillSessionSectionsInPhaseGuide(
     const desc = extractField('Description', sessionBody);
     const tasks = extractField('Tasks', sessionBody);
     if (!needsFill(desc) && !needsFill(tasks)) continue;
-    const newDesc = needsFill(desc) ? (scopeDescription || 'See tierUp scope above.') : desc;
+    const isLight = mode === 'light';
+    const newDesc = needsFill(desc) ? (scopeDescription || (isLight ? 'See tierUp.' : 'See tierUp scope above.')) : desc;
     const newTasks = needsFill(tasks) ? '[To be planned]' : tasks;
     const newSection = [
       firstLine,
@@ -115,7 +120,8 @@ async function fillSessionSectionsInPhaseGuide(
  */
 async function fillPhaseSectionsInFeatureGuide(
   scopeDescription: string,
-  context: WorkflowCommandContext
+  context: WorkflowCommandContext,
+  mode: DecompositionModeForFill
 ): Promise<void> {
   const guidePath = context.paths.getFeatureGuidePath();
   let content = await readProjectFile(guidePath);
@@ -133,7 +139,8 @@ async function fillPhaseSectionsInFeatureGuide(
     const sessions = extractField('Sessions', phaseBody);
     const criteria = extractField('Success Criteria', phaseBody);
     if (!needsFill(desc) && !needsFill(sessions) && !needsFill(criteria)) continue;
-    const newDesc = needsFill(desc) ? (scopeDescription || 'See tierUp scope above.') : desc;
+    const isLight = mode === 'light';
+    const newDesc = needsFill(desc) ? (scopeDescription || (isLight ? 'See tierUp.' : 'See tierUp scope above.')) : desc;
     const newSessions = needsFill(sessions) ? '[To be planned]' : sessions;
     const newCriteria = needsFill(criteria) ? '- [To be defined]' : criteria;
     const newSection = [
@@ -154,22 +161,28 @@ async function fillPhaseSectionsInFeatureGuide(
   if (replacements.length > 0) await writeProjectFile(guidePath, content);
 }
 
+/** Decomposition mode from WorkProfile; controls fill intensity. Guide is authoritative for current-tier decomposition. */
+export type DecompositionModeForFill = 'light' | 'moderate' | 'explicit';
+
 /**
  * Fill implementation-plan fields for all direct tierDown in the current-tier guide.
  * Dispatches by current tier (each tier fills its tierDown sections).
  * No-op for lowest tier (no tierDown). Idempotent: only fills empty/placeholder fields.
+ * When decompositionMode is 'light', uses minimal placeholders; 'explicit' allows richer content.
+ * Guide owns the canonical child-unit list; planning doc is advisory.
  */
 export async function fillDirectTierDownInGuide(ctx: TierStartWorkflowContext): Promise<void> {
-  const { config, identifier, context, resolvedDescription } = ctx;
+  const { config, identifier, context, resolvedDescription, options } = ctx;
   const scope = resolvedDescription ?? identifier;
+  const mode: DecompositionModeForFill = options?.workProfile?.decompositionMode ?? 'moderate';
   if (config.name === 'task') return; // lowest tier
   try {
     if (config.name === 'session') {
-      await fillTaskSectionsInSessionGuide(identifier, scope, context);
+      await fillTaskSectionsInSessionGuide(identifier, scope, context, mode);
     } else if (config.name === 'phase') {
-      await fillSessionSectionsInPhaseGuide(identifier, scope, context);
+      await fillSessionSectionsInPhaseGuide(identifier, scope, context, mode);
     } else if (config.name === 'feature') {
-      await fillPhaseSectionsInFeatureGuide(scope, context);
+      await fillPhaseSectionsInFeatureGuide(scope, context, mode);
     }
   } catch (err) {
     console.warn('fill-direct-tier-down: non-blocking failure', config.name, identifier, err);

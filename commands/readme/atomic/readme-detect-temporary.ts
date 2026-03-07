@@ -40,7 +40,7 @@ const TEMPORARY_CONTENT_PATTERNS = [
  */
 const TIER_GUIDE_PATTERNS = [
   /\/phases\/phase-\d+(\.\d+)?-guide\.md$/,
-  /\/sessions\/session-\d+(\.\d+)*\-guide\.md$/,
+  /\/sessions\/session-\d+(\.\d+)*-guide\.md$/,
 ];
 
 /**

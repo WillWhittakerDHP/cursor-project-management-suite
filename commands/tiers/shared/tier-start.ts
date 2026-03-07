@@ -21,6 +21,7 @@ import { defaultKernel } from '../../harness/kernel';
 import { createTierAdapter } from '../../harness/tier-adapter';
 import { defaultProfileDefaultsResolver } from '../../harness/spec-builder';
 import { buildSpecFromTierRun } from '../../harness/build-spec-from-tier';
+import { classifyWorkProfile } from '../../harness/work-profile-classifier';
 import { WorkflowCommandContext, type TierParamsBag } from '../../utils/command-context';
 import {
   writeTierStartPending,
@@ -113,6 +114,8 @@ export async function runTierStart(
 
   try {
     const featureName = context.feature.name;
+    const workProfile =
+      options?.workProfile ?? classifyWorkProfile({ tier: config.name, action: 'start' });
     const spec = buildSpecFromTierRun({
       tier: config.name,
       action: 'start',
@@ -120,14 +123,20 @@ export async function runTierStart(
       featureContext: { featureId: featureName, featureName },
       mode: executionMode,
       userChoices: options,
+      workProfile,
     });
-    const adapter = createTierAdapter({ config, params, options, context });
+    const adapter = createTierAdapter({
+      config,
+      params,
+      options: { ...options, workProfile },
+      context,
+    });
     const kernelResult = await defaultKernel.run(spec, {
       contextInjector: createContextInjector(),
       recorder: shadowRecorder,
       adapter,
       profileDefaults: defaultProfileDefaultsResolver,
-      routingContext: { tier: config.name, action: 'start', originalParams: params },
+      routingContext: { tier: config.name, action: 'start', originalParams: params, workProfile },
     });
     const reasonCode = kernelResult.outcome.reasonCode;
     if (reasonCode === 'context_gathering') {
@@ -136,10 +145,15 @@ export async function runTierStart(
           tier: config.name,
           params: params as TierStartPendingParams,
           pass: 1,
+          workProfile,
         });
       } else if (config.name === 'task') {
         const p = params as { taskId: string; featureId?: string };
-        await writeTaskStartPending({ taskId: p.taskId, featureId: p.featureId });
+        await writeTaskStartPending({
+          taskId: p.taskId,
+          featureId: p.featureId,
+          workProfile,
+        });
       }
     } else if (
       reasonCode === 'guide_fill_pending' &&
@@ -152,6 +166,7 @@ export async function runTierStart(
         pass: 1,
         guideFillPending: true,
         guidePath: kernelResult.outcome.guidePath,
+        workProfile,
       });
     }
 

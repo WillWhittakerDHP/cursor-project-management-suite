@@ -69,27 +69,29 @@ describe('routeByOutcome', () => {
     }
   });
 
-  it('plan_mode: stop true, requiredMode plan, questionKey approve_execute', () => {
+  it('plan_mode: maps to context_gathering, stop true, requiredMode plan (command-gated: no questionKey)', () => {
     const result = resultFor('plan_mode', true, 'Review deliverables');
     const decision = routeByOutcome(result, baseCtx);
     expect(decision.stop).toBe(true);
     expect(decision.requiredMode).toBe('plan');
-    expect(decision.questionKey).toBe('approve_execute');
-    expect(decision.nextInvoke).toBeDefined();
+    expect(decision.message).toBe('Review deliverables');
+    // plan_mode maps to context_gathering; command-gated flow has no questionKey
   });
 
-  it('context_gathering: stop true, questionKey context_gathering', () => {
+  it('context_gathering: stop true, requiredMode plan (command-gated: no questionKey)', () => {
     const result = resultFor('context_gathering', true, 'Answer context questions');
     const decision = routeByOutcome(result, baseCtx);
     expect(decision.stop).toBe(true);
-    expect(decision.questionKey).toBe('context_gathering');
+    expect(decision.requiredMode).toBe('plan');
+    expect(decision.message).toBe('Answer context questions');
   });
 
-  it('pending_push: stop true, questionKey push_confirmation', () => {
+  it('pending_push: stop true, requiredMode plan (command-gated: no questionKey)', () => {
     const result = resultFor('pending_push', true, 'Push then cascade');
     const decision = routeByOutcome(result, baseCtx);
     expect(decision.stop).toBe(true);
-    expect(decision.questionKey).toBe('push_confirmation');
+    expect(decision.requiredMode).toBe('plan');
+    expect(decision.message).toContain('Push');
   });
 
   it('verification_suggested: stop true, questionKey verification_options', () => {
@@ -199,7 +201,8 @@ describe('routeByOutcome', () => {
       outcome: { reasonCode: 'audit_failed', nextAction: '' },
     };
     const decision = routeByOutcome(result, baseCtx);
-    expect(decision.message).toBe('Command failed with exit code 1');
+    expect(decision.message).toContain('Command failed with exit code 1');
+    // audit_failed gets work-profile suffix (Phase 8)
   });
 
   it('audit_failed with deliverables: message is full audit report (deliverables)', () => {
@@ -214,9 +217,9 @@ describe('routeByOutcome', () => {
       },
     };
     const decision = routeByOutcome(result, baseCtx);
-    expect(decision.message).toBe(fullReport);
+    expect(decision.message).toContain(fullReport);
     expect(decision.stop).toBe(true);
-    expect(decision.questionKey).toBe('failure_options');
+    expect(decision.questionKey).toBe('audit_failed_options');
   });
 
   it('handleMissingOutcome: uses output as message when provided', () => {

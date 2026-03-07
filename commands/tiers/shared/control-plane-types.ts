@@ -43,6 +43,8 @@ export interface ControlPlaneContext {
   action: TierAction;
   /** Original params used to invoke the command (for re-invoke with execute options). */
   originalParams: unknown;
+  /** Work classifier; used to refine messages (Phase 8). */
+  workProfile?: import('../../harness/work-profile').WorkProfile;
 }
 
 /**

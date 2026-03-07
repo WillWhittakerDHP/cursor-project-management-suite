@@ -24,6 +24,7 @@ import { defaultKernel } from '../../harness/kernel';
 import { createTierAdapter } from '../../harness/tier-adapter';
 import { defaultProfileDefaultsResolver } from '../../harness/spec-builder';
 import { buildSpecFromTierRun } from '../../harness/build-spec-from-tier';
+import { classifyWorkProfile } from '../../harness/work-profile-classifier';
 import { isHarnessDefaultForTier } from '../../harness/cutover-config';
 import { WorkflowCommandContext, type TierParamsBag } from '../../utils/command-context';
 import { writeEndPending } from './pending-state';
@@ -148,6 +149,7 @@ export async function runTierEnd(
 
   try {
     const featureContext = { featureId: context.feature.name, featureName: context.feature.name };
+    const workProfile = classifyWorkProfile({ tier: config.name, action: 'end' });
     const spec = buildSpecFromTierRun({
       tier: config.name,
       action: 'end',
@@ -155,6 +157,7 @@ export async function runTierEnd(
       featureContext,
       mode: resolveCommandExecutionMode(getOptionsFromParams(params), 'execute'),
       userChoices: getOptionsFromParams(params) != null ? { continuePastVerification: (params as Record<string, unknown>).continuePastVerification as boolean | undefined } : undefined,
+      workProfile,
     });
     const adapter = createTierAdapter({ config, params, context });
     const kernelResult = await defaultKernel.run(spec, {
@@ -162,7 +165,7 @@ export async function runTierEnd(
       recorder: shadowRecorder,
       adapter,
       profileDefaults: defaultProfileDefaultsResolver,
-      routingContext: { tier: config.name, action: 'end', originalParams: params },
+      routingContext: { tier: config.name, action: 'end', originalParams: params, workProfile },
     });
     // Kernel returns charter reasonCode 'pending_push' (adapters map pending_push_confirmation → pending_push)
     if (kernelResult.outcome.reasonCode === 'pending_push') {

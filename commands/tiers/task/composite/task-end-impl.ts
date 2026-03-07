@@ -27,7 +27,6 @@ import { gitCommit } from '../../../git/atomic/commit';
 import type {
   TierEndWorkflowContext,
   TierEndWorkflowHooks,
-  TierEndWorkflowResult,
   TierEndWorkflowResultWithShadow,
   StepExitResult,
 } from '../../shared/tier-end-workflow-types';

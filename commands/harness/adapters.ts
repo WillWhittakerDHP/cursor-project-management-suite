@@ -36,7 +36,7 @@ export function adaptControlPlaneOutcomeToHarness(outcome: ControlPlaneOutcome):
   const reasonCode = parseReasonCode(outcome.reasonCode);
   const status: TierStatus = isFailureReasonCode(reasonCode)
     ? 'failed'
-    : reasonCode === 'plan_mode' || reasonCode === 'context_gathering'
+    : reasonCode === 'context_gathering'
     ? 'plan_preview'
     : 'completed';
   return {

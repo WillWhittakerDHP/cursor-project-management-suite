@@ -2,7 +2,7 @@
  * Phase-start implementation. Thin adapter: builds hooks and runs shared start workflow.
  */
 
-import { readProjectFile, writeProjectFile, getCurrentBranch } from '../../../utils/utils';
+import { readProjectFile } from '../../../utils/utils';
 import { WorkflowCommandContext } from '../../../utils/command-context';
 import { readTierUpContext, getTierContextSourcePolicy } from '../../shared/context-policy';
 import { extractFilesFromPhaseGuide, gatherFileStatuses } from '../../../utils/context-gatherer';
@@ -11,12 +11,6 @@ import { ensureTierBranch } from '../../../git/shared/tier-branch-manager';
 import { validatePhase, formatPhaseValidation } from './phase';
 import { PHASE_CONFIG } from '../../configs/phase';
 import { derivePhaseDescription } from '../../../planning/utils/resolve-planning-description';
-
-/** Inline slug from phase guide first line (e.g. "# Phase 6.10 Guide" -> "6.10"). */
-function deriveSlugFromGuideTitle(firstLine: string): string | undefined {
-  const m = firstLine.match(/(\d+(?:\.\d+)*)/);
-  return m ? m[1] : undefined;
-}
 import type { TierStartResult } from '../../../utils/tier-outcome';
 import type {
   TierStartWorkflowContext,
@@ -132,15 +126,7 @@ export async function phaseStartImpl(
     },
 
     async ensureBranch() {
-      const phaseName = await derivePhaseDescription(phase, context);
-      let slug: string | undefined;
-      try {
-        const guideContent = await readProjectFile(context.paths.getPhaseGuidePath(phase));
-        const firstLine = guideContent.split('\n')[0] ?? '';
-        slug = deriveSlugFromGuideTitle(firstLine);
-      } catch {
-        slug = undefined;
-      }
+      await derivePhaseDescription(phase, context);
       const result = await ensureTierBranch(PHASE_CONFIG, phase, context);
       return result;
     },

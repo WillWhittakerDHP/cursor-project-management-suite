@@ -25,6 +25,8 @@ export interface CommandExecutionOptions {
   guideFillComplete?: boolean;
   /** When set, the start workflow skips all steps before this one (proceed past a gate without re-running from the top). */
   resumeAfterStep?: string;
+  /** Optional work classifier; when present (e.g. from pending state), used instead of tier+action default. */
+  workProfile?: import('../harness/work-profile').WorkProfile;
 }
 
 /**

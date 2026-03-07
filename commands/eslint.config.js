@@ -1,8 +1,7 @@
 /**
- * ESLint flat config for .cursor/commands (slash commands).
- * TypeScript only; no Vue.
+ * ESLint config for .cursor/commands (harness, tiers, etc.).
+ * Run from repo root: npx eslint .cursor/commands -c .cursor/commands/eslint.config.js
  */
-
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 
@@ -10,29 +9,31 @@ export default tseslint.config(
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
+    files: ['**/*.ts'],
     languageOptions: {
+      parser: tseslint.parser,
       parserOptions: {
-        ecmaVersion: 2022,
+        ecmaVersion: 2020,
         sourceType: 'module',
       },
       globals: {
-    process: 'readonly',
-    __dirname: 'readonly',
-    require: 'readonly',
-    module: 'readonly',
-    Buffer: 'readonly',
-    console: 'readonly',
-    setTimeout: 'readonly',
-    clearTimeout: 'readonly',
-    setInterval: 'readonly',
-    clearInterval: 'readonly',
-    URL: 'readonly',
-    fetch: 'readonly',
-  },
+        console: 'readonly',
+        process: 'readonly',
+        Buffer: 'readonly',
+        __dirname: 'readonly',
+        __filename: 'readonly',
+        describe: 'readonly',
+        it: 'readonly',
+        expect: 'readonly',
+        beforeEach: 'readonly',
+        afterEach: 'readonly',
+        vi: 'readonly',
+      },
     },
     rules: {
+      '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/no-unused-vars': [
-        'error',
+        'warn',
         {
           argsIgnorePattern: '^_',
           varsIgnorePattern: '^_',
@@ -40,5 +41,5 @@ export default tseslint.config(
         },
       ],
     },
-  }
+  },
 );

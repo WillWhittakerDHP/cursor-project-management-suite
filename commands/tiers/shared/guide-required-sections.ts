@@ -63,8 +63,8 @@ function findSectionEndLine(lines: string[], startLine: number): number {
 function countTaskBlocksInSection(sectionContent: string): number {
   const taskHeadingRegex = /(?:^|\n)(?:-\s*\[\s*x?\s*\]\s*)?(?:####|###)\s+Task\s+\d+\.\d+\.\d+\.\d+[\s:]/im;
   let count = 0;
-  let m: RegExpExecArray | null;
-  while ((m = taskHeadingRegex.exec(sectionContent)) !== null) {
+  let _m: RegExpExecArray | null;
+  while ((_m = taskHeadingRegex.exec(sectionContent)) !== null) {
     count++;
     if (count >= 2) return 2; // safeguard only needs to know "more than one"
   }

@@ -6,11 +6,8 @@
 
 import { WorkflowCommandContext } from '../../../utils/command-context';
 import type { TierStartReadResult } from '../../shared/tier-start-workflow-types';
-import {
-  readTierUpContext,
-  getTierContextSourcePolicy,
-  gatherTierContext,
-} from '../../shared/context-policy';
+import { readTierUpContext, gatherTierContext } from '../../shared/context-policy';
+export { getTierContextSourcePolicy } from '../../shared/context-policy';
 
 export interface SessionContextPolicyGatherParams {
   context: WorkflowCommandContext;

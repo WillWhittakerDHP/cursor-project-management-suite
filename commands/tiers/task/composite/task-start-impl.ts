@@ -2,7 +2,6 @@
  * Task-start implementation. Thin adapter: builds hooks and runs shared start workflow.
  */
 
-import { readHandoff } from '../../../utils/read-handoff';
 import { WorkflowCommandContext } from '../../../utils/command-context';
 import { WorkflowId } from '../../../utils/id-utils';
 import { readTierUpContext, getTierContextSourcePolicy } from '../../shared/context-policy';
@@ -53,19 +52,6 @@ async function readTaskSection(
     );
     const match = guideContent.match(pattern);
     return match ? match[0] : '';
-  } catch {
-    return '';
-  }
-}
-
-async function readSessionHandoffExcerpt(
-  context: WorkflowCommandContext,
-  sessionId: string
-): Promise<string> {
-  try {
-    const content = await readHandoff('session', sessionId);
-    if (!content?.trim()) return '';
-    return content.trim().slice(0, 1000) + (content.length > 1000 ? '\n\n*(excerpt truncated)*' : '');
   } catch {
     return '';
   }

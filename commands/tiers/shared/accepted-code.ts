@@ -99,7 +99,11 @@ export async function acceptedCode(): Promise<TierStartResultWithControlPlane> {
   const result = await runTierStart(
     TASK_CONFIG,
     { taskId: state.taskId, featureId: state.featureId },
-    { mode: 'execute', resumeAfterStep: 'ensure_branch' }
+    {
+      mode: 'execute',
+      resumeAfterStep: 'ensure_branch',
+      ...(state.workProfile != null && { workProfile: state.workProfile }),
+    }
   );
 
   await deleteTaskStartPending();

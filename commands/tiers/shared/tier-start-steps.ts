@@ -893,13 +893,30 @@ function buildPlanningDocContent(
   const tierDownSection =
     tier === 'task' ? '' : `\n## How we build the tierDown to achieve them\n${tierDownBody}\n`;
 
+  // Work Profile section (advisory metadata; outside parsed Goal/Files/Approach/Checkpoint slots)
+  const workProfile = ctx.options?.workProfile;
+  const workProfileSection =
+    workProfile != null
+      ? `
+## Work Profile
+- **Execution intent:** ${workProfile.executionIntent}
+- **Action type:** ${workProfile.actionType}
+- **Scope shape:** ${workProfile.scopeShape}
+- **Governance domains:** ${workProfile.governanceDomains.join(', ')}
+- **Recommended context pack:** ${workProfile.contextPack ?? '(derived from intent)'}
+- **Planning artifact action:** ${workProfile.planningArtifactAction ?? 'none'}
+- **Decomposition mode:** ${workProfile.decompositionMode ?? 'moderate'}
+- **Downstream advice:** Planning doc is advisory; guide owns current-tier decomposition. Inherit intent, constraints, and governance emphasis; avoid pre-specifying child execution detail unless decomposition mode is explicit.
+`
+      : '';
+
   return `# Plan: ${tier} ${ctx.resolvedId} — ${title}
 
 ## Contract
 ${scopeLine}
 - **Scope:** ${scopeDesc}
 - **Governance:** ${governanceOneLiner}
-
+${workProfileSection}
 ## Where we left off
 ${continuity}
 

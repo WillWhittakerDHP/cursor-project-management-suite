@@ -4,7 +4,9 @@
  */
 
 import type { WorkflowSpec, ExecutionMode, Profile } from './contracts';
-import { PROFILE_DEFAULTS, defaultProfileDefaultsResolver } from './spec-builder';
+import type { WorkProfile } from './work-profile';
+import { getDefaultWorkProfile } from './work-profile-defaults';
+import { defaultProfileDefaultsResolver } from './spec-builder';
 
 const DEFAULT_CONSTRAINTS = {
   dryRun: false,
@@ -27,12 +29,17 @@ export interface BuildSpecInput {
   runId?: string;
   userChoices?: WorkflowSpec['userChoices'];
   metadata?: WorkflowSpec['metadata'];
+  /** Optional; when absent, derived from tier+action via getDefaultWorkProfile. */
+  workProfile?: WorkProfile;
 }
 
 /** Build a valid WorkflowSpec for kernel.run from tier run params. */
 export function buildSpecFromTierRun(input: BuildSpecInput): WorkflowSpec {
   const profile: Profile = input.profile ?? 'balanced';
   const defaults = defaultProfileDefaultsResolver.resolve(profile);
+  const workProfile =
+    input.workProfile ?? getDefaultWorkProfile(input.tier, input.action as 'start' | 'end');
+
   return {
     specVersion: '1',
     runId: input.runId ?? randomRunId(),
@@ -47,5 +54,6 @@ export function buildSpecFromTierRun(input: BuildSpecInput): WorkflowSpec {
     constraints: { ...DEFAULT_CONSTRAINTS },
     ...(input.userChoices && { userChoices: input.userChoices }),
     ...(input.metadata && { metadata: input.metadata }),
+    workProfile,
   };
 }

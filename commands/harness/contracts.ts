@@ -68,6 +68,8 @@ export interface WorkflowSpec {
     note?: string;
     parentTraceId?: string;
   };
+  /** Optional work classifier; when absent, defaults derived from tier+action. WorkflowCommandContext owns scope. */
+  workProfile?: import('./work-profile').WorkProfile;
 }
 
 // --- Step graph (charter §7.2) ---
@@ -357,6 +359,8 @@ export interface HarnessRoutingContext {
   tier: Tier;
   action: Action;
   originalParams: unknown;
+  /** Work classifier; used to refine control-plane messages (Phase 8). */
+  workProfile?: import('./work-profile').WorkProfile;
 }
 
 export interface HarnessDeps {

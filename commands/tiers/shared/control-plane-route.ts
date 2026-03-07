@@ -47,11 +47,22 @@ export function routeByOutcome(
   if (!success) {
     switch (reasonCode) {
       case 'planning_doc_incomplete':
-        return handlePlanningDocIncomplete(outcome);
+        return handlePlanningDocIncomplete(outcome, ctx);
       case 'validation_failed':
         return handleFailure(outcome, result.output);
-      case 'audit_failed':
-        return handleAuditFailed(outcome, result.output);
+      case 'audit_failed': {
+        // Phase 9: use audit_fix profile for message refinement when handling audit_failed
+        const auditCtx: ControlPlaneContext = {
+          ...ctx,
+          workProfile: ctx.workProfile ?? {
+            executionIntent: 'audit_fix',
+            actionType: 'governance_remediation',
+            scopeShape: 'contract_level',
+            governanceDomains: ['component', 'composable', 'function', 'type'],
+          },
+        };
+        return handleAuditFailed(outcome, result.output, auditCtx);
+      }
       case 'test_failed':
       case 'preflight_failed':
       case 'git_failed':
@@ -79,7 +90,7 @@ export function routeByOutcome(
     case 'uncommitted_blocking':
       return handleUncommittedChanges(outcome, ctx);
     case 'guide_fill_pending':
-      return handlePlanningDocIncomplete(outcome);
+      return handlePlanningDocIncomplete(outcome, ctx);
     case 'start_ok':
     case 'end_ok':
       return handleSuccessWithOptionalCascade(outcome);

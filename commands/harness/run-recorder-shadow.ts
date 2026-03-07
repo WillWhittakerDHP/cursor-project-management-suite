@@ -7,7 +7,6 @@ import type {
   RunRecorder,
   RunTraceHandle,
   StepEvent,
-  ContextPack,
   RunRecorderDecision,
   HarnessRunResult,
 } from './contracts';
@@ -74,7 +73,7 @@ export function createShadowRunRecorder(): RunRecorder & { getTrace(traceId: str
       record.decision = decision;
     },
 
-    async contextReport(handle, pack): Promise<void> {
+    async contextReport(handle, _pack): Promise<void> {
       const record = traces.get(handle.traceId);
       if (!record) return;
       // Store minimal; Phase 3 will add dropped-artifact reporting

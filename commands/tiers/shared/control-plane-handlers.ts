@@ -10,6 +10,7 @@ import type {
 } from './control-plane-types';
 import { QUESTION_KEYS } from './control-plane-types';
 import { buildStartReinvokeParams } from './control-plane-reinvoke';
+import { getWorkProfileMessageSuffix } from './control-plane-work-profile-prompt';
 
 function baseCascadeDecision(outcome: ControlPlaneOutcome, _requiredMode: 'plan' | 'agent'): ControlPlaneDecision {
   if (outcome.cascade != null) {
@@ -29,20 +30,24 @@ function baseCascadeDecision(outcome: ControlPlaneOutcome, _requiredMode: 'plan'
 }
 
 /** planning_doc_incomplete: BLOCKED until agent fills the planning doc. Show message; no proceed until doc is filled. */
-export function handlePlanningDocIncomplete(outcome: ControlPlaneOutcome): ControlPlaneDecision {
+export function handlePlanningDocIncomplete(outcome: ControlPlaneOutcome, ctx?: ControlPlaneContext): ControlPlaneDecision {
+  const base = outcome.nextAction ?? 'Planning doc must be filled before proceeding. The agent must fill the planning doc (replace Goal/Files/Approach/Checkpoint with a concrete draft from context). Then **the user** runs /accepted-proceed again.';
+  const suffix = ctx ? getWorkProfileMessageSuffix(ctx.workProfile) : '';
   return {
     stop: true,
     requiredMode: 'plan',
-    message: outcome.nextAction ?? 'Planning doc must be filled before proceeding. The agent must fill the planning doc (replace Goal/Files/Approach/Checkpoint with a concrete draft from context). Then **the user** runs /accepted-proceed again.',
+    message: base + suffix,
   };
 }
 
 /** context_gathering: show planning doc path and deliverables. Agent fills doc; user runs /accepted-proceed (feature/phase/session) or /accepted-code (task). */
-export function handleContextGathering(outcome: ControlPlaneOutcome, _ctx: ControlPlaneContext): ControlPlaneDecision {
+export function handleContextGathering(outcome: ControlPlaneOutcome, ctx: ControlPlaneContext): ControlPlaneDecision {
+  const base = outcome.deliverables ?? outcome.nextAction;
+  const suffix = getWorkProfileMessageSuffix(ctx.workProfile);
   return {
     stop: true,
     requiredMode: 'plan',
-    message: outcome.deliverables ?? outcome.nextAction,
+    message: base + suffix,
   };
 }
 
@@ -75,13 +80,13 @@ export function handleTaskComplete(outcome: ControlPlaneOutcome): ControlPlaneDe
 }
 
 /** audit_failed: show full audit report (deliverables) and STOP — fix per governance, then re-run. */
-export function handleAuditFailed(outcome: ControlPlaneOutcome, outputFallback: string): ControlPlaneDecision {
-  const message =
-    outcome.deliverables ?? (outcome.nextAction?.trim() ? outcome.nextAction : outputFallback);
+export function handleAuditFailed(outcome: ControlPlaneOutcome, outputFallback: string, ctx?: ControlPlaneContext): ControlPlaneDecision {
+  const base = outcome.deliverables ?? (outcome.nextAction?.trim() ? outcome.nextAction : outputFallback);
+  const suffix = ctx ? getWorkProfileMessageSuffix(ctx.workProfile) : '';
   return {
     stop: true,
     requiredMode: 'plan',
-    message,
+    message: base + suffix,
     questionKey: QUESTION_KEYS.AUDIT_FAILED_OPTIONS,
   };
 }

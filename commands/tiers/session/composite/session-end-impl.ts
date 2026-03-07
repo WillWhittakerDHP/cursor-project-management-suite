@@ -36,7 +36,6 @@ import { testEndWorkflow } from '../../../testing/composite/test-end-workflow';
 import type {
   TierEndWorkflowContext,
   TierEndWorkflowHooks,
-  TierEndWorkflowResult,
   TierEndWorkflowResultWithShadow,
   StepExitResult,
 } from '../../shared/tier-end-workflow-types';

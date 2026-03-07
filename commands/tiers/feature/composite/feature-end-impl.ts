@@ -21,7 +21,6 @@ import { FEATURE_CONFIG } from '../../configs/feature';
 import type {
   TierEndWorkflowContext,
   TierEndWorkflowHooks,
-  TierEndWorkflowResult,
   TierEndWorkflowResultWithShadow,
   StepExitResult,
 } from '../../shared/tier-end-workflow-types';

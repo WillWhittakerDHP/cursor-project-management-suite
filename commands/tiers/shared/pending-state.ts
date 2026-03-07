@@ -6,6 +6,7 @@
 
 import { readProjectFile, writeProjectFile } from '../../utils/utils';
 import type { CascadeInfo } from '../../utils/tier-outcome';
+import type { WorkProfile } from '../../harness/work-profile';
 
 const TIER_PENDING_PATH = '.cursor/commands/.tier-start-pending.json';
 const TASK_PENDING_PATH = '.cursor/commands/.task-start-pending.json';
@@ -26,12 +27,16 @@ export interface TierStartPendingState {
   guideFillPending?: boolean;
   /** Path to the guide file (relative to project) when guideFillPending is true. */
   guidePath?: string;
+  /** Optional work classifier; preserved across /accepted-proceed for consistent spec. */
+  workProfile?: WorkProfile;
 }
 
 /** State for task start: user will run /accepted-code to run task start with execute. */
 export interface TaskStartPendingState {
   taskId: string;
   featureId?: string;
+  /** Optional work classifier; preserved across /accepted-code for consistent spec. */
+  workProfile?: WorkProfile;
 }
 
 function safeParse<T>(path: string, raw: string): T | null {
@@ -51,6 +56,7 @@ export async function readTierStartPending(): Promise<TierStartPendingState | nu
       pass?: number;
       guideFillPending?: boolean;
       guidePath?: string;
+      workProfile?: WorkProfile;
     }>(TIER_PENDING_PATH, raw);
     if (!parsed?.tier || !parsed?.params || (parsed.pass !== 1 && parsed.pass !== 2)) return null;
     if (parsed.tier !== 'feature' && parsed.tier !== 'phase' && parsed.tier !== 'session') return null;
@@ -62,6 +68,7 @@ export async function readTierStartPending(): Promise<TierStartPendingState | nu
         guideFillPending: true,
         guidePath: String(parsed.guidePath),
       }),
+      ...(parsed.workProfile != null && { workProfile: parsed.workProfile }),
     };
   } catch {
     return null;
@@ -86,9 +93,16 @@ export async function deleteTierStartPending(): Promise<void> {
 export async function readTaskStartPending(): Promise<TaskStartPendingState | null> {
   try {
     const raw = await readProjectFile(TASK_PENDING_PATH);
-    const state = safeParse<TaskStartPendingState>(TASK_PENDING_PATH, raw);
-    if (!state?.taskId) return null;
-    return state;
+    const parsed = safeParse<{ taskId?: string; featureId?: string; workProfile?: WorkProfile }>(
+      TASK_PENDING_PATH,
+      raw
+    );
+    if (!parsed?.taskId) return null;
+    return {
+      taskId: parsed.taskId,
+      ...(parsed.featureId != null && { featureId: parsed.featureId }),
+      ...(parsed.workProfile != null && { workProfile: parsed.workProfile }),
+    };
   } catch {
     return null;
   }

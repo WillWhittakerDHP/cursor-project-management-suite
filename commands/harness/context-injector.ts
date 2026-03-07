@@ -16,6 +16,7 @@ import type {
   DroppedArtifact,
   ContextInjector,
 } from './contracts';
+import { getWorkProfileContextArtifacts } from './work-profile-context';
 
 const DEFAULT_ESTIMATE_PER_ARTIFACT = 500;
 
@@ -30,7 +31,7 @@ function buildPlanFromSpec(spec: WorkflowSpec): ContextInjectionPlan {
   const identifier = spec.identifier;
   const featureName = spec.featureContext.featureName;
 
-  // Required: tier guide and scope state for start/end
+  // Layer 1: Tier overlay — required ownership docs
   if (action === 'start' || action === 'end') {
     requiredArtifacts.push({
       artifactId: `scope_${tier}_${identifier}`,
@@ -52,7 +53,7 @@ function buildPlanFromSpec(spec: WorkflowSpec): ContextInjectionPlan {
     }
   }
 
-  // Scored candidates: handoff, log, code files (placeholder paths)
+  // Tier overlay: scored candidates (handoff, log)
   scoredCandidates.push({
     artifactId: `handoff_${featureName}`,
     path: `.project-manager/${featureName}-handoff.md`,
@@ -68,6 +69,23 @@ function buildPlanFromSpec(spec: WorkflowSpec): ContextInjectionPlan {
       priority: 'medium',
       estimatedTokens: 600,
     });
+  }
+
+  // Layer 2: WorkProfile overlay — extra context from classifier (when present)
+  if (spec.workProfile) {
+    const seenPaths = new Set(scoredCandidates.map((r) => r.path));
+    const wpArtifacts = getWorkProfileContextArtifacts({
+      workProfile: spec.workProfile,
+      tier,
+      identifier,
+      featureName,
+    });
+    for (const a of wpArtifacts) {
+      if (!seenPaths.has(a.path)) {
+        seenPaths.add(a.path);
+        scoredCandidates.push(a);
+      }
+    }
   }
 
   return {

@@ -8,11 +8,7 @@
 import { runTierStart, type TierStartResultWithControlPlane } from './tier-start';
 import { getConfigForTier } from '../configs';
 import type { TierConfig } from './types';
-import {
-  readTierStartPending,
-  writeTierStartPending,
-  deleteTierStartPending,
-} from './pending-state';
+import { readTierStartPending, deleteTierStartPending } from './pending-state';
 import type { ControlPlaneDecision } from './control-plane-types';
 import { getPlanningDocPathForTier, isPlanningDocFilled, isGuideFilled } from './tier-start-steps';
 import { readProjectFile } from '../../utils/utils';
@@ -35,9 +31,9 @@ const GUIDE_INCOMPLETE_MESSAGE = (path: string) =>
 The agent MUST fill the guide at \`${path}\`: open the file, replace placeholder text in each tierDown block (Session or Task) with concrete Goal, Files, Approach, and Checkpoint using provided context. Then **the user** runs /accepted-proceed again. The agent does not run the command.`;
 
 const PLANNING_DOC_INCOMPLETE_MESSAGE = (path: string) =>
-  `Proceeding is BLOCKED. The planning doc must be filled before you can continue.
+  `Proceeding is BLOCKED. The planning doc must contain meaningful advisory content before you can continue.
 
-The agent MUST do the following (this is REQUIRED, not optional):
+The planning doc is an advisory intake artifact (not a decomposition mirror). The agent MUST do the following (REQUIRED):
 
 1. Open the planning doc: \`${path}\`
 2. Examine the Loaded Context in that doc (goals, handoff, tier inventory, governance).
@@ -99,6 +95,7 @@ export async function acceptedProceed(): Promise<TierStartResultWithControlPlane
     const result = await runTierStart(config, state.params, {
       mode: 'execute',
       guideFillComplete: true,
+      ...(state.workProfile != null && { workProfile: state.workProfile }),
     });
     if (result.outcome?.reasonCode === 'start_ok') {
       await deleteTierStartPending();
@@ -171,7 +168,11 @@ export async function acceptedProceed(): Promise<TierStartResultWithControlPlane
   }
 
   const config = getConfigForTier(state.tier) as TierConfig;
-  const options = { mode: 'execute' as const, resumeAfterStep: 'ensure_branch' as const };
+  const options = {
+    mode: 'execute' as const,
+    resumeAfterStep: 'ensure_branch' as const,
+    ...(state.workProfile != null && { workProfile: state.workProfile }),
+  };
 
   const result = await runTierStart(config, state.params, options);
 
