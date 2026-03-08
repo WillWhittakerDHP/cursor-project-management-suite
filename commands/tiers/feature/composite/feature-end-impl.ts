@@ -185,8 +185,8 @@ export async function featureEndImpl(
             ctx.steps.changeImpactAnalysis = { success: true, output: impactAnalysisOutput };
           }
         }
-      } catch {
-        // non-fatal
+      } catch (err) {
+        console.warn('[feature-end-impl] Change impact analysis failed (non-fatal)', err);
       }
       try {
         const testResult = await testEndWorkflow('feature', ctx.identifier, 'all');

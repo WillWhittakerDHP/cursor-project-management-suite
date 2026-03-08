@@ -364,7 +364,8 @@ async function syncPlannedTierDownToGuide(ctx: TierStartWorkflowContext): Promis
         guideContent = ensureGuideHasRequiredSections(guideContent, tier, ctx.identifier, description);
         try {
           await writeProjectFile(guidePath, guideContent);
-        } catch {
+        } catch (err) {
+          console.warn(`[tier-start-steps] Failed to write session guide at ${guidePath}`, err);
           return;
         }
       }
@@ -374,8 +375,8 @@ async function syncPlannedTierDownToGuide(ctx: TierStartWorkflowContext): Promis
       if (existsSync(fullPath)) {
         try {
           guideContent = await readProjectFile(guidePath);
-        } catch {
-          // Unreadable; skip overwrite to avoid losing agent-filled content.
+        } catch (err) {
+          console.warn(`[tier-start-steps] Guide exists at ${guidePath} but is unreadable; skipping overwrite`, err);
           return;
         }
       } else {
@@ -385,7 +386,8 @@ async function syncPlannedTierDownToGuide(ctx: TierStartWorkflowContext): Promis
         guideContent = ensureGuideHasRequiredSections(guideContent, tier, ctx.identifier, description);
         try {
           await writeProjectFile(guidePath, guideContent);
-        } catch {
+        } catch (err) {
+          console.warn(`[tier-start-steps] Failed to write guide at ${guidePath}`, err);
           return;
         }
       }
@@ -426,8 +428,8 @@ async function syncPlannedTierDownToGuide(ctx: TierStartWorkflowContext): Promis
     );
     try {
       await writeProjectFile(guidePath, updated);
-    } catch {
-      // non-blocking
+    } catch (err) {
+      console.warn(`[tier-start-steps] Failed to write updated guide at ${guidePath} (non-blocking)`, err);
     }
   }
 }

@@ -350,7 +350,8 @@ export async function taskEndImpl(
         let guideContent = '';
         try {
           guideContent = await readProjectFile(sessionGuidePath);
-        } catch {
+        } catch (err) {
+          console.warn(`[task-end-impl] Could not read session guide at ${sessionGuidePath}; proceeding with empty content`, err);
           guideContent = '';
         }
         // Match session guide lines like "- [ ] #### Task 6.3.3.2: Name" or "#### Task 6.3.3.2: Name"

@@ -239,7 +239,8 @@ export async function phaseEndImpl(
         let phaseLogContent = '';
         try {
           phaseLogContent = await readProjectFile(phaseLogPath);
-        } catch {
+        } catch (err) {
+          console.warn(`[phase-end-impl] Phase log not found at ${phaseLogPath}; creating fresh log`, err);
           phaseLogContent = `# Phase ${p.phaseId} Log\n\n`;
         }
         phaseLogContent += `\n**Tests Run:** ${getCurrentDate()} ${testTarget} ${testResult.success ? 'PASSED' : 'FAILED'}\n`;
@@ -268,8 +269,8 @@ export async function phaseEndImpl(
             try {
               const sessionGuide = await c.context.readSessionGuide(sessionId);
               if (/## Test Strategy|test.*strategy|test.*justification|tests.*deferred/i.test(sessionGuide)) sessionsWithTestDocs++;
-            } catch {
-              // ignore
+            } catch (err) {
+              console.warn(`[phase-end-impl] Could not read session guide for ${sessionId} during test doc check`, err);
             }
           }
         }
@@ -318,8 +319,8 @@ export async function phaseEndImpl(
         try {
           const raw = await readProjectFile('client/.audit-reports/inventory-annotations.json');
           annotations = JSON.parse(raw) as Record<string, unknown>;
-        } catch {
-          // no annotations file or invalid JSON
+        } catch (err) {
+          console.warn('[phase-end-impl] Could not load inventory-annotations.json; proceeding with empty annotations', err);
         }
         const annotatedPaths = new Set(Object.keys(annotations).filter((k) => k !== '_meta'));
         const unannotated = touched.filter((file) => !annotatedPaths.has(file));
@@ -463,7 +464,8 @@ export async function phaseEndImpl(
               const del = await runCommand(`git branch -d ${sessionBranch}`);
               if (del.success) c.steps[`deleteSessionBranch_${sessionBranch}`] = { success: true, output: `Deleted: ${sessionBranch}` };
             } else failedSessions.push(sessionBranch);
-          } catch {
+          } catch (err) {
+            console.warn(`[phase-end-impl] Failed to merge/delete session branch ${sessionBranch}`, err);
             failedSessions.push(sessionBranch);
           }
         }
