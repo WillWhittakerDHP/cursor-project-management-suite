@@ -258,6 +258,7 @@ export async function stepCommitUncommittedNonCursor(
   }
 
   if (!result.committed && !result.output) return null;
+  // result.output may include carry note: "Carried uncommitted changes from X to Y and committed."
   ctx.steps.commitRemaining = { success: result.success, output: result.output };
   ctx.output.push(result.output);
   return null;

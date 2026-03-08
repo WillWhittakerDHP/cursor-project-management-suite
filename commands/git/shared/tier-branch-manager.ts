@@ -79,6 +79,8 @@ interface UncommittedResolution {
   clean: boolean;
   /** True when we stashed workflow artifacts (no commit); caller should pop after checkout. */
   stashedWorkflowArtifacts?: boolean;
+  /** True when we stashed blocking (source) files so we could checkout; commitUncommittedNonCursor should pop after checkout to carry changes. */
+  stashedBlockingFiles?: boolean;
   /** Non-auto-committable files (need user decision). */
   blockingFiles: string[];
   message: string;
@@ -255,6 +257,7 @@ async function resolveUncommittedBeforeCheckout(
     return {
       clean: true,
       stashedWorkflowArtifacts: stashedWorkflow,
+      stashedBlockingFiles: true,
       blockingFiles: [],
       message:
         'Uncommitted work is on another branch; stashed it so we can switch to the command branch. ' +
@@ -268,11 +271,18 @@ async function resolveUncommittedBeforeCheckout(
   return { clean: true, blockingFiles: [], message: '' };
 }
 
+/** Result of ensureOnBranch: success, message, and whether blocking files were stashed (so caller can pop to carry changes). */
+interface EnsureOnBranchResult {
+  success: boolean;
+  output: string;
+  stashedBlockingFiles?: boolean;
+}
+
 /**
  * Ensure working tree is on expectedBranch. Stashes only workflow artifacts if needed, then checkout, then stash pop.
  * Used by commitUncommittedNonCursor when current branch does not match expected (e.g. tier-end on wrong branch).
  */
-async function ensureOnBranch(expectedBranch: string): Promise<{ success: boolean; output: string }> {
+async function ensureOnBranch(expectedBranch: string): Promise<EnsureOnBranchResult> {
   const uncommitted = await resolveUncommittedBeforeCheckout(expectedBranch);
   if (!uncommitted.clean) {
     const fileList = uncommitted.blockingFiles.length > 0
@@ -281,6 +291,7 @@ async function ensureOnBranch(expectedBranch: string): Promise<{ success: boolea
     return { success: false, output: uncommitted.message + fileList };
   }
   const needStashPop = uncommitted.stashedWorkflowArtifacts === true;
+  const stashedBlockingFiles = uncommitted.stashedBlockingFiles === true;
   const checkoutResult = await runCommand(`git checkout ${expectedBranch}`);
   if (!checkoutResult.success) {
     if (needStashPop) await runCommand('git stash pop');
@@ -298,7 +309,11 @@ async function ensureOnBranch(expectedBranch: string): Promise<{ success: boolea
       };
     }
   }
-  return { success: true, output: `Switched to expected branch: ${expectedBranch}.` };
+  return {
+    success: true,
+    output: `Switched to expected branch: ${expectedBranch}.`,
+    stashedBlockingFiles: stashedBlockingFiles || undefined,
+  };
 }
 
 export interface CommitUncommittedOptions {
@@ -319,14 +334,45 @@ export async function commitUncommittedNonCursor(
 ): Promise<{ committed: boolean; success: boolean; output: string }> {
   const allowedPrefixes = options?.allowedPrefixes ?? [...DEFAULT_ALLOWED_COMMIT_PREFIXES];
 
+  let carriedFromBranch: string | undefined;
   if (options?.expectedBranch != null) {
     const current = await getCurrentBranch();
     if (current !== options.expectedBranch) {
+      carriedFromBranch = current;
       const ensureResult = await ensureOnBranch(options.expectedBranch);
       if (!ensureResult.success) {
         return { committed: false, success: false, output: ensureResult.output };
       }
-      // Fall through to status/stage/commit (now on expected branch).
+      // If we stashed blocking (source) files to switch, pop them on the target branch so we can commit.
+      if (ensureResult.stashedBlockingFiles) {
+        const topStash = await runCommand('git stash list -1');
+        const topMessage = topStash.success && topStash.output ? topStash.output : '';
+        if (!topMessage.includes('uncommitted (other branch)')) {
+          console.warn(
+            '[tier-branch-manager] Expected top stash to be "uncommitted (other branch)"; skipping pop. Message:',
+            topMessage.trim() || '(none)'
+          );
+          return {
+            committed: false,
+            success: false,
+            output: `Source code was stashed before branch switch but top stash does not match "uncommitted (other branch)". Your changes may be in \`git stash list\`. Apply manually with \`git stash pop\` if correct.`,
+          };
+        }
+        const popResult = await runCommand('git stash pop');
+        if (!popResult.success) {
+          await runCommand('git stash push -u -m "uncommitted (other branch) - carry failed"');
+          console.warn(
+            '[tier-branch-manager] Stash pop failed after branch switch; re-stashed as "uncommitted (other branch) - carry failed".',
+            popResult.error || popResult.output
+          );
+          return {
+            committed: false,
+            success: false,
+            output: `Source code was stashed before branch switch but could not be applied cleanly on ${options.expectedBranch}. Your changes are safe in \`git stash list\`. Apply them manually with \`git stash pop\` after resolving conflicts.`,
+          };
+        }
+      }
+      // Fall through to status/stage/commit (now on expected branch, with carried changes if any).
     }
   }
 
@@ -368,9 +414,12 @@ export async function commitUncommittedNonCursor(
 
   const safeMessage = commitMessage.replace(/'/g, "'\\''");
   const commitResult = await runCommand(`git commit -m '${safeMessage}'`);
-  const output = commitResult.success
+  let output = commitResult.success
     ? `Committed in-scope changes (${inScopePaths.length} path(s)): ${commitMessage}`
     : `Commit failed: ${commitResult.error || commitResult.output}`;
+  if (commitResult.success && carriedFromBranch && options?.expectedBranch) {
+    output += `\nCarried uncommitted changes from ${carriedFromBranch} to ${options.expectedBranch} and committed.`;
+  }
   return { committed: true, success: commitResult.success, output };
 }
 
