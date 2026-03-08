@@ -4,7 +4,7 @@
 
 import { WorkflowCommandContext } from '../../../utils/command-context';
 import { readProjectFile } from '../../../utils/utils';
-import { getCurrentBranch, runCommand } from '../../../utils/utils';
+import { getCurrentBranch, branchExists, isBranchBasedOn, runCommand } from '../../../utils/utils';
 import { WorkflowId } from '../../../utils/id-utils';
 import { SESSION_CONFIG } from '../../configs/session';
 import { PHASE_CONFIG } from '../../configs/phase';
@@ -31,7 +31,10 @@ export async function validateSessionImpl(sessionId: string): Promise<ValidateSe
   const phase = parsed.phaseId;
   const session = parsed.session;
   const sessionNum = parseInt(session, 10);
-  const context = await WorkflowCommandContext.getCurrent();
+  // WHY: Resolve feature from sessionId (which feature dir contains phase-6.10-guide) so validation
+  // works regardless of current branch. getCurrent() would use branch name (e.g. session-6.10.1) as
+  // feature, producing wrong paths when starting session 6.10.2 from session-6.10.1 branch.
+  const context = await WorkflowCommandContext.contextFromParams('session', { sessionId });
 
   try {
     const phaseGuidePath = context.paths.getPhaseGuidePath(phase);
@@ -92,12 +95,11 @@ export async function validateSessionImpl(sessionId: string): Promise<ValidateSe
         details: ['Session tier config getBranchName returned null.'],
       };
     }
-    const branchCheckResult = await runCommand(`git branch --list ${sessionBranchName}`);
+    const sessionBranchFound = await branchExists(sessionBranchName);
     const currentBranch = await getCurrentBranch();
 
-    if (branchCheckResult.success && branchCheckResult.output.trim()) {
+    if (sessionBranchFound) {
       if (currentBranch === sessionBranchName) {
-        // Already on session branch: allow start so workflow can run (context, fill children, etc.); ensureBranch will no-op.
         return {
           canStart: true,
           reason: 'Session branch is current',
@@ -107,13 +109,40 @@ export async function validateSessionImpl(sessionId: string): Promise<ValidateSe
           ],
         };
       }
+
+      // Branch exists on a different branch — check parentage before deciding.
+      const parentBranch = SESSION_CONFIG.getParentBranchName(context, sessionId);
+      if (parentBranch && (await branchExists(parentBranch))) {
+        const properlyBased = await isBranchBasedOn(sessionBranchName, parentBranch);
+        if (properlyBased) {
+          return {
+            canStart: true,
+            reason: 'Session branch exists with valid parentage',
+            details: [
+              `Session ${sessionId} branch exists: ${sessionBranchName}`,
+              `Branch is properly based on ${parentBranch} — will switch to it.`,
+            ],
+          };
+        }
+        return {
+          canStart: false,
+          reason: 'Session branch exists but has diverged',
+          details: [
+            `Session branch exists: ${sessionBranchName}`,
+            `But it is NOT based on parent branch ${parentBranch} (diverged or orphaned).`,
+            `Rebase onto parent: git rebase ${parentBranch} ${sessionBranchName}`,
+            `Or delete and recreate: git branch -D ${sessionBranchName}`,
+          ],
+        };
+      }
+
+      // Parent branch doesn't exist or couldn't be resolved — allow start; ensureTierBranch will handle it.
       return {
-        canStart: false,
-        reason: 'Session branch already exists',
+        canStart: true,
+        reason: 'Session branch exists (parent not verifiable)',
         details: [
-          `Session branch exists: ${sessionBranchName}`,
-          `Switch to it with: git checkout ${sessionBranchName}`,
-          `Or delete it first if you want to start fresh: git branch -D ${sessionBranchName}`,
+          `Session ${sessionId} branch exists: ${sessionBranchName}`,
+          `Parent branch could not be verified — will switch to existing branch.`,
         ],
       };
     }
@@ -164,7 +193,7 @@ export async function validateSessionImpl(sessionId: string): Promise<ValidateSe
       reason: 'Session can be started',
       details: [
         `Session ${sessionId} is not completed`,
-        `Session ${sessionId} branch does not exist`,
+        `Session ${sessionId} branch will be created`,
         sessionNum > 1 ? `Previous session (${phase}.${sessionNum - 1}) is complete` : 'This is the first session in the phase',
         `Phase ${phase} is not complete`,
         `Ready to start with /session-start ${sessionId}`,

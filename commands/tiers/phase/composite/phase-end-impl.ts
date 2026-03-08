@@ -68,7 +68,7 @@ export async function phaseEndImpl(
   shadow?: EndShadowContext,
   resolvedContext?: WorkflowCommandContext
 ): Promise<PhaseEndResult | (PhaseEndResult & TierEndWorkflowResultWithShadow)> {
-  const context = resolvedContext ?? (await WorkflowCommandContext.getCurrent());
+  const context = resolvedContext ?? (await WorkflowCommandContext.contextFromParams('phase', { phaseId: params.phaseId }));
   const steps: Record<string, { success: boolean; output: string }> = {};
   const outcome = buildTierEndOutcome('completed', 'pending_push_confirmation', '');
 
@@ -471,7 +471,7 @@ export async function phaseEndImpl(
         const phasePushResult = await gitPush();
         c.steps.gitPushPhase = { success: phasePushResult.success, output: phasePushResult.output };
 
-        const mergeToFeature = await mergeTierBranch(PHASE_CONFIG, p.phaseId, c.context, { deleteBranch: true, push: true });
+        const mergeToFeature = await mergeTierBranch(PHASE_CONFIG, p.phaseId, c.context, { push: true });
         c.steps.gitMergePhaseToFeature = { success: mergeToFeature.success, output: mergeToFeature.messages.join('\n') };
       } catch (_error) {
         c.steps.gitOperations = {

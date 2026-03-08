@@ -123,7 +123,7 @@ export async function acceptedProceed(): Promise<TierStartResultWithControlPlane
         controlPlaneDecision: decision,
       };
     }
-    const context = await WorkflowCommandContext.getCurrent();
+    const context = await WorkflowCommandContext.contextFromParams(state.tier, state.params as import('../../utils/command-context').TierParamsBag);
     const basePath = context.paths.getBasePath();
     const planningDocPath = getPlanningDocPathForTier(state.tier, identifier, basePath);
     let content: string;

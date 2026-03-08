@@ -34,7 +34,7 @@ export async function phaseStartImpl(
   shadow?: ShadowContext,
   resolvedContext?: WorkflowCommandContext
 ): Promise<TierStartResult | TierStartWorkflowResult> {
-  const context = resolvedContext ?? (await WorkflowCommandContext.getCurrent());
+  const context = resolvedContext ?? (await WorkflowCommandContext.contextFromParams('phase', { phaseId }));
   const phase = phaseId;
   const output: string[] = [];
 

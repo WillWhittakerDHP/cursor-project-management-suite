@@ -11,6 +11,3 @@ export type { SessionExecutionPolicyValidateParams } from './execution-policy';
 
 export { sessionGitPolicy } from './git-policy';
 export type { SessionGitPolicyEnsureParams } from './git-policy';
-
-export { sessionContextPolicy } from './context-policy';
-export type { SessionContextPolicyGatherParams, SessionContextPolicyReadParams } from './context-policy';

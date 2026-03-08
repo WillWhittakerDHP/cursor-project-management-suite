@@ -160,7 +160,7 @@ export async function sessionEndImpl(
   shadow?: EndShadowContext,
   resolvedContext?: WorkflowCommandContext
 ): Promise<SessionEndResult | (SessionEndResult & TierEndWorkflowResultWithShadow)> {
-  const context = resolvedContext ?? (await WorkflowCommandContext.getCurrent());
+  const context = resolvedContext ?? (await WorkflowCommandContext.contextFromParams('session', { sessionId: params.sessionId }));
   const description = params.description !== undefined
     ? params.description
     : await deriveSessionDescription(params.sessionId, context);
@@ -501,9 +501,9 @@ export async function sessionEndImpl(
 
       if (!p.skipGit) {
         try {
-          const mergeResult = await mergeTierBranch(SESSION_CONFIG, p.sessionId, c.context, { deleteBranch: true, push: false });
+          const mergeResult = await mergeTierBranch(SESSION_CONFIG, p.sessionId, c.context, { push: false });
           c.steps.gitMerge = { success: mergeResult.success, output: mergeResult.messages.join('\n') };
-          if (mergeResult.deletedBranch) c.steps.deleteSessionBranch = { success: true, output: 'Deleted session branch after merge.' };
+          if (mergeResult.deletedBranch) c.steps.deleteSessionBranch = { success: true, output: 'Deleted session branch after merge (only if explicitly requested).' };
         } catch (_error) {
           const sessionBranchName = SESSION_CONFIG.getBranchName(c.context, p.sessionId);
           const phaseBranchName = SESSION_CONFIG.getParentBranchName(c.context, p.sessionId);

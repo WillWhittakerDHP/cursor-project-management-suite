@@ -18,7 +18,6 @@ import { analyzeCodeChangeImpact, getRecentlyModifiedFiles } from '../../../test
 import { CommandExecutionMode, getOptionsFromParams } from '../../../utils/command-execution-mode';
 import { auditVueArchitecture } from '../../../audit/atomic/audit-vue-architecture';
 import { areAllTasksInSessionComplete } from '../../../utils/phase-session-utils';
-import { resolveFeatureName, resolveFeatureId } from '../../../utils/feature-context';
 import { TASK_CONFIG } from '../../configs/task';
 import { resolveRunTests } from '../../../utils/tier-end-utils';
 import { buildTierEndOutcome, type TierEndOutcome } from '../../../utils/tier-outcome';
@@ -68,11 +67,10 @@ export async function taskEndImpl(
 } & TierEndWorkflowResultWithShadow)> {
   const context =
     resolvedContext ??
-    new WorkflowCommandContext(
-      params.featureId != null && params.featureId.trim() !== ''
-        ? await resolveFeatureId(params.featureId)
-        : await resolveFeatureName()
-    );
+    (await WorkflowCommandContext.contextFromParams('task', {
+      taskId: params.taskId,
+      featureId: params.featureId,
+    }));
 
   const parsed = WorkflowId.parseTaskId(params.taskId);
   if (!parsed) {

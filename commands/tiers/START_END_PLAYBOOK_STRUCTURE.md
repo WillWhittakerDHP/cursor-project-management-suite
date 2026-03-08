@@ -14,6 +14,9 @@ All tier start/end commands (feature-start, feature-end, phase-start, phase-end,
 | session-end     | .cursor/commands/tiers/session/composite/session.ts           | sessionEnd       |
 | task-start      | .cursor/commands/tiers/task/composite/task.ts                  | taskStart        |
 | task-end        | .cursor/commands/tiers/task/composite/task.ts                  | taskEnd          |
+| phase-add       | .cursor/commands/tiers/shared/tier-add.ts                      | phaseAdd         |
+| session-add     | .cursor/commands/tiers/shared/tier-add.ts                      | sessionAdd       |
+| task-add        | .cursor/commands/tiers/shared/tier-add.ts                      | taskAdd          |
 
 **Invocation:** From repo root, run the export via the project's TS runner. Example: `npx tsx -e "import('<path>').then(m => m.<export>(...)).then(r => console.log(JSON.stringify(r)))"`. Use the path and export name from the table above.
 
@@ -172,16 +175,25 @@ These rules tell the agent what to do for each `reasonCode` returned by commands
 
 **Failure reasonCodes:** Any `reasonCode` not listed below (e.g. `lint_or_typecheck_failed`, `test_failed`, `test_code_error`, `test_goal_validation_failed`, `vue_architecture_gate_failed`, etc.) indicates a failure. All failure reasonCodes follow the **"If not success (HARD STOP)"** rule in the Routing section above.
 
+### `validation_failed` (start commands)
+
+Validation blocked the start. Present `outcome.nextAction` and stop. Common reasons: session already completed, previous session not finished, phase blocked/completed, session not documented in phase guide.
+
+**Branch-exists sub-cases (session-start):** When a session branch already exists, validation checks parentage against the phase branch:
+- **Branch exists, properly based on parent:** Validation allows the start (`canStart: true`). `ensureTierBranch` will switch to the existing branch — no manual `git checkout` needed.
+- **Branch exists, diverged from parent:** Validation blocks (`canStart: false`). Present the rebase/delete guidance from `outcome.nextAction`. The user must resolve the divergence before retrying.
+- **Branch exists, parent not verifiable:** Validation allows the start. `ensureTierBranch` handles edge cases downstream.
+
 ### `audit_failed` (start commands: audit reported warnings or failures)
 
 The tier start audit (baseline quality) returned **warn** or **fail** (or runtime errors). **Do not proceed.** Governance requires a clean audit before continuing.
 
 1. **Present `controlPlaneDecision.message`** to the user — this includes the audit report and the instruction to fix in compliance with governance.
-2. **STOP and fix:** Address **all** warnings and errors in the audit report in compliance with the project's governance rules (function/composable/component/type rules, coding standards). Do not skip or defer fixes; do not proceed to cascade or the next tier until the audit is clean.
-3. After fixes are applied, re-run the **same** tier start command (e.g. `/session-start 6.4.4`). The audit will run again; only when it returns **pass** (no warns/fails) does the workflow continue.
-4. Present the **User choice required** block from the command output (options: Retry the command / Fix audit with governance context (/audit-fix) / Skip and continue manually). When the user chooses **"Fix audit with governance context (/audit-fix)"**: run `/audit-fix` with the report path from the message (or `npx tsx .cursor/commands/audit/atomic/audit-fix-prompt.ts [report-path]`), paste the command output into chat so governance docs and the report are attached, then fix findings per the playbooks. After fixes, the user can choose **"Retry the command"** to re-run the tier start/end.
+2. **Attempt autonomous fix:** Run `/audit-fix` with the report path from the message (or `npx tsx .cursor/commands/audit/atomic/audit-fix-prompt.ts [report-path]`) to load governance context, then fix **all** warnings and errors in compliance with governance rules (function/composable/component/type rules, coding standards).
+3. **If all findings were resolved autonomously:** Re-run the **same** tier command immediately (e.g. `/task-end 6.10.1.4`). Do not present the choice block to the user — the fix is done; proceed directly to retry. The audit will run again; if it passes, the workflow continues.
+4. **If some findings could not be resolved** (the agent is unsure how to fix them, or the fix requires a design decision): Present the **User choice required** block from the command output (options: Retry the command / Fix audit with governance context (/audit-fix) / Skip and continue manually). Explain which findings remain and why they need user input. When the user chooses **"Fix audit with governance context (/audit-fix)"**: collaborate on the remaining findings using the governance docs already loaded. After fixes, the user can choose **"Retry the command"** to re-run the tier start/end.
 
-**Anti-pattern:** Do not ignore audit warnings or errors. Do not proceed to cascade or implementation until the audit is clean.
+**Anti-pattern:** Do not ignore audit warnings or errors. Do not proceed to cascade or implementation until the audit is clean. Do not present the choice block to the user after successfully fixing all findings — retry automatically.
 
 ### `context_gathering` (start commands, all tiers)
 
@@ -276,6 +288,8 @@ When `outcome.cascade` is present:
 3. On "No": show `outcome.nextAction` and stop.
 
 **Cascade direction (end commands):** For task-end, `direction === 'across'` means there is a **next task** in the session — the next step is to run the next task (e.g. `/task-start <nextTaskId>`), not to end the session. Only when `direction === 'up'` is the next step to end the parent tier (e.g. `/session-end <sessionId>`). Always use `outcome.cascade.command` as the exact next command.
+
+**Branch ownership during cascade:** When cascading up (e.g. task-end → session-end), the agent must **not** manually merge or delete the child branch. Branch merge is the **parent tier-end's** job: session-end merges session→phase; phase-end merges phase→feature. The agent should invoke `outcome.cascade.command` and let the parent tier-end handle its own branch lifecycle. Manually merging a session branch into the phase branch before session-end runs will cause session-end to fail (branch not found).
 
 ### `task_complete` (task-end)
 
@@ -562,9 +576,29 @@ Adjacent-tier transitions use **tierUp**, **tierAt**, and **tierDown** (see `.cu
 
 **Tier reopen:** Use `/phase-reopen`, `/feature-reopen`, or `/session-reopen` when a completed tier needs additional child work (e.g. add session 4.1.4 to completed phase 4.1). The implementation flips status from Complete to Reopened, ensures the branch, and logs the reopen. For agent behavior after the command returns, see **Per-reasonCode behavioral rules > Reopen success**.
 
-**Auto-registration of children:** When planning a new child tier (e.g. `/plan-session 4.1.4`), the plan-* impl calls `appendChildToParentDoc` so the child is registered in the parent doc (e.g. session 4.1.4 added to phase-4.1-guide.md) if not already present. This is idempotent and allows cascade and discovery to work after a reopen.
+**Adding children (`/{tier}-add`):** Use `/phase-add`, `/session-add`, or `/task-add` to register a new child tier in its parent guide. The command validates the identifier, resolves context, classifies a WorkProfile, appends the child to the parent doc (`appendChildToParentDoc`), and runs planning checks. It does **not** create branches, start workflows, or write pending state — that's `/{tier}-start`'s job. Example: `/session-add 6.10.2 "availability polish"` registers session 6.10.2 in the phase 6.10 guide. Then run `/session-start 6.10.2` when ready. The add command is idempotent: if the child already exists, it reports that and skips the append.
+
+**Auto-registration of children:** When planning a new child tier (e.g. `/plan-session 4.1.4`), the plan-* impl calls `appendChildToParentDoc` so the child is registered in the parent doc (e.g. session 4.1.4 added to phase-4.1-guide.md) if not already present. This is idempotent and allows cascade and discovery to work after a reopen. The `/{tier}-add` commands use the same `appendChildToParentDoc` mechanism.
 
 **Plan content and critique mode:** `planSession` and `planPhase` accept an optional `planContent` argument (e.g. from a user's `*.plan.md` file). When provided, that content is used as the guide instead of the template; planning checks still run and their output is presented as "Planning Review" (critique) without overwriting the user's content.
+
+### Branch lifecycle (ownership and retention)
+
+Each tier manages its **own** branch. Branches are **not deleted** after merge — they survive so that reopen, cascade, and discovery workflows can find them.
+
+| Operation | Owner | When |
+|-----------|-------|------|
+| **Create** session branch | session-start (`ensureTierBranch`) | At session start |
+| **Commit on** session branch | task-end (`gitCommit`) | At each task-end |
+| **Merge** session → phase | session-end (`mergeTierBranch`) | When session is complete |
+| **Create** phase branch | phase-start (`ensureTierBranch`) | At phase start |
+| **Merge** phase → feature | phase-end (`mergeTierBranch`) | When phase is complete |
+
+**Retention policy:** `mergeTierBranch` defaults to `deleteBranch: false`. Branches survive after merge. This is intentional — merged branches have zero cost (41-byte pointer) and prevent cascade failures when a parent tier-end needs the branch. Bulk cleanup of merged branches can be done manually when desired (`git branch --merged | xargs git branch -d`).
+
+**Re-entry (branch survives from prior run):** When a session or phase branch already exists (retained after merge per retention policy, or from a previous start), tier-start validates parentage and checks out the existing branch instead of blocking. The branch is not deleted and recreated — work on it is cumulative. This means `/session-start 6.9.2` works even when `session-6.9.2` already exists from a prior completed session, as long as the branch is properly based on its phase branch.
+
+**Anti-pattern:** The agent must **never** manually run `git merge` or `git branch -d` on a tier branch between cascade steps. Branch merge and deletion are handled exclusively by the tier-end pipeline (`mergeTierBranch` in session-end-impl and phase-end-impl). Manually merging a session branch into the phase branch before running session-end will delete the branch and cause session-end to fail.
 
 ---
 

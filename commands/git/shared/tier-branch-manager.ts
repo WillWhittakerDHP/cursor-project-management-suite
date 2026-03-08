@@ -51,9 +51,6 @@ export interface ScopeCoherenceResult {
   message: string;
 }
 
-/** @deprecated Use checkScopeCoherence and ScopeCoherenceResult. */
-export type FeatureCoherenceResult = ScopeCoherenceResult;
-
 // ─── Internals ───────────────────────────────────────────────────────
 
 const ROOT_BRANCH_NAMES = ['develop', 'main', 'master'];
@@ -734,12 +731,12 @@ export async function mergeTierBranch(
   tierId: string,
   context: WorkflowCommandContext,
   options?: {
-    deleteBranch?: boolean; // delete tier branch after merge (default: true)
+    deleteBranch?: boolean; // delete tier branch after merge (default: false — branches survive for reopen/cascade)
     push?: boolean;         // push parent branch after merge (default: false)
   }
 ): Promise<MergeTierBranchResult> {
   const messages: string[] = [];
-  const deleteBranch = options?.deleteBranch ?? true;
+  const deleteBranch = options?.deleteBranch ?? false;
   const shouldPush = options?.push ?? false;
 
   let tierBranch = config.getBranchName(context, tierId);
