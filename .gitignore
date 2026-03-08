@@ -14,3 +14,7 @@ Thumbs.db
 *.swp
 *.swo
 *~
+
+# Pending-state files (transient; written/read during command execution)
+commands/.tier-start-pending.json
+commands/.task-start-pending.json
