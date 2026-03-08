@@ -34,7 +34,13 @@ export async function phaseStartImpl(
   shadow?: ShadowContext,
   resolvedContext?: WorkflowCommandContext
 ): Promise<TierStartResult | TierStartWorkflowResult> {
-  const context = resolvedContext ?? (await WorkflowCommandContext.contextFromParams('phase', { phaseId }));
+  let context: WorkflowCommandContext;
+  if (resolvedContext) {
+    context = resolvedContext;
+  } else {
+    console.warn(`[phase-start-impl] resolvedContext not provided; falling back to contextFromParams('phase', '${phaseId}')`);
+    context = await WorkflowCommandContext.contextFromParams('phase', { phaseId });
+  }
   const phase = phaseId;
   const output: string[] = [];
 

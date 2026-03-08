@@ -160,7 +160,13 @@ export async function sessionEndImpl(
   shadow?: EndShadowContext,
   resolvedContext?: WorkflowCommandContext
 ): Promise<SessionEndResult | (SessionEndResult & TierEndWorkflowResultWithShadow)> {
-  const context = resolvedContext ?? (await WorkflowCommandContext.contextFromParams('session', { sessionId: params.sessionId }));
+  let context: WorkflowCommandContext;
+  if (resolvedContext) {
+    context = resolvedContext;
+  } else {
+    console.warn(`[session-end-impl] resolvedContext not provided; falling back to contextFromParams('session', '${params.sessionId}')`);
+    context = await WorkflowCommandContext.contextFromParams('session', { sessionId: params.sessionId });
+  }
   const description = params.description !== undefined
     ? params.description
     : await deriveSessionDescription(params.sessionId, context);

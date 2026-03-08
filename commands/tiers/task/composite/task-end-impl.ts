@@ -65,12 +65,16 @@ export async function taskEndImpl(
   output: string;
   outcome: TierEndOutcome;
 } & TierEndWorkflowResultWithShadow)> {
-  const context =
-    resolvedContext ??
-    (await WorkflowCommandContext.contextFromParams('task', {
+  let context: WorkflowCommandContext;
+  if (resolvedContext) {
+    context = resolvedContext;
+  } else {
+    console.warn(`[task-end-impl] resolvedContext not provided; falling back to contextFromParams('task', '${params.taskId}')`);
+    context = await WorkflowCommandContext.contextFromParams('task', {
       taskId: params.taskId,
       featureId: params.featureId,
-    }));
+    });
+  }
 
   const parsed = WorkflowId.parseTaskId(params.taskId);
   if (!parsed) {

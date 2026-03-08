@@ -133,7 +133,13 @@ export async function sessionStartImpl(
   shadow?: ShadowContext,
   resolvedContext?: WorkflowCommandContext
 ): Promise<TierStartResult | TierStartWorkflowResult> {
-  const context = resolvedContext ?? (await WorkflowCommandContext.contextFromParams('session', { sessionId }));
+  let context: WorkflowCommandContext;
+  if (resolvedContext) {
+    context = resolvedContext;
+  } else {
+    console.warn(`[session-start-impl] resolvedContext not provided; falling back to contextFromParams('session', '${sessionId}')`);
+    context = await WorkflowCommandContext.contextFromParams('session', { sessionId });
+  }
   const rawDescription =
     description != null && description !== ''
       ? description

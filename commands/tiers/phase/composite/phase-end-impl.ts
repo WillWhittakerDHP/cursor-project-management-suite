@@ -68,7 +68,13 @@ export async function phaseEndImpl(
   shadow?: EndShadowContext,
   resolvedContext?: WorkflowCommandContext
 ): Promise<PhaseEndResult | (PhaseEndResult & TierEndWorkflowResultWithShadow)> {
-  const context = resolvedContext ?? (await WorkflowCommandContext.contextFromParams('phase', { phaseId: params.phaseId }));
+  let context: WorkflowCommandContext;
+  if (resolvedContext) {
+    context = resolvedContext;
+  } else {
+    console.warn(`[phase-end-impl] resolvedContext not provided; falling back to contextFromParams('phase', '${params.phaseId}')`);
+    context = await WorkflowCommandContext.contextFromParams('phase', { phaseId: params.phaseId });
+  }
   const steps: Record<string, { success: boolean; output: string }> = {};
   const outcome = buildTierEndOutcome('completed', 'pending_push_confirmation', '');
 
