@@ -24,7 +24,9 @@ export const sessionExecutionPolicy = {
       };
     }
 
-    const context = await WorkflowCommandContext.getCurrent();
+    // Resolve feature from sessionId (e.g. 6.9.2 -> phase 6.9 -> appointment-workflow) so phase guide
+    // is read from the correct feature dir regardless of current branch.
+    const context = await WorkflowCommandContext.contextFromParams('session', { sessionId: params.sessionId });
     const parsed = WorkflowId.parseSessionId(params.sessionId);
     const hydrationWarnings: string[] = [];
 

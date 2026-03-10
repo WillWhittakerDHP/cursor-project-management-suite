@@ -1,0 +1,84 @@
+{
+  "tier": "session",
+  "identifier": "6.9.2",
+  "overallStatus": "pass",
+  "results": [
+    {
+      "category": "tier-quality",
+      "status": "pass",
+      "score": 82,
+      "findings": [
+        {
+          "type": "info",
+          "message": "component-logic audit not yet run (no JSON output found)",
+          "location": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/.audit-reports/component-logic-audit.json"
+        },
+        {
+          "type": "info",
+          "message": "composables-logic audit not yet run (no JSON output found)",
+          "location": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/.audit-reports/composables-logic-audit.json"
+        },
+        {
+          "type": "info",
+          "message": "function-complexity audit not yet run (no JSON output found)",
+          "location": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/.audit-reports/function-complexity-audit.json"
+        },
+        {
+          "type": "info",
+          "message": "constants-consolidation audit not yet run (no JSON output found)",
+          "location": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/.audit-reports/constants-consolidation-audit.json"
+        },
+        {
+          "type": "info",
+          "message": "todo-aging audit not yet run (no JSON output found)",
+          "location": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/.audit-reports/todo-aging-audit.json"
+        },
+        {
+          "type": "info",
+          "message": "component-health audit not yet run (no JSON output found)",
+          "location": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/.audit-reports/component-health-audit.json"
+        },
+        {
+          "type": "info",
+          "message": "composable-health audit not yet run (no JSON output found)",
+          "location": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/.audit-reports/composable-health-audit.json"
+        },
+        {
+          "type": "info",
+          "message": "type-escape audit not yet run (no JSON output found)",
+          "location": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/.audit-reports/type-escape-audit.json"
+        },
+        {
+          "type": "info",
+          "message": "type-constant-inventory audit not yet run (no JSON output found)",
+          "location": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/.audit-reports/type-constant-inventory-audit.json"
+        }
+      ],
+      "recommendations": [],
+      "summary": "Ran 9 session-tier audits; found 0 error(s), 0 warning(s), 9 info signal(s)."
+    },
+    {
+      "category": "docs",
+      "status": "pass",
+      "score": 100,
+      "findings": [],
+      "recommendations": [
+        "Documentation is comprehensive and well-structured"
+      ],
+      "summary": "3/3 documents exist. 0 issue(s) found."
+    },
+    {
+      "category": "vue-architecture",
+      "status": "pass",
+      "score": 100,
+      "findings": [],
+      "recommendations": [],
+      "summary": "Scanned 178 .vue file(s); found 0 error(s), 0 warning(s)."
+    }
+  ],
+  "timestamp": "2026-03-09T16:11:24.177Z",
+  "reportPath": "",
+  "featureName": "appointment-workflow",
+  "auditType": "end",
+  "baselineComparison": []
+}

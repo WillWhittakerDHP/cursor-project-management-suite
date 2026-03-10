@@ -170,7 +170,7 @@ export async function markTaskComplete(params: MarkTaskCompleteParams): Promise<
     });
     const statusPattern = /(\*\*Status:\*\*)\s*(Not Started|Planning|In Progress|Partial|Blocked)/i;
     const updatedWithStatus = updatedGuideContent.replace(statusPattern, (_match, label) => `${label} In Progress`);
-    await writeProjectFile(sessionGuidePath, updatedWithStatus);
+    await writeProjectFile(sessionGuidePath, updatedWithStatus, { overwriteForTierEnd: true });
     output.push(`✅ Updated session guide: ${sessionGuidePath}`);
     const logEntry: TaskEntry = {
       id: params.taskId,

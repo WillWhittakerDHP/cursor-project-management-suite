@@ -8,6 +8,7 @@
  * feature-start, phase-start, session-start, session-end, phase-end, and tier-reopen.
  */
 
+import { join, dirname } from 'path';
 import type { TierConfig, TierName } from '../../tiers/shared/types';
 import type { WorkflowCommandContext } from '../../utils/command-context';
 import { tierUp } from '../../utils/tier-navigation';
@@ -765,23 +766,23 @@ export async function ensureTierBranch(
 // ─── mergeTierBranch (for end commands) ──────────────────────────────
 
 /**
- * Merge a tier's branch into its parent branch.
- * Used by session-end (merge session -> phase) and phase-end (merge phase -> feature).
+ * Merge a tier's branch into its parent branch (await-then-merge pattern).
  *
- * Algorithm:
- * 1. Resolve tier branch and parent branch from config
- * 2. Verify we're on the tier branch (or can checkout to it)
- * 3. Merge tier branch into parent via gitMerge
- * 4. Optionally delete the tier branch after merge
- * 5. Optionally push the parent branch
+ * 1. Await any in-flight background work (audit prewarm, background audit runner).
+ * 2. Final comprehensive commit — git add -A && git commit (no file exclusions).
+ * 3. Assert clean tree; log to .merge-incident-log if still dirty.
+ * 4. Merge with skipStash: true (no stash/pop — any remaining dirty state is a bug).
+ * 5. Optionally delete tier branch and/or push parent.
  */
 export async function mergeTierBranch(
   config: TierConfig,
   tierId: string,
   context: WorkflowCommandContext,
   options?: {
-    deleteBranch?: boolean; // delete tier branch after merge (default: false — branches survive for reopen/cascade)
-    push?: boolean;         // push parent branch after merge (default: false)
+    deleteBranch?: boolean;
+    push?: boolean;
+    /** Awaited before the final commit so all async writes land on disk first. */
+    auditPrewarmPromise?: Promise<void>;
   }
 ): Promise<MergeTierBranchResult> {
   const messages: string[] = [];
@@ -814,11 +815,47 @@ export async function mergeTierBranch(
     return { success: true, messages, mergedInto: '', deletedBranch: false };
   }
 
-  // Merge
-  const mergeResult = await gitMerge({ sourceBranch: tierBranch, targetBranch: parentBranch });
+  // ── Step 1: Await background work ─────────────────────────────────
+  if (options?.auditPrewarmPromise) {
+    try {
+      await options.auditPrewarmPromise;
+      messages.push('Awaited audit prewarm before merge.');
+    } catch (err) {
+      messages.push(`Audit prewarm failed (non-blocking): ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+
+  // ── Step 2: Final comprehensive commit ────────────────────────────
+  const preMergeStatus = await runCommand('git status --porcelain');
+  if (preMergeStatus.success && preMergeStatus.output.trim()) {
+    const addResult = await runCommand('git add -A');
+    if (addResult.success) {
+      const safeMsg = `[${config.name} ${tierId}] pre-merge: all remaining artifacts`.replace(/'/g, "'\\''");
+      const preMergeCommit = await runCommand(`git commit -m '${safeMsg}'`);
+      if (preMergeCommit.success) {
+        messages.push('Committed all remaining artifacts on tier branch before merge.');
+      } else {
+        messages.push(`Pre-merge commit note: ${preMergeCommit.error || preMergeCommit.output}`);
+      }
+    }
+  }
+
+  // ── Step 3: Assert clean tree ─────────────────────────────────────
+  const assertStatus = await runCommand('git status --porcelain');
+  if (assertStatus.success && assertStatus.output.trim()) {
+    const incident = `[${new Date().toISOString()}] DIRTY_TREE_BEFORE_MERGE tier=${config.name} id=${tierId} branch=${tierBranch}\n${assertStatus.output.trim()}\n`;
+    console.warn(`[mergeTierBranch] Working tree still dirty after final commit:\n${assertStatus.output.trim()}`);
+    await appendMergeIncident(incident);
+    messages.push('WARNING: working tree not clean after final commit — see .merge-incident-log.');
+  }
+
+  // ── Step 4: Merge with skipStash ──────────────────────────────────
+  const mergeResult = await gitMerge({ sourceBranch: tierBranch, targetBranch: parentBranch, skipStash: true });
   if (!mergeResult.success) {
     messages.push(`Merge ${tierBranch} into ${parentBranch} failed: ${mergeResult.output}`);
     messages.push(`Manual recovery: git checkout ${parentBranch} && git merge ${tierBranch}`);
+    const incident = `[${new Date().toISOString()}] MERGE_FAILED tier=${config.name} id=${tierId} from=${tierBranch} into=${parentBranch}\n${mergeResult.output}\n`;
+    await appendMergeIncident(incident);
     return { success: false, messages, mergedInto: parentBranch, deletedBranch: false };
   }
   messages.push(`Merged ${tierBranch} into ${parentBranch}.`);
@@ -844,6 +881,20 @@ export async function mergeTierBranch(
   }
 
   return { success: true, messages, mergedInto: parentBranch, deletedBranch: deleted };
+}
+
+// ─── Merge incident log ─────────────────────────────────────────────
+
+const MERGE_INCIDENT_LOG = join(process.cwd(), '.project-manager', '.merge-incident-log');
+
+async function appendMergeIncident(entry: string): Promise<void> {
+  try {
+    const { appendFile, mkdir } = await import('fs/promises');
+    await mkdir(dirname(MERGE_INCIDENT_LOG), { recursive: true });
+    await appendFile(MERGE_INCIDENT_LOG, entry + '\n');
+  } catch (err) {
+    console.warn(`[appendMergeIncident] Could not write incident log: ${err instanceof Error ? err.message : String(err)}`);
+  }
 }
 
 // ─── formatBranchHierarchyFromConfig ─────────────────────────────────

@@ -1,0 +1,59 @@
+{
+  "generatedAt": "2026-03-07T18:37:05.904Z",
+  "totalScanned": 6,
+  "exceptionSummary": {
+    "totalRequiresReview": 1
+  },
+  "files": [
+    {
+      "id": "client__src__views__admin__AdminBookingEntryView.vue",
+      "repoPath": "client/src/views/admin/AdminBookingEntryView.vue",
+      "absPath": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/src/views/admin/AdminBookingEntryView.vue",
+      "counts": {
+        "watch": 0,
+        "watchEffect": 0,
+        "async": 0,
+        "await": 0,
+        "map": 1,
+        "reduce": 0,
+        "dom": 0,
+        "inlineConfig": 0,
+        "console": 0,
+        "alert": 0
+      },
+      "matches": [
+        {
+          "ruleId": "computed",
+          "lineNumber": 18,
+          "line": "const users = computed(() => {"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 28,
+          "line": "const dropdownItems = computed(() => {"
+        },
+        {
+          "ruleId": "map",
+          "lineNumber": 31,
+          "line": "return items.map((item: AdminEntryAppointmentItem) => ({"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 50,
+          "line": "const canGo = computed(() => {"
+        }
+      ],
+      "requiresReview": [
+        {
+          "ruleId": "map",
+          "lineNumber": 31,
+          "line": "return items.map((item: AdminEntryAppointmentItem) => ({"
+        }
+      ],
+      "score": 1,
+      "priority": "P2"
+    }
+  ],
+  "deltaMode": true,
+  "baseRef": "HEAD~1"
+}

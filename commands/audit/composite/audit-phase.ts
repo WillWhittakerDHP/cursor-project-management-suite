@@ -12,7 +12,7 @@ import { runTierAutofix } from '../autofix/run-tier-autofix';
 import { WorkflowCommandContext } from '../../utils/command-context';
 import { resolveFeatureName } from '../../utils';
 import { writeAuditReport, calculateOverallStatus, getRelativePath, compareBaselineToEnd } from '../utils';
-import { queryBaseline, buildTierStamp } from '../baseline-log';
+import { queryBaseline, buildTierStampFromId } from '../baseline-log';
 import { importExternalAudits } from '../external/import-external-audits';
 
 export interface AuditPhaseParams {
@@ -82,12 +82,7 @@ export async function auditPhase(params: AuditPhaseParams): Promise<{
   // Query baseline log for the matching tier-stamp start entry
   let baselineComparison;
   try {
-    const tierStamp = buildTierStamp({
-      feature: featureName,
-      phase: params.phase,
-      session: null,
-      task: null,
-    });
+    const tierStamp = buildTierStampFromId(featureName, 'phase', params.phase);
     const baseline = await queryBaseline(tierStamp);
     if (baseline) {
       const endScores: Record<string, number> = {};

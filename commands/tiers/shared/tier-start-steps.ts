@@ -21,7 +21,7 @@ import { runTierPlan } from './tier-plan';
 import { buildCascadeDown } from '../../utils/tier-cascade';
 import { spawn } from 'child_process';
 import { join } from 'path';
-import { buildTierStamp } from '../../audit/baseline-log';
+import { buildTierStampFromId } from '../../audit/baseline-log';
 import { buildGovernanceContext } from '../../audit/governance-context';
 import { buildContinuitySummary, buildReferencePaths, type ReferencePaths, TIER_CONTEXT_SOURCES } from './context-policy';
 import { fillDirectTierDownInGuide } from './fill-direct-tier-down';
@@ -1070,13 +1070,8 @@ export async function stepStartAudit(
 
   try {
     const tier = ctx.context.tier;
-    const id = ctx.context.identifier ?? null;
-    const tierStamp = buildTierStamp({
-      feature: ctx.context.feature.name,
-      phase: tier === 'phase' ? id : null,
-      session: tier === 'session' ? id : null,
-      task: tier === 'task' ? id : null,
-    });
+    const id = ctx.context.identifier ?? '';
+    const tierStamp = buildTierStampFromId(ctx.context.feature.name, tier, id);
 
     const runnerPath = join(
       process.cwd(),

@@ -1,0 +1,14 @@
+{
+<<<<<<< HEAD
+  "generatedAt": "2026-03-07T19:58:08.390Z",
+=======
+  "generatedAt": "2026-03-07T20:01:22.966Z",
+>>>>>>> session-6.10.1
+  "totalScanned": 0,
+  "exceptionSummary": {
+    "totalRequiresReview": 0
+  },
+  "files": [],
+  "deltaMode": true,
+  "baseRef": "HEAD~1"
+}

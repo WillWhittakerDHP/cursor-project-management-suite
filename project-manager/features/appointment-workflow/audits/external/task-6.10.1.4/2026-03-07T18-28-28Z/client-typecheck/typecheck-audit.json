@@ -1,0 +1,2157 @@
+{
+  "generatedAt": "2026-03-07T18:28:28.014Z",
+  "scope": {
+    "client": {
+      "command": "vue-tsc -b --pretty false",
+      "cwd": "client"
+    },
+    "server": {
+      "command": "tsc --noEmit --pretty false",
+      "cwd": "server"
+    }
+  },
+  "exitCode": 1,
+  "command": "vue-tsc -b --pretty false && tsc --noEmit --pretty false",
+  "exceptionSummary": {
+    "totalAllowed": 0,
+    "totalRequiresReview": 70,
+    "bySource": {
+      "inline": 0,
+      "pattern": 0,
+      "specific": 0
+    }
+  },
+  "errors": [
+    {
+      "file": "src/components/beta/BetaFeedbackDashboard.vue",
+      "line": 92,
+      "col": 38,
+      "code": "TS18046",
+      "message": "'item' is of type 'unknown'.",
+      "raw": "src/components/beta/BetaFeedbackDashboard.vue(92,38): error TS18046: 'item' is of type 'unknown'.",
+      "scope": "client",
+      "repoPath": "src/components/beta/BetaFeedbackDashboard.vue"
+    },
+    {
+      "file": "src/components/beta/BetaFeedbackDashboard.vue",
+      "line": 93,
+      "col": 16,
+      "code": "TS18046",
+      "message": "'item' is of type 'unknown'.",
+      "raw": "src/components/beta/BetaFeedbackDashboard.vue(93,16): error TS18046: 'item' is of type 'unknown'.",
+      "scope": "client",
+      "repoPath": "src/components/beta/BetaFeedbackDashboard.vue"
+    },
+    {
+      "file": "src/components/beta/BetaFeedbackDashboard.vue",
+      "line": 97,
+      "col": 14,
+      "code": "TS18046",
+      "message": "'item' is of type 'unknown'.",
+      "raw": "src/components/beta/BetaFeedbackDashboard.vue(97,14): error TS18046: 'item' is of type 'unknown'.",
+      "scope": "client",
+      "repoPath": "src/components/beta/BetaFeedbackDashboard.vue"
+    },
+    {
+      "file": "src/components/beta/BetaFeedbackDashboard.vue",
+      "line": 100,
+      "col": 40,
+      "code": "TS18046",
+      "message": "'item' is of type 'unknown'.",
+      "raw": "src/components/beta/BetaFeedbackDashboard.vue(100,40): error TS18046: 'item' is of type 'unknown'.",
+      "scope": "client",
+      "repoPath": "src/components/beta/BetaFeedbackDashboard.vue"
+    },
+    {
+      "file": "src/components/beta/BetaFeedbackDashboard.vue",
+      "line": 101,
+      "col": 16,
+      "code": "TS18046",
+      "message": "'item' is of type 'unknown'.",
+      "raw": "src/components/beta/BetaFeedbackDashboard.vue(101,16): error TS18046: 'item' is of type 'unknown'.",
+      "scope": "client",
+      "repoPath": "src/components/beta/BetaFeedbackDashboard.vue"
+    },
+    {
+      "file": "src/components/beta/BetaFeedbackDashboard.vue",
+      "line": 105,
+      "col": 25,
+      "code": "TS18046",
+      "message": "'item' is of type 'unknown'.",
+      "raw": "src/components/beta/BetaFeedbackDashboard.vue(105,25): error TS18046: 'item' is of type 'unknown'.",
+      "scope": "client",
+      "repoPath": "src/components/beta/BetaFeedbackDashboard.vue"
+    },
+    {
+      "file": "src/components/booking/steps/ConfirmationStep.vue",
+      "line": 84,
+      "col": 17,
+      "code": "TS2339",
+      "message": "Property 'couponDiscount' does not exist on type 'ComputedRef<PriceData>'.",
+      "raw": "src/components/booking/steps/ConfirmationStep.vue(84,17): error TS2339: Property 'couponDiscount' does not exist on type 'ComputedRef<PriceData>'.",
+      "scope": "client",
+      "repoPath": "src/components/booking/steps/ConfirmationStep.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/AppointmentsTable.vue",
+      "line": 143,
+      "col": 42,
+      "code": "TS2339",
+      "message": "Property 'id' does not exist on type '{}'.",
+      "raw": "src/views/admin/tabs/components/AppointmentsTable.vue(143,42): error TS2339: Property 'id' does not exist on type '{}'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/AppointmentsTable.vue",
+      "line": 147,
+      "col": 38,
+      "code": "TS2345",
+      "message": "Argument of type '{}' is not assignable to parameter of type 'AppointmentResponse'.",
+      "raw": "src/views/admin/tabs/components/AppointmentsTable.vue(147,38): error TS2345: Argument of type '{}' is not assignable to parameter of type 'AppointmentResponse'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/AppointmentsTable.vue",
+      "line": 150,
+      "col": 82,
+      "code": "TS2339",
+      "message": "Property 'propertyVersionId' does not exist on type '{}'.",
+      "raw": "src/views/admin/tabs/components/AppointmentsTable.vue(150,82): error TS2339: Property 'propertyVersionId' does not exist on type '{}'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/AppointmentsTable.vue",
+      "line": 177,
+      "col": 46,
+      "code": "TS2339",
+      "message": "Property 'propertyVersionId' does not exist on type '{}'.",
+      "raw": "src/views/admin/tabs/components/AppointmentsTable.vue(177,46): error TS2339: Property 'propertyVersionId' does not exist on type '{}'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/AppointmentsTable.vue",
+      "line": 183,
+      "col": 42,
+      "code": "TS2339",
+      "message": "Property 'id' does not exist on type '{}'.",
+      "raw": "src/views/admin/tabs/components/AppointmentsTable.vue(183,42): error TS2339: Property 'id' does not exist on type '{}'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/AppointmentsTable.vue",
+      "line": 187,
+      "col": 40,
+      "code": "TS2345",
+      "message": "Argument of type '{}' is not assignable to parameter of type 'AppointmentResponse'.",
+      "raw": "src/views/admin/tabs/components/AppointmentsTable.vue(187,40): error TS2345: Argument of type '{}' is not assignable to parameter of type 'AppointmentResponse'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/AppointmentsTable.vue",
+      "line": 187,
+      "col": 75,
+      "code": "TS2345",
+      "message": "Argument of type '{}' is not assignable to parameter of type 'AppointmentResponse'.",
+      "raw": "src/views/admin/tabs/components/AppointmentsTable.vue(187,75): error TS2345: Argument of type '{}' is not assignable to parameter of type 'AppointmentResponse'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/AppointmentsTable.vue",
+      "line": 187,
+      "col": 119,
+      "code": "TS2345",
+      "message": "Argument of type '{}' is not assignable to parameter of type 'AppointmentResponse'.",
+      "raw": "src/views/admin/tabs/components/AppointmentsTable.vue(187,119): error TS2345: Argument of type '{}' is not assignable to parameter of type 'AppointmentResponse'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/AppointmentsTable.vue",
+      "line": 190,
+      "col": 71,
+      "code": "TS2345",
+      "message": "Argument of type '{}' is not assignable to parameter of type 'AppointmentResponse'.",
+      "raw": "src/views/admin/tabs/components/AppointmentsTable.vue(190,71): error TS2345: Argument of type '{}' is not assignable to parameter of type 'AppointmentResponse'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/AppointmentsTable.vue",
+      "line": 215,
+      "col": 42,
+      "code": "TS2339",
+      "message": "Property 'id' does not exist on type '{}'.",
+      "raw": "src/views/admin/tabs/components/AppointmentsTable.vue(215,42): error TS2339: Property 'id' does not exist on type '{}'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/AppointmentsTable.vue",
+      "line": 219,
+      "col": 38,
+      "code": "TS2345",
+      "message": "Argument of type '{}' is not assignable to parameter of type 'AppointmentResponse'.",
+      "raw": "src/views/admin/tabs/components/AppointmentsTable.vue(219,38): error TS2345: Argument of type '{}' is not assignable to parameter of type 'AppointmentResponse'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/AppointmentsTable.vue",
+      "line": 222,
+      "col": 70,
+      "code": "TS2345",
+      "message": "Argument of type '{}' is not assignable to parameter of type 'AppointmentResponse'.",
+      "raw": "src/views/admin/tabs/components/AppointmentsTable.vue(222,70): error TS2345: Argument of type '{}' is not assignable to parameter of type 'AppointmentResponse'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/AppointmentsTable.vue",
+      "line": 247,
+      "col": 42,
+      "code": "TS2339",
+      "message": "Property 'id' does not exist on type '{}'.",
+      "raw": "src/views/admin/tabs/components/AppointmentsTable.vue(247,42): error TS2339: Property 'id' does not exist on type '{}'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/AppointmentsTable.vue",
+      "line": 251,
+      "col": 42,
+      "code": "TS2339",
+      "message": "Property 'scheduledById' does not exist on type '{}'.",
+      "raw": "src/views/admin/tabs/components/AppointmentsTable.vue(251,42): error TS2339: Property 'scheduledById' does not exist on type '{}'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/AppointmentsTable.vue",
+      "line": 253,
+      "col": 57,
+      "code": "TS2339",
+      "message": "Property 'scheduledById' does not exist on type '{}'.",
+      "raw": "src/views/admin/tabs/components/AppointmentsTable.vue(253,57): error TS2339: Property 'scheduledById' does not exist on type '{}'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/AppointmentsTable.vue",
+      "line": 259,
+      "col": 38,
+      "code": "TS2345",
+      "message": "Argument of type '{}' is not assignable to parameter of type 'AppointmentResponse'.",
+      "raw": "src/views/admin/tabs/components/AppointmentsTable.vue(259,38): error TS2345: Argument of type '{}' is not assignable to parameter of type 'AppointmentResponse'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/AppointmentsTable.vue",
+      "line": 263,
+      "col": 70,
+      "code": "TS2339",
+      "message": "Property 'scheduledById' does not exist on type '{}'.",
+      "raw": "src/views/admin/tabs/components/AppointmentsTable.vue(263,70): error TS2339: Property 'scheduledById' does not exist on type '{}'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/AppointmentsTable.vue",
+      "line": 288,
+      "col": 42,
+      "code": "TS2339",
+      "message": "Property 'id' does not exist on type '{}'.",
+      "raw": "src/views/admin/tabs/components/AppointmentsTable.vue(288,42): error TS2339: Property 'id' does not exist on type '{}'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/AppointmentsTable.vue",
+      "line": 288,
+      "col": 65,
+      "code": "TS2345",
+      "message": "Argument of type '{}' is not assignable to parameter of type 'AppointmentResponse'.",
+      "raw": "src/views/admin/tabs/components/AppointmentsTable.vue(288,65): error TS2345: Argument of type '{}' is not assignable to parameter of type 'AppointmentResponse'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/AppointmentsTable.vue",
+      "line": 295,
+      "col": 12,
+      "code": "TS2322",
+      "message": "Type 'unknown' is not assignable to type 'AppointmentResponse | null'.",
+      "raw": "src/views/admin/tabs/components/AppointmentsTable.vue(295,12): error TS2322: Type 'unknown' is not assignable to type 'AppointmentResponse | null'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/AppointmentsTable.vue",
+      "line": 305,
+      "col": 65,
+      "code": "TS2339",
+      "message": "Property 'submittedAt' does not exist on type '{}'.",
+      "raw": "src/views/admin/tabs/components/AppointmentsTable.vue(305,65): error TS2339: Property 'submittedAt' does not exist on type '{}'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/AppointmentsTable.vue",
+      "line": 311,
+      "col": 65,
+      "code": "TS2339",
+      "message": "Property 'confirmedAt' does not exist on type '{}'.",
+      "raw": "src/views/admin/tabs/components/AppointmentsTable.vue(311,65): error TS2339: Property 'confirmedAt' does not exist on type '{}'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/AppointmentsTable.vue",
+      "line": 317,
+      "col": 12,
+      "code": "TS2322",
+      "message": "Type 'unknown' is not assignable to type 'AppointmentResponse | null'.",
+      "raw": "src/views/admin/tabs/components/AppointmentsTable.vue(317,12): error TS2322: Type 'unknown' is not assignable to type 'AppointmentResponse | null'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/PropertiesTable.vue",
+      "line": 115,
+      "col": 42,
+      "code": "TS2339",
+      "message": "Property 'id' does not exist on type '{}'.",
+      "raw": "src/views/admin/tabs/components/PropertiesTable.vue(115,42): error TS2339: Property 'id' does not exist on type '{}'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/PropertiesTable.vue",
+      "line": 116,
+      "col": 21,
+      "code": "TS2339",
+      "message": "Property 'address' does not exist on type '{}'.",
+      "raw": "src/views/admin/tabs/components/PropertiesTable.vue(116,21): error TS2339: Property 'address' does not exist on type '{}'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/PropertiesTable.vue",
+      "line": 129,
+      "col": 42,
+      "code": "TS2339",
+      "message": "Property 'id' does not exist on type '{}'.",
+      "raw": "src/views/admin/tabs/components/PropertiesTable.vue(129,42): error TS2339: Property 'id' does not exist on type '{}'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/PropertiesTable.vue",
+      "line": 130,
+      "col": 37,
+      "code": "TS2339",
+      "message": "Property 'unit' does not exist on type '{}'.",
+      "raw": "src/views/admin/tabs/components/PropertiesTable.vue(130,37): error TS2339: Property 'unit' does not exist on type '{}'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/PropertiesTable.vue",
+      "line": 143,
+      "col": 42,
+      "code": "TS2339",
+      "message": "Property 'id' does not exist on type '{}'.",
+      "raw": "src/views/admin/tabs/components/PropertiesTable.vue(143,42): error TS2339: Property 'id' does not exist on type '{}'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/PropertiesTable.vue",
+      "line": 144,
+      "col": 21,
+      "code": "TS2339",
+      "message": "Property 'city' does not exist on type '{}'.",
+      "raw": "src/views/admin/tabs/components/PropertiesTable.vue(144,21): error TS2339: Property 'city' does not exist on type '{}'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/PropertiesTable.vue",
+      "line": 157,
+      "col": 42,
+      "code": "TS2339",
+      "message": "Property 'id' does not exist on type '{}'.",
+      "raw": "src/views/admin/tabs/components/PropertiesTable.vue(157,42): error TS2339: Property 'id' does not exist on type '{}'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/PropertiesTable.vue",
+      "line": 158,
+      "col": 21,
+      "code": "TS2339",
+      "message": "Property 'state' does not exist on type '{}'.",
+      "raw": "src/views/admin/tabs/components/PropertiesTable.vue(158,21): error TS2339: Property 'state' does not exist on type '{}'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/PropertiesTable.vue",
+      "line": 171,
+      "col": 42,
+      "code": "TS2339",
+      "message": "Property 'id' does not exist on type '{}'.",
+      "raw": "src/views/admin/tabs/components/PropertiesTable.vue(171,42): error TS2339: Property 'id' does not exist on type '{}'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/PropertiesTable.vue",
+      "line": 172,
+      "col": 21,
+      "code": "TS2339",
+      "message": "Property 'zipCode' does not exist on type '{}'.",
+      "raw": "src/views/admin/tabs/components/PropertiesTable.vue(172,21): error TS2339: Property 'zipCode' does not exist on type '{}'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/PropertiesTable.vue",
+      "line": 185,
+      "col": 42,
+      "code": "TS2339",
+      "message": "Property 'id' does not exist on type '{}'.",
+      "raw": "src/views/admin/tabs/components/PropertiesTable.vue(185,42): error TS2339: Property 'id' does not exist on type '{}'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/PropertiesTable.vue",
+      "line": 186,
+      "col": 37,
+      "code": "TS2339",
+      "message": "Property 'mlsNumber' does not exist on type '{}'.",
+      "raw": "src/views/admin/tabs/components/PropertiesTable.vue(186,37): error TS2339: Property 'mlsNumber' does not exist on type '{}'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/PropertiesTable.vue",
+      "line": 199,
+      "col": 42,
+      "code": "TS2339",
+      "message": "Property 'id' does not exist on type '{}'.",
+      "raw": "src/views/admin/tabs/components/PropertiesTable.vue(199,42): error TS2339: Property 'id' does not exist on type '{}'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/PropertiesTable.vue",
+      "line": 200,
+      "col": 37,
+      "code": "TS2339",
+      "message": "Property 'squareFootage' does not exist on type '{}'.",
+      "raw": "src/views/admin/tabs/components/PropertiesTable.vue(200,37): error TS2339: Property 'squareFootage' does not exist on type '{}'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/PropertiesTable.vue",
+      "line": 214,
+      "col": 42,
+      "code": "TS2339",
+      "message": "Property 'id' does not exist on type '{}'.",
+      "raw": "src/views/admin/tabs/components/PropertiesTable.vue(214,42): error TS2339: Property 'id' does not exist on type '{}'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/PropertiesTable.vue",
+      "line": 215,
+      "col": 37,
+      "code": "TS2339",
+      "message": "Property 'bedrooms' does not exist on type '{}'.",
+      "raw": "src/views/admin/tabs/components/PropertiesTable.vue(215,37): error TS2339: Property 'bedrooms' does not exist on type '{}'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/PropertiesTable.vue",
+      "line": 229,
+      "col": 42,
+      "code": "TS2339",
+      "message": "Property 'id' does not exist on type '{}'.",
+      "raw": "src/views/admin/tabs/components/PropertiesTable.vue(229,42): error TS2339: Property 'id' does not exist on type '{}'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/PropertiesTable.vue",
+      "line": 230,
+      "col": 37,
+      "code": "TS2339",
+      "message": "Property 'bathrooms' does not exist on type '{}'.",
+      "raw": "src/views/admin/tabs/components/PropertiesTable.vue(230,37): error TS2339: Property 'bathrooms' does not exist on type '{}'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/PropertiesTable.vue",
+      "line": 244,
+      "col": 42,
+      "code": "TS2339",
+      "message": "Property 'id' does not exist on type '{}'.",
+      "raw": "src/views/admin/tabs/components/PropertiesTable.vue(244,42): error TS2339: Property 'id' does not exist on type '{}'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/PropertiesTable.vue",
+      "line": 245,
+      "col": 37,
+      "code": "TS2339",
+      "message": "Property 'foundationAccess' does not exist on type '{}'.",
+      "raw": "src/views/admin/tabs/components/PropertiesTable.vue(245,37): error TS2339: Property 'foundationAccess' does not exist on type '{}'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/PropertiesTable.vue",
+      "line": 260,
+      "col": 42,
+      "code": "TS2339",
+      "message": "Property 'id' does not exist on type '{}'.",
+      "raw": "src/views/admin/tabs/components/PropertiesTable.vue(260,42): error TS2339: Property 'id' does not exist on type '{}'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/PropertiesTable.vue",
+      "line": 261,
+      "col": 37,
+      "code": "TS2339",
+      "message": "Property 'additionalUnits' does not exist on type '{}'.",
+      "raw": "src/views/admin/tabs/components/PropertiesTable.vue(261,37): error TS2339: Property 'additionalUnits' does not exist on type '{}'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/PropertiesTable.vue",
+      "line": 275,
+      "col": 41,
+      "code": "TS2339",
+      "message": "Property 'id' does not exist on type '{}'.",
+      "raw": "src/views/admin/tabs/components/PropertiesTable.vue(275,41): error TS2339: Property 'id' does not exist on type '{}'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/PropertiesTable.vue",
+      "line": 300,
+      "col": 33,
+      "code": "TS2345",
+      "message": "Argument of type '{}' is not assignable to parameter of type 'PropertyResponse'.",
+      "raw": "src/views/admin/tabs/components/PropertiesTable.vue(300,33): error TS2345: Argument of type '{}' is not assignable to parameter of type 'PropertyResponse'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/PropertiesTable.vue",
+      "line": 309,
+      "col": 45,
+      "code": "TS2339",
+      "message": "Property 'id' does not exist on type '{}'.",
+      "raw": "src/views/admin/tabs/components/PropertiesTable.vue(309,45): error TS2339: Property 'id' does not exist on type '{}'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/UsersTable.vue",
+      "line": 109,
+      "col": 42,
+      "code": "TS2339",
+      "message": "Property 'id' does not exist on type '{}'.",
+      "raw": "src/views/admin/tabs/components/UsersTable.vue(109,42): error TS2339: Property 'id' does not exist on type '{}'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/UsersTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/UsersTable.vue",
+      "line": 110,
+      "col": 21,
+      "code": "TS2339",
+      "message": "Property 'firstName' does not exist on type '{}'.",
+      "raw": "src/views/admin/tabs/components/UsersTable.vue(110,21): error TS2339: Property 'firstName' does not exist on type '{}'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/UsersTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/UsersTable.vue",
+      "line": 123,
+      "col": 42,
+      "code": "TS2339",
+      "message": "Property 'id' does not exist on type '{}'.",
+      "raw": "src/views/admin/tabs/components/UsersTable.vue(123,42): error TS2339: Property 'id' does not exist on type '{}'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/UsersTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/UsersTable.vue",
+      "line": 124,
+      "col": 21,
+      "code": "TS2339",
+      "message": "Property 'lastName' does not exist on type '{}'.",
+      "raw": "src/views/admin/tabs/components/UsersTable.vue(124,21): error TS2339: Property 'lastName' does not exist on type '{}'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/UsersTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/UsersTable.vue",
+      "line": 137,
+      "col": 42,
+      "code": "TS2339",
+      "message": "Property 'id' does not exist on type '{}'.",
+      "raw": "src/views/admin/tabs/components/UsersTable.vue(137,42): error TS2339: Property 'id' does not exist on type '{}'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/UsersTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/UsersTable.vue",
+      "line": 138,
+      "col": 21,
+      "code": "TS2339",
+      "message": "Property 'email' does not exist on type '{}'.",
+      "raw": "src/views/admin/tabs/components/UsersTable.vue(138,21): error TS2339: Property 'email' does not exist on type '{}'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/UsersTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/UsersTable.vue",
+      "line": 152,
+      "col": 42,
+      "code": "TS2339",
+      "message": "Property 'id' does not exist on type '{}'.",
+      "raw": "src/views/admin/tabs/components/UsersTable.vue(152,42): error TS2339: Property 'id' does not exist on type '{}'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/UsersTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/UsersTable.vue",
+      "line": 153,
+      "col": 37,
+      "code": "TS2339",
+      "message": "Property 'phone' does not exist on type '{}'.",
+      "raw": "src/views/admin/tabs/components/UsersTable.vue(153,37): error TS2339: Property 'phone' does not exist on type '{}'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/UsersTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/UsersTable.vue",
+      "line": 167,
+      "col": 42,
+      "code": "TS2339",
+      "message": "Property 'id' does not exist on type '{}'.",
+      "raw": "src/views/admin/tabs/components/UsersTable.vue(167,42): error TS2339: Property 'id' does not exist on type '{}'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/UsersTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/UsersTable.vue",
+      "line": 168,
+      "col": 21,
+      "code": "TS2339",
+      "message": "Property 'userRole' does not exist on type '{}'.",
+      "raw": "src/views/admin/tabs/components/UsersTable.vue(168,21): error TS2339: Property 'userRole' does not exist on type '{}'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/UsersTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/UsersTable.vue",
+      "line": 182,
+      "col": 42,
+      "code": "TS2339",
+      "message": "Property 'id' does not exist on type '{}'.",
+      "raw": "src/views/admin/tabs/components/UsersTable.vue(182,42): error TS2339: Property 'id' does not exist on type '{}'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/UsersTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/UsersTable.vue",
+      "line": 183,
+      "col": 37,
+      "code": "TS2339",
+      "message": "Property 'loginId' does not exist on type '{}'.",
+      "raw": "src/views/admin/tabs/components/UsersTable.vue(183,37): error TS2339: Property 'loginId' does not exist on type '{}'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/UsersTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/UsersTable.vue",
+      "line": 197,
+      "col": 41,
+      "code": "TS2339",
+      "message": "Property 'id' does not exist on type '{}'.",
+      "raw": "src/views/admin/tabs/components/UsersTable.vue(197,41): error TS2339: Property 'id' does not exist on type '{}'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/UsersTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/UsersTable.vue",
+      "line": 222,
+      "col": 33,
+      "code": "TS2345",
+      "message": "Argument of type '{}' is not assignable to parameter of type 'UserResponse'.",
+      "raw": "src/views/admin/tabs/components/UsersTable.vue(222,33): error TS2345: Argument of type '{}' is not assignable to parameter of type 'UserResponse'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/UsersTable.vue"
+    },
+    {
+      "file": "src/views/admin/tabs/components/UsersTable.vue",
+      "line": 231,
+      "col": 45,
+      "code": "TS2339",
+      "message": "Property 'id' does not exist on type '{}'.",
+      "raw": "src/views/admin/tabs/components/UsersTable.vue(231,45): error TS2339: Property 'id' does not exist on type '{}'.",
+      "scope": "client",
+      "repoPath": "src/views/admin/tabs/components/UsersTable.vue"
+    }
+  ],
+  "allowedErrors": [],
+  "pools": [
+    {
+      "poolId": "TS2339-ts2339-prop-id",
+      "groupKey": "TS2339::prop:id@{...}",
+      "errorCount": 26,
+      "fileCount": 3,
+      "severityScore": 260,
+      "blastRadiusScore": 6,
+      "repetitionScore": 26,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 292,
+      "sample": [
+        {
+          "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue",
+          "line": 143,
+          "col": 42,
+          "code": "TS2339",
+          "message": "Property 'id' does not exist on type '{}'."
+        },
+        {
+          "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue",
+          "line": 183,
+          "col": 42,
+          "code": "TS2339",
+          "message": "Property 'id' does not exist on type '{}'."
+        },
+        {
+          "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue",
+          "line": 215,
+          "col": 42,
+          "code": "TS2339",
+          "message": "Property 'id' does not exist on type '{}'."
+        }
+      ],
+      "priority": "P0"
+    },
+    {
+      "poolId": "TS2345-ts2345-arg-appointmentresponse",
+      "groupKey": "TS2345::arg:{...}=>AppointmentResponse",
+      "errorCount": 9,
+      "fileCount": 1,
+      "severityScore": 90,
+      "blastRadiusScore": 2,
+      "repetitionScore": 9,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 101,
+      "sample": [
+        {
+          "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue",
+          "line": 147,
+          "col": 38,
+          "code": "TS2345",
+          "message": "Argument of type '{}' is not assignable to parameter of type 'AppointmentResponse'."
+        },
+        {
+          "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue",
+          "line": 187,
+          "col": 40,
+          "code": "TS2345",
+          "message": "Argument of type '{}' is not assignable to parameter of type 'AppointmentResponse'."
+        },
+        {
+          "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue",
+          "line": 187,
+          "col": 75,
+          "code": "TS2345",
+          "message": "Argument of type '{}' is not assignable to parameter of type 'AppointmentResponse'."
+        }
+      ],
+      "priority": "P0"
+    },
+    {
+      "poolId": "TS18046-ts18046-item-is-of-type-unknown",
+      "groupKey": "TS18046::'item' is of type 'unknown'.",
+      "errorCount": 6,
+      "fileCount": 1,
+      "severityScore": 48,
+      "blastRadiusScore": 2,
+      "repetitionScore": 6,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 56,
+      "sample": [
+        {
+          "repoPath": "src/components/beta/BetaFeedbackDashboard.vue",
+          "line": 92,
+          "col": 38,
+          "code": "TS18046",
+          "message": "'item' is of type 'unknown'."
+        },
+        {
+          "repoPath": "src/components/beta/BetaFeedbackDashboard.vue",
+          "line": 93,
+          "col": 16,
+          "code": "TS18046",
+          "message": "'item' is of type 'unknown'."
+        },
+        {
+          "repoPath": "src/components/beta/BetaFeedbackDashboard.vue",
+          "line": 97,
+          "col": 14,
+          "code": "TS18046",
+          "message": "'item' is of type 'unknown'."
+        }
+      ],
+      "priority": "P0"
+    },
+    {
+      "poolId": "TS2339-ts2339-prop-scheduledbyid",
+      "groupKey": "TS2339::prop:scheduledById@{...}",
+      "errorCount": 3,
+      "fileCount": 1,
+      "severityScore": 30,
+      "blastRadiusScore": 2,
+      "repetitionScore": 3,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 35,
+      "sample": [
+        {
+          "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue",
+          "line": 251,
+          "col": 42,
+          "code": "TS2339",
+          "message": "Property 'scheduledById' does not exist on type '{}'."
+        },
+        {
+          "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue",
+          "line": 253,
+          "col": 57,
+          "code": "TS2339",
+          "message": "Property 'scheduledById' does not exist on type '{}'."
+        },
+        {
+          "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue",
+          "line": 263,
+          "col": 70,
+          "code": "TS2339",
+          "message": "Property 'scheduledById' does not exist on type '{}'."
+        }
+      ],
+      "priority": "P0"
+    },
+    {
+      "poolId": "TS2322-ts2322-assign-unknown-appointmentresponse-null",
+      "groupKey": "TS2322::assign:unknown=>AppointmentResponse | null",
+      "errorCount": 2,
+      "fileCount": 1,
+      "severityScore": 20,
+      "blastRadiusScore": 2,
+      "repetitionScore": 2,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 24,
+      "sample": [
+        {
+          "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue",
+          "line": 295,
+          "col": 12,
+          "code": "TS2322",
+          "message": "Type 'unknown' is not assignable to type 'AppointmentResponse | null'."
+        },
+        {
+          "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue",
+          "line": 317,
+          "col": 12,
+          "code": "TS2322",
+          "message": "Type 'unknown' is not assignable to type 'AppointmentResponse | null'."
+        }
+      ],
+      "priority": "P0"
+    },
+    {
+      "poolId": "TS2339-ts2339-prop-propertyversionid",
+      "groupKey": "TS2339::prop:propertyVersionId@{...}",
+      "errorCount": 2,
+      "fileCount": 1,
+      "severityScore": 20,
+      "blastRadiusScore": 2,
+      "repetitionScore": 2,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 24,
+      "sample": [
+        {
+          "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue",
+          "line": 150,
+          "col": 82,
+          "code": "TS2339",
+          "message": "Property 'propertyVersionId' does not exist on type '{}'."
+        },
+        {
+          "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue",
+          "line": 177,
+          "col": 46,
+          "code": "TS2339",
+          "message": "Property 'propertyVersionId' does not exist on type '{}'."
+        }
+      ],
+      "priority": "P0"
+    },
+    {
+      "poolId": "TS2339-ts2339-prop-additionalunits",
+      "groupKey": "TS2339::prop:additionalUnits@{...}",
+      "errorCount": 1,
+      "fileCount": 1,
+      "severityScore": 10,
+      "blastRadiusScore": 2,
+      "repetitionScore": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 13,
+      "sample": [
+        {
+          "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue",
+          "line": 261,
+          "col": 37,
+          "code": "TS2339",
+          "message": "Property 'additionalUnits' does not exist on type '{}'."
+        }
+      ],
+      "priority": "P1"
+    },
+    {
+      "poolId": "TS2339-ts2339-prop-address",
+      "groupKey": "TS2339::prop:address@{...}",
+      "errorCount": 1,
+      "fileCount": 1,
+      "severityScore": 10,
+      "blastRadiusScore": 2,
+      "repetitionScore": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 13,
+      "sample": [
+        {
+          "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue",
+          "line": 116,
+          "col": 21,
+          "code": "TS2339",
+          "message": "Property 'address' does not exist on type '{}'."
+        }
+      ],
+      "priority": "P1"
+    },
+    {
+      "poolId": "TS2339-ts2339-prop-bathrooms",
+      "groupKey": "TS2339::prop:bathrooms@{...}",
+      "errorCount": 1,
+      "fileCount": 1,
+      "severityScore": 10,
+      "blastRadiusScore": 2,
+      "repetitionScore": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 13,
+      "sample": [
+        {
+          "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue",
+          "line": 230,
+          "col": 37,
+          "code": "TS2339",
+          "message": "Property 'bathrooms' does not exist on type '{}'."
+        }
+      ],
+      "priority": "P1"
+    },
+    {
+      "poolId": "TS2339-ts2339-prop-bedrooms",
+      "groupKey": "TS2339::prop:bedrooms@{...}",
+      "errorCount": 1,
+      "fileCount": 1,
+      "severityScore": 10,
+      "blastRadiusScore": 2,
+      "repetitionScore": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 13,
+      "sample": [
+        {
+          "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue",
+          "line": 215,
+          "col": 37,
+          "code": "TS2339",
+          "message": "Property 'bedrooms' does not exist on type '{}'."
+        }
+      ],
+      "priority": "P1"
+    },
+    {
+      "poolId": "TS2339-ts2339-prop-city",
+      "groupKey": "TS2339::prop:city@{...}",
+      "errorCount": 1,
+      "fileCount": 1,
+      "severityScore": 10,
+      "blastRadiusScore": 2,
+      "repetitionScore": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 13,
+      "sample": [
+        {
+          "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue",
+          "line": 144,
+          "col": 21,
+          "code": "TS2339",
+          "message": "Property 'city' does not exist on type '{}'."
+        }
+      ],
+      "priority": "P1"
+    },
+    {
+      "poolId": "TS2339-ts2339-prop-confirmedat",
+      "groupKey": "TS2339::prop:confirmedAt@{...}",
+      "errorCount": 1,
+      "fileCount": 1,
+      "severityScore": 10,
+      "blastRadiusScore": 2,
+      "repetitionScore": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 13,
+      "sample": [
+        {
+          "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue",
+          "line": 311,
+          "col": 65,
+          "code": "TS2339",
+          "message": "Property 'confirmedAt' does not exist on type '{}'."
+        }
+      ],
+      "priority": "P1"
+    },
+    {
+      "poolId": "TS2339-ts2339-prop-coupondiscount-computedref",
+      "groupKey": "TS2339::prop:couponDiscount@ComputedRef<...>",
+      "errorCount": 1,
+      "fileCount": 1,
+      "severityScore": 10,
+      "blastRadiusScore": 2,
+      "repetitionScore": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 13,
+      "sample": [
+        {
+          "repoPath": "src/components/booking/steps/ConfirmationStep.vue",
+          "line": 84,
+          "col": 17,
+          "code": "TS2339",
+          "message": "Property 'couponDiscount' does not exist on type 'ComputedRef<PriceData>'."
+        }
+      ],
+      "priority": "P1"
+    },
+    {
+      "poolId": "TS2339-ts2339-prop-email",
+      "groupKey": "TS2339::prop:email@{...}",
+      "errorCount": 1,
+      "fileCount": 1,
+      "severityScore": 10,
+      "blastRadiusScore": 2,
+      "repetitionScore": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 13,
+      "sample": [
+        {
+          "repoPath": "src/views/admin/tabs/components/UsersTable.vue",
+          "line": 138,
+          "col": 21,
+          "code": "TS2339",
+          "message": "Property 'email' does not exist on type '{}'."
+        }
+      ],
+      "priority": "P1"
+    },
+    {
+      "poolId": "TS2339-ts2339-prop-firstname",
+      "groupKey": "TS2339::prop:firstName@{...}",
+      "errorCount": 1,
+      "fileCount": 1,
+      "severityScore": 10,
+      "blastRadiusScore": 2,
+      "repetitionScore": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 13,
+      "sample": [
+        {
+          "repoPath": "src/views/admin/tabs/components/UsersTable.vue",
+          "line": 110,
+          "col": 21,
+          "code": "TS2339",
+          "message": "Property 'firstName' does not exist on type '{}'."
+        }
+      ],
+      "priority": "P1"
+    },
+    {
+      "poolId": "TS2339-ts2339-prop-foundationaccess",
+      "groupKey": "TS2339::prop:foundationAccess@{...}",
+      "errorCount": 1,
+      "fileCount": 1,
+      "severityScore": 10,
+      "blastRadiusScore": 2,
+      "repetitionScore": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 13,
+      "sample": [
+        {
+          "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue",
+          "line": 245,
+          "col": 37,
+          "code": "TS2339",
+          "message": "Property 'foundationAccess' does not exist on type '{}'."
+        }
+      ],
+      "priority": "P1"
+    },
+    {
+      "poolId": "TS2339-ts2339-prop-lastname",
+      "groupKey": "TS2339::prop:lastName@{...}",
+      "errorCount": 1,
+      "fileCount": 1,
+      "severityScore": 10,
+      "blastRadiusScore": 2,
+      "repetitionScore": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 13,
+      "sample": [
+        {
+          "repoPath": "src/views/admin/tabs/components/UsersTable.vue",
+          "line": 124,
+          "col": 21,
+          "code": "TS2339",
+          "message": "Property 'lastName' does not exist on type '{}'."
+        }
+      ],
+      "priority": "P1"
+    },
+    {
+      "poolId": "TS2339-ts2339-prop-loginid",
+      "groupKey": "TS2339::prop:loginId@{...}",
+      "errorCount": 1,
+      "fileCount": 1,
+      "severityScore": 10,
+      "blastRadiusScore": 2,
+      "repetitionScore": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 13,
+      "sample": [
+        {
+          "repoPath": "src/views/admin/tabs/components/UsersTable.vue",
+          "line": 183,
+          "col": 37,
+          "code": "TS2339",
+          "message": "Property 'loginId' does not exist on type '{}'."
+        }
+      ],
+      "priority": "P1"
+    },
+    {
+      "poolId": "TS2339-ts2339-prop-mlsnumber",
+      "groupKey": "TS2339::prop:mlsNumber@{...}",
+      "errorCount": 1,
+      "fileCount": 1,
+      "severityScore": 10,
+      "blastRadiusScore": 2,
+      "repetitionScore": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 13,
+      "sample": [
+        {
+          "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue",
+          "line": 186,
+          "col": 37,
+          "code": "TS2339",
+          "message": "Property 'mlsNumber' does not exist on type '{}'."
+        }
+      ],
+      "priority": "P1"
+    },
+    {
+      "poolId": "TS2339-ts2339-prop-phone",
+      "groupKey": "TS2339::prop:phone@{...}",
+      "errorCount": 1,
+      "fileCount": 1,
+      "severityScore": 10,
+      "blastRadiusScore": 2,
+      "repetitionScore": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 13,
+      "sample": [
+        {
+          "repoPath": "src/views/admin/tabs/components/UsersTable.vue",
+          "line": 153,
+          "col": 37,
+          "code": "TS2339",
+          "message": "Property 'phone' does not exist on type '{}'."
+        }
+      ],
+      "priority": "P1"
+    },
+    {
+      "poolId": "TS2339-ts2339-prop-squarefootage",
+      "groupKey": "TS2339::prop:squareFootage@{...}",
+      "errorCount": 1,
+      "fileCount": 1,
+      "severityScore": 10,
+      "blastRadiusScore": 2,
+      "repetitionScore": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 13,
+      "sample": [
+        {
+          "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue",
+          "line": 200,
+          "col": 37,
+          "code": "TS2339",
+          "message": "Property 'squareFootage' does not exist on type '{}'."
+        }
+      ],
+      "priority": "P1"
+    },
+    {
+      "poolId": "TS2339-ts2339-prop-state",
+      "groupKey": "TS2339::prop:state@{...}",
+      "errorCount": 1,
+      "fileCount": 1,
+      "severityScore": 10,
+      "blastRadiusScore": 2,
+      "repetitionScore": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 13,
+      "sample": [
+        {
+          "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue",
+          "line": 158,
+          "col": 21,
+          "code": "TS2339",
+          "message": "Property 'state' does not exist on type '{}'."
+        }
+      ],
+      "priority": "P1"
+    },
+    {
+      "poolId": "TS2339-ts2339-prop-submittedat",
+      "groupKey": "TS2339::prop:submittedAt@{...}",
+      "errorCount": 1,
+      "fileCount": 1,
+      "severityScore": 10,
+      "blastRadiusScore": 2,
+      "repetitionScore": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 13,
+      "sample": [
+        {
+          "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue",
+          "line": 305,
+          "col": 65,
+          "code": "TS2339",
+          "message": "Property 'submittedAt' does not exist on type '{}'."
+        }
+      ],
+      "priority": "P1"
+    },
+    {
+      "poolId": "TS2339-ts2339-prop-unit",
+      "groupKey": "TS2339::prop:unit@{...}",
+      "errorCount": 1,
+      "fileCount": 1,
+      "severityScore": 10,
+      "blastRadiusScore": 2,
+      "repetitionScore": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 13,
+      "sample": [
+        {
+          "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue",
+          "line": 130,
+          "col": 37,
+          "code": "TS2339",
+          "message": "Property 'unit' does not exist on type '{}'."
+        }
+      ],
+      "priority": "P1"
+    },
+    {
+      "poolId": "TS2339-ts2339-prop-userrole",
+      "groupKey": "TS2339::prop:userRole@{...}",
+      "errorCount": 1,
+      "fileCount": 1,
+      "severityScore": 10,
+      "blastRadiusScore": 2,
+      "repetitionScore": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 13,
+      "sample": [
+        {
+          "repoPath": "src/views/admin/tabs/components/UsersTable.vue",
+          "line": 168,
+          "col": 21,
+          "code": "TS2339",
+          "message": "Property 'userRole' does not exist on type '{}'."
+        }
+      ],
+      "priority": "P1"
+    },
+    {
+      "poolId": "TS2339-ts2339-prop-zipcode",
+      "groupKey": "TS2339::prop:zipCode@{...}",
+      "errorCount": 1,
+      "fileCount": 1,
+      "severityScore": 10,
+      "blastRadiusScore": 2,
+      "repetitionScore": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 13,
+      "sample": [
+        {
+          "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue",
+          "line": 172,
+          "col": 21,
+          "code": "TS2339",
+          "message": "Property 'zipCode' does not exist on type '{}'."
+        }
+      ],
+      "priority": "P1"
+    },
+    {
+      "poolId": "TS2345-ts2345-arg-propertyresponse",
+      "groupKey": "TS2345::arg:{...}=>PropertyResponse",
+      "errorCount": 1,
+      "fileCount": 1,
+      "severityScore": 10,
+      "blastRadiusScore": 2,
+      "repetitionScore": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 13,
+      "sample": [
+        {
+          "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue",
+          "line": 300,
+          "col": 33,
+          "code": "TS2345",
+          "message": "Argument of type '{}' is not assignable to parameter of type 'PropertyResponse'."
+        }
+      ],
+      "priority": "P1"
+    },
+    {
+      "poolId": "TS2345-ts2345-arg-userresponse",
+      "groupKey": "TS2345::arg:{...}=>UserResponse",
+      "errorCount": 1,
+      "fileCount": 1,
+      "severityScore": 10,
+      "blastRadiusScore": 2,
+      "repetitionScore": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 13,
+      "sample": [
+        {
+          "repoPath": "src/views/admin/tabs/components/UsersTable.vue",
+          "line": 222,
+          "col": 33,
+          "code": "TS2345",
+          "message": "Argument of type '{}' is not assignable to parameter of type 'UserResponse'."
+        }
+      ],
+      "priority": "P1"
+    }
+  ],
+  "files": [
+    {
+      "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue",
+      "errorCount": 25,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "errors": [
+        {
+          "file": "src/views/admin/tabs/components/PropertiesTable.vue",
+          "line": 115,
+          "col": 42,
+          "code": "TS2339",
+          "message": "Property 'id' does not exist on type '{}'.",
+          "raw": "src/views/admin/tabs/components/PropertiesTable.vue(115,42): error TS2339: Property 'id' does not exist on type '{}'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/PropertiesTable.vue",
+          "line": 116,
+          "col": 21,
+          "code": "TS2339",
+          "message": "Property 'address' does not exist on type '{}'.",
+          "raw": "src/views/admin/tabs/components/PropertiesTable.vue(116,21): error TS2339: Property 'address' does not exist on type '{}'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/PropertiesTable.vue",
+          "line": 129,
+          "col": 42,
+          "code": "TS2339",
+          "message": "Property 'id' does not exist on type '{}'.",
+          "raw": "src/views/admin/tabs/components/PropertiesTable.vue(129,42): error TS2339: Property 'id' does not exist on type '{}'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/PropertiesTable.vue",
+          "line": 130,
+          "col": 37,
+          "code": "TS2339",
+          "message": "Property 'unit' does not exist on type '{}'.",
+          "raw": "src/views/admin/tabs/components/PropertiesTable.vue(130,37): error TS2339: Property 'unit' does not exist on type '{}'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/PropertiesTable.vue",
+          "line": 143,
+          "col": 42,
+          "code": "TS2339",
+          "message": "Property 'id' does not exist on type '{}'.",
+          "raw": "src/views/admin/tabs/components/PropertiesTable.vue(143,42): error TS2339: Property 'id' does not exist on type '{}'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/PropertiesTable.vue",
+          "line": 144,
+          "col": 21,
+          "code": "TS2339",
+          "message": "Property 'city' does not exist on type '{}'.",
+          "raw": "src/views/admin/tabs/components/PropertiesTable.vue(144,21): error TS2339: Property 'city' does not exist on type '{}'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/PropertiesTable.vue",
+          "line": 157,
+          "col": 42,
+          "code": "TS2339",
+          "message": "Property 'id' does not exist on type '{}'.",
+          "raw": "src/views/admin/tabs/components/PropertiesTable.vue(157,42): error TS2339: Property 'id' does not exist on type '{}'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/PropertiesTable.vue",
+          "line": 158,
+          "col": 21,
+          "code": "TS2339",
+          "message": "Property 'state' does not exist on type '{}'.",
+          "raw": "src/views/admin/tabs/components/PropertiesTable.vue(158,21): error TS2339: Property 'state' does not exist on type '{}'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/PropertiesTable.vue",
+          "line": 171,
+          "col": 42,
+          "code": "TS2339",
+          "message": "Property 'id' does not exist on type '{}'.",
+          "raw": "src/views/admin/tabs/components/PropertiesTable.vue(171,42): error TS2339: Property 'id' does not exist on type '{}'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/PropertiesTable.vue",
+          "line": 172,
+          "col": 21,
+          "code": "TS2339",
+          "message": "Property 'zipCode' does not exist on type '{}'.",
+          "raw": "src/views/admin/tabs/components/PropertiesTable.vue(172,21): error TS2339: Property 'zipCode' does not exist on type '{}'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/PropertiesTable.vue",
+          "line": 185,
+          "col": 42,
+          "code": "TS2339",
+          "message": "Property 'id' does not exist on type '{}'.",
+          "raw": "src/views/admin/tabs/components/PropertiesTable.vue(185,42): error TS2339: Property 'id' does not exist on type '{}'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/PropertiesTable.vue",
+          "line": 186,
+          "col": 37,
+          "code": "TS2339",
+          "message": "Property 'mlsNumber' does not exist on type '{}'.",
+          "raw": "src/views/admin/tabs/components/PropertiesTable.vue(186,37): error TS2339: Property 'mlsNumber' does not exist on type '{}'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/PropertiesTable.vue",
+          "line": 199,
+          "col": 42,
+          "code": "TS2339",
+          "message": "Property 'id' does not exist on type '{}'.",
+          "raw": "src/views/admin/tabs/components/PropertiesTable.vue(199,42): error TS2339: Property 'id' does not exist on type '{}'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/PropertiesTable.vue",
+          "line": 200,
+          "col": 37,
+          "code": "TS2339",
+          "message": "Property 'squareFootage' does not exist on type '{}'.",
+          "raw": "src/views/admin/tabs/components/PropertiesTable.vue(200,37): error TS2339: Property 'squareFootage' does not exist on type '{}'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/PropertiesTable.vue",
+          "line": 214,
+          "col": 42,
+          "code": "TS2339",
+          "message": "Property 'id' does not exist on type '{}'.",
+          "raw": "src/views/admin/tabs/components/PropertiesTable.vue(214,42): error TS2339: Property 'id' does not exist on type '{}'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/PropertiesTable.vue",
+          "line": 215,
+          "col": 37,
+          "code": "TS2339",
+          "message": "Property 'bedrooms' does not exist on type '{}'.",
+          "raw": "src/views/admin/tabs/components/PropertiesTable.vue(215,37): error TS2339: Property 'bedrooms' does not exist on type '{}'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/PropertiesTable.vue",
+          "line": 229,
+          "col": 42,
+          "code": "TS2339",
+          "message": "Property 'id' does not exist on type '{}'.",
+          "raw": "src/views/admin/tabs/components/PropertiesTable.vue(229,42): error TS2339: Property 'id' does not exist on type '{}'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/PropertiesTable.vue",
+          "line": 230,
+          "col": 37,
+          "code": "TS2339",
+          "message": "Property 'bathrooms' does not exist on type '{}'.",
+          "raw": "src/views/admin/tabs/components/PropertiesTable.vue(230,37): error TS2339: Property 'bathrooms' does not exist on type '{}'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/PropertiesTable.vue",
+          "line": 244,
+          "col": 42,
+          "code": "TS2339",
+          "message": "Property 'id' does not exist on type '{}'.",
+          "raw": "src/views/admin/tabs/components/PropertiesTable.vue(244,42): error TS2339: Property 'id' does not exist on type '{}'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/PropertiesTable.vue",
+          "line": 245,
+          "col": 37,
+          "code": "TS2339",
+          "message": "Property 'foundationAccess' does not exist on type '{}'.",
+          "raw": "src/views/admin/tabs/components/PropertiesTable.vue(245,37): error TS2339: Property 'foundationAccess' does not exist on type '{}'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/PropertiesTable.vue",
+          "line": 260,
+          "col": 42,
+          "code": "TS2339",
+          "message": "Property 'id' does not exist on type '{}'.",
+          "raw": "src/views/admin/tabs/components/PropertiesTable.vue(260,42): error TS2339: Property 'id' does not exist on type '{}'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/PropertiesTable.vue",
+          "line": 261,
+          "col": 37,
+          "code": "TS2339",
+          "message": "Property 'additionalUnits' does not exist on type '{}'.",
+          "raw": "src/views/admin/tabs/components/PropertiesTable.vue(261,37): error TS2339: Property 'additionalUnits' does not exist on type '{}'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/PropertiesTable.vue",
+          "line": 275,
+          "col": 41,
+          "code": "TS2339",
+          "message": "Property 'id' does not exist on type '{}'.",
+          "raw": "src/views/admin/tabs/components/PropertiesTable.vue(275,41): error TS2339: Property 'id' does not exist on type '{}'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/PropertiesTable.vue",
+          "line": 300,
+          "col": 33,
+          "code": "TS2345",
+          "message": "Argument of type '{}' is not assignable to parameter of type 'PropertyResponse'.",
+          "raw": "src/views/admin/tabs/components/PropertiesTable.vue(300,33): error TS2345: Argument of type '{}' is not assignable to parameter of type 'PropertyResponse'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/PropertiesTable.vue",
+          "line": 309,
+          "col": 45,
+          "code": "TS2339",
+          "message": "Property 'id' does not exist on type '{}'.",
+          "raw": "src/views/admin/tabs/components/PropertiesTable.vue(309,45): error TS2339: Property 'id' does not exist on type '{}'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/PropertiesTable.vue"
+        }
+      ]
+    },
+    {
+      "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue",
+      "errorCount": 23,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "errors": [
+        {
+          "file": "src/views/admin/tabs/components/AppointmentsTable.vue",
+          "line": 143,
+          "col": 42,
+          "code": "TS2339",
+          "message": "Property 'id' does not exist on type '{}'.",
+          "raw": "src/views/admin/tabs/components/AppointmentsTable.vue(143,42): error TS2339: Property 'id' does not exist on type '{}'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/AppointmentsTable.vue",
+          "line": 147,
+          "col": 38,
+          "code": "TS2345",
+          "message": "Argument of type '{}' is not assignable to parameter of type 'AppointmentResponse'.",
+          "raw": "src/views/admin/tabs/components/AppointmentsTable.vue(147,38): error TS2345: Argument of type '{}' is not assignable to parameter of type 'AppointmentResponse'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/AppointmentsTable.vue",
+          "line": 150,
+          "col": 82,
+          "code": "TS2339",
+          "message": "Property 'propertyVersionId' does not exist on type '{}'.",
+          "raw": "src/views/admin/tabs/components/AppointmentsTable.vue(150,82): error TS2339: Property 'propertyVersionId' does not exist on type '{}'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/AppointmentsTable.vue",
+          "line": 177,
+          "col": 46,
+          "code": "TS2339",
+          "message": "Property 'propertyVersionId' does not exist on type '{}'.",
+          "raw": "src/views/admin/tabs/components/AppointmentsTable.vue(177,46): error TS2339: Property 'propertyVersionId' does not exist on type '{}'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/AppointmentsTable.vue",
+          "line": 183,
+          "col": 42,
+          "code": "TS2339",
+          "message": "Property 'id' does not exist on type '{}'.",
+          "raw": "src/views/admin/tabs/components/AppointmentsTable.vue(183,42): error TS2339: Property 'id' does not exist on type '{}'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/AppointmentsTable.vue",
+          "line": 187,
+          "col": 40,
+          "code": "TS2345",
+          "message": "Argument of type '{}' is not assignable to parameter of type 'AppointmentResponse'.",
+          "raw": "src/views/admin/tabs/components/AppointmentsTable.vue(187,40): error TS2345: Argument of type '{}' is not assignable to parameter of type 'AppointmentResponse'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/AppointmentsTable.vue",
+          "line": 187,
+          "col": 75,
+          "code": "TS2345",
+          "message": "Argument of type '{}' is not assignable to parameter of type 'AppointmentResponse'.",
+          "raw": "src/views/admin/tabs/components/AppointmentsTable.vue(187,75): error TS2345: Argument of type '{}' is not assignable to parameter of type 'AppointmentResponse'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/AppointmentsTable.vue",
+          "line": 187,
+          "col": 119,
+          "code": "TS2345",
+          "message": "Argument of type '{}' is not assignable to parameter of type 'AppointmentResponse'.",
+          "raw": "src/views/admin/tabs/components/AppointmentsTable.vue(187,119): error TS2345: Argument of type '{}' is not assignable to parameter of type 'AppointmentResponse'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/AppointmentsTable.vue",
+          "line": 190,
+          "col": 71,
+          "code": "TS2345",
+          "message": "Argument of type '{}' is not assignable to parameter of type 'AppointmentResponse'.",
+          "raw": "src/views/admin/tabs/components/AppointmentsTable.vue(190,71): error TS2345: Argument of type '{}' is not assignable to parameter of type 'AppointmentResponse'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/AppointmentsTable.vue",
+          "line": 215,
+          "col": 42,
+          "code": "TS2339",
+          "message": "Property 'id' does not exist on type '{}'.",
+          "raw": "src/views/admin/tabs/components/AppointmentsTable.vue(215,42): error TS2339: Property 'id' does not exist on type '{}'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/AppointmentsTable.vue",
+          "line": 219,
+          "col": 38,
+          "code": "TS2345",
+          "message": "Argument of type '{}' is not assignable to parameter of type 'AppointmentResponse'.",
+          "raw": "src/views/admin/tabs/components/AppointmentsTable.vue(219,38): error TS2345: Argument of type '{}' is not assignable to parameter of type 'AppointmentResponse'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/AppointmentsTable.vue",
+          "line": 222,
+          "col": 70,
+          "code": "TS2345",
+          "message": "Argument of type '{}' is not assignable to parameter of type 'AppointmentResponse'.",
+          "raw": "src/views/admin/tabs/components/AppointmentsTable.vue(222,70): error TS2345: Argument of type '{}' is not assignable to parameter of type 'AppointmentResponse'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/AppointmentsTable.vue",
+          "line": 247,
+          "col": 42,
+          "code": "TS2339",
+          "message": "Property 'id' does not exist on type '{}'.",
+          "raw": "src/views/admin/tabs/components/AppointmentsTable.vue(247,42): error TS2339: Property 'id' does not exist on type '{}'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/AppointmentsTable.vue",
+          "line": 251,
+          "col": 42,
+          "code": "TS2339",
+          "message": "Property 'scheduledById' does not exist on type '{}'.",
+          "raw": "src/views/admin/tabs/components/AppointmentsTable.vue(251,42): error TS2339: Property 'scheduledById' does not exist on type '{}'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/AppointmentsTable.vue",
+          "line": 253,
+          "col": 57,
+          "code": "TS2339",
+          "message": "Property 'scheduledById' does not exist on type '{}'.",
+          "raw": "src/views/admin/tabs/components/AppointmentsTable.vue(253,57): error TS2339: Property 'scheduledById' does not exist on type '{}'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/AppointmentsTable.vue",
+          "line": 259,
+          "col": 38,
+          "code": "TS2345",
+          "message": "Argument of type '{}' is not assignable to parameter of type 'AppointmentResponse'.",
+          "raw": "src/views/admin/tabs/components/AppointmentsTable.vue(259,38): error TS2345: Argument of type '{}' is not assignable to parameter of type 'AppointmentResponse'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/AppointmentsTable.vue",
+          "line": 263,
+          "col": 70,
+          "code": "TS2339",
+          "message": "Property 'scheduledById' does not exist on type '{}'.",
+          "raw": "src/views/admin/tabs/components/AppointmentsTable.vue(263,70): error TS2339: Property 'scheduledById' does not exist on type '{}'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/AppointmentsTable.vue",
+          "line": 288,
+          "col": 42,
+          "code": "TS2339",
+          "message": "Property 'id' does not exist on type '{}'.",
+          "raw": "src/views/admin/tabs/components/AppointmentsTable.vue(288,42): error TS2339: Property 'id' does not exist on type '{}'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/AppointmentsTable.vue",
+          "line": 288,
+          "col": 65,
+          "code": "TS2345",
+          "message": "Argument of type '{}' is not assignable to parameter of type 'AppointmentResponse'.",
+          "raw": "src/views/admin/tabs/components/AppointmentsTable.vue(288,65): error TS2345: Argument of type '{}' is not assignable to parameter of type 'AppointmentResponse'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/AppointmentsTable.vue",
+          "line": 295,
+          "col": 12,
+          "code": "TS2322",
+          "message": "Type 'unknown' is not assignable to type 'AppointmentResponse | null'.",
+          "raw": "src/views/admin/tabs/components/AppointmentsTable.vue(295,12): error TS2322: Type 'unknown' is not assignable to type 'AppointmentResponse | null'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/AppointmentsTable.vue",
+          "line": 305,
+          "col": 65,
+          "code": "TS2339",
+          "message": "Property 'submittedAt' does not exist on type '{}'.",
+          "raw": "src/views/admin/tabs/components/AppointmentsTable.vue(305,65): error TS2339: Property 'submittedAt' does not exist on type '{}'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/AppointmentsTable.vue",
+          "line": 311,
+          "col": 65,
+          "code": "TS2339",
+          "message": "Property 'confirmedAt' does not exist on type '{}'.",
+          "raw": "src/views/admin/tabs/components/AppointmentsTable.vue(311,65): error TS2339: Property 'confirmedAt' does not exist on type '{}'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/AppointmentsTable.vue",
+          "line": 317,
+          "col": 12,
+          "code": "TS2322",
+          "message": "Type 'unknown' is not assignable to type 'AppointmentResponse | null'.",
+          "raw": "src/views/admin/tabs/components/AppointmentsTable.vue(317,12): error TS2322: Type 'unknown' is not assignable to type 'AppointmentResponse | null'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/AppointmentsTable.vue"
+        }
+      ]
+    },
+    {
+      "repoPath": "src/views/admin/tabs/components/UsersTable.vue",
+      "errorCount": 15,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "errors": [
+        {
+          "file": "src/views/admin/tabs/components/UsersTable.vue",
+          "line": 109,
+          "col": 42,
+          "code": "TS2339",
+          "message": "Property 'id' does not exist on type '{}'.",
+          "raw": "src/views/admin/tabs/components/UsersTable.vue(109,42): error TS2339: Property 'id' does not exist on type '{}'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/UsersTable.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/UsersTable.vue",
+          "line": 110,
+          "col": 21,
+          "code": "TS2339",
+          "message": "Property 'firstName' does not exist on type '{}'.",
+          "raw": "src/views/admin/tabs/components/UsersTable.vue(110,21): error TS2339: Property 'firstName' does not exist on type '{}'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/UsersTable.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/UsersTable.vue",
+          "line": 123,
+          "col": 42,
+          "code": "TS2339",
+          "message": "Property 'id' does not exist on type '{}'.",
+          "raw": "src/views/admin/tabs/components/UsersTable.vue(123,42): error TS2339: Property 'id' does not exist on type '{}'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/UsersTable.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/UsersTable.vue",
+          "line": 124,
+          "col": 21,
+          "code": "TS2339",
+          "message": "Property 'lastName' does not exist on type '{}'.",
+          "raw": "src/views/admin/tabs/components/UsersTable.vue(124,21): error TS2339: Property 'lastName' does not exist on type '{}'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/UsersTable.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/UsersTable.vue",
+          "line": 137,
+          "col": 42,
+          "code": "TS2339",
+          "message": "Property 'id' does not exist on type '{}'.",
+          "raw": "src/views/admin/tabs/components/UsersTable.vue(137,42): error TS2339: Property 'id' does not exist on type '{}'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/UsersTable.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/UsersTable.vue",
+          "line": 138,
+          "col": 21,
+          "code": "TS2339",
+          "message": "Property 'email' does not exist on type '{}'.",
+          "raw": "src/views/admin/tabs/components/UsersTable.vue(138,21): error TS2339: Property 'email' does not exist on type '{}'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/UsersTable.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/UsersTable.vue",
+          "line": 152,
+          "col": 42,
+          "code": "TS2339",
+          "message": "Property 'id' does not exist on type '{}'.",
+          "raw": "src/views/admin/tabs/components/UsersTable.vue(152,42): error TS2339: Property 'id' does not exist on type '{}'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/UsersTable.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/UsersTable.vue",
+          "line": 153,
+          "col": 37,
+          "code": "TS2339",
+          "message": "Property 'phone' does not exist on type '{}'.",
+          "raw": "src/views/admin/tabs/components/UsersTable.vue(153,37): error TS2339: Property 'phone' does not exist on type '{}'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/UsersTable.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/UsersTable.vue",
+          "line": 167,
+          "col": 42,
+          "code": "TS2339",
+          "message": "Property 'id' does not exist on type '{}'.",
+          "raw": "src/views/admin/tabs/components/UsersTable.vue(167,42): error TS2339: Property 'id' does not exist on type '{}'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/UsersTable.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/UsersTable.vue",
+          "line": 168,
+          "col": 21,
+          "code": "TS2339",
+          "message": "Property 'userRole' does not exist on type '{}'.",
+          "raw": "src/views/admin/tabs/components/UsersTable.vue(168,21): error TS2339: Property 'userRole' does not exist on type '{}'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/UsersTable.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/UsersTable.vue",
+          "line": 182,
+          "col": 42,
+          "code": "TS2339",
+          "message": "Property 'id' does not exist on type '{}'.",
+          "raw": "src/views/admin/tabs/components/UsersTable.vue(182,42): error TS2339: Property 'id' does not exist on type '{}'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/UsersTable.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/UsersTable.vue",
+          "line": 183,
+          "col": 37,
+          "code": "TS2339",
+          "message": "Property 'loginId' does not exist on type '{}'.",
+          "raw": "src/views/admin/tabs/components/UsersTable.vue(183,37): error TS2339: Property 'loginId' does not exist on type '{}'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/UsersTable.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/UsersTable.vue",
+          "line": 197,
+          "col": 41,
+          "code": "TS2339",
+          "message": "Property 'id' does not exist on type '{}'.",
+          "raw": "src/views/admin/tabs/components/UsersTable.vue(197,41): error TS2339: Property 'id' does not exist on type '{}'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/UsersTable.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/UsersTable.vue",
+          "line": 222,
+          "col": 33,
+          "code": "TS2345",
+          "message": "Argument of type '{}' is not assignable to parameter of type 'UserResponse'.",
+          "raw": "src/views/admin/tabs/components/UsersTable.vue(222,33): error TS2345: Argument of type '{}' is not assignable to parameter of type 'UserResponse'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/UsersTable.vue"
+        },
+        {
+          "file": "src/views/admin/tabs/components/UsersTable.vue",
+          "line": 231,
+          "col": 45,
+          "code": "TS2339",
+          "message": "Property 'id' does not exist on type '{}'.",
+          "raw": "src/views/admin/tabs/components/UsersTable.vue(231,45): error TS2339: Property 'id' does not exist on type '{}'.",
+          "scope": "client",
+          "repoPath": "src/views/admin/tabs/components/UsersTable.vue"
+        }
+      ]
+    },
+    {
+      "repoPath": "src/components/beta/BetaFeedbackDashboard.vue",
+      "errorCount": 6,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "errors": [
+        {
+          "file": "src/components/beta/BetaFeedbackDashboard.vue",
+          "line": 92,
+          "col": 38,
+          "code": "TS18046",
+          "message": "'item' is of type 'unknown'.",
+          "raw": "src/components/beta/BetaFeedbackDashboard.vue(92,38): error TS18046: 'item' is of type 'unknown'.",
+          "scope": "client",
+          "repoPath": "src/components/beta/BetaFeedbackDashboard.vue"
+        },
+        {
+          "file": "src/components/beta/BetaFeedbackDashboard.vue",
+          "line": 93,
+          "col": 16,
+          "code": "TS18046",
+          "message": "'item' is of type 'unknown'.",
+          "raw": "src/components/beta/BetaFeedbackDashboard.vue(93,16): error TS18046: 'item' is of type 'unknown'.",
+          "scope": "client",
+          "repoPath": "src/components/beta/BetaFeedbackDashboard.vue"
+        },
+        {
+          "file": "src/components/beta/BetaFeedbackDashboard.vue",
+          "line": 97,
+          "col": 14,
+          "code": "TS18046",
+          "message": "'item' is of type 'unknown'.",
+          "raw": "src/components/beta/BetaFeedbackDashboard.vue(97,14): error TS18046: 'item' is of type 'unknown'.",
+          "scope": "client",
+          "repoPath": "src/components/beta/BetaFeedbackDashboard.vue"
+        },
+        {
+          "file": "src/components/beta/BetaFeedbackDashboard.vue",
+          "line": 100,
+          "col": 40,
+          "code": "TS18046",
+          "message": "'item' is of type 'unknown'.",
+          "raw": "src/components/beta/BetaFeedbackDashboard.vue(100,40): error TS18046: 'item' is of type 'unknown'.",
+          "scope": "client",
+          "repoPath": "src/components/beta/BetaFeedbackDashboard.vue"
+        },
+        {
+          "file": "src/components/beta/BetaFeedbackDashboard.vue",
+          "line": 101,
+          "col": 16,
+          "code": "TS18046",
+          "message": "'item' is of type 'unknown'.",
+          "raw": "src/components/beta/BetaFeedbackDashboard.vue(101,16): error TS18046: 'item' is of type 'unknown'.",
+          "scope": "client",
+          "repoPath": "src/components/beta/BetaFeedbackDashboard.vue"
+        },
+        {
+          "file": "src/components/beta/BetaFeedbackDashboard.vue",
+          "line": 105,
+          "col": 25,
+          "code": "TS18046",
+          "message": "'item' is of type 'unknown'.",
+          "raw": "src/components/beta/BetaFeedbackDashboard.vue(105,25): error TS18046: 'item' is of type 'unknown'.",
+          "scope": "client",
+          "repoPath": "src/components/beta/BetaFeedbackDashboard.vue"
+        }
+      ]
+    },
+    {
+      "repoPath": "src/components/booking/steps/ConfirmationStep.vue",
+      "errorCount": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "errors": [
+        {
+          "file": "src/components/booking/steps/ConfirmationStep.vue",
+          "line": 84,
+          "col": 17,
+          "code": "TS2339",
+          "message": "Property 'couponDiscount' does not exist on type 'ComputedRef<PriceData>'.",
+          "raw": "src/components/booking/steps/ConfirmationStep.vue(84,17): error TS2339: Property 'couponDiscount' does not exist on type 'ComputedRef<PriceData>'.",
+          "scope": "client",
+          "repoPath": "src/components/booking/steps/ConfirmationStep.vue"
+        }
+      ]
+    }
+  ]
+}

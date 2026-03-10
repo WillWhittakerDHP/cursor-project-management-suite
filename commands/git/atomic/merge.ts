@@ -2,9 +2,13 @@
  * Atomic Command: /git-merge [sourceBranch] [targetBranch?]
  * Merge sourceBranch into targetBranch (or current branch if targetBranch not provided).
  *
- * Stashes uncommitted changes before checkout so that tier-end workflows
- * (which write docs between the feature commit and the merge step) don't
- * fail with "Your local changes would be overwritten by checkout".
+ * skipStash (default false): When true the merge expects a clean working tree.
+ *   If uncommitted changes exist, the merge returns a descriptive failure instead
+ *   of stashing (which historically caused "added by both" / stash-pop conflicts).
+ *   Tier-end callers should always pre-commit before calling with skipStash: true.
+ *
+ * Legacy stash behaviour is preserved when skipStash is false so that manual
+ * or non-tier-end callers still work without changes.
  */
 
 import { runCommand, getCurrentBranch } from '../../utils/utils';
@@ -12,6 +16,8 @@ import { runCommand, getCurrentBranch } from '../../utils/utils';
 export interface GitMergeParams {
   sourceBranch: string;
   targetBranch?: string;
+  /** When true, refuse to stash; fail if the working tree is dirty. */
+  skipStash?: boolean;
 }
 
 async function hasUncommittedChanges(): Promise<boolean> {
@@ -22,11 +28,23 @@ async function hasUncommittedChanges(): Promise<boolean> {
 export async function gitMerge(params: GitMergeParams): Promise<{ success: boolean; output: string }> {
   const targetBranch = params.targetBranch || await getCurrentBranch();
   const currentBranch = await getCurrentBranch();
+  const skipStash = params.skipStash ?? false;
   let didStash = false;
 
   if (currentBranch !== targetBranch) {
-    // Stash any uncommitted changes so the checkout can proceed
-    if (await hasUncommittedChanges()) {
+    const dirty = await hasUncommittedChanges();
+
+    if (dirty && skipStash) {
+      const statusOut = await runCommand('git status --porcelain');
+      return {
+        success: false,
+        output:
+          `Working tree is dirty and skipStash is set — refusing to merge.\n` +
+          `Commit or resolve the following before retrying:\n${statusOut.output}`,
+      };
+    }
+
+    if (dirty && !skipStash) {
       const stashResult = await runCommand('git stash --include-untracked');
       if (!stashResult.success) {
         return {
@@ -67,7 +85,6 @@ export async function gitMerge(params: GitMergeParams): Promise<{ success: boole
     };
   }
 
-  // Re-apply stashed changes on the merged branch
   if (didStash) {
     const popResult = await runCommand('git stash pop');
     if (!popResult.success) {

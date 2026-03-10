@@ -110,12 +110,20 @@ async function appendToWriteLog(line: string): Promise<void> {
   }
 }
 
+/** Options for shouldBlockProjectManagerWrite. */
+export interface ShouldBlockProjectManagerWriteOptions {
+  /** When true, allow write for tier-end workflow (e.g. task-end checkbox, session/phase status). Do not use for other callers. */
+  overwriteForTierEnd?: boolean;
+}
+
 /** If path is protected and existing content is filled, return true (caller should skip write). */
 export async function shouldBlockProjectManagerWrite(
   projectRoot: string,
-  filename: string
+  filename: string,
+  options?: ShouldBlockProjectManagerWriteOptions
 ): Promise<boolean> {
   if (!isProjectManagerProtectedPath(filename)) return false;
+  if (options?.overwriteForTierEnd) return false;
   let existing: string;
   try {
     existing = await readFile(join(projectRoot, filename), 'utf-8');

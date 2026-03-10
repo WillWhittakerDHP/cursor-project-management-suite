@@ -114,6 +114,13 @@ export class FeatureContext {
         // continue
       }
     }
+    // Phase fallback: phase guide may not exist yet (phase-add). Resolve via feature number from phase ID (e.g. 6.12 → 6).
+    if (tier === 'phase') {
+      const featureNum = identifier.split('.')[0];
+      if (featureNum && /^\d+$/.test(featureNum)) {
+        return resolveFeatureId(featureNum);
+      }
+    }
     // Task fallback: planning doc may not exist yet (created during task-start). Resolve via session guide.
     if (tier === 'task') {
       const sessionId = identifier.split('.').slice(0, 3).join('.');
@@ -121,6 +128,22 @@ export class FeatureContext {
         const sessionRelPath = `sessions/session-${sessionId}-guide.md`;
         for (const name of candidates) {
           const full = join(featuresDir, name, sessionRelPath);
+          try {
+            await access(full);
+            return name;
+          } catch {
+            // continue
+          }
+        }
+      }
+    }
+    // Session fallback: session guide may not exist yet (session-add). Resolve via parent phase guide.
+    if (tier === 'session') {
+      const phaseId = identifier.split('.').slice(0, 2).join('.');
+      if (phaseId && phaseId !== identifier) {
+        const phaseRelPath = `phases/phase-${phaseId}-guide.md`;
+        for (const name of candidates) {
+          const full = join(featuresDir, name, phaseRelPath);
           try {
             await access(full);
             return name;

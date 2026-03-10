@@ -42,6 +42,7 @@
 import { readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { execSync } from 'child_process';
+import type { ShouldBlockProjectManagerWriteOptions } from './project-manager-write-guard';
 import {
   isProjectManagerProtectedPath,
   shouldBlockProjectManagerWrite,
@@ -67,12 +68,17 @@ export async function readProjectFile(filename: string): Promise<string> {
  * - Audit: logs path, timestamp, and caller to stderr (and to .project-manager/.write-log when TIER_LOG_WRITES=1 or when a write is blocked).
  * - Lock: skips the write and logs "BLOCKED overwrite" if the file already exists and is "filled" (no placeholders).
  * Set TIER_LOG_WRITES=1 to capture all protected-path writes in .project-manager/.write-log.
+ * Pass options.overwriteForTierEnd: true only for tier-end workflow (e.g. task-end checkbox).
  */
-export async function writeProjectFile(filename: string, content: string): Promise<void> {
+export async function writeProjectFile(
+  filename: string,
+  content: string,
+  options?: ShouldBlockProjectManagerWriteOptions
+): Promise<void> {
   const filePath = join(PROJECT_ROOT, filename);
   if (isProjectManagerProtectedPath(filename)) {
     const caller = getCallerFromStack();
-    const blocked = await shouldBlockProjectManagerWrite(PROJECT_ROOT, filename);
+    const blocked = await shouldBlockProjectManagerWrite(PROJECT_ROOT, filename, options);
     if (blocked) {
       logProjectManagerWrite({ path: filename, blocked: true, caller });
       return;

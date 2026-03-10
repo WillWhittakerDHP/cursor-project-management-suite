@@ -29,7 +29,7 @@ export interface BaselineLogEntry {
 }
 
 /**
- * Build a tier-stamp from scope values.
+ * Build a tier-stamp from explicit scope values.
  * Produces "F:<feature>.P:<phase>.S:<session>.T:<task>" with only non-null segments.
  */
 export function buildTierStamp(scope: {
@@ -44,6 +44,33 @@ export function buildTierStamp(scope: {
   if (scope.session) parts.push(`S:${scope.session}`);
   if (scope.task) parts.push(`T:${scope.task}`);
   return parts.join('.');
+}
+
+/**
+ * Build a tier-stamp by deriving the full parent hierarchy from the identifier.
+ *
+ * Identifier segments follow a fixed depth convention:
+ *   2 segments (6.9)       → phase
+ *   3 segments (6.9.3)     → session (parent phase = first 2)
+ *   4 segments (6.9.3.1)   → task    (parent phase = first 2, session = first 3)
+ *
+ * This prevents callers from accidentally omitting parent tiers.
+ */
+export function buildTierStampFromId(
+  feature: string,
+  tier: AuditTier,
+  identifier: string
+): string {
+  if (tier === 'feature') {
+    return buildTierStamp({ feature });
+  }
+  const segments = identifier.split('.');
+  return buildTierStamp({
+    feature,
+    phase: segments.length >= 2 ? segments.slice(0, 2).join('.') : null,
+    session: segments.length >= 3 ? segments.slice(0, 3).join('.') : null,
+    task: segments.length >= 4 ? segments.slice(0, 4).join('.') : null,
+  });
 }
 
 /**

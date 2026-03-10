@@ -14,7 +14,7 @@ import { auditVueArchitecture } from '../atomic/audit-vue-architecture';
 import { WorkflowCommandContext } from '../../utils/command-context';
 import { resolveFeatureName } from '../../utils';
 import { writeAuditReport, calculateOverallStatus, getRelativePath, compareBaselineToEnd, getTypeConstantInventoryScore, getComposableGovernanceScore, getFunctionGovernanceScore, getComponentGovernanceScore } from '../utils';
-import { queryBaseline, buildTierStamp } from '../baseline-log';
+import { queryBaseline, buildTierStampFromId } from '../baseline-log';
 import { importExternalAudits } from '../external/import-external-audits';
 
 export interface AuditSessionParams {
@@ -96,12 +96,7 @@ export async function auditSession(params: AuditSessionParams): Promise<{
   // Query baseline log for the matching tier-stamp start entry
   let baselineComparison;
   try {
-    const tierStamp = buildTierStamp({
-      feature: featureName,
-      phase: null,
-      session: params.sessionId,
-      task: null,
-    });
+    const tierStamp = buildTierStampFromId(featureName, 'session', params.sessionId);
     const baseline = await queryBaseline(tierStamp);
     if (baseline) {
       const endScores: Record<string, number> = {};

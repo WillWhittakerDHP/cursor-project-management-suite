@@ -507,7 +507,7 @@ export async function sessionEndImpl(
 
       if (!p.skipGit) {
         try {
-          const mergeResult = await mergeTierBranch(SESSION_CONFIG, p.sessionId, c.context, { push: false });
+          const mergeResult = await mergeTierBranch(SESSION_CONFIG, p.sessionId, c.context, { push: false, auditPrewarmPromise: c.auditPrewarmPromise });
           c.steps.gitMerge = { success: mergeResult.success, output: mergeResult.messages.join('\n') };
           if (mergeResult.deletedBranch) c.steps.deleteSessionBranch = { success: true, output: 'Deleted session branch after merge (only if explicitly requested).' };
         } catch (_error) {

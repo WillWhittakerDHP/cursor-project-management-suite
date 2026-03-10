@@ -11,7 +11,7 @@ import { auditTierQuality } from '../atomic/audit-tier-quality';
 import { runTierAutofix } from '../autofix/run-tier-autofix';
 import { WorkflowCommandContext } from '../../utils/command-context';
 import { writeAuditReport, calculateOverallStatus, getRelativePath, compareBaselineToEnd } from '../utils';
-import { queryBaseline, buildTierStamp } from '../baseline-log';
+import { queryBaseline, buildTierStampFromId } from '../baseline-log';
 import { importExternalAudits } from '../external/import-external-audits';
 
 export interface AuditFeatureParams {
@@ -79,12 +79,7 @@ export async function auditFeature(params: AuditFeatureParams): Promise<{
   // Query baseline log for the matching tier-stamp start entry
   let baselineComparison;
   try {
-    const tierStamp = buildTierStamp({
-      feature: params.featureName,
-      phase: null,
-      session: null,
-      task: null,
-    });
+    const tierStamp = buildTierStampFromId(params.featureName, 'feature', params.featureName);
     const baseline = await queryBaseline(tierStamp);
     if (baseline) {
       const endScores: Record<string, number> = {};

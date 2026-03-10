@@ -1,0 +1,973 @@
+{
+  "generatedAt": "2026-03-09T17:03:19.462Z",
+  "scope": {
+    "client": {
+      "command": "vue-tsc -b --pretty false",
+      "cwd": "client"
+    },
+    "server": {
+      "command": "tsc --noEmit --pretty false",
+      "cwd": "server"
+    }
+  },
+  "exitCode": 1,
+  "command": "vue-tsc -b --pretty false && tsc --noEmit --pretty false",
+  "exceptionSummary": {
+    "totalAllowed": 0,
+    "totalRequiresReview": 27,
+    "bySource": {
+      "inline": 0,
+      "pattern": 0,
+      "specific": 0
+    }
+  },
+  "errors": [
+    {
+      "file": "src/composables/admin/useEntityCardForm.ts",
+      "line": 26,
+      "col": 13,
+      "code": "TS2304",
+      "message": "Cannot find name 'Ref'.",
+      "raw": "src/composables/admin/useEntityCardForm.ts(26,13): error TS2304: Cannot find name 'Ref'.",
+      "scope": "client",
+      "repoPath": "src/composables/admin/useEntityCardForm.ts"
+    },
+    {
+      "file": "src/composables/admin/useInstanceDragAndDrop.ts",
+      "line": 27,
+      "col": 47,
+      "code": "TS2304",
+      "message": "Cannot find name 'Ref'.",
+      "raw": "src/composables/admin/useInstanceDragAndDrop.ts(27,47): error TS2304: Cannot find name 'Ref'.",
+      "scope": "client",
+      "repoPath": "src/composables/admin/useInstanceDragAndDrop.ts"
+    },
+    {
+      "file": "src/composables/admin/useInstanceDragAndDrop.ts",
+      "line": 28,
+      "col": 47,
+      "code": "TS2304",
+      "message": "Cannot find name 'Ref'.",
+      "raw": "src/composables/admin/useInstanceDragAndDrop.ts(28,47): error TS2304: Cannot find name 'Ref'.",
+      "scope": "client",
+      "repoPath": "src/composables/admin/useInstanceDragAndDrop.ts"
+    },
+    {
+      "file": "src/composables/admin/useInstanceDragAndDrop.ts",
+      "line": 31,
+      "col": 49,
+      "code": "TS2304",
+      "message": "Cannot find name 'Ref'.",
+      "raw": "src/composables/admin/useInstanceDragAndDrop.ts(31,49): error TS2304: Cannot find name 'Ref'.",
+      "scope": "client",
+      "repoPath": "src/composables/admin/useInstanceDragAndDrop.ts"
+    },
+    {
+      "file": "src/composables/admin/useInstanceDragAndDrop.ts",
+      "line": 31,
+      "col": 53,
+      "code": "TS2304",
+      "message": "Cannot find name 'ComponentPublicInstance'.",
+      "raw": "src/composables/admin/useInstanceDragAndDrop.ts(31,53): error TS2304: Cannot find name 'ComponentPublicInstance'.",
+      "scope": "client",
+      "repoPath": "src/composables/admin/useInstanceDragAndDrop.ts"
+    },
+    {
+      "file": "src/composables/admin/useRelationshipCollection.ts",
+      "line": 254,
+      "col": 21,
+      "code": "TS2304",
+      "message": "Cannot find name 'Ref'.",
+      "raw": "src/composables/admin/useRelationshipCollection.ts(254,21): error TS2304: Cannot find name 'Ref'.",
+      "scope": "client",
+      "repoPath": "src/composables/admin/useRelationshipCollection.ts"
+    },
+    {
+      "file": "src/composables/admin/useRelationshipCollection.ts",
+      "line": 255,
+      "col": 21,
+      "code": "TS2304",
+      "message": "Cannot find name 'Ref'.",
+      "raw": "src/composables/admin/useRelationshipCollection.ts(255,21): error TS2304: Cannot find name 'Ref'.",
+      "scope": "client",
+      "repoPath": "src/composables/admin/useRelationshipCollection.ts"
+    },
+    {
+      "file": "src/composables/admin/useSelectInputsAsync.ts",
+      "line": 24,
+      "col": 43,
+      "code": "TS2304",
+      "message": "Cannot find name 'SelectOption'.",
+      "raw": "src/composables/admin/useSelectInputsAsync.ts(24,43): error TS2304: Cannot find name 'SelectOption'.",
+      "scope": "client",
+      "repoPath": "src/composables/admin/useSelectInputsAsync.ts"
+    },
+    {
+      "file": "src/composables/booking/useDevPanelButtonsInject.ts",
+      "line": 11,
+      "col": 37,
+      "code": "TS2304",
+      "message": "Cannot find name 'Ref'.",
+      "raw": "src/composables/booking/useDevPanelButtonsInject.ts(11,37): error TS2304: Cannot find name 'Ref'.",
+      "scope": "client",
+      "repoPath": "src/composables/booking/useDevPanelButtonsInject.ts"
+    },
+    {
+      "file": "src/composables/booking/useStepValidation.ts",
+      "line": 36,
+      "col": 49,
+      "code": "TS2304",
+      "message": "Cannot find name 'Ref'.",
+      "raw": "src/composables/booking/useStepValidation.ts(36,49): error TS2304: Cannot find name 'Ref'.",
+      "scope": "client",
+      "repoPath": "src/composables/booking/useStepValidation.ts"
+    },
+    {
+      "file": "src/composables/useBusiness.ts",
+      "line": 35,
+      "col": 36,
+      "code": "TS2304",
+      "message": "Cannot find name 'ComputedRef'.",
+      "raw": "src/composables/useBusiness.ts(35,36): error TS2304: Cannot find name 'ComputedRef'.",
+      "scope": "client",
+      "repoPath": "src/composables/useBusiness.ts"
+    },
+    {
+      "file": "src/composables/useBusiness.ts",
+      "line": 40,
+      "col": 34,
+      "code": "TS2304",
+      "message": "Cannot find name 'ComputedRef'.",
+      "raw": "src/composables/useBusiness.ts(40,34): error TS2304: Cannot find name 'ComputedRef'.",
+      "scope": "client",
+      "repoPath": "src/composables/useBusiness.ts"
+    },
+    {
+      "file": "src/composables/useBusiness.ts",
+      "line": 45,
+      "col": 29,
+      "code": "TS2304",
+      "message": "Cannot find name 'ComputedRef'.",
+      "raw": "src/composables/useBusiness.ts(45,29): error TS2304: Cannot find name 'ComputedRef'.",
+      "scope": "client",
+      "repoPath": "src/composables/useBusiness.ts"
+    },
+    {
+      "file": "src/composables/useFormValidation.ts",
+      "line": 26,
+      "col": 8,
+      "code": "TS2304",
+      "message": "Cannot find name 'ComputedRef'.",
+      "raw": "src/composables/useFormValidation.ts(26,8): error TS2304: Cannot find name 'ComputedRef'.",
+      "scope": "client",
+      "repoPath": "src/composables/useFormValidation.ts"
+    },
+    {
+      "file": "src/layouts/blank.vue",
+      "line": 4,
+      "col": 31,
+      "code": "TS2304",
+      "message": "Cannot find name 'useSkins'.",
+      "raw": "src/layouts/blank.vue(4,31): error TS2304: Cannot find name 'useSkins'.",
+      "scope": "client",
+      "repoPath": "src/layouts/blank.vue"
+    },
+    {
+      "file": "src/layouts/components/NavBarNotifications.vue",
+      "line": 10,
+      "col": 23,
+      "code": "TS2304",
+      "message": "Cannot find name 'ref'.",
+      "raw": "src/layouts/components/NavBarNotifications.vue(10,23): error TS2304: Cannot find name 'ref'.",
+      "scope": "client",
+      "repoPath": "src/layouts/components/NavBarNotifications.vue"
+    },
+    {
+      "file": "src/layouts/components/NavSearchBar.vue",
+      "line": 29,
+      "col": 31,
+      "code": "TS2304",
+      "message": "Cannot find name 'ref'.",
+      "raw": "src/layouts/components/NavSearchBar.vue(29,31): error TS2304: Cannot find name 'ref'.",
+      "scope": "client",
+      "repoPath": "src/layouts/components/NavSearchBar.vue"
+    },
+    {
+      "file": "src/layouts/components/NavSearchBar.vue",
+      "line": 101,
+      "col": 26,
+      "code": "TS2304",
+      "message": "Cannot find name 'defineAsyncComponent'.",
+      "raw": "src/layouts/components/NavSearchBar.vue(101,26): error TS2304: Cannot find name 'defineAsyncComponent'.",
+      "scope": "client",
+      "repoPath": "src/layouts/components/NavSearchBar.vue"
+    },
+    {
+      "file": "src/layouts/default.vue",
+      "line": 9,
+      "col": 40,
+      "code": "TS2304",
+      "message": "Cannot find name 'defineAsyncComponent'.",
+      "raw": "src/layouts/default.vue(9,40): error TS2304: Cannot find name 'defineAsyncComponent'.",
+      "scope": "client",
+      "repoPath": "src/layouts/default.vue"
+    },
+    {
+      "file": "src/layouts/default.vue",
+      "line": 10,
+      "col": 38,
+      "code": "TS2304",
+      "message": "Cannot find name 'defineAsyncComponent'.",
+      "raw": "src/layouts/default.vue(10,38): error TS2304: Cannot find name 'defineAsyncComponent'.",
+      "scope": "client",
+      "repoPath": "src/layouts/default.vue"
+    },
+    {
+      "file": "src/layouts/default.vue",
+      "line": 16,
+      "col": 44,
+      "code": "TS2304",
+      "message": "Cannot find name 'useSkins'.",
+      "raw": "src/layouts/default.vue(16,44): error TS2304: Cannot find name 'useSkins'.",
+      "scope": "client",
+      "repoPath": "src/layouts/default.vue"
+    },
+    {
+      "file": "src/layouts/default.vue",
+      "line": 21,
+      "col": 29,
+      "code": "TS2304",
+      "message": "Cannot find name 'ref'.",
+      "raw": "src/layouts/default.vue(21,29): error TS2304: Cannot find name 'ref'.",
+      "scope": "client",
+      "repoPath": "src/layouts/default.vue"
+    },
+    {
+      "file": "src/plugins/1.router/additional-routes.ts",
+      "line": 11,
+      "col": 24,
+      "code": "TS2304",
+      "message": "Cannot find name 'useCookie'.",
+      "raw": "src/plugins/1.router/additional-routes.ts(11,24): error TS2304: Cannot find name 'useCookie'.",
+      "scope": "client",
+      "repoPath": "src/plugins/1.router/additional-routes.ts"
+    },
+    {
+      "file": "src/plugins/1.router/guards.ts",
+      "line": 39,
+      "col": 27,
+      "code": "TS2304",
+      "message": "Cannot find name 'useCookie'.",
+      "raw": "src/plugins/1.router/guards.ts(39,27): error TS2304: Cannot find name 'useCookie'.",
+      "scope": "client",
+      "repoPath": "src/plugins/1.router/guards.ts"
+    },
+    {
+      "file": "src/plugins/1.router/guards.ts",
+      "line": 39,
+      "col": 58,
+      "code": "TS2304",
+      "message": "Cannot find name 'useCookie'.",
+      "raw": "src/plugins/1.router/guards.ts(39,58): error TS2304: Cannot find name 'useCookie'.",
+      "scope": "client",
+      "repoPath": "src/plugins/1.router/guards.ts"
+    },
+    {
+      "file": "src/plugins/5.vuetify/icons.ts",
+      "line": 68,
+      "col": 16,
+      "code": "TS2304",
+      "message": "Cannot find name 'h'.",
+      "raw": "src/plugins/5.vuetify/icons.ts(68,16): error TS2304: Cannot find name 'h'.",
+      "scope": "client",
+      "repoPath": "src/plugins/5.vuetify/icons.ts"
+    },
+    {
+      "file": "src/plugins/5.vuetify/icons.ts",
+      "line": 71,
+      "col": 12,
+      "code": "TS2304",
+      "message": "Cannot find name 'h'.",
+      "raw": "src/plugins/5.vuetify/icons.ts(71,12): error TS2304: Cannot find name 'h'.",
+      "scope": "client",
+      "repoPath": "src/plugins/5.vuetify/icons.ts"
+    }
+  ],
+  "allowedErrors": [],
+  "pools": [
+    {
+      "poolId": "TS2304-ts2304-cannot-find-name-ref",
+      "groupKey": "TS2304::Cannot find name 'Ref'.",
+      "errorCount": 8,
+      "fileCount": 5,
+      "severityScore": 80,
+      "blastRadiusScore": 10,
+      "repetitionScore": 8,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 98,
+      "sample": [
+        {
+          "repoPath": "src/composables/admin/useEntityCardForm.ts",
+          "line": 26,
+          "col": 13,
+          "code": "TS2304",
+          "message": "Cannot find name 'Ref'."
+        },
+        {
+          "repoPath": "src/composables/admin/useInstanceDragAndDrop.ts",
+          "line": 27,
+          "col": 47,
+          "code": "TS2304",
+          "message": "Cannot find name 'Ref'."
+        },
+        {
+          "repoPath": "src/composables/admin/useInstanceDragAndDrop.ts",
+          "line": 28,
+          "col": 47,
+          "code": "TS2304",
+          "message": "Cannot find name 'Ref'."
+        }
+      ],
+      "priority": "P0"
+    },
+    {
+      "poolId": "TS2304-ts2304-cannot-find-name-computedref",
+      "groupKey": "TS2304::Cannot find name 'ComputedRef'.",
+      "errorCount": 4,
+      "fileCount": 2,
+      "severityScore": 40,
+      "blastRadiusScore": 4,
+      "repetitionScore": 4,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 48,
+      "sample": [
+        {
+          "repoPath": "src/composables/useBusiness.ts",
+          "line": 35,
+          "col": 36,
+          "code": "TS2304",
+          "message": "Cannot find name 'ComputedRef'."
+        },
+        {
+          "repoPath": "src/composables/useBusiness.ts",
+          "line": 40,
+          "col": 34,
+          "code": "TS2304",
+          "message": "Cannot find name 'ComputedRef'."
+        },
+        {
+          "repoPath": "src/composables/useBusiness.ts",
+          "line": 45,
+          "col": 29,
+          "code": "TS2304",
+          "message": "Cannot find name 'ComputedRef'."
+        }
+      ],
+      "priority": "P0"
+    },
+    {
+      "poolId": "TS2304-ts2304-cannot-find-name-ref",
+      "groupKey": "TS2304::Cannot find name 'ref'.",
+      "errorCount": 3,
+      "fileCount": 3,
+      "severityScore": 30,
+      "blastRadiusScore": 6,
+      "repetitionScore": 3,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 39,
+      "sample": [
+        {
+          "repoPath": "src/layouts/components/NavBarNotifications.vue",
+          "line": 10,
+          "col": 23,
+          "code": "TS2304",
+          "message": "Cannot find name 'ref'."
+        },
+        {
+          "repoPath": "src/layouts/components/NavSearchBar.vue",
+          "line": 29,
+          "col": 31,
+          "code": "TS2304",
+          "message": "Cannot find name 'ref'."
+        },
+        {
+          "repoPath": "src/layouts/default.vue",
+          "line": 21,
+          "col": 29,
+          "code": "TS2304",
+          "message": "Cannot find name 'ref'."
+        }
+      ],
+      "priority": "P0"
+    },
+    {
+      "poolId": "TS2304-ts2304-cannot-find-name-defineasynccomponent",
+      "groupKey": "TS2304::Cannot find name 'defineAsyncComponent'.",
+      "errorCount": 3,
+      "fileCount": 2,
+      "severityScore": 30,
+      "blastRadiusScore": 4,
+      "repetitionScore": 3,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 37,
+      "sample": [
+        {
+          "repoPath": "src/layouts/components/NavSearchBar.vue",
+          "line": 101,
+          "col": 26,
+          "code": "TS2304",
+          "message": "Cannot find name 'defineAsyncComponent'."
+        },
+        {
+          "repoPath": "src/layouts/default.vue",
+          "line": 9,
+          "col": 40,
+          "code": "TS2304",
+          "message": "Cannot find name 'defineAsyncComponent'."
+        },
+        {
+          "repoPath": "src/layouts/default.vue",
+          "line": 10,
+          "col": 38,
+          "code": "TS2304",
+          "message": "Cannot find name 'defineAsyncComponent'."
+        }
+      ],
+      "priority": "P0"
+    },
+    {
+      "poolId": "TS2304-ts2304-cannot-find-name-usecookie",
+      "groupKey": "TS2304::Cannot find name 'useCookie'.",
+      "errorCount": 3,
+      "fileCount": 2,
+      "severityScore": 30,
+      "blastRadiusScore": 4,
+      "repetitionScore": 3,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 37,
+      "sample": [
+        {
+          "repoPath": "src/plugins/1.router/additional-routes.ts",
+          "line": 11,
+          "col": 24,
+          "code": "TS2304",
+          "message": "Cannot find name 'useCookie'."
+        },
+        {
+          "repoPath": "src/plugins/1.router/guards.ts",
+          "line": 39,
+          "col": 27,
+          "code": "TS2304",
+          "message": "Cannot find name 'useCookie'."
+        },
+        {
+          "repoPath": "src/plugins/1.router/guards.ts",
+          "line": 39,
+          "col": 58,
+          "code": "TS2304",
+          "message": "Cannot find name 'useCookie'."
+        }
+      ],
+      "priority": "P0"
+    },
+    {
+      "poolId": "TS2304-ts2304-cannot-find-name-useskins",
+      "groupKey": "TS2304::Cannot find name 'useSkins'.",
+      "errorCount": 2,
+      "fileCount": 2,
+      "severityScore": 20,
+      "blastRadiusScore": 4,
+      "repetitionScore": 2,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 26,
+      "sample": [
+        {
+          "repoPath": "src/layouts/blank.vue",
+          "line": 4,
+          "col": 31,
+          "code": "TS2304",
+          "message": "Cannot find name 'useSkins'."
+        },
+        {
+          "repoPath": "src/layouts/default.vue",
+          "line": 16,
+          "col": 44,
+          "code": "TS2304",
+          "message": "Cannot find name 'useSkins'."
+        }
+      ],
+      "priority": "P0"
+    },
+    {
+      "poolId": "TS2304-ts2304-cannot-find-name-h",
+      "groupKey": "TS2304::Cannot find name 'h'.",
+      "errorCount": 2,
+      "fileCount": 1,
+      "severityScore": 20,
+      "blastRadiusScore": 2,
+      "repetitionScore": 2,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 24,
+      "sample": [
+        {
+          "repoPath": "src/plugins/5.vuetify/icons.ts",
+          "line": 68,
+          "col": 16,
+          "code": "TS2304",
+          "message": "Cannot find name 'h'."
+        },
+        {
+          "repoPath": "src/plugins/5.vuetify/icons.ts",
+          "line": 71,
+          "col": 12,
+          "code": "TS2304",
+          "message": "Cannot find name 'h'."
+        }
+      ],
+      "priority": "P0"
+    },
+    {
+      "poolId": "TS2304-ts2304-cannot-find-name-componentpublicinstance",
+      "groupKey": "TS2304::Cannot find name 'ComponentPublicInstance'.",
+      "errorCount": 1,
+      "fileCount": 1,
+      "severityScore": 10,
+      "blastRadiusScore": 2,
+      "repetitionScore": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 13,
+      "sample": [
+        {
+          "repoPath": "src/composables/admin/useInstanceDragAndDrop.ts",
+          "line": 31,
+          "col": 53,
+          "code": "TS2304",
+          "message": "Cannot find name 'ComponentPublicInstance'."
+        }
+      ],
+      "priority": "P1"
+    },
+    {
+      "poolId": "TS2304-ts2304-cannot-find-name-selectoption",
+      "groupKey": "TS2304::Cannot find name 'SelectOption'.",
+      "errorCount": 1,
+      "fileCount": 1,
+      "severityScore": 10,
+      "blastRadiusScore": 2,
+      "repetitionScore": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 13,
+      "sample": [
+        {
+          "repoPath": "src/composables/admin/useSelectInputsAsync.ts",
+          "line": 24,
+          "col": 43,
+          "code": "TS2304",
+          "message": "Cannot find name 'SelectOption'."
+        }
+      ],
+      "priority": "P1"
+    }
+  ],
+  "files": [
+    {
+      "repoPath": "src/composables/admin/useInstanceDragAndDrop.ts",
+      "errorCount": 4,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "errors": [
+        {
+          "file": "src/composables/admin/useInstanceDragAndDrop.ts",
+          "line": 27,
+          "col": 47,
+          "code": "TS2304",
+          "message": "Cannot find name 'Ref'.",
+          "raw": "src/composables/admin/useInstanceDragAndDrop.ts(27,47): error TS2304: Cannot find name 'Ref'.",
+          "scope": "client",
+          "repoPath": "src/composables/admin/useInstanceDragAndDrop.ts"
+        },
+        {
+          "file": "src/composables/admin/useInstanceDragAndDrop.ts",
+          "line": 28,
+          "col": 47,
+          "code": "TS2304",
+          "message": "Cannot find name 'Ref'.",
+          "raw": "src/composables/admin/useInstanceDragAndDrop.ts(28,47): error TS2304: Cannot find name 'Ref'.",
+          "scope": "client",
+          "repoPath": "src/composables/admin/useInstanceDragAndDrop.ts"
+        },
+        {
+          "file": "src/composables/admin/useInstanceDragAndDrop.ts",
+          "line": 31,
+          "col": 49,
+          "code": "TS2304",
+          "message": "Cannot find name 'Ref'.",
+          "raw": "src/composables/admin/useInstanceDragAndDrop.ts(31,49): error TS2304: Cannot find name 'Ref'.",
+          "scope": "client",
+          "repoPath": "src/composables/admin/useInstanceDragAndDrop.ts"
+        },
+        {
+          "file": "src/composables/admin/useInstanceDragAndDrop.ts",
+          "line": 31,
+          "col": 53,
+          "code": "TS2304",
+          "message": "Cannot find name 'ComponentPublicInstance'.",
+          "raw": "src/composables/admin/useInstanceDragAndDrop.ts(31,53): error TS2304: Cannot find name 'ComponentPublicInstance'.",
+          "scope": "client",
+          "repoPath": "src/composables/admin/useInstanceDragAndDrop.ts"
+        }
+      ]
+    },
+    {
+      "repoPath": "src/layouts/default.vue",
+      "errorCount": 4,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "errors": [
+        {
+          "file": "src/layouts/default.vue",
+          "line": 9,
+          "col": 40,
+          "code": "TS2304",
+          "message": "Cannot find name 'defineAsyncComponent'.",
+          "raw": "src/layouts/default.vue(9,40): error TS2304: Cannot find name 'defineAsyncComponent'.",
+          "scope": "client",
+          "repoPath": "src/layouts/default.vue"
+        },
+        {
+          "file": "src/layouts/default.vue",
+          "line": 10,
+          "col": 38,
+          "code": "TS2304",
+          "message": "Cannot find name 'defineAsyncComponent'.",
+          "raw": "src/layouts/default.vue(10,38): error TS2304: Cannot find name 'defineAsyncComponent'.",
+          "scope": "client",
+          "repoPath": "src/layouts/default.vue"
+        },
+        {
+          "file": "src/layouts/default.vue",
+          "line": 16,
+          "col": 44,
+          "code": "TS2304",
+          "message": "Cannot find name 'useSkins'.",
+          "raw": "src/layouts/default.vue(16,44): error TS2304: Cannot find name 'useSkins'.",
+          "scope": "client",
+          "repoPath": "src/layouts/default.vue"
+        },
+        {
+          "file": "src/layouts/default.vue",
+          "line": 21,
+          "col": 29,
+          "code": "TS2304",
+          "message": "Cannot find name 'ref'.",
+          "raw": "src/layouts/default.vue(21,29): error TS2304: Cannot find name 'ref'.",
+          "scope": "client",
+          "repoPath": "src/layouts/default.vue"
+        }
+      ]
+    },
+    {
+      "repoPath": "src/composables/useBusiness.ts",
+      "errorCount": 3,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "errors": [
+        {
+          "file": "src/composables/useBusiness.ts",
+          "line": 35,
+          "col": 36,
+          "code": "TS2304",
+          "message": "Cannot find name 'ComputedRef'.",
+          "raw": "src/composables/useBusiness.ts(35,36): error TS2304: Cannot find name 'ComputedRef'.",
+          "scope": "client",
+          "repoPath": "src/composables/useBusiness.ts"
+        },
+        {
+          "file": "src/composables/useBusiness.ts",
+          "line": 40,
+          "col": 34,
+          "code": "TS2304",
+          "message": "Cannot find name 'ComputedRef'.",
+          "raw": "src/composables/useBusiness.ts(40,34): error TS2304: Cannot find name 'ComputedRef'.",
+          "scope": "client",
+          "repoPath": "src/composables/useBusiness.ts"
+        },
+        {
+          "file": "src/composables/useBusiness.ts",
+          "line": 45,
+          "col": 29,
+          "code": "TS2304",
+          "message": "Cannot find name 'ComputedRef'.",
+          "raw": "src/composables/useBusiness.ts(45,29): error TS2304: Cannot find name 'ComputedRef'.",
+          "scope": "client",
+          "repoPath": "src/composables/useBusiness.ts"
+        }
+      ]
+    },
+    {
+      "repoPath": "src/composables/admin/useRelationshipCollection.ts",
+      "errorCount": 2,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "errors": [
+        {
+          "file": "src/composables/admin/useRelationshipCollection.ts",
+          "line": 254,
+          "col": 21,
+          "code": "TS2304",
+          "message": "Cannot find name 'Ref'.",
+          "raw": "src/composables/admin/useRelationshipCollection.ts(254,21): error TS2304: Cannot find name 'Ref'.",
+          "scope": "client",
+          "repoPath": "src/composables/admin/useRelationshipCollection.ts"
+        },
+        {
+          "file": "src/composables/admin/useRelationshipCollection.ts",
+          "line": 255,
+          "col": 21,
+          "code": "TS2304",
+          "message": "Cannot find name 'Ref'.",
+          "raw": "src/composables/admin/useRelationshipCollection.ts(255,21): error TS2304: Cannot find name 'Ref'.",
+          "scope": "client",
+          "repoPath": "src/composables/admin/useRelationshipCollection.ts"
+        }
+      ]
+    },
+    {
+      "repoPath": "src/layouts/components/NavSearchBar.vue",
+      "errorCount": 2,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "errors": [
+        {
+          "file": "src/layouts/components/NavSearchBar.vue",
+          "line": 29,
+          "col": 31,
+          "code": "TS2304",
+          "message": "Cannot find name 'ref'.",
+          "raw": "src/layouts/components/NavSearchBar.vue(29,31): error TS2304: Cannot find name 'ref'.",
+          "scope": "client",
+          "repoPath": "src/layouts/components/NavSearchBar.vue"
+        },
+        {
+          "file": "src/layouts/components/NavSearchBar.vue",
+          "line": 101,
+          "col": 26,
+          "code": "TS2304",
+          "message": "Cannot find name 'defineAsyncComponent'.",
+          "raw": "src/layouts/components/NavSearchBar.vue(101,26): error TS2304: Cannot find name 'defineAsyncComponent'.",
+          "scope": "client",
+          "repoPath": "src/layouts/components/NavSearchBar.vue"
+        }
+      ]
+    },
+    {
+      "repoPath": "src/plugins/1.router/guards.ts",
+      "errorCount": 2,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "errors": [
+        {
+          "file": "src/plugins/1.router/guards.ts",
+          "line": 39,
+          "col": 27,
+          "code": "TS2304",
+          "message": "Cannot find name 'useCookie'.",
+          "raw": "src/plugins/1.router/guards.ts(39,27): error TS2304: Cannot find name 'useCookie'.",
+          "scope": "client",
+          "repoPath": "src/plugins/1.router/guards.ts"
+        },
+        {
+          "file": "src/plugins/1.router/guards.ts",
+          "line": 39,
+          "col": 58,
+          "code": "TS2304",
+          "message": "Cannot find name 'useCookie'.",
+          "raw": "src/plugins/1.router/guards.ts(39,58): error TS2304: Cannot find name 'useCookie'.",
+          "scope": "client",
+          "repoPath": "src/plugins/1.router/guards.ts"
+        }
+      ]
+    },
+    {
+      "repoPath": "src/plugins/5.vuetify/icons.ts",
+      "errorCount": 2,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "errors": [
+        {
+          "file": "src/plugins/5.vuetify/icons.ts",
+          "line": 68,
+          "col": 16,
+          "code": "TS2304",
+          "message": "Cannot find name 'h'.",
+          "raw": "src/plugins/5.vuetify/icons.ts(68,16): error TS2304: Cannot find name 'h'.",
+          "scope": "client",
+          "repoPath": "src/plugins/5.vuetify/icons.ts"
+        },
+        {
+          "file": "src/plugins/5.vuetify/icons.ts",
+          "line": 71,
+          "col": 12,
+          "code": "TS2304",
+          "message": "Cannot find name 'h'.",
+          "raw": "src/plugins/5.vuetify/icons.ts(71,12): error TS2304: Cannot find name 'h'.",
+          "scope": "client",
+          "repoPath": "src/plugins/5.vuetify/icons.ts"
+        }
+      ]
+    },
+    {
+      "repoPath": "src/composables/admin/useEntityCardForm.ts",
+      "errorCount": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "errors": [
+        {
+          "file": "src/composables/admin/useEntityCardForm.ts",
+          "line": 26,
+          "col": 13,
+          "code": "TS2304",
+          "message": "Cannot find name 'Ref'.",
+          "raw": "src/composables/admin/useEntityCardForm.ts(26,13): error TS2304: Cannot find name 'Ref'.",
+          "scope": "client",
+          "repoPath": "src/composables/admin/useEntityCardForm.ts"
+        }
+      ]
+    },
+    {
+      "repoPath": "src/composables/admin/useSelectInputsAsync.ts",
+      "errorCount": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "errors": [
+        {
+          "file": "src/composables/admin/useSelectInputsAsync.ts",
+          "line": 24,
+          "col": 43,
+          "code": "TS2304",
+          "message": "Cannot find name 'SelectOption'.",
+          "raw": "src/composables/admin/useSelectInputsAsync.ts(24,43): error TS2304: Cannot find name 'SelectOption'.",
+          "scope": "client",
+          "repoPath": "src/composables/admin/useSelectInputsAsync.ts"
+        }
+      ]
+    },
+    {
+      "repoPath": "src/composables/booking/useDevPanelButtonsInject.ts",
+      "errorCount": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "errors": [
+        {
+          "file": "src/composables/booking/useDevPanelButtonsInject.ts",
+          "line": 11,
+          "col": 37,
+          "code": "TS2304",
+          "message": "Cannot find name 'Ref'.",
+          "raw": "src/composables/booking/useDevPanelButtonsInject.ts(11,37): error TS2304: Cannot find name 'Ref'.",
+          "scope": "client",
+          "repoPath": "src/composables/booking/useDevPanelButtonsInject.ts"
+        }
+      ]
+    },
+    {
+      "repoPath": "src/composables/booking/useStepValidation.ts",
+      "errorCount": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "errors": [
+        {
+          "file": "src/composables/booking/useStepValidation.ts",
+          "line": 36,
+          "col": 49,
+          "code": "TS2304",
+          "message": "Cannot find name 'Ref'.",
+          "raw": "src/composables/booking/useStepValidation.ts(36,49): error TS2304: Cannot find name 'Ref'.",
+          "scope": "client",
+          "repoPath": "src/composables/booking/useStepValidation.ts"
+        }
+      ]
+    },
+    {
+      "repoPath": "src/composables/useFormValidation.ts",
+      "errorCount": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "errors": [
+        {
+          "file": "src/composables/useFormValidation.ts",
+          "line": 26,
+          "col": 8,
+          "code": "TS2304",
+          "message": "Cannot find name 'ComputedRef'.",
+          "raw": "src/composables/useFormValidation.ts(26,8): error TS2304: Cannot find name 'ComputedRef'.",
+          "scope": "client",
+          "repoPath": "src/composables/useFormValidation.ts"
+        }
+      ]
+    },
+    {
+      "repoPath": "src/layouts/blank.vue",
+      "errorCount": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "errors": [
+        {
+          "file": "src/layouts/blank.vue",
+          "line": 4,
+          "col": 31,
+          "code": "TS2304",
+          "message": "Cannot find name 'useSkins'.",
+          "raw": "src/layouts/blank.vue(4,31): error TS2304: Cannot find name 'useSkins'.",
+          "scope": "client",
+          "repoPath": "src/layouts/blank.vue"
+        }
+      ]
+    },
+    {
+      "repoPath": "src/layouts/components/NavBarNotifications.vue",
+      "errorCount": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "errors": [
+        {
+          "file": "src/layouts/components/NavBarNotifications.vue",
+          "line": 10,
+          "col": 23,
+          "code": "TS2304",
+          "message": "Cannot find name 'ref'.",
+          "raw": "src/layouts/components/NavBarNotifications.vue(10,23): error TS2304: Cannot find name 'ref'.",
+          "scope": "client",
+          "repoPath": "src/layouts/components/NavBarNotifications.vue"
+        }
+      ]
+    },
+    {
+      "repoPath": "src/plugins/1.router/additional-routes.ts",
+      "errorCount": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "errors": [
+        {
+          "file": "src/plugins/1.router/additional-routes.ts",
+          "line": 11,
+          "col": 24,
+          "code": "TS2304",
+          "message": "Cannot find name 'useCookie'.",
+          "raw": "src/plugins/1.router/additional-routes.ts(11,24): error TS2304: Cannot find name 'useCookie'.",
+          "scope": "client",
+          "repoPath": "src/plugins/1.router/additional-routes.ts"
+        }
+      ]
+    }
+  ]
+}

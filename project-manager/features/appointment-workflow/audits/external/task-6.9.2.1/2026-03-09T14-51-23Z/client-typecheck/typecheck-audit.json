@@ -1,0 +1,978 @@
+{
+  "generatedAt": "2026-03-09T14:51:15.634Z",
+  "scope": {
+    "client": {
+      "command": "vue-tsc -b --pretty false",
+      "cwd": "client"
+    },
+    "server": {
+      "command": "tsc --noEmit --pretty false",
+      "cwd": "server"
+    }
+  },
+  "exitCode": 1,
+  "command": "vue-tsc -b --pretty false && tsc --noEmit --pretty false",
+  "exceptionSummary": {
+    "totalAllowed": 0,
+    "totalRequiresReview": 25,
+    "bySource": {
+      "inline": 0,
+      "pattern": 0,
+      "specific": 0
+    }
+  },
+  "errors": [
+    {
+      "file": "src/components/booking/steps/AvailabilityStep.vue",
+      "line": 193,
+      "col": 22,
+      "code": "TS2345",
+      "message": "Argument of type 'string | string[] | Date | Date[] | null' is not assignable to parameter of type 'string | null'.",
+      "raw": "src/components/booking/steps/AvailabilityStep.vue(193,22): error TS2345: Argument of type 'string | string[] | Date | Date[] | null' is not assignable to parameter of type 'string | null'.",
+      "scope": "client",
+      "repoPath": "src/components/booking/steps/AvailabilityStep.vue"
+    },
+    {
+      "file": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+      "line": 39,
+      "col": 21,
+      "code": "TS18046",
+      "message": "'__VLS_ctx.ctx.o.selectedDateSingle' is of type 'unknown'.",
+      "raw": "src/components/booking/steps/AvailabilitySubStepContent.vue(39,21): error TS18046: '__VLS_ctx.ctx.o.selectedDateSingle' is of type 'unknown'.",
+      "scope": "client",
+      "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue"
+    },
+    {
+      "file": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+      "line": 40,
+      "col": 22,
+      "code": "TS18046",
+      "message": "'__VLS_ctx.ctx.o.vDatePickerDisplayDate' is of type 'unknown'.",
+      "raw": "src/components/booking/steps/AvailabilitySubStepContent.vue(40,22): error TS18046: '__VLS_ctx.ctx.o.vDatePickerDisplayDate' is of type 'unknown'.",
+      "scope": "client",
+      "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue"
+    },
+    {
+      "file": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+      "line": 41,
+      "col": 13,
+      "code": "TS18046",
+      "message": "'__VLS_ctx.ctx.o.getTodayDate' is of type 'unknown'.",
+      "raw": "src/components/booking/steps/AvailabilitySubStepContent.vue(41,13): error TS18046: '__VLS_ctx.ctx.o.getTodayDate' is of type 'unknown'.",
+      "scope": "client",
+      "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue"
+    },
+    {
+      "file": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+      "line": 42,
+      "col": 42,
+      "code": "TS18046",
+      "message": "'__VLS_ctx.ctx.o.allowedDates' is of type 'unknown'.",
+      "raw": "src/components/booking/steps/AvailabilitySubStepContent.vue(42,42): error TS18046: '__VLS_ctx.ctx.o.allowedDates' is of type 'unknown'.",
+      "scope": "client",
+      "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue"
+    },
+    {
+      "file": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+      "line": 43,
+      "col": 29,
+      "code": "TS18046",
+      "message": "'__VLS_ctx.ctx.o.fieldErrors' is of type 'unknown'.",
+      "raw": "src/components/booking/steps/AvailabilitySubStepContent.vue(43,29): error TS18046: '__VLS_ctx.ctx.o.fieldErrors' is of type 'unknown'.",
+      "scope": "client",
+      "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue"
+    },
+    {
+      "file": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+      "line": 45,
+      "col": 29,
+      "code": "TS18046",
+      "message": "'__VLS_ctx.ctx.o.setVDatePickerDisplayDate' is of type 'unknown'.",
+      "raw": "src/components/booking/steps/AvailabilitySubStepContent.vue(45,29): error TS18046: '__VLS_ctx.ctx.o.setVDatePickerDisplayDate' is of type 'unknown'.",
+      "scope": "client",
+      "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue"
+    },
+    {
+      "file": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+      "line": 51,
+      "col": 31,
+      "code": "TS18046",
+      "message": "'__VLS_ctx.ctx.o.wizard' is of type 'unknown'.",
+      "raw": "src/components/booking/steps/AvailabilitySubStepContent.vue(51,31): error TS18046: '__VLS_ctx.ctx.o.wizard' is of type 'unknown'.",
+      "scope": "client",
+      "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue"
+    },
+    {
+      "file": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+      "line": 52,
+      "col": 23,
+      "code": "TS18046",
+      "message": "'__VLS_ctx.ctx.o.wizard' is of type 'unknown'.",
+      "raw": "src/components/booking/steps/AvailabilitySubStepContent.vue(52,23): error TS18046: '__VLS_ctx.ctx.o.wizard' is of type 'unknown'.",
+      "scope": "client",
+      "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue"
+    },
+    {
+      "file": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+      "line": 53,
+      "col": 38,
+      "code": "TS18046",
+      "message": "'__VLS_ctx.ctx.o.wizard' is of type 'unknown'.",
+      "raw": "src/components/booking/steps/AvailabilitySubStepContent.vue(53,38): error TS18046: '__VLS_ctx.ctx.o.wizard' is of type 'unknown'.",
+      "scope": "client",
+      "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue"
+    },
+    {
+      "file": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+      "line": 54,
+      "col": 39,
+      "code": "TS18046",
+      "message": "'__VLS_ctx.ctx.o.selectedOptionTypeBlockId' is of type 'unknown'.",
+      "raw": "src/components/booking/steps/AvailabilitySubStepContent.vue(54,39): error TS18046: '__VLS_ctx.ctx.o.selectedOptionTypeBlockId' is of type 'unknown'.",
+      "scope": "client",
+      "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue"
+    },
+    {
+      "file": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+      "line": 61,
+      "col": 13,
+      "code": "TS18046",
+      "message": "'__VLS_ctx.ctx.o.isEffectivelyDifferential' is of type 'unknown'.",
+      "raw": "src/components/booking/steps/AvailabilitySubStepContent.vue(61,13): error TS18046: '__VLS_ctx.ctx.o.isEffectivelyDifferential' is of type 'unknown'.",
+      "scope": "client",
+      "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue"
+    },
+    {
+      "file": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+      "line": 62,
+      "col": 33,
+      "code": "TS18046",
+      "message": "'__VLS_ctx.ctx.o.isEffectivelyDifferential' is of type 'unknown'.",
+      "raw": "src/components/booking/steps/AvailabilitySubStepContent.vue(62,33): error TS18046: '__VLS_ctx.ctx.o.isEffectivelyDifferential' is of type 'unknown'.",
+      "scope": "client",
+      "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue"
+    },
+    {
+      "file": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+      "line": 63,
+      "col": 20,
+      "code": "TS18046",
+      "message": "'__VLS_ctx.ctx.o.graphBars' is of type 'unknown'.",
+      "raw": "src/components/booking/steps/AvailabilitySubStepContent.vue(63,20): error TS18046: '__VLS_ctx.ctx.o.graphBars' is of type 'unknown'.",
+      "scope": "client",
+      "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue"
+    },
+    {
+      "file": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+      "line": 64,
+      "col": 27,
+      "code": "TS18046",
+      "message": "'__VLS_ctx.ctx.o.wizard' is of type 'unknown'.",
+      "raw": "src/components/booking/steps/AvailabilitySubStepContent.vue(64,27): error TS18046: '__VLS_ctx.ctx.o.wizard' is of type 'unknown'.",
+      "scope": "client",
+      "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue"
+    },
+    {
+      "file": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+      "line": 65,
+      "col": 25,
+      "code": "TS18046",
+      "message": "'__VLS_ctx.ctx.o.perspective' is of type 'unknown'.",
+      "raw": "src/components/booking/steps/AvailabilitySubStepContent.vue(65,25): error TS18046: '__VLS_ctx.ctx.o.perspective' is of type 'unknown'.",
+      "scope": "client",
+      "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue"
+    },
+    {
+      "file": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+      "line": 72,
+      "col": 21,
+      "code": "TS18046",
+      "message": "'__VLS_ctx.ctx.o.selectedDate' is of type 'unknown'.",
+      "raw": "src/components/booking/steps/AvailabilitySubStepContent.vue(72,21): error TS18046: '__VLS_ctx.ctx.o.selectedDate' is of type 'unknown'.",
+      "scope": "client",
+      "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue"
+    },
+    {
+      "file": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+      "line": 73,
+      "col": 18,
+      "code": "TS18046",
+      "message": "'__VLS_ctx.ctx.o.appointmentSlots' is of type 'unknown'.",
+      "raw": "src/components/booking/steps/AvailabilitySubStepContent.vue(73,18): error TS18046: '__VLS_ctx.ctx.o.appointmentSlots' is of type 'unknown'.",
+      "scope": "client",
+      "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue"
+    },
+    {
+      "file": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+      "line": 82,
+      "col": 31,
+      "code": "TS18046",
+      "message": "'__VLS_ctx.ctx.o.appointmentSlots' is of type 'unknown'.",
+      "raw": "src/components/booking/steps/AvailabilitySubStepContent.vue(82,31): error TS18046: '__VLS_ctx.ctx.o.appointmentSlots' is of type 'unknown'.",
+      "scope": "client",
+      "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue"
+    },
+    {
+      "file": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+      "line": 83,
+      "col": 35,
+      "code": "TS18046",
+      "message": "'__VLS_ctx.ctx.o.selectedButtonIndex' is of type 'unknown'.",
+      "raw": "src/components/booking/steps/AvailabilitySubStepContent.vue(83,35): error TS18046: '__VLS_ctx.ctx.o.selectedButtonIndex' is of type 'unknown'.",
+      "scope": "client",
+      "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue"
+    },
+    {
+      "file": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+      "line": 84,
+      "col": 24,
+      "code": "TS18046",
+      "message": "'__VLS_ctx.ctx.o.perspective' is of type 'unknown'.",
+      "raw": "src/components/booking/steps/AvailabilitySubStepContent.vue(84,24): error TS18046: '__VLS_ctx.ctx.o.perspective' is of type 'unknown'.",
+      "scope": "client",
+      "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue"
+    },
+    {
+      "file": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+      "line": 85,
+      "col": 19,
+      "code": "TS18046",
+      "message": "'__VLS_ctx.ctx.o.slotColor' is of type 'unknown'.",
+      "raw": "src/components/booking/steps/AvailabilitySubStepContent.vue(85,19): error TS18046: '__VLS_ctx.ctx.o.slotColor' is of type 'unknown'.",
+      "scope": "client",
+      "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue"
+    },
+    {
+      "file": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+      "line": 90,
+      "col": 18,
+      "code": "TS18046",
+      "message": "'__VLS_ctx.ctx.o.fieldErrors' is of type 'unknown'.",
+      "raw": "src/components/booking/steps/AvailabilitySubStepContent.vue(90,18): error TS18046: '__VLS_ctx.ctx.o.fieldErrors' is of type 'unknown'.",
+      "scope": "client",
+      "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue"
+    },
+    {
+      "file": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+      "line": 91,
+      "col": 12,
+      "code": "TS18046",
+      "message": "'__VLS_ctx.ctx.o.fieldErrors' is of type 'unknown'.",
+      "raw": "src/components/booking/steps/AvailabilitySubStepContent.vue(91,12): error TS18046: '__VLS_ctx.ctx.o.fieldErrors' is of type 'unknown'.",
+      "scope": "client",
+      "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue"
+    },
+    {
+      "file": "src/components/booking/steps/ConfirmationStep.vue",
+      "line": 18,
+      "col": 10,
+      "code": "TS2305",
+      "message": "Module '\"@/composables/admin/tables/useTableModelHelpers\"' has no exported member 'ensureItemsArray'.",
+      "raw": "src/components/booking/steps/ConfirmationStep.vue(18,10): error TS2305: Module '\"@/composables/admin/tables/useTableModelHelpers\"' has no exported member 'ensureItemsArray'.",
+      "scope": "client",
+      "repoPath": "src/components/booking/steps/ConfirmationStep.vue"
+    }
+  ],
+  "allowedErrors": [],
+  "pools": [
+    {
+      "poolId": "TS18046-ts18046-vls-ctx-ctx-o-wizard-is-of-type-unknown",
+      "groupKey": "TS18046::'__VLS_ctx.ctx.o.wizard' is of type 'unknown'.",
+      "errorCount": 4,
+      "fileCount": 1,
+      "severityScore": 32,
+      "blastRadiusScore": 2,
+      "repetitionScore": 4,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 38,
+      "sample": [
+        {
+          "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+          "line": 51,
+          "col": 31,
+          "code": "TS18046",
+          "message": "'__VLS_ctx.ctx.o.wizard' is of type 'unknown'."
+        },
+        {
+          "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+          "line": 52,
+          "col": 23,
+          "code": "TS18046",
+          "message": "'__VLS_ctx.ctx.o.wizard' is of type 'unknown'."
+        },
+        {
+          "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+          "line": 53,
+          "col": 38,
+          "code": "TS18046",
+          "message": "'__VLS_ctx.ctx.o.wizard' is of type 'unknown'."
+        }
+      ],
+      "priority": "P0"
+    },
+    {
+      "poolId": "TS18046-ts18046-vls-ctx-ctx-o-fielderrors-is-of-type-unknown",
+      "groupKey": "TS18046::'__VLS_ctx.ctx.o.fieldErrors' is of type 'unknown'.",
+      "errorCount": 3,
+      "fileCount": 1,
+      "severityScore": 24,
+      "blastRadiusScore": 2,
+      "repetitionScore": 3,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 29,
+      "sample": [
+        {
+          "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+          "line": 43,
+          "col": 29,
+          "code": "TS18046",
+          "message": "'__VLS_ctx.ctx.o.fieldErrors' is of type 'unknown'."
+        },
+        {
+          "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+          "line": 90,
+          "col": 18,
+          "code": "TS18046",
+          "message": "'__VLS_ctx.ctx.o.fieldErrors' is of type 'unknown'."
+        },
+        {
+          "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+          "line": 91,
+          "col": 12,
+          "code": "TS18046",
+          "message": "'__VLS_ctx.ctx.o.fieldErrors' is of type 'unknown'."
+        }
+      ],
+      "priority": "P0"
+    },
+    {
+      "poolId": "TS18046-ts18046-vls-ctx-ctx-o-appointmentslots-is-of-type-unknown",
+      "groupKey": "TS18046::'__VLS_ctx.ctx.o.appointmentSlots' is of type 'unknown'.",
+      "errorCount": 2,
+      "fileCount": 1,
+      "severityScore": 16,
+      "blastRadiusScore": 2,
+      "repetitionScore": 2,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 20,
+      "sample": [
+        {
+          "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+          "line": 73,
+          "col": 18,
+          "code": "TS18046",
+          "message": "'__VLS_ctx.ctx.o.appointmentSlots' is of type 'unknown'."
+        },
+        {
+          "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+          "line": 82,
+          "col": 31,
+          "code": "TS18046",
+          "message": "'__VLS_ctx.ctx.o.appointmentSlots' is of type 'unknown'."
+        }
+      ],
+      "priority": "P0"
+    },
+    {
+      "poolId": "TS18046-ts18046-vls-ctx-ctx-o-iseffectivelydifferential-is-of-type-unknown",
+      "groupKey": "TS18046::'__VLS_ctx.ctx.o.isEffectivelyDifferential' is of type 'unknown'.",
+      "errorCount": 2,
+      "fileCount": 1,
+      "severityScore": 16,
+      "blastRadiusScore": 2,
+      "repetitionScore": 2,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 20,
+      "sample": [
+        {
+          "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+          "line": 61,
+          "col": 13,
+          "code": "TS18046",
+          "message": "'__VLS_ctx.ctx.o.isEffectivelyDifferential' is of type 'unknown'."
+        },
+        {
+          "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+          "line": 62,
+          "col": 33,
+          "code": "TS18046",
+          "message": "'__VLS_ctx.ctx.o.isEffectivelyDifferential' is of type 'unknown'."
+        }
+      ],
+      "priority": "P0"
+    },
+    {
+      "poolId": "TS18046-ts18046-vls-ctx-ctx-o-perspective-is-of-type-unknown",
+      "groupKey": "TS18046::'__VLS_ctx.ctx.o.perspective' is of type 'unknown'.",
+      "errorCount": 2,
+      "fileCount": 1,
+      "severityScore": 16,
+      "blastRadiusScore": 2,
+      "repetitionScore": 2,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 20,
+      "sample": [
+        {
+          "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+          "line": 65,
+          "col": 25,
+          "code": "TS18046",
+          "message": "'__VLS_ctx.ctx.o.perspective' is of type 'unknown'."
+        },
+        {
+          "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+          "line": 84,
+          "col": 24,
+          "code": "TS18046",
+          "message": "'__VLS_ctx.ctx.o.perspective' is of type 'unknown'."
+        }
+      ],
+      "priority": "P0"
+    },
+    {
+      "poolId": "TS2305-ts2305-module-composables-admin-tables-usetablemodelhelpers-has-no-exported-member-ensureitemsarray",
+      "groupKey": "TS2305::Module '\"@/composables/admin/tables/useTableModelHelpers\"' has no exported member 'ensureItemsArray'.",
+      "errorCount": 1,
+      "fileCount": 1,
+      "severityScore": 10,
+      "blastRadiusScore": 2,
+      "repetitionScore": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 13,
+      "sample": [
+        {
+          "repoPath": "src/components/booking/steps/ConfirmationStep.vue",
+          "line": 18,
+          "col": 10,
+          "code": "TS2305",
+          "message": "Module '\"@/composables/admin/tables/useTableModelHelpers\"' has no exported member 'ensureItemsArray'."
+        }
+      ],
+      "priority": "P1"
+    },
+    {
+      "poolId": "TS2345-ts2345-arg-string-string-date-date-null-string-null",
+      "groupKey": "TS2345::arg:string | string[] | Date | Date[] | null=>string | null",
+      "errorCount": 1,
+      "fileCount": 1,
+      "severityScore": 10,
+      "blastRadiusScore": 2,
+      "repetitionScore": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 13,
+      "sample": [
+        {
+          "repoPath": "src/components/booking/steps/AvailabilityStep.vue",
+          "line": 193,
+          "col": 22,
+          "code": "TS2345",
+          "message": "Argument of type 'string | string[] | Date | Date[] | null' is not assignable to parameter of type 'string | null'."
+        }
+      ],
+      "priority": "P1"
+    },
+    {
+      "poolId": "TS18046-ts18046-vls-ctx-ctx-o-alloweddates-is-of-type-unknown",
+      "groupKey": "TS18046::'__VLS_ctx.ctx.o.allowedDates' is of type 'unknown'.",
+      "errorCount": 1,
+      "fileCount": 1,
+      "severityScore": 8,
+      "blastRadiusScore": 2,
+      "repetitionScore": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 11,
+      "sample": [
+        {
+          "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+          "line": 42,
+          "col": 42,
+          "code": "TS18046",
+          "message": "'__VLS_ctx.ctx.o.allowedDates' is of type 'unknown'."
+        }
+      ],
+      "priority": "P1"
+    },
+    {
+      "poolId": "TS18046-ts18046-vls-ctx-ctx-o-gettodaydate-is-of-type-unknown",
+      "groupKey": "TS18046::'__VLS_ctx.ctx.o.getTodayDate' is of type 'unknown'.",
+      "errorCount": 1,
+      "fileCount": 1,
+      "severityScore": 8,
+      "blastRadiusScore": 2,
+      "repetitionScore": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 11,
+      "sample": [
+        {
+          "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+          "line": 41,
+          "col": 13,
+          "code": "TS18046",
+          "message": "'__VLS_ctx.ctx.o.getTodayDate' is of type 'unknown'."
+        }
+      ],
+      "priority": "P1"
+    },
+    {
+      "poolId": "TS18046-ts18046-vls-ctx-ctx-o-graphbars-is-of-type-unknown",
+      "groupKey": "TS18046::'__VLS_ctx.ctx.o.graphBars' is of type 'unknown'.",
+      "errorCount": 1,
+      "fileCount": 1,
+      "severityScore": 8,
+      "blastRadiusScore": 2,
+      "repetitionScore": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 11,
+      "sample": [
+        {
+          "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+          "line": 63,
+          "col": 20,
+          "code": "TS18046",
+          "message": "'__VLS_ctx.ctx.o.graphBars' is of type 'unknown'."
+        }
+      ],
+      "priority": "P1"
+    },
+    {
+      "poolId": "TS18046-ts18046-vls-ctx-ctx-o-selectedbuttonindex-is-of-type-unknown",
+      "groupKey": "TS18046::'__VLS_ctx.ctx.o.selectedButtonIndex' is of type 'unknown'.",
+      "errorCount": 1,
+      "fileCount": 1,
+      "severityScore": 8,
+      "blastRadiusScore": 2,
+      "repetitionScore": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 11,
+      "sample": [
+        {
+          "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+          "line": 83,
+          "col": 35,
+          "code": "TS18046",
+          "message": "'__VLS_ctx.ctx.o.selectedButtonIndex' is of type 'unknown'."
+        }
+      ],
+      "priority": "P1"
+    },
+    {
+      "poolId": "TS18046-ts18046-vls-ctx-ctx-o-selecteddate-is-of-type-unknown",
+      "groupKey": "TS18046::'__VLS_ctx.ctx.o.selectedDate' is of type 'unknown'.",
+      "errorCount": 1,
+      "fileCount": 1,
+      "severityScore": 8,
+      "blastRadiusScore": 2,
+      "repetitionScore": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 11,
+      "sample": [
+        {
+          "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+          "line": 72,
+          "col": 21,
+          "code": "TS18046",
+          "message": "'__VLS_ctx.ctx.o.selectedDate' is of type 'unknown'."
+        }
+      ],
+      "priority": "P1"
+    },
+    {
+      "poolId": "TS18046-ts18046-vls-ctx-ctx-o-selecteddatesingle-is-of-type-unknown",
+      "groupKey": "TS18046::'__VLS_ctx.ctx.o.selectedDateSingle' is of type 'unknown'.",
+      "errorCount": 1,
+      "fileCount": 1,
+      "severityScore": 8,
+      "blastRadiusScore": 2,
+      "repetitionScore": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 11,
+      "sample": [
+        {
+          "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+          "line": 39,
+          "col": 21,
+          "code": "TS18046",
+          "message": "'__VLS_ctx.ctx.o.selectedDateSingle' is of type 'unknown'."
+        }
+      ],
+      "priority": "P1"
+    },
+    {
+      "poolId": "TS18046-ts18046-vls-ctx-ctx-o-selectedoptiontypeblockid-is-of-type-unknown",
+      "groupKey": "TS18046::'__VLS_ctx.ctx.o.selectedOptionTypeBlockId' is of type 'unknown'.",
+      "errorCount": 1,
+      "fileCount": 1,
+      "severityScore": 8,
+      "blastRadiusScore": 2,
+      "repetitionScore": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 11,
+      "sample": [
+        {
+          "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+          "line": 54,
+          "col": 39,
+          "code": "TS18046",
+          "message": "'__VLS_ctx.ctx.o.selectedOptionTypeBlockId' is of type 'unknown'."
+        }
+      ],
+      "priority": "P1"
+    },
+    {
+      "poolId": "TS18046-ts18046-vls-ctx-ctx-o-setvdatepickerdisplaydate-is-of-type-unknown",
+      "groupKey": "TS18046::'__VLS_ctx.ctx.o.setVDatePickerDisplayDate' is of type 'unknown'.",
+      "errorCount": 1,
+      "fileCount": 1,
+      "severityScore": 8,
+      "blastRadiusScore": 2,
+      "repetitionScore": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 11,
+      "sample": [
+        {
+          "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+          "line": 45,
+          "col": 29,
+          "code": "TS18046",
+          "message": "'__VLS_ctx.ctx.o.setVDatePickerDisplayDate' is of type 'unknown'."
+        }
+      ],
+      "priority": "P1"
+    },
+    {
+      "poolId": "TS18046-ts18046-vls-ctx-ctx-o-slotcolor-is-of-type-unknown",
+      "groupKey": "TS18046::'__VLS_ctx.ctx.o.slotColor' is of type 'unknown'.",
+      "errorCount": 1,
+      "fileCount": 1,
+      "severityScore": 8,
+      "blastRadiusScore": 2,
+      "repetitionScore": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 11,
+      "sample": [
+        {
+          "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+          "line": 85,
+          "col": 19,
+          "code": "TS18046",
+          "message": "'__VLS_ctx.ctx.o.slotColor' is of type 'unknown'."
+        }
+      ],
+      "priority": "P1"
+    },
+    {
+      "poolId": "TS18046-ts18046-vls-ctx-ctx-o-vdatepickerdisplaydate-is-of-type-unknown",
+      "groupKey": "TS18046::'__VLS_ctx.ctx.o.vDatePickerDisplayDate' is of type 'unknown'.",
+      "errorCount": 1,
+      "fileCount": 1,
+      "severityScore": 8,
+      "blastRadiusScore": 2,
+      "repetitionScore": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 11,
+      "sample": [
+        {
+          "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+          "line": 40,
+          "col": 22,
+          "code": "TS18046",
+          "message": "'__VLS_ctx.ctx.o.vDatePickerDisplayDate' is of type 'unknown'."
+        }
+      ],
+      "priority": "P1"
+    }
+  ],
+  "files": [
+    {
+      "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+      "errorCount": 23,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "errors": [
+        {
+          "file": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+          "line": 39,
+          "col": 21,
+          "code": "TS18046",
+          "message": "'__VLS_ctx.ctx.o.selectedDateSingle' is of type 'unknown'.",
+          "raw": "src/components/booking/steps/AvailabilitySubStepContent.vue(39,21): error TS18046: '__VLS_ctx.ctx.o.selectedDateSingle' is of type 'unknown'.",
+          "scope": "client",
+          "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue"
+        },
+        {
+          "file": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+          "line": 40,
+          "col": 22,
+          "code": "TS18046",
+          "message": "'__VLS_ctx.ctx.o.vDatePickerDisplayDate' is of type 'unknown'.",
+          "raw": "src/components/booking/steps/AvailabilitySubStepContent.vue(40,22): error TS18046: '__VLS_ctx.ctx.o.vDatePickerDisplayDate' is of type 'unknown'.",
+          "scope": "client",
+          "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue"
+        },
+        {
+          "file": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+          "line": 41,
+          "col": 13,
+          "code": "TS18046",
+          "message": "'__VLS_ctx.ctx.o.getTodayDate' is of type 'unknown'.",
+          "raw": "src/components/booking/steps/AvailabilitySubStepContent.vue(41,13): error TS18046: '__VLS_ctx.ctx.o.getTodayDate' is of type 'unknown'.",
+          "scope": "client",
+          "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue"
+        },
+        {
+          "file": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+          "line": 42,
+          "col": 42,
+          "code": "TS18046",
+          "message": "'__VLS_ctx.ctx.o.allowedDates' is of type 'unknown'.",
+          "raw": "src/components/booking/steps/AvailabilitySubStepContent.vue(42,42): error TS18046: '__VLS_ctx.ctx.o.allowedDates' is of type 'unknown'.",
+          "scope": "client",
+          "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue"
+        },
+        {
+          "file": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+          "line": 43,
+          "col": 29,
+          "code": "TS18046",
+          "message": "'__VLS_ctx.ctx.o.fieldErrors' is of type 'unknown'.",
+          "raw": "src/components/booking/steps/AvailabilitySubStepContent.vue(43,29): error TS18046: '__VLS_ctx.ctx.o.fieldErrors' is of type 'unknown'.",
+          "scope": "client",
+          "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue"
+        },
+        {
+          "file": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+          "line": 45,
+          "col": 29,
+          "code": "TS18046",
+          "message": "'__VLS_ctx.ctx.o.setVDatePickerDisplayDate' is of type 'unknown'.",
+          "raw": "src/components/booking/steps/AvailabilitySubStepContent.vue(45,29): error TS18046: '__VLS_ctx.ctx.o.setVDatePickerDisplayDate' is of type 'unknown'.",
+          "scope": "client",
+          "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue"
+        },
+        {
+          "file": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+          "line": 51,
+          "col": 31,
+          "code": "TS18046",
+          "message": "'__VLS_ctx.ctx.o.wizard' is of type 'unknown'.",
+          "raw": "src/components/booking/steps/AvailabilitySubStepContent.vue(51,31): error TS18046: '__VLS_ctx.ctx.o.wizard' is of type 'unknown'.",
+          "scope": "client",
+          "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue"
+        },
+        {
+          "file": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+          "line": 52,
+          "col": 23,
+          "code": "TS18046",
+          "message": "'__VLS_ctx.ctx.o.wizard' is of type 'unknown'.",
+          "raw": "src/components/booking/steps/AvailabilitySubStepContent.vue(52,23): error TS18046: '__VLS_ctx.ctx.o.wizard' is of type 'unknown'.",
+          "scope": "client",
+          "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue"
+        },
+        {
+          "file": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+          "line": 53,
+          "col": 38,
+          "code": "TS18046",
+          "message": "'__VLS_ctx.ctx.o.wizard' is of type 'unknown'.",
+          "raw": "src/components/booking/steps/AvailabilitySubStepContent.vue(53,38): error TS18046: '__VLS_ctx.ctx.o.wizard' is of type 'unknown'.",
+          "scope": "client",
+          "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue"
+        },
+        {
+          "file": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+          "line": 54,
+          "col": 39,
+          "code": "TS18046",
+          "message": "'__VLS_ctx.ctx.o.selectedOptionTypeBlockId' is of type 'unknown'.",
+          "raw": "src/components/booking/steps/AvailabilitySubStepContent.vue(54,39): error TS18046: '__VLS_ctx.ctx.o.selectedOptionTypeBlockId' is of type 'unknown'.",
+          "scope": "client",
+          "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue"
+        },
+        {
+          "file": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+          "line": 61,
+          "col": 13,
+          "code": "TS18046",
+          "message": "'__VLS_ctx.ctx.o.isEffectivelyDifferential' is of type 'unknown'.",
+          "raw": "src/components/booking/steps/AvailabilitySubStepContent.vue(61,13): error TS18046: '__VLS_ctx.ctx.o.isEffectivelyDifferential' is of type 'unknown'.",
+          "scope": "client",
+          "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue"
+        },
+        {
+          "file": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+          "line": 62,
+          "col": 33,
+          "code": "TS18046",
+          "message": "'__VLS_ctx.ctx.o.isEffectivelyDifferential' is of type 'unknown'.",
+          "raw": "src/components/booking/steps/AvailabilitySubStepContent.vue(62,33): error TS18046: '__VLS_ctx.ctx.o.isEffectivelyDifferential' is of type 'unknown'.",
+          "scope": "client",
+          "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue"
+        },
+        {
+          "file": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+          "line": 63,
+          "col": 20,
+          "code": "TS18046",
+          "message": "'__VLS_ctx.ctx.o.graphBars' is of type 'unknown'.",
+          "raw": "src/components/booking/steps/AvailabilitySubStepContent.vue(63,20): error TS18046: '__VLS_ctx.ctx.o.graphBars' is of type 'unknown'.",
+          "scope": "client",
+          "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue"
+        },
+        {
+          "file": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+          "line": 64,
+          "col": 27,
+          "code": "TS18046",
+          "message": "'__VLS_ctx.ctx.o.wizard' is of type 'unknown'.",
+          "raw": "src/components/booking/steps/AvailabilitySubStepContent.vue(64,27): error TS18046: '__VLS_ctx.ctx.o.wizard' is of type 'unknown'.",
+          "scope": "client",
+          "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue"
+        },
+        {
+          "file": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+          "line": 65,
+          "col": 25,
+          "code": "TS18046",
+          "message": "'__VLS_ctx.ctx.o.perspective' is of type 'unknown'.",
+          "raw": "src/components/booking/steps/AvailabilitySubStepContent.vue(65,25): error TS18046: '__VLS_ctx.ctx.o.perspective' is of type 'unknown'.",
+          "scope": "client",
+          "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue"
+        },
+        {
+          "file": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+          "line": 72,
+          "col": 21,
+          "code": "TS18046",
+          "message": "'__VLS_ctx.ctx.o.selectedDate' is of type 'unknown'.",
+          "raw": "src/components/booking/steps/AvailabilitySubStepContent.vue(72,21): error TS18046: '__VLS_ctx.ctx.o.selectedDate' is of type 'unknown'.",
+          "scope": "client",
+          "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue"
+        },
+        {
+          "file": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+          "line": 73,
+          "col": 18,
+          "code": "TS18046",
+          "message": "'__VLS_ctx.ctx.o.appointmentSlots' is of type 'unknown'.",
+          "raw": "src/components/booking/steps/AvailabilitySubStepContent.vue(73,18): error TS18046: '__VLS_ctx.ctx.o.appointmentSlots' is of type 'unknown'.",
+          "scope": "client",
+          "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue"
+        },
+        {
+          "file": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+          "line": 82,
+          "col": 31,
+          "code": "TS18046",
+          "message": "'__VLS_ctx.ctx.o.appointmentSlots' is of type 'unknown'.",
+          "raw": "src/components/booking/steps/AvailabilitySubStepContent.vue(82,31): error TS18046: '__VLS_ctx.ctx.o.appointmentSlots' is of type 'unknown'.",
+          "scope": "client",
+          "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue"
+        },
+        {
+          "file": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+          "line": 83,
+          "col": 35,
+          "code": "TS18046",
+          "message": "'__VLS_ctx.ctx.o.selectedButtonIndex' is of type 'unknown'.",
+          "raw": "src/components/booking/steps/AvailabilitySubStepContent.vue(83,35): error TS18046: '__VLS_ctx.ctx.o.selectedButtonIndex' is of type 'unknown'.",
+          "scope": "client",
+          "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue"
+        },
+        {
+          "file": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+          "line": 84,
+          "col": 24,
+          "code": "TS18046",
+          "message": "'__VLS_ctx.ctx.o.perspective' is of type 'unknown'.",
+          "raw": "src/components/booking/steps/AvailabilitySubStepContent.vue(84,24): error TS18046: '__VLS_ctx.ctx.o.perspective' is of type 'unknown'.",
+          "scope": "client",
+          "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue"
+        },
+        {
+          "file": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+          "line": 85,
+          "col": 19,
+          "code": "TS18046",
+          "message": "'__VLS_ctx.ctx.o.slotColor' is of type 'unknown'.",
+          "raw": "src/components/booking/steps/AvailabilitySubStepContent.vue(85,19): error TS18046: '__VLS_ctx.ctx.o.slotColor' is of type 'unknown'.",
+          "scope": "client",
+          "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue"
+        },
+        {
+          "file": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+          "line": 90,
+          "col": 18,
+          "code": "TS18046",
+          "message": "'__VLS_ctx.ctx.o.fieldErrors' is of type 'unknown'.",
+          "raw": "src/components/booking/steps/AvailabilitySubStepContent.vue(90,18): error TS18046: '__VLS_ctx.ctx.o.fieldErrors' is of type 'unknown'.",
+          "scope": "client",
+          "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue"
+        },
+        {
+          "file": "src/components/booking/steps/AvailabilitySubStepContent.vue",
+          "line": 91,
+          "col": 12,
+          "code": "TS18046",
+          "message": "'__VLS_ctx.ctx.o.fieldErrors' is of type 'unknown'.",
+          "raw": "src/components/booking/steps/AvailabilitySubStepContent.vue(91,12): error TS18046: '__VLS_ctx.ctx.o.fieldErrors' is of type 'unknown'.",
+          "scope": "client",
+          "repoPath": "src/components/booking/steps/AvailabilitySubStepContent.vue"
+        }
+      ]
+    },
+    {
+      "repoPath": "src/components/booking/steps/AvailabilityStep.vue",
+      "errorCount": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "errors": [
+        {
+          "file": "src/components/booking/steps/AvailabilityStep.vue",
+          "line": 193,
+          "col": 22,
+          "code": "TS2345",
+          "message": "Argument of type 'string | string[] | Date | Date[] | null' is not assignable to parameter of type 'string | null'.",
+          "raw": "src/components/booking/steps/AvailabilityStep.vue(193,22): error TS2345: Argument of type 'string | string[] | Date | Date[] | null' is not assignable to parameter of type 'string | null'.",
+          "scope": "client",
+          "repoPath": "src/components/booking/steps/AvailabilityStep.vue"
+        }
+      ]
+    },
+    {
+      "repoPath": "src/components/booking/steps/ConfirmationStep.vue",
+      "errorCount": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "errors": [
+        {
+          "file": "src/components/booking/steps/ConfirmationStep.vue",
+          "line": 18,
+          "col": 10,
+          "code": "TS2305",
+          "message": "Module '\"@/composables/admin/tables/useTableModelHelpers\"' has no exported member 'ensureItemsArray'.",
+          "raw": "src/components/booking/steps/ConfirmationStep.vue(18,10): error TS2305: Module '\"@/composables/admin/tables/useTableModelHelpers\"' has no exported member 'ensureItemsArray'.",
+          "scope": "client",
+          "repoPath": "src/components/booking/steps/ConfirmationStep.vue"
+        }
+      ]
+    }
+  ]
+}
