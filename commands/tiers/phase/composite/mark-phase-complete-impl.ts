@@ -42,7 +42,7 @@ export async function markPhaseCompleteImpl(params: MarkPhaseCompleteParams): Pr
   if (!guideContent.includes(phaseGuideMarker)) {
     guideContent = guideContent.trimEnd() + '\n\n' + phaseGuideMarker;
   }
-  await writeProjectFile(phaseGuidePath, guideContent);
+  await writeProjectFile(phaseGuidePath, guideContent, { overwriteForTierEnd: true });
   output.push(`✅ Updated phase guide: ${phaseGuidePath}`);
 
   try {
@@ -63,7 +63,7 @@ export async function markPhaseCompleteImpl(params: MarkPhaseCompleteParams): Pr
     if (!handoffContent.includes(featureHandoffMarker)) {
       handoffContent = handoffContent.trimEnd() + '\n\n' + featureHandoffMarker;
     }
-    await writeProjectFile(handoffPath, handoffContent);
+    await writeProjectFile(handoffPath, handoffContent, { overwriteForTierEnd: true });
     output.push(`✅ Updated handoff: ${handoffPath}`);
   } catch (_error) {
     output.push(`⚠️ Could not update handoff: ${_error instanceof Error ? _error.message : String(_error)}`);
@@ -119,7 +119,7 @@ export async function markPhaseCompleteImpl(params: MarkPhaseCompleteParams): Pr
   if (!logContent.includes(phaseLogMarker)) {
     logContent = logContent.trimEnd() + '\n\n' + phaseLogMarker;
   }
-  await writeProjectFile(phaseLogPath, logContent);
+  await writeProjectFile(phaseLogPath, logContent, { overwriteForTierEnd: true });
   output.push(`✅ Updated phase log: ${phaseLogPath}`);
 
   return output.join('\n');

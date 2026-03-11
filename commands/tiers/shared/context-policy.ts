@@ -14,6 +14,7 @@ import { generateCurrentStateSummary } from '../../utils/context-gatherer';
 import { formatAutoGatheredContext } from '../../utils/context-templates';
 import { getFeatureGuideFromProjectPlan } from '../../utils/project-plan-adapter';
 import { ensureGuideHasRequiredSections } from './guide-required-sections';
+import { extractOpenQuestions, getUnresolvedQuestions } from '../../utils/open-questions';
 
 export type TierName = 'feature' | 'phase' | 'session' | 'task';
 
@@ -355,12 +356,18 @@ export async function readTierUpContext(params: TierContextReadParams): Promise<
     task: 'Task context (from session guide)',
   };
 
+  // Extract unresolved open questions from the parent guide so they propagate downward.
+  const inheritedOpenQuestions = guide
+    ? getUnresolvedQuestions(extractOpenQuestions(guide))
+    : [];
+
   let result: TierStartReadResult = {
     label,
     guide: guide || undefined,
     handoff,
     sectionTitle: sectionTitles[tier],
     sourcePolicy: 'tierUpOnly',
+    inheritedOpenQuestions: inheritedOpenQuestions.length > 0 ? inheritedOpenQuestions : undefined,
   };
 
   if (logExcerpt.trim()) {

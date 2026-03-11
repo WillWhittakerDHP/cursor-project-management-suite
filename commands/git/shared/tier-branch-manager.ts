@@ -284,7 +284,13 @@ interface EnsureOnBranchResult {
  * Used by commitUncommittedNonCursor when current branch does not match expected (e.g. tier-end on wrong branch).
  */
 async function ensureOnBranch(expectedBranch: string): Promise<EnsureOnBranchResult> {
-  const uncommitted = await resolveUncommittedBeforeCheckout(expectedBranch);
+  let resolvedBranch = expectedBranch;
+  if (!(await branchExists(resolvedBranch))) {
+    const prefixMatches = await listBranchesByPrefix(resolvedBranch);
+    if (prefixMatches.length >= 1) resolvedBranch = prefixMatches[0];
+  }
+
+  const uncommitted = await resolveUncommittedBeforeCheckout(resolvedBranch);
   if (!uncommitted.clean) {
     const fileList = uncommitted.blockingFiles.length > 0
       ? ` Blocking files: ${uncommitted.blockingFiles.join(', ')}.`
@@ -293,7 +299,7 @@ async function ensureOnBranch(expectedBranch: string): Promise<EnsureOnBranchRes
   }
   const needStashPop = uncommitted.stashedWorkflowArtifacts === true;
   const stashedBlockingFiles = uncommitted.stashedBlockingFiles === true;
-  const checkoutResult = await runCommand(`git checkout ${expectedBranch}`);
+  const checkoutResult = await runCommand(`git checkout ${resolvedBranch}`);
   if (!checkoutResult.success) {
     if (needStashPop) await runCommand('git stash pop');
     return {
@@ -495,15 +501,22 @@ export function buildBranchChain(
 
 /**
  * Return the expected branch name for the given tier (leaf of branch chain).
+ * Resolves slug-style names via prefix matching (e.g. phase-6.9 → phase-6.9-availability-step-mini-wizard).
  * Used before commit to verify we are on the correct branch. Returns null for tiers with no branch (e.g. task).
  */
-export function getExpectedBranchForTier(
+export async function getExpectedBranchForTier(
   config: TierConfig,
   tierId: string,
   context: WorkflowCommandContext
-): string | null {
+): Promise<string | null> {
   const chain = buildBranchChain(config, tierId, context);
-  return chain.length > 0 ? chain[chain.length - 1].branchName : null;
+  if (chain.length === 0) return null;
+  let branchName = chain[chain.length - 1].branchName;
+  if (!(await branchExists(branchName))) {
+    const prefixMatches = await listBranchesByPrefix(branchName);
+    if (prefixMatches.length >= 1) branchName = prefixMatches[0];
+  }
+  return branchName;
 }
 
 // ─── Scope Coherence ──────────────────────────────────────────────────

@@ -75,7 +75,7 @@ ${accomplishmentsList}
     logContent += `\n\n${completedSessionsMarker}\n\n${sessionEntry}`;
   }
 
-  await writeProjectFile(phaseLogPath, logContent);
+  await writeProjectFile(phaseLogPath, logContent, { overwriteForTierEnd: true });
   output.push(`✅ Updated phase log: ${phaseLogPath}`);
 
   return output.join('\n');

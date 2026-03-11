@@ -77,6 +77,8 @@ export interface TierStartReadResult {
   sectionTitle?: string;
   /** When set, handoff/guide are from tierUp sources only; tierDown docs are excluded. */
   sourcePolicy?: 'tierUpOnly';
+  /** Unresolved open questions inherited from the parent guide (extracted during read-context). */
+  inheritedOpenQuestions?: import('../../utils/open-questions').OpenQuestion[];
 }
 
 /**

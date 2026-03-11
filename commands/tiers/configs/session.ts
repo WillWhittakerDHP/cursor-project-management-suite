@@ -55,7 +55,7 @@ export const SESSION_CONFIG: TierConfig = {
         const box = isComplete ? 'x' : ' ';
         return `${open}${box}${mid}${id}:${rest}`;
       });
-      await writeProjectFile(guidePath, content);
+      await writeProjectFile(guidePath, content, { overwriteForTierEnd: true });
     },
   },
   updateLog: async (context: WorkflowCommandContext, identifier: string, logEntry: string) => {

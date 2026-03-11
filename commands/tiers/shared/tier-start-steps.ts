@@ -39,6 +39,7 @@ import { ensureGuideHasRequiredSections } from './guide-required-sections';
 import { readProjectFile, writeProjectFile, PROJECT_ROOT } from '../../utils/utils';
 import { tierDown } from '../../utils/tier-navigation';
 import { existsSync } from 'fs';
+import { formatOpenQuestionsWarning } from '../../utils/open-questions';
 
 /** Early-exit result from a step; null means continue. */
 export type StepExitResult = TierStartResult | null;
@@ -977,6 +978,35 @@ export async function stepContextGathering(
   const tierGoals = hooks.getTierGoals ? await hooks.getTierGoals(ctx) : undefined;
   const slotDraft = hooks.getPlanningDocSlotDraft ? await hooks.getPlanningDocSlotDraft(ctx) : undefined;
 
+  const inheritedOpenQuestions = readResult?.inheritedOpenQuestions ?? [];
+
+  // ── Hard gate: block tier-start when parent has unresolved open questions ──
+  if (inheritedOpenQuestions.length > 0) {
+    const sourceTierName = TIER_CONTEXT_SOURCES[tier].guide === 'project' ? 'project' : TIER_CONTEXT_SOURCES[tier].guide;
+    const warning = formatOpenQuestionsWarning(inheritedOpenQuestions, sourceTierName, ctx.identifier);
+    const blockMessage = [
+      `## Blocked: unresolved open questions in parent ${sourceTierName} guide`,
+      '',
+      warning,
+      '',
+      '**To proceed**, resolve all open questions using `/resolve-question`, then re-run this tier-start.',
+      '**To list all open questions**, run `/resolve-question` with `listOpenQuestions()`.',
+    ].join('\n');
+
+    ctx.output.push(blockMessage);
+
+    return {
+      success: false,
+      output: ctx.output.join('\n\n'),
+      outcome: {
+        status: 'blocked',
+        reasonCode: 'unresolved_questions',
+        nextAction: `Resolve ${inheritedOpenQuestions.length} open question(s) in the parent ${sourceTierName} guide using /resolve-question, then re-run this tier-start.`,
+        deliverables: blockMessage,
+      },
+    };
+  }
+
   const planningDocPath = getPlanningDocPath(ctx);
   let existingContent: string | null = null;
   try {
@@ -1011,8 +1041,9 @@ export async function stepContextGathering(
     '3. The ## How we build the tierDown section must be one line per phase/session/task in the format `- **Session X.Y.Z:** short name` (no paragraphs).',
     '4. Save the file.',
     '',
-    '**Context for filling slots:**',
   ];
+
+  messageLines.push('**Context for filling slots:**');
   if (tierGoals?.trim()) {
     messageLines.push(tierGoals.trim(), '');
   }

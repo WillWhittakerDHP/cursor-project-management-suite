@@ -52,7 +52,7 @@ export const PHASE_CONFIG: TierConfig = {
       const content = await readProjectFile(guidePath);
       const display = titleCase(newStatus.toLowerCase());
       const newContent = content.replace(PHASE_STATUS_REGEX, `**Status:** ${display}`);
-      await writeProjectFile(guidePath, newContent);
+      await writeProjectFile(guidePath, newContent, { overwriteForTierEnd: true });
     },
   },
   updateLog: async (context: WorkflowCommandContext, identifier: string, logEntry: string) => {
@@ -80,7 +80,7 @@ export const PHASE_CONFIG: TierConfig = {
     } else {
       logContent += `\n\n${CHANGE_REQUESTS_MARKER}\n\n${logEntry}`;
     }
-    await writeProjectFile(phaseLogPath, logContent);
+    await writeProjectFile(phaseLogPath, logContent, { overwriteForTierEnd: true });
   },
   replanCommand: undefined, // Set by tier-change when planPhase is passed
   getBranchName: (ctx, id) => {

@@ -232,7 +232,7 @@ function commitPrefixFromContext(identifier: string): string {
 export async function stepCommitUncommittedNonCursor(
   ctx: TierEndWorkflowContext
 ): Promise<StepExitResult> {
-  const expectedBranch = getExpectedBranchForTier(ctx.config, ctx.identifier, ctx.context);
+  const expectedBranch = await getExpectedBranchForTier(ctx.config, ctx.identifier, ctx.context);
   const prefix = commitPrefixFromContext(ctx.identifier);
   const commitMessage = `${prefix} tier-end: commit remaining work`;
 
