@@ -4,11 +4,11 @@ alwaysApply: true
 
 Coding standards:
 
-**Mutability and data flow:** Use functional approaches (map, reduce, filter) over mutations. Avoid forEach for transformations; use map. Use for...of only for early returns or side effects. Avoid mutating arrays/objects in loops. Create clear, typed, well-documented transformation functions instead of complex nested transformations or prop-drilling. See: frontend-root/src/admin/dataTransformation/bridgeToAdminTransformer.ts
+**Mutability and data flow:** Use functional approaches (map, reduce, filter) over mutations. Avoid forEach for transformations; use map. Use for...of only for early returns or side effects. Avoid mutating arrays/objects in loops. Create clear, typed, well-documented transformation functions instead of complex nested transformations or prop-drilling.
 
 **Return types and errors:** Include explicit return types in function definitions to avoid type casting. Handle errors with explicit logging; no silent fallbacks or filters that hide errors; log and propagate appropriately.
 
-**Types:** Avoid unnecessary type assertions (as any, as unknown as). Prefer type guards (value is Type) over assertions. Use keyof/typeof only when necessary for constraints. See: frontend-root/src/admin/dataTransformation/typeAdapters.ts. Maintain generic patterns with runtime configs over specific type definitions (e.g. EntityBase<GlobalEntityKey> with ENTITY_CONFIGS). See: frontend-root/src/global/types/globalEntityTypes.ts, server/src/config/entityRegistry.ts. Use descriptive generic names (GlobalEntityKey not K, GlobalPropertyKey not P).
+**Types:** Avoid unnecessary type assertions (as any, as unknown as). Prefer type guards (value is Type) over assertions. Use keyof/typeof only when necessary for constraints. Maintain generic patterns with runtime configs over specific type definitions (e.g. EntityBase<GlobalEntityKey> with ENTITY_CONFIGS). Use descriptive generic names (GlobalEntityKey not K, GlobalPropertyKey not P).
 
 **Refactors:** During refactors, do not introduce unnecessary fallbacks, filtering, new types, or new properties unless directed; use current property names and types.
 
