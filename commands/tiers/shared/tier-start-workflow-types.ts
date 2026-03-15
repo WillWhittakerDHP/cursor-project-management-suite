@@ -6,7 +6,7 @@
 import type { TierConfig } from './types';
 import type { WorkflowCommandContext } from '../../utils/command-context';
 import type { TierStartResult, CascadeInfo } from '../../utils/tier-outcome';
-import type { EnsureTierBranchResult } from '../../git/shared/tier-branch-manager';
+import type { EnsureTierBranchResult } from '../../git/shared/git-manager';
 import type { FormatBranchHierarchyOptions } from '../../utils/tier-start-utils';
 import type { CommandExecutionOptions } from '../../utils/command-execution-mode';
 import type { RunRecorder, RunTraceHandle } from '../../harness/contracts';

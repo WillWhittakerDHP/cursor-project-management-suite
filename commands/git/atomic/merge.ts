@@ -11,7 +11,8 @@
  * or non-tier-end callers still work without changes.
  */
 
-import { runCommand, getCurrentBranch } from '../../utils/utils';
+import { getCurrentBranch } from '../../utils/utils';
+import { runGitCommand } from '../shared/git-logger';
 
 export interface GitMergeParams {
   sourceBranch: string;
@@ -21,7 +22,7 @@ export interface GitMergeParams {
 }
 
 async function hasUncommittedChanges(): Promise<boolean> {
-  const status = await runCommand('git status --porcelain');
+  const status = await runGitCommand('git status --porcelain', 'gitMerge-status');
   return status.success && status.output.trim().length > 0;
 }
 
@@ -35,7 +36,7 @@ export async function gitMerge(params: GitMergeParams): Promise<{ success: boole
     const dirty = await hasUncommittedChanges();
 
     if (dirty && skipStash) {
-      const statusOut = await runCommand('git status --porcelain');
+      const statusOut = await runGitCommand('git status --porcelain', 'gitMerge-status');
       return {
         success: false,
         output:
@@ -45,7 +46,7 @@ export async function gitMerge(params: GitMergeParams): Promise<{ success: boole
     }
 
     if (dirty && !skipStash) {
-      const stashResult = await runCommand('git stash --include-untracked');
+      const stashResult = await runGitCommand('git stash --include-untracked', 'gitMerge-stash');
       if (!stashResult.success) {
         return {
           success: false,
@@ -55,9 +56,9 @@ export async function gitMerge(params: GitMergeParams): Promise<{ success: boole
       didStash = true;
     }
 
-    const checkoutResult = await runCommand(`git checkout ${targetBranch}`);
+    const checkoutResult = await runGitCommand(`git checkout ${targetBranch}`, 'gitMerge-checkout');
     if (!checkoutResult.success) {
-      if (didStash) await runCommand('git stash pop');
+      if (didStash) await runGitCommand('git stash pop', 'gitMerge-stash-pop');
       return {
         success: false,
         output: `Failed to checkout target branch ${targetBranch}: ${checkoutResult.error || checkoutResult.output}`,
@@ -65,10 +66,10 @@ export async function gitMerge(params: GitMergeParams): Promise<{ success: boole
     }
   }
 
-  const mergeResult = await runCommand(`git merge ${params.sourceBranch} --no-edit`);
+  const mergeResult = await runGitCommand(`git merge ${params.sourceBranch} --no-edit`, 'gitMerge-merge');
 
   if (!mergeResult.success) {
-    if (didStash) await runCommand('git stash pop');
+    if (didStash) await runGitCommand('git stash pop', 'gitMerge-stash-pop');
 
     if (mergeResult.error?.includes('conflict') || mergeResult.output.includes('conflict')) {
       return {
@@ -86,7 +87,7 @@ export async function gitMerge(params: GitMergeParams): Promise<{ success: boole
   }
 
   if (didStash) {
-    const popResult = await runCommand('git stash pop');
+    const popResult = await runGitCommand('git stash pop', 'gitMerge-stash-pop');
     if (!popResult.success) {
       return {
         success: true,
@@ -100,4 +101,3 @@ export async function gitMerge(params: GitMergeParams): Promise<{ success: boole
     output: `Successfully merged ${params.sourceBranch} into ${targetBranch}`,
   };
 }
-

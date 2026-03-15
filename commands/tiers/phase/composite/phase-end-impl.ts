@@ -2,15 +2,21 @@
  * Phase-end implementation. Thin adapter: builds context + hooks, runs shared tier end workflow.
  */
 
-import { createBranch } from '../../../git/atomic/create-branch';
-import { gitCommit } from '../../../git/atomic/commit';
-import { ensureTierBranch, mergeTierBranch } from '../../../git/shared/tier-branch-manager';
+import {
+  createBranch,
+  gitCommit,
+  gitPush,
+  ensureTierBranch,
+  mergeTierBranch,
+  mergeChildBranches,
+  getCurrentBranch,
+  runGitCommand,
+} from '../../../git/shared/git-manager';
 import { markPhaseComplete, MarkPhaseCompleteParams } from './phase';
 import { WorkflowCommandContext } from '../../../utils/command-context';
 import { WorkflowId } from '../../../utils/id-utils';
 import { detectPhaseModifiedFiles } from '../../../utils/detect-modified-files';
-import { gitMerge } from '../../../git/atomic/merge';
-import { runCommand, runWithLintVerification, getCurrentDate, getCurrentBranch, readProjectFile, writeProjectFile } from '../../../utils/utils';
+import { runWithLintVerification, getCurrentDate, readProjectFile, writeProjectFile } from '../../../utils/utils';
 import { validateTestGoals } from '../../../testing/composite/test-goal-validator';
 import { analyzeTestError } from '../../../testing/composite/test-error-analyzer';
 import { requestTestFileFixPermission } from '../../../testing/composite/test-file-fix-permission';
@@ -291,7 +297,7 @@ export async function phaseEndImpl(
 
       if (!p.skipGit) {
         try {
-          const statusResult = await runCommand('git status --porcelain');
+          const statusResult = await runGitCommand('git status --porcelain', 'phase-end-backup-status');
           if (statusResult.success && statusResult.output.trim()) {
             const backupCommitMessage = `Phase ${p.phaseId} pre-audit backup: ${p.completedSessions.length} session(s) completed`;
             const backupCommitResult = await gitCommit(backupCommitMessage);
@@ -377,7 +383,7 @@ export async function phaseEndImpl(
 
       if (!p.skipGit) {
         try {
-          const preCleanupStatus = await runCommand('git status --porcelain');
+          const preCleanupStatus = await runGitCommand('git status --porcelain', 'phase-end-preCleanup-status');
           if (preCleanupStatus.success && preCleanupStatus.output.trim()) {
             await gitCommit(`Phase ${p.phaseId} pre-comment-cleanup backup`);
           }
@@ -396,7 +402,7 @@ export async function phaseEndImpl(
       } else {
         const verified = await runWithLintVerification(
           () => phaseCommentCleanup({ dryRun: false, paths: cleanupPaths }),
-          async () => { await runCommand('git checkout -- .'); }
+          async () => { await runGitCommand('git checkout -- .', 'phase-end-revert-cleanup'); }
         );
         const cleanupResult = verified.cleanupResult;
         c.steps.commentCleanup = {
@@ -442,40 +448,21 @@ export async function phaseEndImpl(
           throw new Error('Cannot proceed: branch names from config are null');
         }
 
-        const sessionBranchPattern = `session-${p.phaseId}*`;
-        const listResult = await runCommand(`git branch --list "${sessionBranchPattern}"`);
-        const sessionBranches = listResult.success && listResult.output
-          ? listResult.output.split('\n').map(l => l.trim().replace(/^\*\s*/, '')).filter(Boolean)
-          : [];
-        c.steps.findSessionBranches = { success: true, output: `Found ${sessionBranches.length} session branch(es): ${sessionBranches.join(', ') || 'none'}` };
-
         const ensureResult = await ensureTierBranch(PHASE_CONFIG, p.phaseId, c.context, { createIfMissing: true });
         c.steps.ensurePhaseBranch = { success: ensureResult.success, output: ensureResult.messages.join('\n') };
         if (!ensureResult.success) throw new Error('Cannot proceed: could not ensure phase branch');
 
         const resolvedPhaseBranch = await getCurrentBranch();
-        const mergedSessions: string[] = [];
-        const failedSessions: string[] = [];
-        for (const sessionBranch of sessionBranches) {
-          try {
-            const mergeResult = await gitMerge({ sourceBranch: sessionBranch, targetBranch: resolvedPhaseBranch });
-            if (mergeResult.success) {
-              mergedSessions.push(sessionBranch);
-              const del = await runCommand(`git branch -d ${sessionBranch}`);
-              if (del.success) c.steps[`deleteSessionBranch_${sessionBranch}`] = { success: true, output: `Deleted: ${sessionBranch}` };
-            } else failedSessions.push(sessionBranch);
-          } catch (err) {
-            console.warn(`[phase-end-impl] Failed to merge/delete session branch ${sessionBranch}`, err);
-            failedSessions.push(sessionBranch);
-          }
-        }
-        c.steps.mergeSessionBranches = { success: failedSessions.length === 0, output: `Merged ${mergedSessions.length}/${sessionBranches.length} session branch(es).` };
+        const sessionBranchPattern = `session-${p.phaseId}*`;
+        const childResult = await mergeChildBranches(sessionBranchPattern, resolvedPhaseBranch, { deleteMerged: true });
+        const allSessionBranches = [...childResult.merged, ...childResult.failed];
+        c.steps.findSessionBranches = { success: true, output: `Found ${allSessionBranches.length} session branch(es): ${allSessionBranches.join(', ') || 'none'}` };
+        c.steps.mergeSessionBranches = { success: childResult.failed.length === 0, output: `Merged ${childResult.merged.length}/${allSessionBranches.length} session branch(es).` };
 
         const commitPrefix = `[phase ${p.phaseId}]`;
         const phaseCommitMessage = p.commitMessage || `${commitPrefix} completion`;
         const phaseCommitResult = await gitCommit(phaseCommitMessage);
         c.steps.gitCommitPhase = { success: phaseCommitResult.success, output: phaseCommitResult.output };
-        const { gitPush } = await import('../../../git/atomic/push');
         const phasePushResult = await gitPush();
         c.steps.gitPushPhase = { success: phasePushResult.success, output: phasePushResult.output };
 

@@ -20,6 +20,7 @@ import {
   stepReadmeCleanup,
   stepCommitUncommittedNonCursor,
   stepTierGit,
+  stepPropagateShared,
   stepVerificationCheck,
   stepConfigFix,
   stepEndAudit,
@@ -118,6 +119,10 @@ export async function runTierEndWorkflow(
   const gitExit = await stepTierGit(ctx, hooks);
   await recordEndStep(ctx, 'git', gitExit ? 'exit_failure' : 'exit_success');
   if (gitExit) return attachEndShadowPayload(ctx, gitExit);
+
+  await recordEndStep(ctx, 'propagate_shared', 'enter');
+  await stepPropagateShared(ctx);
+  await recordEndStep(ctx, 'propagate_shared', 'exit_success');
 
   await recordEndStep(ctx, 'verification_check', 'enter');
   const verificationExit = await stepVerificationCheck(ctx, hooks);

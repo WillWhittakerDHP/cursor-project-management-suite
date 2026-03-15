@@ -11,7 +11,8 @@
  *   propagateFiles({ preset: 'harness' })           // propagates .cursor submodule + .gitignore only
  */
 
-import { getCurrentBranch, runCommand, branchExists } from '../../utils/utils';
+import { getCurrentBranch, branchExists } from '../../utils/utils';
+import { runGitCommand } from '../shared/git-logger';
 
 // ─── Types ──────────────────────────────────────────────────────────────
 
@@ -56,7 +57,7 @@ const ROOT_BRANCHES = ['main', 'master', 'develop'];
 // ─── Core ───────────────────────────────────────────────────────────────
 
 async function listTierBranches(): Promise<string[]> {
-  const result = await runCommand('git branch --format="%(refname:short)"');
+  const result = await runGitCommand('git branch --format="%(refname:short)"', 'propagate-listBranches');
   if (!result.success || !result.output.trim()) return [];
   return result.output
     .split('\n')
@@ -66,15 +67,15 @@ async function listTierBranches(): Promise<string[]> {
 }
 
 async function stashIfDirty(): Promise<boolean> {
-  const status = await runCommand('git status --porcelain');
+  const status = await runGitCommand('git status --porcelain', 'propagate-status');
   if (!status.success || !status.output.trim()) return false;
-  const stash = await runCommand('git stash push -u -m "propagate-files: auto-stash"');
+  const stash = await runGitCommand('git stash push -u -m "propagate-files: auto-stash"', 'propagate-stash');
   return stash.success;
 }
 
 async function unstash(didStash: boolean): Promise<void> {
   if (!didStash) return;
-  await runCommand('git stash pop');
+  await runGitCommand('git stash pop', 'propagate-unstash');
 }
 
 export async function propagateFiles(opts: PropagateOptions): Promise<PropagateResult> {
@@ -128,29 +129,31 @@ export async function propagateFiles(opts: PropagateOptions): Promise<PropagateR
 
   const didStash = await stashIfDirty();
 
+  const safeCommitMsg = commitMsg.replace(/'/g, "'\\''");
+
   for (const branch of filteredTargets) {
     try {
-      const checkout = await runCommand(`git checkout ${branch}`);
+      const checkout = await runGitCommand(`git checkout ${branch}`, 'propagate-checkout');
       if (!checkout.success) {
         details.push({ branch, status: 'failed', message: `checkout failed: ${checkout.error ?? checkout.output}` });
         continue;
       }
 
       for (const file of filesToCopy) {
-        await runCommand(`git checkout ${sourceBranch} -- ${file}`);
+        await runGitCommand(`git checkout ${sourceBranch} -- ${file}`, 'propagate-checkout-file');
       }
 
-      const diff = await runCommand('git diff --cached --quiet');
+      const diff = await runGitCommand('git diff --cached --quiet', 'propagate-diff');
       if (diff.success) {
-        await runCommand('git checkout -- .');
+        await runGitCommand('git checkout -- .', 'propagate-discard');
         details.push({ branch, status: 'skipped', message: 'already up to date' });
         continue;
       }
 
-      const commit = await runCommand(`git commit -m "${commitMsg.replace(/"/g, '\\"')}"`);
+      const commit = await runGitCommand(`git commit -m '${safeCommitMsg}'`, 'propagate-commit');
       if (!commit.success) {
-        await runCommand('git reset HEAD -- .');
-        await runCommand('git checkout -- .');
+        await runGitCommand('git reset HEAD -- .', 'propagate-reset');
+        await runGitCommand('git checkout -- .', 'propagate-discard');
         details.push({ branch, status: 'failed', message: `commit failed: ${commit.error ?? commit.output}` });
         continue;
       }
@@ -165,7 +168,7 @@ export async function propagateFiles(opts: PropagateOptions): Promise<PropagateR
     }
   }
 
-  await runCommand(`git checkout ${originalBranch}`);
+  await runGitCommand(`git checkout ${originalBranch}`, 'propagate-checkout-original');
   await unstash(didStash);
 
   const updated = details.filter((d) => d.status === 'updated').length;

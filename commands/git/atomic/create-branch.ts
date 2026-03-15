@@ -3,11 +3,11 @@
  * Create new git branch
  */
 
-import { runCommand } from '../../utils/utils';
+import { runGitCommand } from '../shared/git-logger';
 
 export async function createBranch(branchName: string): Promise<{ success: boolean; output: string }> {
-  const result = await runCommand(`git checkout -b ${branchName}`);
-  
+  const result = await runGitCommand(`git checkout -b ${branchName}`, 'createBranch');
+
   return {
     success: result.success,
     output: result.success
@@ -15,4 +15,3 @@ export async function createBranch(branchName: string): Promise<{ success: boole
       : result.error || result.output,
   };
 }
-

@@ -17,6 +17,7 @@ import {
   commitRemaining,
   getExpectedBranchForTier,
   DEFAULT_ALLOWED_COMMIT_PREFIXES,
+  propagateSharedFiles,
 } from '../../git/shared/git-manager';
 import { PROJECT_ROOT } from '../../utils/utils';
 import type { TierName } from './types';
@@ -271,6 +272,24 @@ export async function stepTierGit(
 ): Promise<StepExitResult> {
   if (!hooks.runGit) return null;
   return hooks.runGit(ctx);
+}
+
+/** Propagate shared files (PROJECT_PLAN.md, .gitignore, .cursor) to other tier branches. Phase and session only; non-blocking. */
+export async function stepPropagateShared(ctx: TierEndWorkflowContext): Promise<void> {
+  const tier = ctx.config.name;
+  if (tier !== 'phase' && tier !== 'session') return;
+
+  try {
+    const result = await propagateSharedFiles(undefined, { dryRun: false });
+    ctx.steps.propagateShared = {
+      success: result.success,
+      output: result.summary + (result.details.length ? '\n' + result.details.map((d) => `${d.branch}: ${d.status} — ${d.message}`).join('\n') : ''),
+    };
+  } catch (err) {
+    const msg = `Propagate shared files failed (non-blocking): ${err instanceof Error ? err.message : String(err)}`;
+    ctx.steps.propagateShared = { success: false, output: msg };
+    console.warn(msg);
+  }
 }
 
 const VERIFICATION_NEXT_ACTION =

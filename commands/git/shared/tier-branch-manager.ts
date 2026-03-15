@@ -8,12 +8,12 @@
  * feature-start, phase-start, session-start, session-end, phase-end, and tier-reopen.
  */
 
-import { join, dirname } from 'path';
 import type { TierConfig, TierName } from '../../tiers/shared/types';
 import type { WorkflowCommandContext } from '../../utils/command-context';
 import { tierUp } from '../../utils/tier-navigation';
 import { getConfigForTier } from '../../tiers/configs/index';
-import { getCurrentBranch, branchExists, isBranchBasedOn, runCommand } from '../../utils/utils';
+import { getCurrentBranch, branchExists, isBranchBasedOn } from '../../utils/utils';
+import { runGitCommand, warnGitOp } from './git-logger';
 import { createBranch } from '../atomic/create-branch';
 import { gitMerge } from '../atomic/merge';
 import { gitPush } from '../atomic/push';
@@ -66,7 +66,7 @@ function isRootBranch(branchName: string): boolean {
  */
 async function listBranchesByPrefix(prefix: string): Promise<string[]> {
   const pattern = `${prefix}*`;
-  const result = await runCommand(`git branch --list "${pattern}"`);
+  const result = await runGitCommand(`git branch --list "${pattern}"`, 'listBranchesByPrefix');
   if (!result.success || !result.output.trim()) return [];
   return result.output
     .split('\n')
@@ -177,7 +177,7 @@ function normalizeStatusPath(path: string): string {
 async function resolveUncommittedBeforeCheckout(
   theirBranch?: string | null
 ): Promise<UncommittedResolution> {
-  const status = await runCommand('git status --porcelain');
+  const status = await runGitCommand('git status --porcelain', 'resolveUncommitted-status');
   if (!status.success || !status.output.trim()) {
     return { clean: true, blockingFiles: [], message: '' };
   }
@@ -190,8 +190,9 @@ async function resolveUncommittedBeforeCheckout(
 
   // Only workflow artifacts uncommitted: stash and allow checkout
   if (autoFiles.length > 0 && blockingFiles.length === 0) {
-    const stashResult = await runCommand(
-      `git stash push -m "workflow artifacts (non-blocking)" -- ${WORKFLOW_ARTIFACT_STASH_PATHS}`
+    const stashResult = await runGitCommand(
+      `git stash push -m "workflow artifacts (non-blocking)" -- ${WORKFLOW_ARTIFACT_STASH_PATHS}`,
+      'resolveUncommitted-stash-workflow'
     );
     if (!stashResult.success) {
       return {
@@ -228,8 +229,9 @@ async function resolveUncommittedBeforeCheckout(
     const blockingPathsSafe = blockingFiles
       .map((p) => `'${p.replace(/'/g, "'\\''")}'`)
       .join(' ');
-    const stashBlockingResult = await runCommand(
-      `git stash push -u -m "uncommitted (other branch)" -- ${blockingPathsSafe}`
+    const stashBlockingResult = await runGitCommand(
+      `git stash push -u -m "uncommitted (other branch)" -- ${blockingPathsSafe}`,
+      'resolveUncommitted-stash-blocking'
     );
     if (!stashBlockingResult.success) {
       return {
@@ -241,11 +243,12 @@ async function resolveUncommittedBeforeCheckout(
 
     let stashedWorkflow = false;
     if (autoFiles.length > 0) {
-      const stashWorkflowResult = await runCommand(
-        `git stash push -m "workflow artifacts (non-blocking)" -- ${WORKFLOW_ARTIFACT_STASH_PATHS}`
+      const stashWorkflowResult = await runGitCommand(
+        `git stash push -m "workflow artifacts (non-blocking)" -- ${WORKFLOW_ARTIFACT_STASH_PATHS}`,
+        'resolveUncommitted-stash-workflow2'
       );
       if (!stashWorkflowResult.success) {
-        await runCommand('git stash pop'); // restore blocking stash
+        await runGitCommand('git stash pop', 'resolveUncommitted-stash-pop-restore'); // restore blocking stash
         return {
           clean: false,
           blockingFiles,
@@ -299,16 +302,16 @@ async function ensureOnBranch(expectedBranch: string): Promise<EnsureOnBranchRes
   }
   const needStashPop = uncommitted.stashedWorkflowArtifacts === true;
   const stashedBlockingFiles = uncommitted.stashedBlockingFiles === true;
-  const checkoutResult = await runCommand(`git checkout ${resolvedBranch}`);
+  const checkoutResult = await runGitCommand(`git checkout ${resolvedBranch}`, 'ensureOnBranch-checkout');
   if (!checkoutResult.success) {
-    if (needStashPop) await runCommand('git stash pop');
+    if (needStashPop) await runGitCommand('git stash pop', 'ensureOnBranch-stash-pop');
     return {
       success: false,
       output: `Failed to checkout ${expectedBranch}: ${checkoutResult.error || checkoutResult.output}`,
     };
   }
   if (needStashPop) {
-    const popResult = await runCommand('git stash pop');
+    const popResult = await runGitCommand('git stash pop', 'ensureOnBranch-stash-pop');
     if (!popResult.success) {
       return {
         success: true,
@@ -352,7 +355,7 @@ export async function commitUncommittedNonCursor(
       }
       // If we stashed blocking (source) files to switch, pop them on the target branch so we can commit.
       if (ensureResult.stashedBlockingFiles) {
-        const topStash = await runCommand('git stash list -1');
+        const topStash = await runGitCommand('git stash list -1', 'commitUncommitted-stash-list');
         const topMessage = topStash.success && topStash.output ? topStash.output : '';
         if (!topMessage.includes('uncommitted (other branch)')) {
           console.warn(
@@ -365,9 +368,9 @@ export async function commitUncommittedNonCursor(
             output: `Source code was stashed before branch switch but top stash does not match "uncommitted (other branch)". Your changes may be in \`git stash list\`. Apply manually with \`git stash pop\` if correct.`,
           };
         }
-        const popResult = await runCommand('git stash pop');
+        const popResult = await runGitCommand('git stash pop', 'commitUncommitted-stash-pop');
         if (!popResult.success) {
-          await runCommand('git stash push -u -m "uncommitted (other branch) - carry failed"');
+          await runGitCommand('git stash push -u -m "uncommitted (other branch) - carry failed"', 'commitUncommitted-restash');
           console.warn(
             '[tier-branch-manager] Stash pop failed after branch switch; re-stashed as "uncommitted (other branch) - carry failed".',
             popResult.error || popResult.output
@@ -383,7 +386,7 @@ export async function commitUncommittedNonCursor(
     }
   }
 
-  const status = await runCommand('git status --porcelain');
+  const status = await runGitCommand('git status --porcelain', 'commitUncommitted-status');
   if (!status.success || !status.output.trim()) {
     return { committed: false, success: true, output: '' };
   }
@@ -404,7 +407,7 @@ export async function commitUncommittedNonCursor(
 
   for (const path of inScopePaths) {
     const safePath = path.replace(/'/g, "'\\''");
-    const addResult = await runCommand(`git add -- '${safePath}'`);
+    const addResult = await runGitCommand(`git add -- '${safePath}'`, 'commitUncommitted-add');
     if (!addResult.success) {
       return {
         committed: false,
@@ -414,13 +417,13 @@ export async function commitUncommittedNonCursor(
     }
   }
 
-  const diffStaged = await runCommand('git diff --cached --quiet');
+  const diffStaged = await runGitCommand('git diff --cached --quiet', 'commitUncommitted-diff');
   if (diffStaged.success) {
     return { committed: false, success: true, output: '' };
   }
 
   const safeMessage = commitMessage.replace(/'/g, "'\\''");
-  const commitResult = await runCommand(`git commit -m '${safeMessage}'`);
+  const commitResult = await runGitCommand(`git commit -m '${safeMessage}'`, 'commitUncommitted-commit');
   let output = commitResult.success
     ? `Committed in-scope changes (${inScopePaths.length} path(s)): ${commitMessage}`
     : `Commit failed: ${commitResult.error || commitResult.output}`;
@@ -636,7 +639,7 @@ export async function ensureTierBranch(
         messages.push(`Root branch ${parentBranch} not found; using ${altRoot}.`);
       }
       if (pullRoot) {
-        const pullResult = await runCommand(`git checkout ${parentBranch} && git pull origin ${parentBranch}`);
+        const pullResult = await runGitCommand(`git checkout ${parentBranch} && git pull origin ${parentBranch}`, 'ensureTierBranch-pullRoot');
         if (pullResult.success) {
           messages.push(`Pulled latest ${parentBranch}.`);
         } else {
@@ -681,7 +684,7 @@ export async function ensureTierBranch(
     // Checkout ancestor (needed so we can create/verify next level from correct base)
     const currentBranch = await getCurrentBranch();
     if (currentBranch !== link.branchName) {
-      const checkoutResult = await runCommand(`git checkout ${link.branchName}`);
+      const checkoutResult = await runGitCommand(`git checkout ${link.branchName}`, 'ensureTierBranch-checkout-ancestor');
       if (!checkoutResult.success) {
         messages.push(`Could not checkout ${link.tier} branch ${link.branchName}: ${checkoutResult.error || checkoutResult.output}`);
         return { success: false, messages, finalBranch: currentBranch, chain };
@@ -697,7 +700,7 @@ export async function ensureTierBranch(
   if (parentOfTarget) {
     const currentBranch = await getCurrentBranch();
     if (currentBranch !== parentOfTarget) {
-      const checkoutParent = await runCommand(`git checkout ${parentOfTarget}`);
+      const checkoutParent = await runGitCommand(`git checkout ${parentOfTarget}`, 'ensureTierBranch-checkout-parent');
       if (!checkoutParent.success) {
         messages.push(`Could not checkout parent branch ${parentOfTarget} before creating target: ${checkoutParent.error || checkoutParent.output}`);
         return { success: false, messages, finalBranch: currentBranch, chain };
@@ -705,7 +708,7 @@ export async function ensureTierBranch(
     }
     // Feature-start: pull latest from root before creating feature branch
     if (pullRoot && isRootBranch(parentOfTarget)) {
-      const pullResult = await runCommand(`git pull origin ${parentOfTarget}`);
+      const pullResult = await runGitCommand(`git pull origin ${parentOfTarget}`, 'ensureTierBranch-pull');
       if (pullResult.success) {
         messages.push(`Pulled latest ${parentOfTarget}.`);
       } else {
@@ -726,7 +729,7 @@ export async function ensureTierBranch(
         return { success: false, messages, finalBranch: await getCurrentBranch(), chain };
       }
     }
-    const checkoutTarget = await runCommand(`git checkout ${targetLink.branchName}`);
+    const checkoutTarget = await runGitCommand(`git checkout ${targetLink.branchName}`, 'ensureTierBranch-checkout-target');
     if (!checkoutTarget.success) {
       messages.push(`Could not switch to existing branch ${targetLink.branchName}: ${checkoutTarget.error || checkoutTarget.output}`);
       return { success: false, messages, finalBranch: await getCurrentBranch(), chain };
@@ -755,7 +758,7 @@ export async function ensureTierBranch(
 
   // If we stashed workflow artifacts before checkout, restore them on the target branch
   if (needStashPop) {
-    const popResult = await runCommand('git stash pop');
+    const popResult = await runGitCommand('git stash pop', 'ensureTierBranch-stash-pop');
     if (popResult.success) {
       messages.push(
         'Restored stashed workflow artifacts (.cursor, .project-manager, audit reports) on current branch. Planning docs and other .project-manager files are back in the working tree.'
@@ -839,12 +842,12 @@ export async function mergeTierBranch(
   }
 
   // ── Step 2: Final comprehensive commit ────────────────────────────
-  const preMergeStatus = await runCommand('git status --porcelain');
+  const preMergeStatus = await runGitCommand('git status --porcelain', 'mergeTierBranch-preStatus');
   if (preMergeStatus.success && preMergeStatus.output.trim()) {
-    const addResult = await runCommand('git add -A');
+    const addResult = await runGitCommand('git add -A', 'mergeTierBranch-preAdd');
     if (addResult.success) {
       const safeMsg = `[${config.name} ${tierId}] pre-merge: all remaining artifacts`.replace(/'/g, "'\\''");
-      const preMergeCommit = await runCommand(`git commit -m '${safeMsg}'`);
+      const preMergeCommit = await runGitCommand(`git commit -m '${safeMsg}'`, 'mergeTierBranch-preCommit');
       if (preMergeCommit.success) {
         messages.push('Committed all remaining artifacts on tier branch before merge.');
       } else {
@@ -854,12 +857,18 @@ export async function mergeTierBranch(
   }
 
   // ── Step 3: Assert clean tree ─────────────────────────────────────
-  const assertStatus = await runCommand('git status --porcelain');
+  const assertStatus = await runGitCommand('git status --porcelain', 'mergeTierBranch-assertClean');
   if (assertStatus.success && assertStatus.output.trim()) {
-    const incident = `[${new Date().toISOString()}] DIRTY_TREE_BEFORE_MERGE tier=${config.name} id=${tierId} branch=${tierBranch}\n${assertStatus.output.trim()}\n`;
-    console.warn(`[mergeTierBranch] Working tree still dirty after final commit:\n${assertStatus.output.trim()}`);
-    await appendMergeIncident(incident);
-    messages.push('WARNING: working tree not clean after final commit — see .merge-incident-log.');
+    warnGitOp({
+      timestamp: new Date().toISOString(),
+      operation: 'mergeTierBranch',
+      command: 'assert clean',
+      success: false,
+      output: assertStatus.output.trim(),
+      error: 'DIRTY_TREE_BEFORE_MERGE',
+      context: `tier=${config.name} id=${tierId} branch=${tierBranch}`,
+    });
+    messages.push('WARNING: working tree not clean after final commit — see .git-ops-log.');
   }
 
   // ── Step 4: Merge with skipStash ──────────────────────────────────
@@ -867,8 +876,15 @@ export async function mergeTierBranch(
   if (!mergeResult.success) {
     messages.push(`Merge ${tierBranch} into ${parentBranch} failed: ${mergeResult.output}`);
     messages.push(`Manual recovery: git checkout ${parentBranch} && git merge ${tierBranch}`);
-    const incident = `[${new Date().toISOString()}] MERGE_FAILED tier=${config.name} id=${tierId} from=${tierBranch} into=${parentBranch}\n${mergeResult.output}\n`;
-    await appendMergeIncident(incident);
+    warnGitOp({
+      timestamp: new Date().toISOString(),
+      operation: 'mergeTierBranch',
+      command: `git merge ${tierBranch}`,
+      success: false,
+      output: mergeResult.output,
+      error: 'MERGE_FAILED',
+      context: `tier=${config.name} id=${tierId} from=${tierBranch} into=${parentBranch}`,
+    });
     return { success: false, messages, mergedInto: parentBranch, deletedBranch: false };
   }
   messages.push(`Merged ${tierBranch} into ${parentBranch}.`);
@@ -876,7 +892,7 @@ export async function mergeTierBranch(
   // Delete
   let deleted = false;
   if (deleteBranch) {
-    const deleteResult = await runCommand(`git branch -d ${tierBranch}`);
+    const deleteResult = await runGitCommand(`git branch -d ${tierBranch}`, 'mergeTierBranch-delete');
     deleted = deleteResult.success;
     messages.push(deleted
       ? `Deleted branch: ${tierBranch}`
@@ -896,18 +912,46 @@ export async function mergeTierBranch(
   return { success: true, messages, mergedInto: parentBranch, deletedBranch: deleted };
 }
 
-// ─── Merge incident log ─────────────────────────────────────────────
+// ─── mergeChildBranches (for phase-end: merge session branches into phase) ───
 
-const MERGE_INCIDENT_LOG = join(process.cwd(), '.project-manager', '.merge-incident-log');
+export interface MergeChildBranchesResult {
+  merged: string[];
+  failed: string[];
+  messages: string[];
+}
 
-async function appendMergeIncident(entry: string): Promise<void> {
-  try {
-    const { appendFile, mkdir } = await import('fs/promises');
-    await mkdir(dirname(MERGE_INCIDENT_LOG), { recursive: true });
-    await appendFile(MERGE_INCIDENT_LOG, entry + '\n');
-  } catch (err) {
-    console.warn(`[appendMergeIncident] Could not write incident log: ${err instanceof Error ? err.message : String(err)}`);
+/**
+ * List branches matching pattern (e.g. "session-6.10*"), merge each into targetBranch
+ * with skipStash: true, optionally delete each merged branch. Used by phase-end.
+ */
+export async function mergeChildBranches(
+  pattern: string,
+  targetBranch: string,
+  options?: { deleteMerged?: boolean }
+): Promise<MergeChildBranchesResult> {
+  const prefix = pattern.endsWith('*') ? pattern.slice(0, -1) : pattern;
+  const branches = await listBranchesByPrefix(prefix);
+  const merged: string[] = [];
+  const failed: string[] = [];
+  const messages: string[] = [];
+
+  for (const branch of branches) {
+    const mergeResult = await gitMerge({ sourceBranch: branch, targetBranch, skipStash: true });
+    if (mergeResult.success) {
+      merged.push(branch);
+      if (options?.deleteMerged) {
+        const delResult = await runGitCommand(`git branch -d ${branch}`, 'mergeChildBranches-delete');
+        messages.push(delResult.success ? `Merged and deleted: ${branch}` : `Merged ${branch} (delete failed: ${delResult.output})`);
+      } else {
+        messages.push(`Merged: ${branch}`);
+      }
+    } else {
+      failed.push(branch);
+      messages.push(`Merge failed: ${branch} — ${mergeResult.output}`);
+    }
   }
+
+  return { merged, failed, messages };
 }
 
 // ─── formatBranchHierarchyFromConfig ─────────────────────────────────
