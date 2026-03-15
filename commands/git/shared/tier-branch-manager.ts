@@ -563,11 +563,14 @@ export async function ensureTierBranch(
   options?: {
     pullRoot?: boolean;        // pull latest from root branch (feature-start only)
     createIfMissing?: boolean; // create target branch if it doesn't exist (default: true)
+    /** When true (default), pull non-root ancestor branches after checkout (multi-machine sync). */
+    syncRemote?: boolean;
   }
 ): Promise<EnsureTierBranchResult> {
   const messages: string[] = [];
   const createIfMissing = options?.createIfMissing ?? true;
   const pullRoot = options?.pullRoot ?? false;
+  const syncRemote = options?.syncRemote ?? true;
 
   // Step 0a: Feature coherence
   const coherence = await checkScopeCoherence(context);
@@ -691,6 +694,17 @@ export async function ensureTierBranch(
       }
       messages.push(`Checked out ${link.tier} branch: ${link.branchName}`);
     }
+    if (syncRemote && !link.isRoot) {
+      const pullResult = await runGitCommand(
+        `git pull origin ${link.branchName}`,
+        'ensureTierBranch-pullAncestor'
+      );
+      if (pullResult.success) {
+        messages.push(`Pulled latest ${link.branchName} from remote.`);
+      } else {
+        messages.push(`Warning: could not pull ${link.branchName}: ${pullResult.error || pullResult.output}`);
+      }
+    }
   }
 
   // Step 3: Handle target branch (the leaf)
@@ -799,6 +813,8 @@ export async function mergeTierBranch(
     push?: boolean;
     /** Awaited before the final commit so all async writes land on disk first. */
     auditPrewarmPromise?: Promise<void>;
+    /** When true (default), pull parent branch from origin before merge (multi-machine sync). */
+    syncRemote?: boolean;
   }
 ): Promise<MergeTierBranchResult> {
   const messages: string[] = [];
@@ -872,7 +888,13 @@ export async function mergeTierBranch(
   }
 
   // ── Step 4: Merge with skipStash ──────────────────────────────────
-  const mergeResult = await gitMerge({ sourceBranch: tierBranch, targetBranch: parentBranch, skipStash: true });
+  const syncRemote = options?.syncRemote ?? true;
+  const mergeResult = await gitMerge({
+    sourceBranch: tierBranch,
+    targetBranch: parentBranch,
+    skipStash: true,
+    pullBeforeMerge: syncRemote,
+  });
   if (!mergeResult.success) {
     messages.push(`Merge ${tierBranch} into ${parentBranch} failed: ${mergeResult.output}`);
     messages.push(`Manual recovery: git checkout ${parentBranch} && git merge ${tierBranch}`);

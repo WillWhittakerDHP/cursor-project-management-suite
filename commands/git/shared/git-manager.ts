@@ -118,5 +118,18 @@ export async function gitDiffCached(): Promise<{ success: boolean; output: strin
   return runGitCommand('git diff --cached --quiet', 'gitDiffCached');
 }
 
+/** Run `git fetch origin [branch]`. Omit branch to fetch all. */
+export async function gitFetch(
+  branch?: string
+): Promise<{ success: boolean; output: string; error?: string }> {
+  const cmd = branch ? `git fetch origin ${branch}` : 'git fetch origin';
+  return runGitCommand(cmd, 'gitFetch');
+}
+
+/** Run `git pull origin <branch>`. Returns success even if nothing to pull. */
+export async function gitPull(branch: string): Promise<{ success: boolean; output: string; error?: string }> {
+  return runGitCommand(`git pull origin ${branch}`, 'gitPull');
+}
+
 // ─── Propagation ────────────────────────────────────────────────────────
 export { propagateFiles, propagateSharedFiles, propagateHarness };

@@ -19,6 +19,8 @@ export interface GitMergeParams {
   targetBranch?: string;
   /** When true, refuse to stash; fail if the working tree is dirty. */
   skipStash?: boolean;
+  /** When true, pull target branch from origin after checkout and before merge (multi-machine sync). */
+  pullBeforeMerge?: boolean;
 }
 
 async function hasUncommittedChanges(): Promise<boolean> {
@@ -62,6 +64,25 @@ export async function gitMerge(params: GitMergeParams): Promise<{ success: boole
       return {
         success: false,
         output: `Failed to checkout target branch ${targetBranch}: ${checkoutResult.error || checkoutResult.output}`,
+      };
+    }
+
+    if (params.pullBeforeMerge) {
+      const pullResult = await runGitCommand(`git pull origin ${targetBranch}`, 'gitMerge-pull');
+      if (!pullResult.success) {
+        if (didStash) await runGitCommand('git stash pop', 'gitMerge-stash-pop');
+        return {
+          success: false,
+          output: `Failed to pull ${targetBranch} before merge: ${pullResult.error || pullResult.output}`,
+        };
+      }
+    }
+  } else if (params.pullBeforeMerge) {
+    const pullResult = await runGitCommand(`git pull origin ${targetBranch}`, 'gitMerge-pull');
+    if (!pullResult.success) {
+      return {
+        success: false,
+        output: `Failed to pull ${targetBranch} before merge: ${pullResult.error || pullResult.output}`,
       };
     }
   }
