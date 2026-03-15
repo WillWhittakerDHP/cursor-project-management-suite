@@ -24,6 +24,8 @@ import { runTierStartWorkflow } from '../../../harness/run-start-steps';
 import { getTierUpPlanningDocSections } from '../../shared/tier-start-steps';
 import { buildReuseOpportunitiesSection, type InventoryPayload } from '../helpers/inventory-reuse-check';
 import type { RunRecorder, RunTraceHandle } from '../../../harness/contracts';
+import { writeTierScope } from '../../../utils/tier-scope-writer';
+import { getCurrentBranch } from '../../../utils/utils';
 
 export type ShadowContext = { recorder: RunRecorder; handle: RunTraceHandle };
 
@@ -306,6 +308,30 @@ export async function phaseStartImpl(
   };
 
   const result = await runTierStartWorkflow(ctx, hooks);
+  if (result.success) {
+    const phaseDesc = await derivePhaseDescription(phase, context);
+    const phaseName = phaseDesc || `Phase ${phase}`;
+    let phaseBranch: string | undefined;
+    let phaseSlug: string | undefined;
+    try {
+      const current = await getCurrentBranch();
+      if (current && (current === `phase-${phase}` || current.startsWith(`phase-${phase}-`))) {
+        phaseBranch = current;
+        phaseSlug = current.replace(new RegExp(`^phase-${phase.replace('.', '\\.')}-?`), '') || undefined;
+      }
+    } catch {
+      // non-blocking
+    }
+    await writeTierScope({
+      feature: { id: context.feature.name, name: `Feature: ${context.feature.name}` },
+      phase: {
+        id: phase,
+        name: phaseName,
+        branch: phaseBranch,
+        slug: phaseSlug,
+      },
+    });
+  }
   if (result.outcome.cascade) {
     result.outcome.nextAction = `Phase ${phaseId} planning complete. Cascade: ${result.outcome.cascade.command}`;
   }

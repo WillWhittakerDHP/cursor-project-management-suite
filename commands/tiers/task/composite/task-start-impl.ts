@@ -24,6 +24,9 @@ import type { RunRecorder, RunTraceHandle } from '../../../harness/contracts';
 import { getInventoryMatchesForFiles } from '../../../audit/governance-context';
 import { getPlanningDocPathForTier, getTierUpPlanningDocSections, parsePlanningDocSections } from '../../shared/tier-start-steps';
 import { readProjectFile } from '../../../utils/utils';
+import { writeTierScope } from '../../../utils/tier-scope-writer';
+import { getExpectedBranchForTier } from '../../../git/shared/git-manager';
+import { getConfigForTier } from '../../configs/index';
 
 export type ShadowContext = { recorder: RunRecorder; handle: RunTraceHandle };
 
@@ -407,5 +410,40 @@ export async function taskStartImpl(
     runStartAudit: true,
   };
 
-  return runTierStartWorkflow(ctx, hooks);
+  const result = await runTierStartWorkflow(ctx, hooks);
+  if (result.success) {
+    const phaseId = sessionId.split('.').slice(0, 2).join('.');
+    const PHASE_CONFIG = getConfigForTier('phase');
+    let phaseBranch: string | undefined;
+    let phaseSlug: string | undefined;
+    try {
+      const branch = await getExpectedBranchForTier(PHASE_CONFIG, phaseId, context);
+      if (branch) {
+        phaseBranch = branch;
+        phaseSlug = branch.replace(new RegExp(`^phase-${phaseId.replace('.', '\\.')}-?`), '') || undefined;
+      }
+    } catch {
+      // non-blocking
+    }
+    let taskName = `Task ${taskId}`;
+    try {
+      const section = await readTaskSection(taskId, context, sessionId);
+      const title = extractTaskHeading(section);
+      if (title) taskName = title;
+    } catch {
+      // non-blocking
+    }
+    await writeTierScope({
+      feature: { id: context.feature.name, name: `Feature: ${context.feature.name}` },
+      phase: {
+        id: phaseId,
+        name: `Phase ${phaseId}`,
+        branch: phaseBranch,
+        slug: phaseSlug,
+      },
+      session: { id: sessionId, name: `Session ${sessionId}` },
+      task: { id: taskId, name: taskName },
+    });
+  }
+  return result;
 }

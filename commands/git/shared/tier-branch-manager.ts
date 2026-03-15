@@ -671,16 +671,34 @@ export async function ensureTierBranch(
       }
     }
 
-    // Verify ancestor is based on its parent (use resolved parent from chain when available)
+    // Verify ancestor is based on its parent; auto-rebase if not (e.g. parent got new commits from a sibling merge)
     const resolvedParent = i > 0 ? chain[i - 1].branchName : parentBranch;
     if (resolvedParent && !isRootBranch(resolvedParent) && (await branchExists(resolvedParent))) {
       const isBasedOn = await isBranchBasedOn(link.branchName, resolvedParent);
       if (!isBasedOn) {
-        messages.push(
-          `Branch ${link.branchName} (${link.tier}) is not based on ${resolvedParent}. ` +
-          `You may need to rebase: git rebase ${resolvedParent}`
-        );
-        return { success: false, messages, finalBranch: await getCurrentBranch(), chain };
+        const preBranch = await getCurrentBranch();
+        if (preBranch !== link.branchName) {
+          const coResult = await runGitCommand(`git checkout ${link.branchName}`, 'ensureTierBranch-checkout-for-rebase');
+          if (!coResult.success) {
+            messages.push(
+              `Branch ${link.branchName} (${link.tier}) is not based on ${resolvedParent} ` +
+              `and could not checkout for auto-rebase: ${coResult.error || coResult.output}. ` +
+              `Resolve manually: git checkout ${link.branchName} && git rebase ${resolvedParent}`
+            );
+            return { success: false, messages, finalBranch: await getCurrentBranch(), chain };
+          }
+        }
+        const rebaseResult = await runGitCommand(`git rebase ${resolvedParent}`, 'ensureTierBranch-auto-rebase');
+        if (!rebaseResult.success) {
+          await runGitCommand('git rebase --abort', 'ensureTierBranch-rebase-abort');
+          messages.push(
+            `Branch ${link.branchName} (${link.tier}) is not based on ${resolvedParent} ` +
+            `and auto-rebase failed (conflicts). ` +
+            `Resolve manually: git checkout ${link.branchName} && git rebase ${resolvedParent}`
+          );
+          return { success: false, messages, finalBranch: await getCurrentBranch(), chain };
+        }
+        messages.push(`Auto-rebased ${link.branchName} onto ${resolvedParent}.`);
       }
     }
 
@@ -703,6 +721,22 @@ export async function ensureTierBranch(
         messages.push(`Pulled latest ${link.branchName} from remote.`);
       } else {
         messages.push(`Warning: could not pull ${link.branchName}: ${pullResult.error || pullResult.output}`);
+      }
+      // Re-check ancestry after pull; pulling can introduce old history that breaks the relationship
+      if (resolvedParent && !isRootBranch(resolvedParent) && (await branchExists(resolvedParent))) {
+        const stillBasedOn = await isBranchBasedOn(link.branchName, resolvedParent);
+        if (!stillBasedOn) {
+          const postPullRebase = await runGitCommand(`git rebase ${resolvedParent}`, 'ensureTierBranch-post-pull-rebase');
+          if (!postPullRebase.success) {
+            await runGitCommand('git rebase --abort', 'ensureTierBranch-post-pull-rebase-abort');
+            messages.push(
+              `Pulling ${link.branchName} broke ancestry with ${resolvedParent} and auto-rebase failed. ` +
+              `Resolve manually: git rebase ${resolvedParent}`
+            );
+            return { success: false, messages, finalBranch: await getCurrentBranch(), chain };
+          }
+          messages.push(`Post-pull auto-rebase: ${link.branchName} onto ${resolvedParent}.`);
+        }
       }
     }
   }
@@ -729,6 +763,23 @@ export async function ensureTierBranch(
         messages.push(`Warning: could not pull ${parentOfTarget}: ${pullResult.error || pullResult.output}`);
       }
     }
+    // Phase/session-start: pull latest non-root parent before creating child branch so the new branch includes latest harness/feature updates
+    if (
+      createIfMissing &&
+      !isRootBranch(parentOfTarget) &&
+      (await branchExists(parentOfTarget)) &&
+      !(await branchExists(targetLink.branchName))
+    ) {
+      const pullResult = await runGitCommand(
+        `git pull origin ${parentOfTarget}`,
+        'ensureTierBranch-pullParentBeforeCreate'
+      );
+      if (pullResult.success) {
+        messages.push(`Pulled latest ${parentOfTarget} before creating ${targetLink.tier} branch.`);
+      } else {
+        messages.push(`Warning: could not pull ${parentOfTarget}: ${pullResult.error || pullResult.output}`);
+      }
+    }
   }
 
   if (await branchExists(targetLink.branchName)) {
@@ -737,8 +788,9 @@ export async function ensureTierBranch(
       const isBasedOn = await isBranchBasedOn(targetLink.branchName, parentOfTarget);
       if (!isBasedOn) {
         messages.push(
-          `Target branch ${targetLink.branchName} exists but is not based on ${parentOfTarget}. ` +
-          `Delete and recreate, or rebase: git rebase ${parentOfTarget}`
+          `Target branch ${targetLink.branchName} (${targetLink.tier}) exists but is not based on ${parentOfTarget}. ` +
+            `The parent may have been updated (e.g. harness or feature changes). ` +
+            `Rebase to bring in the latest updates: git rebase ${parentOfTarget}`
         );
         return { success: false, messages, finalBranch: await getCurrentBranch(), chain };
       }

@@ -15,6 +15,7 @@ import { TemplateManager } from './template-manager';
 import { FileCache } from './file-cache';
 import { WorkflowId } from './id-utils';
 import { readProjectFile, writeProjectFile } from './utils';
+import { readTierScope, type TierScopeSnapshot } from './tier-scope-writer';
 
 /**
  * Document tier types
@@ -50,6 +51,8 @@ export class WorkflowCommandContext {
   readonly tier?: TierName;
   /** Set when created via contextFromParams; the identifier (featureId, phaseId, sessionId, taskId) used. */
   readonly identifier?: string;
+  /** Populated from .tier-scope when context is built via contextFromParams or getCurrent; used for branch resolution. */
+  readonly scope?: TierScopeSnapshot;
 
   /**
    * Create a new command context
@@ -57,8 +60,15 @@ export class WorkflowCommandContext {
    * @param cache Optional file cache (creates new one if not provided)
    * @param tier Optional; set when built from contextFromParams
    * @param identifier Optional; set when built from contextFromParams
+   * @param scope Optional; from .tier-scope for branch/slug resolution
    */
-  constructor(featureName: string, cache?: FileCache, tier?: TierName, identifier?: string) {
+  constructor(
+    featureName: string,
+    cache?: FileCache,
+    tier?: TierName,
+    identifier?: string,
+    scope?: TierScopeSnapshot
+  ) {
     this.feature = FeatureContext.fromName(featureName);
     this.paths = this.feature.paths;
     this.cache = cache || new FileCache();
@@ -66,6 +76,7 @@ export class WorkflowCommandContext {
     this.templates = new TemplateManager(this.feature);
     this.tier = tier;
     this.identifier = identifier;
+    this.scope = scope;
   }
 
   /**
@@ -75,7 +86,8 @@ export class WorkflowCommandContext {
    */
   static async getCurrent(cache?: FileCache): Promise<WorkflowCommandContext> {
     const feature = await FeatureContext.getCurrent();
-    return new WorkflowCommandContext(feature.name, cache);
+    const scope = (await readTierScope()) ?? undefined;
+    return new WorkflowCommandContext(feature.name, cache, undefined, undefined, scope);
   }
 
   /**
@@ -125,7 +137,8 @@ export class WorkflowCommandContext {
       default:
         throw new Error(`contextFromParams: unknown tier ${tier}`);
     }
-    return new WorkflowCommandContext(featureName, cache, tier, identifier);
+    const scope = (await readTierScope()) ?? undefined;
+    return new WorkflowCommandContext(featureName, cache, tier, identifier, scope);
   }
 
   // Convenience methods for common operations

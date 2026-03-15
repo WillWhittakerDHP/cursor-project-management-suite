@@ -24,6 +24,7 @@ import type {
 import { runTierStartWorkflow } from '../../../harness/run-start-steps';
 import { getTierUpPlanningDocSections } from '../../shared/tier-start-steps';
 import type { RunRecorder, RunTraceHandle } from '../../../harness/contracts';
+import { writeTierScope } from '../../../utils/tier-scope-writer';
 
 const BLOCKED_STATUSES = ['complete', 'blocked'] as const;
 
@@ -312,5 +313,11 @@ export async function featureStartImpl(
     runStartAudit: true,
   };
 
-  return runTierStartWorkflow(ctx, hooks);
+  const result = await runTierStartWorkflow(ctx, hooks);
+  if (result.success) {
+    await writeTierScope({
+      feature: { id: context.feature.name, name: `Feature: ${context.feature.name}` },
+    });
+  }
+  return result;
 }

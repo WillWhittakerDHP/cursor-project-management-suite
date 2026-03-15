@@ -29,6 +29,8 @@ import type {
 import { runTierStartWorkflow } from '../../../harness/run-start-steps';
 import { getTierUpPlanningDocSections } from '../../shared/tier-start-steps';
 import type { RunRecorder, RunTraceHandle } from '../../../harness/contracts';
+import { writeTierScope } from '../../../utils/tier-scope-writer';
+import { getExpectedBranchForTier } from '../../../git/shared/git-manager';
 
 export type ShadowContext = { recorder: RunRecorder; handle: RunTraceHandle };
 
@@ -468,6 +470,31 @@ export async function sessionStartImpl(
   };
 
   const result = await runTierStartWorkflow(ctx, hooks);
+  if (result.success) {
+    const phaseId = sessionId.split('.').slice(0, 2).join('.');
+    const PHASE_CONFIG = getConfigForTier('phase');
+    let phaseBranch: string | undefined;
+    let phaseSlug: string | undefined;
+    try {
+      const branch = await getExpectedBranchForTier(PHASE_CONFIG, phaseId, context);
+      if (branch) {
+        phaseBranch = branch;
+        phaseSlug = branch.replace(new RegExp(`^phase-${phaseId.replace('.', '\\.')}-?`), '') || undefined;
+      }
+    } catch {
+      // non-blocking
+    }
+    await writeTierScope({
+      feature: { id: context.feature.name, name: `Feature: ${context.feature.name}` },
+      phase: {
+        id: phaseId,
+        name: `Phase ${phaseId}`,
+        branch: phaseBranch,
+        slug: phaseSlug,
+      },
+      session: { id: sessionId, name: resolvedDescription || `Session ${sessionId}` },
+    });
+  }
   if (result.outcome.cascade) {
     result.outcome.nextAction = `Session ${sessionId} planning complete. Cascade: ${result.outcome.cascade.command}`;
   }
