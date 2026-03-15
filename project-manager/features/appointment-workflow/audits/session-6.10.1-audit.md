@@ -3,7 +3,7 @@
 **Feature:** appointment-workflow
 **Tier:** session
 **Identifier:** 6.10.1
-**Timestamp:** 2026-03-08T00:32:16.502Z
+**Timestamp:** 2026-03-11T02:30:16.817Z
 **Overall Status:** ✅ PASS
 
 ---
@@ -15,6 +15,23 @@
 - **Fail:** 0
 
 **Average Score:** 99/100
+
+## Score Comparison
+
+| Category | Start | End | Delta | Status |
+|----------|-------|-----|-------|--------|
+| tier-quality-coverage | 100 | N/A | N/A | ⚠️ Missing |
+| type-constant-inventory | 0 | 0 | +0 | ➡️ Unchanged |
+| composable-governance | 100 | 100 | +0 | ➡️ Unchanged |
+| function-governance | 100 | 100 | +0 | ➡️ Unchanged |
+| component-governance | 100 | 100 | +0 | ➡️ Unchanged |
+| tier-quality | N/A | 98 | N/A | 🆕 New |
+| docs | N/A | 100 | N/A | 🆕 New |
+| vue-architecture | N/A | 100 | N/A | 🆕 New |
+
+**Overall:** 80 → 85 (+0 points improvement)
+
+---
 
 ---
 

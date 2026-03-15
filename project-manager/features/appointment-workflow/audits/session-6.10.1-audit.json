@@ -37,9 +37,58 @@
       "summary": "Scanned 176 .vue file(s); found 0 error(s), 0 warning(s)."
     }
   ],
-  "timestamp": "2026-03-08T00:32:16.502Z",
+  "timestamp": "2026-03-11T02:30:16.817Z",
   "reportPath": "",
   "featureName": "appointment-workflow",
   "auditType": "end",
-  "baselineComparison": []
+  "baselineComparison": [
+    {
+      "category": "tier-quality-coverage",
+      "startScore": 100,
+      "status": "missing"
+    },
+    {
+      "category": "type-constant-inventory",
+      "startScore": 0,
+      "endScore": 0,
+      "delta": 0,
+      "status": "unchanged"
+    },
+    {
+      "category": "composable-governance",
+      "startScore": 100,
+      "endScore": 100,
+      "delta": 0,
+      "status": "unchanged"
+    },
+    {
+      "category": "function-governance",
+      "startScore": 100,
+      "endScore": 100,
+      "delta": 0,
+      "status": "unchanged"
+    },
+    {
+      "category": "component-governance",
+      "startScore": 100,
+      "endScore": 100,
+      "delta": 0,
+      "status": "unchanged"
+    },
+    {
+      "category": "tier-quality",
+      "endScore": 98,
+      "status": "new"
+    },
+    {
+      "category": "docs",
+      "endScore": 100,
+      "status": "new"
+    },
+    {
+      "category": "vue-architecture",
+      "endScore": 100,
+      "status": "new"
+    }
+  ]
 }

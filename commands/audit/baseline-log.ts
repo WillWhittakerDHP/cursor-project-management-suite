@@ -74,10 +74,38 @@ export function buildTierStampFromId(
 }
 
 /**
- * Append one entry to the baseline log (atomic append, safe for concurrent writes).
+ * Append one entry to the baseline log.
+ * Skips the write if an entry with the same tierStamp + phase already exists
+ * within the dedup window (default 30 minutes), preventing duplicates when
+ * tier-start is invoked more than once for the same tier.
  */
 export async function appendBaselineEntry(entry: BaselineLogEntry): Promise<void> {
   await mkdir(dirname(LOG_PATH), { recursive: true });
+
+  const DEDUP_WINDOW_MS = 30 * 60 * 1000;
+  if (existsSync(LOG_PATH)) {
+    try {
+      const raw = await readFile(LOG_PATH, 'utf-8');
+      const entryTime = new Date(entry.timestamp).getTime();
+      for (const line of raw.trim().split('\n').filter(Boolean)) {
+        try {
+          const existing = JSON.parse(line) as BaselineLogEntry;
+          if (
+            existing.tierStamp === entry.tierStamp &&
+            existing.phase === entry.phase &&
+            Math.abs(entryTime - new Date(existing.timestamp).getTime()) < DEDUP_WINDOW_MS
+          ) {
+            console.warn(
+              `[appendBaselineEntry] Skipping duplicate: ${entry.tierStamp} (${entry.phase}) — ` +
+              `existing entry at ${existing.timestamp}, new at ${entry.timestamp}`
+            );
+            return;
+          }
+        } catch { /* skip malformed lines */ }
+      }
+    } catch { /* file unreadable — proceed with append */ }
+  }
+
   const line = JSON.stringify(entry) + '\n';
   await appendFile(LOG_PATH, line, 'utf-8');
 }
