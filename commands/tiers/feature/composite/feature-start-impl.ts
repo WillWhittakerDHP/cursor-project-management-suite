@@ -9,7 +9,7 @@ import { extractFilePaths, gatherFileStatuses } from '../../../utils/context-gat
 import { formatFileStatusList } from '../../../utils/context-templates';
 import { resolveFeatureId } from '../../../utils/feature-context';
 import { FEATURE_CONFIG } from '../../configs/feature';
-import { ensureTierBranch } from '../../../git/shared/tier-branch-manager';
+import { ensureTierBranch } from '../../../git/shared/git-manager';
 import { deriveFeatureDescription } from '../../../planning/utils/resolve-planning-description';
 import { readTierUpContext, getTierContextSourcePolicy } from '../../shared/context-policy';
 import type { TierStartResult } from '../../../utils/tier-outcome';

@@ -6,7 +6,7 @@
 import { PHASE_CONFIG } from '../../configs/phase';
 import { resolveFeatureName } from '../../../utils/feature-context';
 import { WorkflowCommandContext } from '../../../utils/command-context';
-import { ensureTierBranch } from '../../../git/shared/tier-branch-manager';
+import { ensureTierBranch } from '../../../git/shared/git-manager';
 import { readProjectFile, writeProjectFile } from '../../../utils/utils';
 import { derivePhaseDescription } from '../../../planning/utils/resolve-planning-description';
 import { tierDown } from '../../../utils/tier-navigation';

@@ -8,14 +8,8 @@ import { access } from 'fs/promises';
 import { FEATURE_CONFIG } from '../../configs/feature';
 import { resolveFeatureId } from '../../../utils/feature-context';
 import { WorkflowCommandContext } from '../../../utils/command-context';
-import {
-  readProjectFile,
-  writeProjectFile,
-  branchExists,
-  runCommand,
-  getCurrentBranch,
-  PROJECT_ROOT,
-} from '../../../utils/utils';
+import { readProjectFile, writeProjectFile, PROJECT_ROOT } from '../../../utils/utils';
+import { branchExists, getCurrentBranch, gitCheckout } from '../../../git/shared/git-manager';
 import { deriveFeatureDescription } from '../../../planning/utils/resolve-planning-description';
 import { tierDown } from '../../../utils/tier-navigation';
 import type { TierReopenParams, TierReopenResult, TierReopenWorkflowContext, TierReopenWorkflowHooks } from '../../shared/tier-reopen-workflow';
@@ -89,7 +83,7 @@ export async function featureReopenImpl(
       if (featureBranch && (await branchExists(featureBranch))) {
         const currentBranch = await getCurrentBranch();
         if (currentBranch !== featureBranch) {
-          const checkoutResult = await runCommand(`git checkout ${featureBranch}`);
+          const checkoutResult = await gitCheckout(featureBranch);
           if (checkoutResult.success) {
             c.output.push(`✅ Switched to branch: ${featureBranch}`);
           }

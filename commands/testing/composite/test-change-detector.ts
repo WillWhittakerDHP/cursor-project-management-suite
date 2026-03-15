@@ -13,7 +13,7 @@
 import { access, stat } from 'fs/promises';
 import { join } from 'path';
 import { PROJECT_ROOT } from '../../utils/utils';
-import { execSync } from 'child_process';
+import { gitStatus, runGitCommand } from '../../git/shared/git-manager';
 
 /**
  * Type of code change detected
@@ -82,7 +82,7 @@ export async function analyzeCodeChangeImpact(
   
   // Get all changed files (provided + uncommitted if requested)
   const allChangedFiles = includeUncommitted
-    ? [...changedFiles, ...getUncommittedFiles()]
+    ? [...changedFiles, ...(await getUncommittedFiles())]
     : changedFiles;
   
   // Remove duplicates and filter to code files
@@ -144,14 +144,12 @@ export async function analyzeCodeChangeImpact(
 /**
  * Get uncommitted files from git status
  */
-function getUncommittedFiles(): string[] {
+async function getUncommittedFiles(): Promise<string[]> {
   try {
-    const output = execSync('git status --porcelain', {
-      cwd: PROJECT_ROOT,
-      encoding: 'utf-8',
-      stdio: ['pipe', 'pipe', 'ignore'],
-    });
-    
+    const result = await gitStatus();
+    if (!result.success) return [];
+
+    const output = result.output;
     return output
       .split('\n')
       .map(line => line.trim())
@@ -243,15 +241,15 @@ function findTestFile(sourcePath: string): string | null {
  */
 async function analyzeFileChanges(filePath: string): Promise<CodeChange[]> {
   const changes: CodeChange[] = [];
-  
+
   try {
-    // Get git diff for the file
-    const diff = execSync(`git diff HEAD ${filePath}`, {
-      cwd: PROJECT_ROOT,
-      encoding: 'utf-8',
-      stdio: ['pipe', 'pipe', 'ignore'],
-    });
-    
+    // Get git diff for the file (quote path for safety)
+    const diffResult = await runGitCommand(
+      'git diff HEAD -- ' + JSON.stringify(filePath),
+      'test-change-detector-diff'
+    );
+    const diff = diffResult.success ? diffResult.output : '';
+
     if (!diff) {
       // No git diff available (new file or uncommitted)
       return changes;
@@ -445,7 +443,7 @@ export async function getRecentlyModifiedFiles(
     const windowMs = windowMinutes * 60 * 1000;
     
     // Get uncommitted files from git
-    const uncommittedFiles = getUncommittedFiles();
+    const uncommittedFiles = await getUncommittedFiles();
     
     // Check modification time of each file
     const recentFiles: string[] = [];

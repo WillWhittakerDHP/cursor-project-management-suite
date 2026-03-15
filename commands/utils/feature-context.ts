@@ -12,7 +12,7 @@
 import { WorkflowPathResolver } from './path-resolver';
 import { readFile, readdir, access } from 'fs/promises';
 import { join } from 'path';
-import { execSync } from 'child_process';
+import { getCurrentBranch } from '../git/shared/git-manager';
 
 /**
  * FeatureContext class
@@ -51,7 +51,7 @@ export class FeatureContext {
    */
   static async getCurrent(): Promise<FeatureContext> {
     try {
-      const branchName = execSync('git branch --show-current', { encoding: 'utf-8' }).trim();
+      const branchName = (await getCurrentBranch()).trim();
       const featureName = branchName
         .replace(/^(feature|feat|fix|bugfix)\//, '')
         .replace(/^.*\//, '')

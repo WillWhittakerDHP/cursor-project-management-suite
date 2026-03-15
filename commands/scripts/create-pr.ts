@@ -6,6 +6,7 @@
 import { execSync } from 'node:child_process';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { getCurrentBranch, gitPush } from '../git/shared/git-manager';
 
 const colors = {
   reset: '\x1b[0m',
@@ -30,13 +31,13 @@ export interface CreatePullRequestResult {
 /**
  * Create a pull request using GitHub CLI.
  */
-export function createPullRequest(
+export async function createPullRequest(
   title: string,
   body = '',
   draft = false
-): CreatePullRequestResult {
+): Promise<CreatePullRequestResult> {
   try {
-    const currentBranch = execSync('git branch --show-current', { encoding: 'utf8' }).trim();
+    const currentBranch = (await getCurrentBranch()).trim();
 
     if (currentBranch === 'main' || currentBranch === 'master') {
       log('⚠️  Cannot create PR from main/master branch', 'yellow');
@@ -46,7 +47,10 @@ export function createPullRequest(
     log(`\n🔄 Pushing branch: ${currentBranch}...`, 'blue');
 
     try {
-      execSync(`git push -u origin ${currentBranch}`, { encoding: 'utf8', stdio: 'inherit' });
+      const pushResult = await gitPush();
+      if (!pushResult.success) {
+        log('   (Branch already pushed or push failed)', 'yellow');
+      }
     } catch {
       log('   (Branch already pushed or push failed)', 'yellow');
     }
@@ -67,10 +71,8 @@ export function createPullRequest(
     log(`\n❌ Failed to create pull request: ${message}`, 'red');
     const repoUrl = 'https://github.com/WillWhittakerDHP/DHP_Differential_Scheduler';
     log(`\n⚠️  Create PR manually:`, 'yellow');
-    log(
-      `   ${repoUrl}/compare/main...${execSync('git branch --show-current', { encoding: 'utf8' }).trim()}`,
-      'yellow'
-    );
+    const fallbackBranch = (await getCurrentBranch()).trim();
+    log(`   ${repoUrl}/compare/main...${fallbackBranch}`, 'yellow');
     return { success: false, error: message };
   }
 }
@@ -106,6 +108,7 @@ if (isMainModule) {
     log('❌ GitHub CLI not authenticated. Run: gh auth login', 'red');
     process.exit(1);
   }
-  const result = createPullRequest(title, body, draft);
-  process.exit(result.success ? 0 : 1);
+  createPullRequest(title, body, draft).then((result) => {
+    process.exit(result.success ? 0 : 1);
+  });
 }

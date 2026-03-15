@@ -4,7 +4,8 @@
 
 import { featureSummarize } from '../atomic/feature-summarize';
 import { featureClose } from '../atomic/feature-close';
-import { runCommand, runWithLintVerification } from '../../../utils/utils';
+import { runWithLintVerification } from '../../../utils/utils';
+import { gitCheckout } from '../../../git/shared/git-manager';
 import { featureCommentCleanup } from '../../../comments/commentCleanup';
 import { WorkflowCommandContext } from '../../../utils/command-context';
 import { detectFeatureModifiedFiles } from '../../../utils/detect-modified-files';
@@ -289,7 +290,7 @@ export async function featureEndImpl(
         } else {
           const verified = await runWithLintVerification(
             () => featureCommentCleanup({ dryRun: false }),
-            async () => { await runCommand('git checkout -- .'); }
+            async () => { await gitCheckout('-- .'); }
           );
           const cleanupResult = verified.cleanupResult;
           ctx.steps.commentCleanup = {

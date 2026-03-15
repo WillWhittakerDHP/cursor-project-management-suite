@@ -9,7 +9,7 @@
 import { readFile } from 'fs/promises';
 import { existsSync } from 'fs';
 import { join } from 'path';
-import { execSync } from 'child_process';
+import { getCurrentBranch, branchExists, runGitCommand } from '../git/shared/git-manager';
 import { WorkflowCommandContext } from './command-context';
 import { WorkflowId } from './id-utils';
 
@@ -230,36 +230,25 @@ export async function detectFeatureModifiedFiles(
 ): Promise<string[]> {
   try {
     // Get current branch name
-    const branchOutput = execSync('git branch --show-current', {
-      cwd: PROJECT_ROOT,
-      encoding: 'utf-8',
-      stdio: ['pipe', 'pipe', 'ignore'],
-    }).trim();
+    const branchOutput = (await getCurrentBranch()).trim();
 
     // Try to find base branch (usually 'develop' or 'main')
     const baseBranches = ['develop', 'main', 'master'];
     let baseBranch = 'develop';
 
     for (const branch of baseBranches) {
-      try {
-        execSync(`git rev-parse --verify ${branch}`, {
-          cwd: PROJECT_ROOT,
-          stdio: ['ignore', 'ignore', 'ignore'],
-        });
+      if (await branchExists(branch)) {
         baseBranch = branch;
         break;
-      } catch (_err) {
-        continue;
       }
     }
 
     // Get files changed in feature branch compared to base
-    const gitDiffCommand = `git diff --name-only ${baseBranch}..${branchOutput}`;
-    const output = execSync(gitDiffCommand, {
-      cwd: PROJECT_ROOT,
-      encoding: 'utf-8',
-      stdio: ['pipe', 'pipe', 'ignore'],
-    });
+    const diffResult = await runGitCommand(
+      `git diff --name-only ${baseBranch}..${branchOutput}`,
+      'detectFeatureModifiedFiles'
+    );
+    const output = diffResult.output;
 
     const files = output
       .split('\n')

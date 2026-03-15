@@ -4,7 +4,8 @@
  * Shows: phase, next action, last completed, branch, recent commits
  */
 
-import { getCurrentBranch, runCommand } from './utils';
+import { getCurrentBranch } from './utils';
+import { gitLog } from '../git/shared/git-manager';
 import { MarkdownUtils } from './markdown-utils';
 import { WorkflowCommandContext } from './command-context';
 
@@ -22,7 +23,7 @@ export async function status(): Promise<string> {
   
   // Get git info
   const branch = await getCurrentBranch();
-  const lastCommitResult = await runCommand('git log -1 --pretty=format:"%h - %s (%ar)"');
+  const lastCommitResult = await gitLog('%h - %s (%ar)', 1);
   const lastCommit = lastCommitResult.success ? lastCommitResult.output : 'Unable to get commit info';
   
   output.push('# Current Status\n');

@@ -7,7 +7,7 @@
 import { readEndPending, deleteEndPending } from './pending-state';
 import type { ControlPlaneDecision } from './control-plane-types';
 import { QUESTION_KEYS } from './control-plane-types';
-import { runCommand } from '../../utils/utils';
+import { gitPush } from '../../git/shared/git-manager';
 
 const NO_PENDING_MESSAGE =
   'No pending push. Run a tier end (feature-end, phase-end, session-end, or task-end) first. When it returns pending push, run **/accepted-push** to push or **/skip-push** to skip.';
@@ -45,7 +45,7 @@ export async function acceptedPush(): Promise<AcceptedPushResult> {
     };
   }
 
-  const pushResult = await runCommand('git push');
+  const pushResult = await gitPush();
   await deleteEndPending();
 
   if (!pushResult.success) {

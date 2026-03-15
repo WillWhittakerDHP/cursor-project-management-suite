@@ -22,7 +22,7 @@ import { TASK_CONFIG } from '../../configs/task';
 import { resolveRunTests } from '../../../utils/tier-end-utils';
 import { buildTierEndOutcome, type TierEndOutcome } from '../../../utils/tier-outcome';
 import { buildCascadeUp, buildCascadeAcross } from '../../../utils/tier-cascade';
-import { gitCommit } from '../../../git/atomic/commit';
+import { gitCommit } from '../../../git/shared/git-manager';
 import type {
   TierEndWorkflowContext,
   TierEndWorkflowHooks,

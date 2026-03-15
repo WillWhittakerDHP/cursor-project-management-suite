@@ -4,9 +4,8 @@
  * Used after tier-start (background-audit-runner) and tier-end (runEndAuditForTier).
  */
 
-import { execSync } from 'child_process';
 import { join } from 'path';
-import { PROJECT_ROOT } from '../utils/utils';
+import { gitAdd, gitDiffCached, runGitCommand } from '../git/shared/git-manager';
 
 const CLIENT_AUDIT_REPORTS = 'client/.audit-reports';
 
@@ -19,12 +18,9 @@ export interface CommitAuditReportsOptions {
  * Stage client/.audit-reports/ (and optionally feature audits dir), then commit if there are changes.
  * Non-fatal: returns on any failure (e.g. not a git repo, nothing to commit).
  */
-export function commitAuditReports(options?: CommitAuditReportsOptions): void {
+export async function commitAuditReports(options?: CommitAuditReportsOptions): Promise<void> {
   try {
-    execSync(`git add ${CLIENT_AUDIT_REPORTS}`, {
-      cwd: PROJECT_ROOT,
-      stdio: 'pipe',
-    });
+    await gitAdd(CLIENT_AUDIT_REPORTS);
     if (options?.featureName) {
       const featureAuditsDir = join(
         '.cursor',
@@ -33,21 +29,13 @@ export function commitAuditReports(options?: CommitAuditReportsOptions): void {
         options.featureName,
         'audits'
       );
-      execSync(`git add ${featureAuditsDir}`, {
-        cwd: PROJECT_ROOT,
-        stdio: 'pipe',
-      });
+      await gitAdd(featureAuditsDir);
     }
-    try {
-      execSync('git diff --cached --quiet', { cwd: PROJECT_ROOT, stdio: 'pipe' });
-      return;
-    } catch {
-      // diff --quiet exits 1 when there are changes; proceed to commit
-    }
-    execSync('git commit -m "chore(audit): update audit reports"', {
-      cwd: PROJECT_ROOT,
-      stdio: 'pipe',
-    });
+    const diffResult = await gitDiffCached();
+    if (diffResult.success) return;
+    const msg = 'chore(audit): update audit reports';
+    const safe = msg.replace(/'/g, "'\\''");
+    await runGitCommand(`git commit -m '${safe}'`, 'commitAuditReports');
   } catch (_err) {
     // Non-fatal: e.g. not a git repo, nothing to commit, or commit rejected
   }

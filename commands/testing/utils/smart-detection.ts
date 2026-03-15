@@ -13,7 +13,7 @@
 
 import { stat, readdir } from 'fs/promises';
 import { join } from 'path';
-import { execSync } from 'child_process';
+import { gitStatus } from '../../git/shared/git-manager';
 import { PROJECT_ROOT, FRONTEND_ROOT } from '../../utils/utils';
 import { WorkflowCommandContext } from '../../utils/command-context';
 
@@ -153,30 +153,28 @@ async function findAppFiles(dir: string, testPattern: RegExp): Promise<string[]>
 /**
  * Check git status for uncommitted test/app files
  */
-function checkGitStatus(): { detected: boolean; files: string[] } {
+async function checkGitStatus(): Promise<{ detected: boolean; files: string[] }> {
   try {
-    const statusOutput = execSync('git status --porcelain', {
-      encoding: 'utf-8',
-      cwd: PROJECT_ROOT,
-      stdio: 'pipe',
-    });
-    
+    const result = await gitStatus();
+    if (!result.success) return { detected: false, files: [] };
+
+    const statusOutput = result.output;
     const testFilePattern = /\.(test|spec)\.(ts|tsx|js|jsx)$/;
     const appFilePattern = /\.(ts|tsx|js|jsx|vue)$/;
-    
+
     const lines = statusOutput.trim().split('\n').filter(line => line.length > 0);
     const relevantFiles: string[] = [];
-    
+
     for (const line of lines) {
       // Git status format: XY filename
       const filename = line.substring(3).trim();
-      
-      if (testFilePattern.test(filename) || 
+
+      if (testFilePattern.test(filename) ||
           (appFilePattern.test(filename) && !testFilePattern.test(filename))) {
         relevantFiles.push(filename);
       }
     }
-    
+
     return {
       detected: relevantFiles.length > 0,
       files: relevantFiles,
@@ -256,7 +254,7 @@ export async function shouldEnableWatchMode(
   const fileModDetected = fileModResult.detected;
   
   // Check git status
-  const gitResult = checkGitStatus();
+  const gitResult = await checkGitStatus();
   const gitDetected = gitResult.detected;
   
   // Check session context

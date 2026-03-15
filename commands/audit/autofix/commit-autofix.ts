@@ -4,8 +4,7 @@
  */
 
 import type { AuditTier, AutofixResult } from '../types';
-import { gitCommit } from '../../git/atomic/commit';
-import { runCommand } from '../../utils/utils';
+import { gitCommit, gitStatus } from '../../git/shared/git-manager';
 
 function formatCommitMessage(tier: AuditTier, identifier: string): string {
   const label = tier.charAt(0).toUpperCase() + tier.slice(1);
@@ -46,7 +45,7 @@ export async function commitAutofixChanges(
   }
 
   try {
-    const statusResult = await runCommand('git status --porcelain');
+    const statusResult = await gitStatus();
     const hasUncommittedChanges =
       statusResult.success && statusResult.output.trim().length > 0;
 

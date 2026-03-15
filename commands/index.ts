@@ -56,11 +56,8 @@ export * from './utils/append-log';
 export * from './utils/update-next-action';
 export * from './utils/update-timestamp';
 export * from './utils/generate-prompt';
-// Git operations (Cross-tier utilities)
-export * from './git/atomic/create-branch';
-export * from './git/atomic/commit';
-export * from './git/atomic/push';
-export * from './git/atomic/merge';
+// Git operations (single surface via git-manager)
+export { createBranch, gitCommit, gitPush, gitMerge } from './git/shared/git-manager';
 export { checkDocs as checkDocsUtil } from './utils/check-docs';
 export { checkReuse as checkReuseUtil } from './utils/check-reuse';
 export * from './utils/update-guide';

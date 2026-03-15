@@ -7,7 +7,7 @@ import { WorkflowCommandContext } from '../../../utils/command-context';
 import { readTierUpContext, getTierContextSourcePolicy } from '../../shared/context-policy';
 import { extractFilesFromPhaseGuide, gatherFileStatuses } from '../../../utils/context-gatherer';
 import { formatFileStatusList } from '../../../utils/context-templates';
-import { ensureTierBranch } from '../../../git/shared/tier-branch-manager';
+import { ensureTierBranch } from '../../../git/shared/git-manager';
 import { validatePhase, formatPhaseValidation } from './phase';
 import { PHASE_CONFIG } from '../../configs/phase';
 import { derivePhaseDescription } from '../../../planning/utils/resolve-planning-description';

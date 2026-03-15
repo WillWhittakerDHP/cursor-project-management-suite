@@ -66,5 +66,57 @@ export const gitPush = gitPushFromAtomic;
 // ─── Logger ────────────────────────────────────────────────────────────
 export { runGitCommand, logGitOp, warnGitOp, getGitOpsLog };
 
+// ─── Convenience wrappers (all go through runGitCommand for logging) ────────
+
+/** Run `git status --porcelain`. Returns { success, output }. */
+export async function gitStatus(): Promise<{ success: boolean; output: string; error?: string }> {
+  return runGitCommand('git status --porcelain', 'gitStatus');
+}
+
+/**
+ * Run `git log -n <n> --pretty=format:<format>`.
+ * @param format - e.g. '%h - %s (%ar)'
+ * @param n - number of commits (default 1)
+ */
+export async function gitLog(
+  format: string,
+  n = 1
+): Promise<{ success: boolean; output: string; error?: string }> {
+  const safe = format.replace(/"/g, '\\"');
+  return runGitCommand(`git log -${n} --pretty=format:"${safe}"`, 'gitLog');
+}
+
+/** Run `git diff <args>`. Caller must pass safe args (e.g. "HEAD path"). */
+export async function gitDiff(args: string): Promise<{ success: boolean; output: string; error?: string }> {
+  return runGitCommand('git diff ' + args, 'gitDiff');
+}
+
+/** Run `git add <paths>`. Paths are passed as-is; avoid untrusted input. */
+export async function gitAdd(...paths: string[]): Promise<{ success: boolean; output: string; error?: string }> {
+  const quoted = paths.map((p) => (p.includes(' ') ? `"${p.replace(/"/g, '\\"')}"` : p)).join(' ');
+  return runGitCommand('git add ' + quoted, 'gitAdd');
+}
+
+/** Run `git checkout <target>` (e.g. branch name or `-- .`). */
+export async function gitCheckout(target: string): Promise<{ success: boolean; output: string; error?: string }> {
+  return runGitCommand('git checkout ' + target, 'gitCheckout');
+}
+
+/** Run `git branch --list [pattern]`. */
+export async function gitListBranches(
+  pattern?: string
+): Promise<{ success: boolean; output: string; error?: string }> {
+  if (pattern != null && pattern !== '') {
+    const safe = pattern.replace(/'/g, "'\\''");
+    return runGitCommand(`git branch --list '${safe}'`, 'gitListBranches');
+  }
+  return runGitCommand('git branch --list', 'gitListBranches');
+}
+
+/** Run `git diff --cached --quiet`. success true = no staged changes; success false = staged changes or error. */
+export async function gitDiffCached(): Promise<{ success: boolean; output: string; error?: string }> {
+  return runGitCommand('git diff --cached --quiet', 'gitDiffCached');
+}
+
 // ─── Propagation ────────────────────────────────────────────────────────
 export { propagateFiles, propagateSharedFiles, propagateHarness };

@@ -7,7 +7,7 @@ import { WorkflowId } from '../../../utils/id-utils';
 import { SESSION_CONFIG } from '../../configs/session';
 import { resolveFeatureName } from '../../../utils/feature-context';
 import { WorkflowCommandContext } from '../../../utils/command-context';
-import { ensureTierBranch } from '../../../git/shared/tier-branch-manager';
+import { ensureTierBranch } from '../../../git/shared/git-manager';
 import { deriveSessionDescription } from '../../../planning/utils/resolve-planning-description';
 import { tierDown } from '../../../utils/tier-navigation';
 import type { TierReopenParams, TierReopenResult, TierReopenWorkflowContext, TierReopenWorkflowHooks } from '../../shared/tier-reopen-workflow';

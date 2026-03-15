@@ -118,6 +118,6 @@ export async function runEndAuditForTier(params: RunEndAuditParams): Promise<Run
       return { output: '' };
   }
 
-  commitAuditReports({ featureName });
+  await commitAuditReports({ featureName });
   return out;
 }

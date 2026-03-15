@@ -4,7 +4,7 @@
 
 import { WorkflowCommandContext } from '../../../utils/command-context';
 import { readProjectFile } from '../../../utils/utils';
-import { getCurrentBranch, runCommand } from '../../../utils/utils';
+import { getCurrentBranch, gitListBranches } from '../../../git/shared/git-manager';
 import { PHASE_CONFIG } from '../../configs/phase';
 
 export interface ValidatePhaseResult {
@@ -127,7 +127,7 @@ export async function validatePhaseImpl(phase: string): Promise<ValidatePhaseRes
         details: ['Phase tier config getBranchName returned null.'],
       };
     }
-    const branchCheckResult = await runCommand(`git branch --list ${phaseBranchName}`);
+    const branchCheckResult = await gitListBranches(phaseBranchName);
     if (branchCheckResult.success && branchCheckResult.output.trim()) {
       return {
         canStart: false,
