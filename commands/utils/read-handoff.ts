@@ -12,7 +12,7 @@ import { WorkflowCommandContext } from './command-context';
 import { MarkdownUtils } from './markdown-utils';
 import { WorkflowId } from './id-utils';
 import { resolveFeatureName } from './feature-context';
-import { readProjectFile, writeProjectFile, getCurrentDate } from './utils';
+import { readProjectFile } from './utils';
 
 export type HandoffTier = 'phase' | 'session' | 'task';
 
@@ -141,52 +141,12 @@ async function createMissingHandoffFromTemplate(
   tier: HandoffTier,
   identifier: string
 ): Promise<void> {
-  const applyLiteralPlaceholders = (template: string, replacements: Record<string, string>): string => {
-    let result = template;
-    for (const [key, value] of Object.entries(replacements)) {
-      result = result.split(`[${key}]`).join(value);
-    }
-    return result;
-  };
-
-  const date = getCurrentDate();
-  let handoffPath: string;
-  let rendered: string;
-
-  if (tier === 'phase') {
-    const nextPhase = Number(identifier) + 1;
-    handoffPath = context.paths.getPhaseHandoffPath(identifier);
-    const template = await context.templates.loadTemplate('phase', 'handoff');
-    rendered = applyLiteralPlaceholders(template, {
-      N: identifier,
-      DATE: date,
-      Date: date,
-      'N+1': Number.isFinite(nextPhase) ? String(nextPhase) : '',
-      'Complete / In Progress': 'In Progress',
-    })
-      .replace(/\[N\+1\]/g, Number.isFinite(nextPhase) ? String(nextPhase) : '')
-      .replace(/\[Complete \/ In Progress\]/g, 'In Progress');
-  } else {
-    const sessionId = tier === 'task'
-      ? (WorkflowId.parseTaskId(identifier)?.sessionId ?? identifier)
-      : identifier;
-    const parsed = WorkflowId.parseSessionId(sessionId);
-    handoffPath = context.paths.getSessionHandoffPath(sessionId);
-    const template = await context.templates.loadTemplate('session', 'handoff');
-    rendered = applyLiteralPlaceholders(template, {
-      SESSION_ID: sessionId,
-      DESCRIPTION: `Session ${sessionId}`,
-      DATE: date,
-      Date: date,
-      NEXT_SESSION: '',
-      LAST_TASK: '',
-      PHASE: parsed?.phaseId ?? '',
-      'Complete / In Progress': 'In Progress',
-    })
-      .replace(/\[Complete \/ In Progress\]/g, 'In Progress');
+  if (tier === 'task') {
+    await context.documents.ensureHandoff('task', identifier);
+    return;
   }
-
-  await writeProjectFile(handoffPath, rendered);
+  const description = tier === 'phase' ? `Phase ${identifier}` : `Session ${identifier}`;
+  await context.documents.ensureHandoff(tier, identifier, description);
 }
 
 export async function readHandoff(

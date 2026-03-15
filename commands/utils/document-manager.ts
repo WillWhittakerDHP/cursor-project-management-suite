@@ -18,7 +18,18 @@ import { readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { access } from 'fs/promises';
 import { writeProjectFile } from './utils';
-import { isProjectManagerProtectedPath } from './project-manager-write-guard';
+import {
+  isProjectManagerProtectedPath,
+  type ShouldBlockProjectManagerWriteOptions,
+} from './project-manager-write-guard';
+import {
+  REQUIRED_GUIDE_SECTIONS,
+  REQUIRED_HANDOFF_SECTIONS,
+  ensureGuideHasRequiredSections,
+  ensureHandoffHasRequiredSections,
+  type GuideTier,
+  type HandoffTierForSections,
+} from '../tiers/shared/guide-required-sections';
 
 /**
  * Document tier types
@@ -26,9 +37,36 @@ import { isProjectManagerProtectedPath } from './project-manager-write-guard';
 export type DocumentTier = 'feature' | 'phase' | 'session';
 
 /**
+ * Handoff tier: feature, phase, session, or task (task has handoff but no guide/log).
+ */
+export type HandoffTier = DocumentTier | 'task';
+
+/**
  * Document type types
  */
 export type DocumentType = 'guide' | 'log' | 'handoff';
+
+/**
+ * Result of document verification (guide or handoff).
+ */
+export interface DocVerifyResult {
+  ok: boolean;
+  missingSections: string[];
+  shortSections: string[];
+  path: string;
+}
+
+/**
+ * Thrown when verifyGuide or verifyHandoff fails (strict enforcement).
+ */
+export class DocVerifyError extends Error {
+  constructor(public readonly result: DocVerifyResult) {
+    super(
+      `Document verification failed: ${result.path} missing [${result.missingSections.join(', ')}]${result.shortSections.length ? ` short [${result.shortSections.join(', ')}]` : ''}`
+    );
+    this.name = 'DocVerifyError';
+  }
+}
 
 /**
  * Template replacements map
@@ -83,25 +121,222 @@ export class DocumentManager {
   }
 
   /**
-   * Read handoff document
-   * @param tier Document tier
-   * @param id Optional ID (phase number, session ID, etc.)
+   * Read handoff document (feature, phase, session, or task).
+   * @param tier Handoff tier (DocumentTier or 'task')
+   * @param id Optional ID (phase number, session ID, task ID)
    * @returns Document content
    */
-  async readHandoff(tier: DocumentTier, id?: string): Promise<string> {
-    const path = this.getDocumentPath(tier, id, 'handoff');
+  async readHandoff(tier: HandoffTier, id?: string): Promise<string> {
+    const path = this.getHandoffPath(tier, id);
     return this.readFile(path);
   }
 
   /**
-   * Write guide document
+   * Write guide document, then verify (throws DocVerifyError if verification fails).
    * @param tier Document tier
    * @param id Document ID (required for phase/session, optional for feature)
-   * @param content Document content
+   * @param content Document content (must be structurally valid for verification to pass)
+   * @param options Optional; use overwriteForTierEnd for tier-end workflow (e.g. task-end, phase complete)
    */
-  async writeGuide(tier: DocumentTier, id: string | undefined, content: string): Promise<void> {
+  async writeGuide(
+    tier: DocumentTier,
+    id: string | undefined,
+    content: string,
+    options?: ShouldBlockProjectManagerWriteOptions
+  ): Promise<void> {
     const path = this.getDocumentPath(tier, id, 'guide');
+    await this.writeFile(path, content, options);
+    const result = await this.verifyGuide(tier, id);
+    if (!result.ok) {
+      throw new DocVerifyError(result);
+    }
+  }
+
+  /**
+   * Ensure guide exists: create from template with required sections if missing; otherwise ensure sections and write only if changed.
+   * @param tier Document tier
+   * @param id Document ID (required for phase/session, optional for feature)
+   * @param description Display name for minimal section content
+   */
+  async ensureGuide(tier: DocumentTier, id: string | undefined, description: string): Promise<void> {
+    const path = this.getDocumentPath(tier, id, 'guide');
+    let content: string;
+    try {
+      content = await this.readFile(path);
+    } catch {
+      const template = await this.templates.loadTemplate(tier, 'guide');
+      const replacements: TemplateReplacements = {
+        DESCRIPTION: description,
+        NAME: description,
+        DATE: new Date().toISOString().split('T')[0],
+        ...(tier === 'feature' ? { FEATURE_NAME: this.context.name } : {}),
+        ...(id ? { IDENTIFIER: id, N: id, SESSION_ID: id, PHASE: id.split('.').slice(0, 2).join('.') } : {}),
+      };
+      content = this.templates.render(template, replacements);
+      content = ensureGuideHasRequiredSections(content, tier as GuideTier, id ?? '', description);
+      await this.writeGuide(tier, id, content);
+      return;
+    }
+    const normalized = ensureGuideHasRequiredSections(content, tier as GuideTier, id ?? '', description);
+    if (normalized !== content) {
+      await this.writeGuide(tier, id, normalized);
+    }
+  }
+
+  /**
+   * Update guide: read, apply updater, write (with verification).
+   * @param tier Document tier
+   * @param id Document ID
+   * @param updater Function that returns updated content (sync or async)
+   * @param options Optional; use overwriteForTierEnd for tier-end workflow (e.g. task-end, phase complete)
+   */
+  async updateGuide(
+    tier: DocumentTier,
+    id: string | undefined,
+    updater: (content: string) => string | Promise<string>,
+    options?: ShouldBlockProjectManagerWriteOptions
+  ): Promise<void> {
+    const path = this.getDocumentPath(tier, id, 'guide');
+    const content = await this.readFile(path);
+    const updated = await updater(content);
+    await this.writeGuide(tier, id, updated, options);
+  }
+
+  /**
+   * Verify guide has all REQUIRED_GUIDE_SECTIONS with sufficient content. Returns result and throws DocVerifyError if not ok.
+   */
+  async verifyGuide(tier: DocumentTier, id?: string): Promise<DocVerifyResult> {
+    const path = this.getDocumentPath(tier, id, 'guide');
+    let content: string;
+    try {
+      content = await this.readFile(path);
+    } catch {
+      const result: DocVerifyResult = {
+        ok: false,
+        missingSections: [...REQUIRED_GUIDE_SECTIONS[tier]],
+        shortSections: [],
+        path,
+      };
+      throw new DocVerifyError(result);
+    }
+    const sections = REQUIRED_GUIDE_SECTIONS[tier];
+    const missingSections: string[] = [];
+    const shortSections: string[] = [];
+    const MIN_LENGTH = 30;
+    for (const sectionTitle of sections) {
+      const sectionContent = this.markdown.extractSection(content, sectionTitle);
+      if (!sectionContent || sectionContent.trim().length === 0) {
+        missingSections.push(sectionTitle);
+      } else if (sectionContent.trim().length < MIN_LENGTH) {
+        shortSections.push(sectionTitle);
+      }
+    }
+    const ok = missingSections.length === 0 && shortSections.length === 0;
+    const result: DocVerifyResult = { ok, missingSections, shortSections, path };
+    if (!ok) {
+      throw new DocVerifyError(result);
+    }
+    return result;
+  }
+
+  /**
+   * Write handoff document, then verify (throws DocVerifyError if verification fails). Task handoffs skip verification.
+   */
+  async writeHandoff(tier: HandoffTier, id: string | undefined, content: string): Promise<void> {
+    const path = this.getHandoffPath(tier, id);
     await this.writeFile(path, content);
+    const result = await this.verifyHandoff(tier, id);
+    if (!result.ok) {
+      throw new DocVerifyError(result);
+    }
+  }
+
+  /**
+   * Ensure handoff exists: create from template with required sections if missing. Task: create minimal file if missing (no template).
+   */
+  async ensureHandoff(tier: HandoffTier, id: string | undefined, description?: string): Promise<void> {
+    const path = this.getHandoffPath(tier, id);
+    try {
+      await this.readFile(path);
+      return;
+    } catch {
+      // File missing: create
+    }
+    const desc = description ?? id ?? '';
+    if (tier === 'task') {
+      await this.writeFile(path, `# Task ${id} handoff\n\n**Status:** [Fill in]\n\n`);
+      return;
+    }
+    const template = await this.templates.loadTemplate(tier, 'handoff');
+    const replacements: TemplateReplacements = {
+      DESCRIPTION: desc,
+      DATE: new Date().toISOString().split('T')[0],
+      ...(id ? { IDENTIFIER: id, SESSION_ID: id, PHASE: id.split('.').slice(0, 2).join('.') } : {}),
+    };
+    let content = this.templates.render(template, replacements);
+    content = ensureHandoffHasRequiredSections(content, tier as HandoffTierForSections, id ?? '', desc);
+    await this.writeFile(path, content);
+    const result = await this.verifyHandoff(tier, id);
+    if (!result.ok) {
+      throw new DocVerifyError(result);
+    }
+  }
+
+  /**
+   * Update handoff: read, apply updater, write (with verification). Task handoffs skip section verification.
+   */
+  async updateHandoff(
+    tier: HandoffTier,
+    id: string | undefined,
+    updater: (content: string) => string | Promise<string>
+  ): Promise<void> {
+    const path = this.getHandoffPath(tier, id);
+    const content = await this.readFile(path);
+    const updated = await updater(content);
+    await this.writeFile(path, updated);
+    const result = await this.verifyHandoff(tier, id);
+    if (!result.ok) {
+      throw new DocVerifyError(result);
+    }
+  }
+
+  /**
+   * Verify handoff has all REQUIRED_HANDOFF_SECTIONS. Task handoffs skip verification (return ok: true).
+   */
+  async verifyHandoff(tier: HandoffTier, id?: string): Promise<DocVerifyResult> {
+    const path = this.getHandoffPath(tier, id);
+    if (tier === 'task') {
+      return { ok: true, missingSections: [], shortSections: [], path };
+    }
+    let content: string;
+    try {
+      content = await this.readFile(path);
+    } catch {
+      const result: DocVerifyResult = {
+        ok: false,
+        missingSections: [...REQUIRED_HANDOFF_SECTIONS],
+        shortSections: [],
+        path,
+      };
+      throw new DocVerifyError(result);
+    }
+    const missingSections: string[] = [];
+    const shortSections: string[] = [];
+    const MIN_LENGTH = 30;
+    for (const sectionTitle of REQUIRED_HANDOFF_SECTIONS) {
+      const sectionContent = this.markdown.extractSection(content, sectionTitle);
+      if (!sectionContent || sectionContent.trim().length === 0) {
+        missingSections.push(sectionTitle);
+      } else if (sectionContent.trim().length < MIN_LENGTH) {
+        shortSections.push(sectionTitle);
+      }
+    }
+    const ok = missingSections.length === 0 && shortSections.length === 0;
+    const result: DocVerifyResult = { ok, missingSections, shortSections, path };
+    if (!ok) {
+      throw new DocVerifyError(result);
+    }
+    return result;
   }
 
   /**
@@ -250,6 +485,19 @@ export class DocumentManager {
         }
         break;
     }
+    throw new Error(`Unsupported tier/docType: ${tier}/${docType}`);
+  }
+
+  /**
+   * Get handoff path for HandoffTier (includes task).
+   * @private
+   */
+  private getHandoffPath(tier: HandoffTier, id: string | undefined): string {
+    if (tier === 'task') {
+      if (!id) throw new Error('Task ID is required for task handoff');
+      return this.context.paths.getTaskHandoffPath(id);
+    }
+    return this.getDocumentPath(tier, id, 'handoff');
   }
 
   /**
@@ -287,9 +535,13 @@ export class DocumentManager {
    * Protected paths (guides/planning under .project-manager) go through writeProjectFile for guard and audit.
    * @private
    */
-  private async writeFile(path: string, content: string): Promise<void> {
+  private async writeFile(
+    path: string,
+    content: string,
+    options?: ShouldBlockProjectManagerWriteOptions
+  ): Promise<void> {
     if (isProjectManagerProtectedPath(path)) {
-      await writeProjectFile(path, content);
+      await writeProjectFile(path, content, options);
     } else {
       const fullPath = join(this.PROJECT_ROOT, path);
       await writeFile(fullPath, content, 'utf-8');

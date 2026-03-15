@@ -4,7 +4,6 @@
  * runGitCommand from git-logger and re-export through this facade.
  */
 
-import { getCurrentBranch as getCurrentBranchFromUtils, branchExists, isBranchBasedOn } from '../../utils/utils';
 import { gitCommit as gitCommitFromAtomic } from '../atomic/commit';
 import { gitMerge } from '../atomic/merge';
 import { createBranch as createBranchFromAtomic } from '../atomic/create-branch';
@@ -24,7 +23,16 @@ import {
   type MergeChildBranchesResult,
   type CommitUncommittedOptions,
 } from './tier-branch-manager';
-import { runGitCommand, logGitOp, warnGitOp, getGitOpsLog, type GitOpEntry } from './git-logger';
+import {
+  runGitCommand,
+  logGitOp,
+  warnGitOp,
+  getGitOpsLog,
+  getCurrentBranch,
+  branchExists,
+  isBranchBasedOn,
+  type GitOpEntry,
+} from './git-logger';
 import {
   propagateFiles,
   propagateSharedFiles,
@@ -40,11 +48,8 @@ export type { GitOpEntry, PropagateOptions, PropagateResult };
 // ─── Branch operations ─────────────────────────────────────────────────
 export { ensureTierBranch, mergeTierBranch, mergeChildBranches, getExpectedBranchForTier, formatBranchHierarchyFromConfig };
 
-// ─── Query (from utils) ────────────────────────────────────────────────
-export async function getCurrentBranch(): Promise<string> {
-  return getCurrentBranchFromUtils();
-}
-export { branchExists, isBranchBasedOn };
+// ─── Query (from git-logger, logged via runGitCommand) ───────────────────
+export { getCurrentBranch, branchExists, isBranchBasedOn };
 
 // ─── Commit remaining ───────────────────────────────────────────────────
 export async function commitRemaining(

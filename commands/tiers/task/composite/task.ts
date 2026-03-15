@@ -5,13 +5,13 @@
 import { runTierStart } from '../../shared/tier-start';
 import { runTierEnd, TierEndResult } from '../../shared/tier-end';
 import { runTierPlan } from '../../shared/tier-plan';
-import { runTierChange } from '../../shared/tier-change';
+import { runTierChange } from '../../../utils/change-request';
 import { runTierValidate } from '../../shared/tier-validate';
 import { TASK_CONFIG } from '../../configs/task';
 import type { ValidateTaskResult } from './validate-task-impl';
 import type { CommandExecutionOptions } from '../../../utils/command-execution-mode';
 import type { TaskEndParams } from './task-end-impl';
-import type { ChangeRequest, ChangeScope } from '../../../utils/utils';
+import type { ChangeRequest, ChangeScope } from '../../../utils/change-request';
 import { WorkflowId } from '../../../utils/id-utils';
 import { formatTaskEntry, type TaskEntry } from '../atomic/format-task-entry';
 import { appendLog } from '../../../utils/append-log';
@@ -157,21 +157,25 @@ export async function markTaskComplete(params: MarkTaskCompleteParams): Promise<
     throw new Error(`ERROR: Invalid task ID format. Expected X.Y.Z.A (e.g., 4.1.3.1)\nAttempted: ${params.taskId}`);
   }
   const sessionId = parsed.sessionId;
-  const sessionGuidePath = context.paths.getSessionGuidePath(sessionId);
   const sessionLogPath = context.paths.getSessionLogPath(sessionId);
   try {
-    const guideContent = await readProjectFile(sessionGuidePath);
-    const taskPattern = new RegExp(`(- \\[ \\]|#### Task) (#### Task )?${params.taskId.replace(/\./g, '\\.')}:`, 'g');
-    const updatedGuideContent = guideContent.replace(taskPattern, (match) => {
-      if (match.includes('- [ ]')) {
-        return match.replace('- [ ]', '- [x]');
-      }
-      return `- [x] #### Task ${params.taskId}:`;
-    });
-    const statusPattern = /(\*\*Status:\*\*)\s*(Not Started|Planning|In Progress|Partial|Blocked)/i;
-    const updatedWithStatus = updatedGuideContent.replace(statusPattern, (_match, label) => `${label} In Progress`);
-    await writeProjectFile(sessionGuidePath, updatedWithStatus, { overwriteForTierEnd: true });
-    output.push(`✅ Updated session guide: ${sessionGuidePath}`);
+    await context.documents.updateGuide(
+      'session',
+      sessionId,
+      (guideContent) => {
+        const taskPattern = new RegExp(`(- \\[ \\]|#### Task) (#### Task )?${params.taskId.replace(/\./g, '\\.')}:`, 'g');
+        const updatedGuideContent = guideContent.replace(taskPattern, (match) => {
+          if (match.includes('- [ ]')) {
+            return match.replace('- [ ]', '- [x]');
+          }
+          return `- [x] #### Task ${params.taskId}:`;
+        });
+        const statusPattern = /(\*\*Status:\*\*)\s*(Not Started|Planning|In Progress|Partial|Blocked)/i;
+        return updatedGuideContent.replace(statusPattern, (_match, label) => `${label} In Progress`);
+      },
+      { overwriteForTierEnd: true }
+    );
+    output.push(`✅ Updated session guide: ${context.paths.getSessionGuidePath(sessionId)}`);
     const logEntry: TaskEntry = {
       id: params.taskId,
       description: params.entry?.description || `Task ${params.taskId}`,
@@ -231,7 +235,7 @@ export async function markTaskComplete(params: MarkTaskCompleteParams): Promise<
       handoffLines.push('**Files modified:**', ...logEntry.filesModified.map((f) => `- ${f}`), '');
     }
     handoffLines.push(`**Next:** ${logEntry.nextTask}`, '', getExcerptEndMarker('task'));
-    await context.writeTaskHandoff(params.taskId, handoffLines.join('\n'));
+    await context.documents.writeHandoff('task', params.taskId, handoffLines.join('\n'));
     output.push(`✅ Wrote task handoff: ${context.paths.getTaskHandoffPath(params.taskId)}`);
 
     return output.join('\n');

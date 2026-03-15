@@ -14,7 +14,7 @@ import { DocumentManager } from './document-manager';
 import { TemplateManager } from './template-manager';
 import { FileCache } from './file-cache';
 import { WorkflowId } from './id-utils';
-import { readProjectFile, writeProjectFile } from './utils';
+import { readProjectFile } from './utils';
 import { readTierScope, type TierScopeSnapshot } from './tier-scope-writer';
 
 /**
@@ -235,12 +235,11 @@ export class WorkflowCommandContext {
   }
 
   /**
-   * Write task handoff (e.g. at task-end so next task or session can read it)
-   * @param taskId Task ID in format X.Y.Z.A
-   * @param content Handoff content (what was done, what's next)
+   * Write task handoff (e.g. at task-end so next task or session can read it).
+   * Delegates to DocumentManager.writeHandoff for unified write + verify.
    */
   async writeTaskHandoff(taskId: string, content: string): Promise<void> {
-    await writeProjectFile(this.paths.getTaskHandoffPath(taskId), content);
+    await this.documents.writeHandoff('task', taskId, content);
   }
 
   /**

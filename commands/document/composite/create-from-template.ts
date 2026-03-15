@@ -21,6 +21,7 @@ import { resolveFeatureName } from '../../utils';
 import { WorkflowCommandContext } from '../../utils/command-context';
 import { WorkflowId } from '../../utils/id-utils';
 import { TemplateReplacements } from '../../utils/template-manager';
+import { ensureGuideHasRequiredSections } from '../../tiers/shared/guide-required-sections';
 import { writeFile } from 'fs/promises';
 import { join } from 'path';
 
@@ -73,8 +74,25 @@ export async function workflowCreateFromTemplate(
     // Render template
     const rendered = context.templates.render(template, finalReplacements);
     
-    // Determine output path
-    const outputPath = 
+    // Write document (guides via DocumentManager with required sections and verification)
+    if (docType === 'guide') {
+      const desc = finalReplacements.DESCRIPTION ?? finalReplacements.NAME ?? identifier ?? resolved;
+      const content = ensureGuideHasRequiredSections(rendered, tier, identifier ?? '', desc);
+      await context.documents.writeGuide(tier, identifier, content);
+    } else if (docType === 'handoff') {
+      await context.documents.writeHandoff(tier, identifier, rendered);
+    } else {
+      // Log: write new file (no writeLog in DocumentManager for initial create)
+      const outputPath =
+        tier === 'feature' ? context.paths.getFeatureLogPath() :
+        tier === 'phase' ? context.paths.getPhaseLogPath(identifier!) :
+        context.paths.getSessionLogPath(identifier!);
+      const PROJECT_ROOT = process.cwd();
+      await writeFile(join(PROJECT_ROOT, outputPath), rendered, 'utf-8');
+      context.cache.invalidate(outputPath);
+    }
+    
+    const outputPath =
       tier === 'feature' ? (
         docType === 'guide' ? context.paths.getFeatureGuidePath() :
         docType === 'log' ? context.paths.getFeatureLogPath() :
@@ -89,11 +107,6 @@ export async function workflowCreateFromTemplate(
         docType === 'log' ? context.paths.getSessionLogPath(identifier!) :
         context.paths.getSessionHandoffPath(identifier!)
       );
-    
-    // Write document
-    const PROJECT_ROOT = process.cwd();
-    await writeFile(join(PROJECT_ROOT, outputPath), rendered, 'utf-8');
-    context.cache.invalidate(outputPath);
     
     output.push(`✅ **Document created successfully**\n`);
     output.push(`**Path:** ${outputPath}\n`);

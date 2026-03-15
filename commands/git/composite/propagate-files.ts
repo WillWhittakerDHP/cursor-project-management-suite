@@ -11,8 +11,7 @@
  *   propagateFiles({ preset: 'harness' })           // propagates .cursor submodule + .gitignore only
  */
 
-import { getCurrentBranch, branchExists } from '../../utils/utils';
-import { runGitCommand } from '../shared/git-logger';
+import { getCurrentBranch, branchExists, runGitCommand } from '../shared/git-logger';
 
 // ─── Types ──────────────────────────────────────────────────────────────
 

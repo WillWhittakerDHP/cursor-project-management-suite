@@ -30,13 +30,11 @@ export async function updateGuide(
   const context = new WorkflowCommandContext(resolved);
 
   if (sessionId) {
-    // Update session-specific guide
-    await context.documents.updateSection(
-      'session',
-      sessionId,
-      update.section,
-      update.content,
+    // Update session-specific guide (unified API: read, transform, write + verify)
+    await context.documents.updateGuide('session', sessionId, (content) =>
       update.append ?? false
+        ? MarkdownUtils.appendToSection(content, update.section, update.content)
+        : MarkdownUtils.replaceSection(content, update.section, update.content)
     );
   } else {
     // For backward compatibility, try to update template guide

@@ -364,7 +364,7 @@ async function syncPlannedTierDownToGuide(ctx: TierStartWorkflowContext): Promis
         ctx.tierDownPlanItems = mergedItems;
         guideContent = ensureGuideHasRequiredSections(guideContent, tier, ctx.identifier, description);
         try {
-          await writeProjectFile(guidePath, guideContent);
+          await ctx.context.documents.writeGuide('session', ctx.identifier, guideContent);
         } catch (err) {
           console.warn(`[tier-start-steps] Failed to write session guide at ${guidePath}`, err);
           return;
@@ -386,7 +386,7 @@ async function syncPlannedTierDownToGuide(ctx: TierStartWorkflowContext): Promis
         guideContent = buildGuideFromPlanItems(tier, ctx.identifier, description, parsedItems);
         guideContent = ensureGuideHasRequiredSections(guideContent, tier, ctx.identifier, description);
         try {
-          await writeProjectFile(guidePath, guideContent);
+          await ctx.context.documents.writeGuide(tier, ctx.identifier, guideContent);
         } catch (err) {
           console.warn(`[tier-start-steps] Failed to write guide at ${guidePath}`, err);
           return;
@@ -428,7 +428,7 @@ async function syncPlannedTierDownToGuide(ctx: TierStartWorkflowContext): Promis
       ctx.resolvedDescription ?? ctx.identifier
     );
     try {
-      await writeProjectFile(guidePath, updated);
+      await ctx.context.documents.writeGuide(tier, ctx.identifier, updated);
     } catch (err) {
       console.warn(`[tier-start-steps] Failed to write updated guide at ${guidePath} (non-blocking)`, err);
     }

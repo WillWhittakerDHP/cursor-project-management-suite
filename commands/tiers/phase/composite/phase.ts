@@ -9,13 +9,13 @@ import { runTierReopen } from '../../shared/tier-reopen';
 import { runTierCheckpoint } from '../../shared/tier-checkpoint';
 import { runTierComplete } from '../../shared/tier-complete';
 import { runTierValidate } from '../../shared/tier-validate';
-import { runTierChange } from '../../shared/tier-change';
+import { runTierChange } from '../../../utils/change-request';
 import { PHASE_CONFIG } from '../../configs/phase';
 import type { CommandExecutionOptions } from '../../../utils/command-execution-mode';
 import type { PhaseEndParams, PhaseEndResult } from './phase-end-impl';
 import type { MarkPhaseCompleteParams as ImplParams } from './mark-phase-complete-impl';
 import type { ValidatePhaseResult } from './validate-phase-impl';
-import type { ChangeRequest, ChangeScope } from '../../../utils/utils';
+import type { ChangeRequest, ChangeScope } from '../../../utils/change-request';
 import { TierStartResult } from '../../../utils/tier-outcome';
 
 export type { PhaseEndParams, PhaseEndResult };

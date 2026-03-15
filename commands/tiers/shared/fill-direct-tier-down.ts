@@ -6,7 +6,7 @@
 
 import type { TierStartWorkflowContext } from './tier-start-workflow-types';
 import type { WorkflowCommandContext } from '../../utils/command-context';
-import { readProjectFile, writeProjectFile } from '../../utils/utils';
+import { readProjectFile } from '../../utils/utils';
 
 const PLACEHOLDER_PATTERN = /\[Fill in\]|\[Files to work with\]|\[What needs to be verified\]|\[To be planned\]|\[To be identified during planning\]|\[To be defined\]/i;
 
@@ -70,7 +70,9 @@ async function fillTaskSectionsInSessionGuide(
   for (const { from, to } of replacements) {
     content = content.replace(from, to);
   }
-  if (replacements.length > 0) await writeProjectFile(guidePath, content);
+  if (replacements.length > 0) {
+    await context.documents.updateGuide('session', sessionId, () => content);
+  }
 }
 
 /**
@@ -112,7 +114,9 @@ async function fillSessionSectionsInPhaseGuide(
   for (const { from, to } of replacements) {
     content = content.replace(from, to);
   }
-  if (replacements.length > 0) await writeProjectFile(guidePath, content);
+  if (replacements.length > 0) {
+    await context.documents.updateGuide('phase', phaseId, () => content);
+  }
 }
 
 /**
@@ -158,7 +162,9 @@ async function fillPhaseSectionsInFeatureGuide(
   for (const { from, to } of replacements) {
     content = content.replace(from, to);
   }
-  if (replacements.length > 0) await writeProjectFile(guidePath, content);
+  if (replacements.length > 0) {
+    await context.documents.updateGuide('feature', undefined, () => content);
+  }
 }
 
 /** Decomposition mode from WorkProfile; controls fill intensity. Guide is authoritative for current-tier decomposition. */

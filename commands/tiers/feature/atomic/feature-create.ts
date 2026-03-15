@@ -27,16 +27,9 @@ export async function featureCreate(featureName: string, description: string): P
     output.push(`# Feature ${featureName} Created\n`);
     output.push(`**Date:** ${new Date().toISOString().split('T')[0]}\n`);
     
-    // Create feature guide
-    const guideTemplate = await readProjectFile('.cursor/commands/tiers/feature/templates/feature-guide.md');
-    const guideContent = guideTemplate
-      .replace(/\[Name\]/g, featureName)
-      .replace(/\[Brief description of feature objectives\]/g, description)
-      .replace(/\[Estimated weeks\/months\]/g, '[To be determined]')
-      .replace(/\[Date\]/g, new Date().toISOString().split('T')[0]);
-    
-    const guidePath = `${featureDir}/feature-${featureName}-guide.md`;
-    await writeProjectFile(guidePath, guideContent);
+    // Create feature guide (unified API: ensure + verify)
+    await context.documents.ensureGuide('feature', undefined, description || featureName);
+    const guidePath = context.paths.getFeatureGuidePath();
     output.push(`**Guide Created:** ${guidePath}\n`);
     
     // Create feature log
@@ -49,15 +42,13 @@ export async function featureCreate(featureName: string, description: string): P
     await writeProjectFile(logPath, logContent);
     output.push(`**Log Created:** ${logPath}\n`);
     
-    // Create feature handoff
+    // Create feature handoff (unified API: write + verify)
     const handoffTemplate = await readProjectFile('.cursor/commands/tiers/feature/templates/feature-handoff.md');
     const handoffContent = handoffTemplate
       .replace(/\[Name\]/g, featureName)
       .replace(/\[Date\]/g, new Date().toISOString().split('T')[0]);
-    
-    const handoffPath = `${featureDir}/feature-${featureName}-handoff.md`;
-    await writeProjectFile(handoffPath, handoffContent);
-    output.push(`**Handoff Created:** ${handoffPath}\n`);
+    await context.documents.writeHandoff('feature', undefined, handoffContent);
+    output.push(`**Handoff Created:** ${context.paths.getFeatureHandoffPath()}\n`);
     
     output.push('\n---\n');
     output.push('## Next Steps\n');

@@ -25,45 +25,46 @@ export async function markPhaseCompleteImpl(params: MarkPhaseCompleteParams): Pr
   try {
     await PHASE_CONFIG.controlDoc.writeStatus(context, params.phase, 'complete');
 
-    let guideContent = await readProjectFile(phaseGuidePath);
-  const successCriteriaPattern = /(- \[ \] All sessions completed)/g;
-  guideContent = guideContent.replace(successCriteriaPattern, '- [x] All sessions completed');
-
-  const otherCriteriaPatterns = [
-    /(- \[ \] Code quality checks passing)/g,
-    /(- \[ \] Documentation updated)/g,
-    /(- \[ \] Ready for next phase)/g,
-  ];
-  otherCriteriaPatterns.forEach(pattern => {
-    guideContent = guideContent.replace(pattern, (match) => match.replace('- [ ]', '- [x]'));
-  });
-
-  const phaseGuideMarker = getExcerptEndMarker('phase');
-  if (!guideContent.includes(phaseGuideMarker)) {
-    guideContent = guideContent.trimEnd() + '\n\n' + phaseGuideMarker;
-  }
-  await writeProjectFile(phaseGuidePath, guideContent, { overwriteForTierEnd: true });
-  output.push(`✅ Updated phase guide: ${phaseGuidePath}`);
+    await context.documents.updateGuide(
+      'phase',
+      params.phase,
+      (guideContent) => {
+        let content = guideContent.replace(/(- \[ \] All sessions completed)/g, '- [x] All sessions completed');
+        const otherCriteriaPatterns = [
+          /(- \[ \] Code quality checks passing)/g,
+          /(- \[ \] Documentation updated)/g,
+          /(- \[ \] Ready for next phase)/g,
+        ];
+        otherCriteriaPatterns.forEach((pattern) => {
+          content = content.replace(pattern, (match) => match.replace('- [ ]', '- [x]'));
+        });
+        const phaseGuideMarker = getExcerptEndMarker('phase');
+        if (!content.includes(phaseGuideMarker)) {
+          content = content.trimEnd() + '\n\n' + phaseGuideMarker;
+        }
+        return content;
+      },
+      { overwriteForTierEnd: true }
+    );
+    output.push(`✅ Updated phase guide: ${phaseGuidePath}`);
 
   try {
-    let handoffContent = await readProjectFile(handoffPath);
-    const nextPhase = parseInt(params.phase) + 1;
-    handoffContent = handoffContent.replace(
-      /(\*\*Current Phase:\*\*)\s*Phase \d+ (Complete|In Progress)/i,
-      (_match, label) => `${label} Phase ${nextPhase} (Next)`
-    );
-    const lastSession = params.sessionsCompleted?.length
-      ? params.sessionsCompleted[params.sessionsCompleted.length - 1]
-      : `Phase ${params.phase}`;
-    handoffContent = handoffContent.replace(
-      /(\*\*Last Completed:\*\*)\s*.*/,
-      `$1 ${lastSession}`
-    );
-    const featureHandoffMarker = getExcerptEndMarker('feature');
-    if (!handoffContent.includes(featureHandoffMarker)) {
-      handoffContent = handoffContent.trimEnd() + '\n\n' + featureHandoffMarker;
-    }
-    await writeProjectFile(handoffPath, handoffContent, { overwriteForTierEnd: true });
+    await context.documents.updateHandoff('feature', undefined, (handoffContent) => {
+      const nextPhase = parseInt(params.phase, 10) + 1;
+      let content = handoffContent.replace(
+        /(\*\*Current Phase:\*\*)\s*Phase \d+ (Complete|In Progress)/i,
+        (_match, label) => `${label} Phase ${nextPhase} (Next)`
+      );
+      const lastSession = params.sessionsCompleted?.length
+        ? params.sessionsCompleted[params.sessionsCompleted.length - 1]
+        : `Phase ${params.phase}`;
+      content = content.replace(/(\*\*Last Completed:\*\*)\s*.*/, `$1 ${lastSession}`);
+      const featureHandoffMarker = getExcerptEndMarker('feature');
+      if (!content.includes(featureHandoffMarker)) {
+        content = content.trimEnd() + '\n\n' + featureHandoffMarker;
+      }
+      return content;
+    });
     output.push(`✅ Updated handoff: ${handoffPath}`);
   } catch (_error) {
     output.push(`⚠️ Could not update handoff: ${_error instanceof Error ? _error.message : String(_error)}`);

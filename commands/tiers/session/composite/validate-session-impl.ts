@@ -4,7 +4,7 @@
 
 import { WorkflowCommandContext } from '../../../utils/command-context';
 import { readProjectFile } from '../../../utils/utils';
-import { getCurrentBranch, branchExists, isBranchBasedOn, runCommand } from '../../../utils/utils';
+import { getCurrentBranch, branchExists, isBranchBasedOn } from '../../../git/shared/git-manager';
 import { WorkflowId } from '../../../utils/id-utils';
 import { SESSION_CONFIG } from '../../configs/session';
 import { PHASE_CONFIG } from '../../configs/phase';

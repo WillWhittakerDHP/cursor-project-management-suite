@@ -468,10 +468,32 @@ export async function phaseEndImpl(
 
         const mergeToFeature = await mergeTierBranch(PHASE_CONFIG, p.phaseId, c.context, { push: true, auditPrewarmPromise: c.auditPrewarmPromise });
         c.steps.gitMergePhaseToFeature = { success: mergeToFeature.success, output: mergeToFeature.messages.join('\n') };
+        if (!mergeToFeature.success) {
+          return {
+            success: false,
+            output: c.output.join('\n'),
+            steps: c.steps,
+            outcome: buildTierEndOutcome(
+              'blocked_fix_required',
+              'git_failed',
+              `Phase merge into feature failed. ${mergeToFeature.messages.join(' ')} Fix and re-run /phase-end.`
+            ),
+          };
+        }
       } catch (_error) {
         c.steps.gitOperations = {
           success: false,
-          output: `Git operations failed (non-critical): ${_error instanceof Error ? _error.message : String(_error)}`,
+          output: `Git operations failed: ${_error instanceof Error ? _error.message : String(_error)}`,
+        };
+        return {
+          success: false,
+          output: c.output.join('\n'),
+          steps: c.steps,
+          outcome: buildTierEndOutcome(
+            'blocked_fix_required',
+            'git_failed',
+            `Phase git operations threw an error: ${_error instanceof Error ? _error.message : String(_error)}. Fix and re-run /phase-end.`
+          ),
         };
       }
 

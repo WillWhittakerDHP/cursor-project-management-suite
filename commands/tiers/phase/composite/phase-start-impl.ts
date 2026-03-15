@@ -25,7 +25,7 @@ import { getTierUpPlanningDocSections } from '../../shared/tier-start-steps';
 import { buildReuseOpportunitiesSection, type InventoryPayload } from '../helpers/inventory-reuse-check';
 import type { RunRecorder, RunTraceHandle } from '../../../harness/contracts';
 import { writeTierScope } from '../../../utils/tier-scope-writer';
-import { getCurrentBranch } from '../../../utils/utils';
+import { getCurrentBranch } from '../../../git/shared/git-manager';
 
 export type ShadowContext = { recorder: RunRecorder; handle: RunTraceHandle };
 

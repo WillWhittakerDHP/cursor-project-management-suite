@@ -12,7 +12,7 @@ import type { TierConfig, TierName } from '../../tiers/shared/types';
 import type { WorkflowCommandContext } from '../../utils/command-context';
 import { tierUp } from '../../utils/tier-navigation';
 import { getConfigForTier } from '../../tiers/configs/index';
-import { getCurrentBranch, branchExists, isBranchBasedOn } from '../../utils/utils';
+import { getCurrentBranch, branchExists, isBranchBasedOn } from './git-manager';
 import { runGitCommand, warnGitOp } from './git-logger';
 import { createBranch } from '../atomic/create-branch';
 import { gitMerge } from '../atomic/merge';
@@ -783,24 +783,33 @@ export async function ensureTierBranch(
   }
 
   if (await branchExists(targetLink.branchName)) {
-    // Target exists - verify based-on parent, then switch
-    if (parentOfTarget && (await branchExists(parentOfTarget)) && !isRootBranch(parentOfTarget)) {
-      const isBasedOn = await isBranchBasedOn(targetLink.branchName, parentOfTarget);
-      if (!isBasedOn) {
-        messages.push(
-          `Target branch ${targetLink.branchName} (${targetLink.tier}) exists but is not based on ${parentOfTarget}. ` +
-            `The parent may have been updated (e.g. harness or feature changes). ` +
-            `Rebase to bring in the latest updates: git rebase ${parentOfTarget}`
-        );
-        return { success: false, messages, finalBranch: await getCurrentBranch(), chain };
-      }
-    }
+    // Target exists - checkout first, then verify based-on parent (auto-rebase if not)
     const checkoutTarget = await runGitCommand(`git checkout ${targetLink.branchName}`, 'ensureTierBranch-checkout-target');
     if (!checkoutTarget.success) {
       messages.push(`Could not switch to existing branch ${targetLink.branchName}: ${checkoutTarget.error || checkoutTarget.output}`);
       return { success: false, messages, finalBranch: await getCurrentBranch(), chain };
     }
     messages.push(`Switched to existing ${targetLink.tier} branch: ${targetLink.branchName}`);
+
+    if (parentOfTarget && (await branchExists(parentOfTarget)) && !isRootBranch(parentOfTarget)) {
+      const isBasedOn = await isBranchBasedOn(targetLink.branchName, parentOfTarget);
+      if (!isBasedOn) {
+        messages.push(
+          `Target branch ${targetLink.branchName} (${targetLink.tier}) is not based on ${parentOfTarget}. ` +
+            `Attempting auto-rebase to bring in latest parent updates...`
+        );
+        const rebaseResult = await runGitCommand(`git rebase ${parentOfTarget}`, 'ensureTierBranch-auto-rebase-target');
+        if (!rebaseResult.success) {
+          await runGitCommand('git rebase --abort', 'ensureTierBranch-rebase-abort-target');
+          messages.push(
+            `Auto-rebase of ${targetLink.branchName} onto ${parentOfTarget} failed (conflicts). ` +
+              `Resolve manually: git checkout ${targetLink.branchName} && git rebase ${parentOfTarget}`
+          );
+          return { success: false, messages, finalBranch: await getCurrentBranch(), chain };
+        }
+        messages.push(`Auto-rebased ${targetLink.branchName} onto ${parentOfTarget}.`);
+      }
+    }
   } else if (createIfMissing) {
     // Target does not exist - create from current (parent) branch
     const result = await createBranch(targetLink.branchName);
@@ -910,7 +919,7 @@ export async function mergeTierBranch(
   }
 
   // ── Step 2: Final comprehensive commit ────────────────────────────
-  const preMergeStatus = await runGitCommand('git status --porcelain', 'mergeTierBranch-preStatus');
+  const preMergeStatus = await runGitCommand('git status --porcelain --ignore-submodules=dirty', 'mergeTierBranch-preStatus');
   if (preMergeStatus.success && preMergeStatus.output.trim()) {
     const addResult = await runGitCommand('git add -A', 'mergeTierBranch-preAdd');
     if (addResult.success) {
@@ -925,7 +934,7 @@ export async function mergeTierBranch(
   }
 
   // ── Step 3: Assert clean tree ─────────────────────────────────────
-  const assertStatus = await runGitCommand('git status --porcelain', 'mergeTierBranch-assertClean');
+  const assertStatus = await runGitCommand('git status --porcelain --ignore-submodules=dirty', 'mergeTierBranch-assertClean');
   if (assertStatus.success && assertStatus.output.trim()) {
     warnGitOp({
       timestamp: new Date().toISOString(),

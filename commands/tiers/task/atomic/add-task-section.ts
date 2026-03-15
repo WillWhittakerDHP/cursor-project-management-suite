@@ -6,7 +6,6 @@
  * Operates on: Task-level sections embedded in session handoff document
  */
 
-import { readProjectFile, writeProjectFile } from '../../../utils/utils';
 import { WorkflowCommandContext } from '../../../utils/command-context';
 import { resolveFeatureName } from '../../../utils';
 
@@ -26,11 +25,7 @@ export interface TaskSection {
 export async function addTaskSection(section: TaskSection, featureName?: string): Promise<void> {
   const resolved = await resolveFeatureName(featureName);
   const context = new WorkflowCommandContext(resolved);
-  // Extract session ID from task ID (X.Y.Z -> X.Y)
   const sessionId = section.id.split('.').slice(0, 2).join('.');
-  const handoffPath = context.paths.getSessionHandoffPath(sessionId);
-  const content = await readProjectFile(handoffPath);
-  
   const formattedSection = `### Task ${section.id}: ${section.name} ✅
 
 **Goal:** ${section.goal}
@@ -56,21 +51,17 @@ ${section.vueNotes.map(n => `- ${n}`).join('\n')}
 **Completion Summary:**
 ${section.completionSummary.map(s => `- ✅ ${s}`).join('\n')}
 `;
-  
-  // Find the "Current Status" section and insert before it, or append to end
-  const lines = content.split('\n');
-  const statusIndex = lines.findIndex(line => 
-    line.trim().startsWith('##') && line.includes('Current Status')
-  );
-  
-  if (statusIndex !== -1) {
-    // Insert before Current Status section
-    lines.splice(statusIndex, 0, formattedSection);
-  } else {
-    // Append to end
-    lines.push(formattedSection);
-  }
-  
-  await writeProjectFile(handoffPath, lines.join('\n'));
+  await context.documents.updateHandoff('session', sessionId, (content) => {
+    const lines = content.split('\n');
+    const statusIndex = lines.findIndex(line =>
+      line.trim().startsWith('##') && line.includes('Current Status')
+    );
+    if (statusIndex !== -1) {
+      lines.splice(statusIndex, 0, formattedSection);
+    } else {
+      lines.push(formattedSection);
+    }
+    return lines.join('\n');
+  });
 }
 

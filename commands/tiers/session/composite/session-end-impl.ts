@@ -474,7 +474,7 @@ export async function sessionEndImpl(
         let sessionGuideContent = await readProjectFile(sessionGuidePath);
         if (!sessionGuideContent.includes(sessionMarker)) {
           sessionGuideContent = sessionGuideContent.trimEnd() + '\n\n' + sessionMarker;
-          await writeProjectFile(sessionGuidePath, sessionGuideContent);
+          await c.context.documents.updateGuide('session', p.sessionId, () => sessionGuideContent);
         }
         c.steps.excerptMarkerSessionGuide = { success: true, output: 'Session guide excerpt marker ensured' };
       } catch (_err) {
@@ -509,6 +509,18 @@ export async function sessionEndImpl(
         try {
           const mergeResult = await mergeTierBranch(SESSION_CONFIG, p.sessionId, c.context, { push: false, auditPrewarmPromise: c.auditPrewarmPromise });
           c.steps.gitMerge = { success: mergeResult.success, output: mergeResult.messages.join('\n') };
+          if (!mergeResult.success) {
+            return {
+              success: false,
+              output: c.output.join('\n'),
+              steps: c.steps,
+              outcome: buildTierEndOutcome(
+                'blocked_fix_required',
+                'git_failed',
+                `Session merge into phase failed. ${mergeResult.messages.join(' ')} Fix and re-run /session-end.`
+              ),
+            };
+          }
           if (mergeResult.deletedBranch) c.steps.deleteSessionBranch = { success: true, output: 'Deleted session branch after merge (only if explicitly requested).' };
         } catch (_error) {
           const sessionBranchName = SESSION_CONFIG.getBranchName(c.context, p.sessionId);
@@ -516,7 +528,17 @@ export async function sessionEndImpl(
           const errorMsg = sessionBranchName && phaseBranchName
             ? `Manual recovery: git checkout ${phaseBranchName} && git merge ${sessionBranchName}`
             : 'Resolve branch names from tier config and merge manually.';
-          c.steps.gitMerge = { success: false, output: `Branch merge failed (non-critical): ${_error instanceof Error ? _error.message : String(_error)}\n${errorMsg}` };
+          c.steps.gitMerge = { success: false, output: `Branch merge failed: ${_error instanceof Error ? _error.message : String(_error)}\n${errorMsg}` };
+          return {
+            success: false,
+            output: c.output.join('\n'),
+            steps: c.steps,
+            outcome: buildTierEndOutcome(
+              'blocked_fix_required',
+              'git_failed',
+              `Session merge into phase threw an error. ${errorMsg} Fix and re-run /session-end.`
+            ),
+          };
         }
       } else {
         c.steps.gitMerge = { success: true, output: 'Skipped (skipGit=true)' };

@@ -243,3 +243,107 @@ export function ensureGuideHasRequiredSections(
 
   return result;
 }
+
+// --- Handoff: minimal section builders and ensure ---
+
+export type HandoffTierForSections = 'feature' | 'phase' | 'session';
+
+function buildMinimalHandoffCurrentStatus(identifier: string, description: string): string {
+  return [
+    '## Current Status',
+    '',
+    `**Last Completed:** [Fill in for ${description || identifier}]`,
+    '**Next Session:** [Fill in]',
+    '**Git Branch:** [Fill in]',
+    '**Last Updated:** [Fill in]',
+    '',
+  ].join('\n');
+}
+
+function buildMinimalHandoffNextAction(): string {
+  return [
+    '## Next Action',
+    '',
+    'Continue with next step. [Fill in.]',
+    '',
+  ].join('\n');
+}
+
+function buildMinimalHandoffTransitionContext(): string {
+  return [
+    '## Transition Context',
+    '',
+    '**Where we left off:** [Fill in]',
+    '',
+    '**What you need to start:** [Fill in]',
+    '',
+  ].join('\n');
+}
+
+function buildMinimalHandoffSection(
+  sectionTitle: string,
+  identifier: string,
+  description: string
+): string {
+  if (sectionTitle === 'Current Status') return buildMinimalHandoffCurrentStatus(identifier, description);
+  if (sectionTitle === 'Next Action') return buildMinimalHandoffNextAction();
+  if (sectionTitle === 'Transition Context') return buildMinimalHandoffTransitionContext();
+  return `## ${sectionTitle}\n\n[Fill in.]\n\n`;
+}
+
+/** Handoff section match: use same logic as guide (## Title). */
+function handoffSectionTitleMatches(headingTitle: string, sectionTitle: string): boolean {
+  return headingTitle.trim().includes(sectionTitle);
+}
+
+function findHandoffSectionStartLine(lines: string[], sectionTitle: string): number {
+  return lines.findIndex((line) => {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith('#')) return false;
+    const titleMatch = trimmed.match(/^#+\s+(.+)$/);
+    if (!titleMatch) return false;
+    return handoffSectionTitleMatches(titleMatch[1].trim(), sectionTitle);
+  });
+}
+
+/**
+ * Ensure content has all REQUIRED_HANDOFF_SECTIONS, each with at least MIN_SECTION_LENGTH
+ * characters. Replaces short or missing sections with minimal content.
+ * Used by DocumentManager.ensureHandoff and writeHandoff verification.
+ */
+export function ensureHandoffHasRequiredSections(
+  content: string,
+  tier: HandoffTierForSections,
+  identifier: string,
+  description?: string
+): string {
+  const desc = description ?? identifier;
+  let result = content;
+  const currentLines = result.split('\n');
+
+  for (const sectionTitle of REQUIRED_HANDOFF_SECTIONS) {
+    const startIdx = findHandoffSectionStartLine(currentLines, sectionTitle);
+
+    if (startIdx === -1) {
+      const minimal = buildMinimalHandoffSection(sectionTitle, identifier, desc);
+      result = result.trimEnd() + '\n\n---\n\n' + minimal;
+      currentLines.length = 0;
+      currentLines.push(...result.split('\n'));
+      continue;
+    }
+
+    const endIdx = findSectionEndLine(currentLines, startIdx);
+    const sectionContent = currentLines.slice(startIdx, endIdx).join('\n');
+
+    if (sectionContent.trim().length >= MIN_SECTION_LENGTH) continue;
+
+    const minimal = buildMinimalHandoffSection(sectionTitle, identifier, desc);
+    const before = currentLines.slice(0, startIdx).join('\n');
+    const after = currentLines.slice(endIdx).join('\n');
+    result = (before ? before + '\n\n' : '') + minimal + (after ? '\n\n' + after : '');
+    currentLines.length = 0;
+    currentLines.push(...result.split('\n'));
+  }
+
+  return result;
+}

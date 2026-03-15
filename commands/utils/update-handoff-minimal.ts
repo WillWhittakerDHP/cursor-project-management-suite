@@ -8,11 +8,10 @@
  * Focus: Where we left off, what's next (not instructions or detailed notes)
  */
 
-import { readProjectFile, writeProjectFile, getCurrentDate, getCurrentBranch, PROJECT_ROOT } from './utils';
+import { getCurrentDate } from './utils';
+import { getCurrentBranch } from '../git/shared/git-manager';
 import { WorkflowCommandContext } from './command-context';
 import { resolveFeatureName } from './feature-context';
-import { readFile } from 'fs/promises';
-import { join } from 'path';
 import { getExcerptEndMarker } from '../tiers/shared/context-policy';
 
 export interface MinimalHandoffUpdate {
@@ -23,64 +22,22 @@ export interface MinimalHandoffUpdate {
   featureName?: string; // Optional: resolved from .current-feature or git branch if not set
 }
 
-/**
- * Check if file exists, create from template if it doesn't
- */
-async function ensureHandoffFileExists(handoffPath: string, sessionId: string, context: WorkflowCommandContext): Promise<void> {
-  try {
-    // Try to read the file - if it exists, we're done
-    await readProjectFile(handoffPath);
-    return;
-  } catch (err) {
-    console.warn('Update handoff minimal: handoff file not found, creating from template', handoffPath, err);
-    const templatePath = context.paths.getTemplatePath('session', 'handoff');
-    const templateContent = await readFile(join(PROJECT_ROOT, templatePath), 'utf-8');
-    
-    // Replace template placeholders with actual values
-    const initialContent = templateContent
-      .replace(/\[SESSION_ID\]/g, sessionId)
-      .replace(/\[DESCRIPTION\]/g, `Session ${sessionId}`)
-      .replace(/\[Date\]/g, getCurrentDate())
-      .replace(/\[Complete \/ In Progress\]/g, 'In Progress')
-      .replace(/\[NEXT_SESSION\]/g, '')
-      .replace(/\[LAST_TASK\]/g, '')
-      .replace(/\[PHASE\]/g, sessionId.split('.')[0]);
-    
-    // Write the initial handoff file
-    await writeProjectFile(handoffPath, initialContent);
-  }
-}
-
 export async function updateHandoffMinimal(update: MinimalHandoffUpdate): Promise<void> {
   const featureName = await resolveFeatureName(update.featureName);
   const context = new WorkflowCommandContext(featureName);
-  // Extract session ID from lastCompletedTask if not provided (X.Y.Z -> X.Y)
   const sessionId = update.sessionId || update.lastCompletedTask.split('.').slice(0, 2).join('.');
-  const handoffPath = context.paths.getSessionHandoffPath(sessionId);
-  
-  // Ensure handoff file exists (create from template if it doesn't)
-  await ensureHandoffFileExists(handoffPath, sessionId, context);
-  
-  const content = await readProjectFile(handoffPath);
-  const lines = content.split('\n');
-  
+  await context.documents.ensureHandoff('session', sessionId, `Session ${sessionId}`);
   const branch = await getCurrentBranch();
   const date = getCurrentDate();
-  
-  // Update or create "Current Status" section
   const statusSection = `## Current Status
 
 **Last Completed:** Task ${update.lastCompletedTask}
 **Next Session:** Session ${update.nextSession}
 **Git Branch:** \`${branch}\`
 **Last Updated:** ${date}`;
-  
-  // Update or create "Next Action" section
   const nextActionSection = `## Next Action
 
 Start Session ${update.nextSession}`;
-  
-  // Update or create "Transition Context" section
   const transitionSection = update.transitionNotes
     ? `## Transition Context
 
@@ -97,69 +54,32 @@ Completed Task ${update.lastCompletedTask}
 
 **What you need to start:**
 - Begin Session ${update.nextSession}`;
-  
-  // Find existing sections and replace, or insert if not found
-  const statusIndex = lines.findIndex(line => line.trim().startsWith('##') && line.includes('Current Status'));
-  const nextActionIndex = lines.findIndex(line => line.trim().startsWith('##') && line.includes('Next Action'));
-  const transitionIndex = lines.findIndex(line => line.trim().startsWith('##') && line.includes('Transition Context'));
-  
-  // Replace or insert sections
-  const updatedLines: string[] = [];
-  let i = 0;
-  
-  // Keep everything before Current Status
-  if (statusIndex !== -1) {
-    updatedLines.push(...lines.slice(0, statusIndex));
-  } else {
-    updatedLines.push(...lines);
-  }
-  
-  // Add/update Current Status
-  updatedLines.push(statusSection);
-  updatedLines.push('');
-  
-  // Find end of Current Status section
-  if (statusIndex !== -1) {
-    for (i = statusIndex + 1; i < lines.length; i++) {
-      if (lines[i].trim().startsWith('##')) break;
+  await context.documents.updateHandoff('session', sessionId, (content) => {
+    const lines = content.split('\n');
+    const statusIndex = lines.findIndex(line => line.trim().startsWith('##') && line.includes('Current Status'));
+    const nextActionIndex = lines.findIndex(line => line.trim().startsWith('##') && line.includes('Next Action'));
+    const transitionIndex = lines.findIndex(line => line.trim().startsWith('##') && line.includes('Transition Context'));
+    const updatedLines: string[] = [];
+    let i = 0;
+    if (statusIndex !== -1) {
+      updatedLines.push(...lines.slice(0, statusIndex));
+    } else {
+      updatedLines.push(...lines);
     }
-  }
-  
-  // Add/update Next Action
-  updatedLines.push(nextActionSection);
-  updatedLines.push('');
-  
-  // Add/update Transition Context, then excerpt marker so excerptUpToMarker returns only useful content
-  updatedLines.push(transitionSection);
-  updatedLines.push('');
-  updatedLines.push(getExcerptEndMarker('session'));
-  updatedLines.push('');
-
-  // Keep everything after Transition Context (or after Current Status if Transition Context didn't exist)
-  if (transitionIndex !== -1) {
-    for (i = transitionIndex + 1; i < lines.length; i++) {
-      if (lines[i].trim().startsWith('##')) {
-        // Skip sections we've already added
-        const sectionName = lines[i].trim();
-        if (sectionName.includes('Current Status') || sectionName.includes('Next Action') || sectionName.includes('Transition Context')) {
-          continue;
-        }
+    updatedLines.push(statusSection, '', nextActionSection, '', transitionSection, '', getExcerptEndMarker('session'), '');
+    if (transitionIndex !== -1) {
+      for (i = transitionIndex + 1; i < lines.length; i++) {
+        const trimmed = lines[i].trim();
+        if (trimmed.startsWith('##') && (trimmed.includes('Current Status') || trimmed.includes('Next Action') || trimmed.includes('Transition Context'))) continue;
+        updatedLines.push(lines[i]);
       }
-      updatedLines.push(lines[i]);
-    }
-  } else if (statusIndex !== -1) {
-    // Skip old Next Action if it existed
-    if (nextActionIndex !== -1) {
+    } else if (statusIndex !== -1 && nextActionIndex !== -1) {
       for (i = nextActionIndex + 1; i < lines.length; i++) {
         if (lines[i].trim().startsWith('##')) break;
       }
+      if (i < lines.length) updatedLines.push(...lines.slice(i));
     }
-    if (i < lines.length) {
-      updatedLines.push(...lines.slice(i));
-    }
-  }
-
-  const finalContent = updatedLines.join('\n').trimEnd();
-  await writeProjectFile(handoffPath, finalContent);
+    return updatedLines.join('\n').trimEnd();
+  });
 }
 

@@ -7,7 +7,7 @@
  * Use this after git operations (merge, checkout, branch switch) to keep config in sync.
  */
 
-import { getCurrentBranch } from './utils';
+import { getCurrentBranch } from '../git/shared/git-manager';
 
 export interface UpdateCurrentFeatureResult {
   success: boolean;

@@ -11,8 +11,7 @@
  * or non-tier-end callers still work without changes.
  */
 
-import { getCurrentBranch } from '../../utils/utils';
-import { runGitCommand } from '../shared/git-logger';
+import { getCurrentBranch, runGitCommand } from '../shared/git-logger';
 
 export interface GitMergeParams {
   sourceBranch: string;
@@ -24,7 +23,7 @@ export interface GitMergeParams {
 }
 
 async function hasUncommittedChanges(): Promise<boolean> {
-  const status = await runGitCommand('git status --porcelain', 'gitMerge-status');
+  const status = await runGitCommand('git status --porcelain --ignore-submodules=dirty', 'gitMerge-status');
   return status.success && status.output.trim().length > 0;
 }
 

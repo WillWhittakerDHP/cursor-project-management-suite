@@ -13,7 +13,6 @@ import { MarkdownUtils } from '../../utils/markdown-utils';
 import { generateCurrentStateSummary } from '../../utils/context-gatherer';
 import { formatAutoGatheredContext } from '../../utils/context-templates';
 import { getFeatureGuideFromProjectPlan } from '../../utils/project-plan-adapter';
-import { ensureGuideHasRequiredSections } from './guide-required-sections';
 import { extractOpenQuestions, getUnresolvedQuestions } from '../../utils/open-questions';
 
 export type TierName = 'feature' | 'phase' | 'session' | 'task';
@@ -53,16 +52,10 @@ export async function ensureTierScaffold(params: TierContextReadParams): Promise
       await context.readPhaseGuide(identifier);
     } catch {
       try {
-        const template = await context.templates.loadTemplate('phase', 'guide');
-        const rendered = context.templates.render(template, {
-          N: identifier,
-          NAME: resolvedDescription,
-          DESCRIPTION: resolvedDescription,
-        });
         const phaseGuidePath = context.paths.getPhaseGuidePath(identifier);
         const fullPath = join(PROJECT_ROOT, phaseGuidePath);
         await mkdir(dirname(fullPath), { recursive: true });
-        await context.documents.writeGuide('phase', identifier, rendered);
+        await context.documents.ensureGuide('phase', identifier, resolvedDescription);
       } catch {
         // non-blocking
       }
@@ -76,19 +69,7 @@ export async function ensureTierScaffold(params: TierContextReadParams): Promise
       await context.readSessionGuide(identifier);
     } catch {
       try {
-        const template = await context.templates.loadTemplate('session', 'guide');
-        const rendered = context.templates.render(template, {
-          SESSION_ID: identifier,
-          DESCRIPTION: resolvedDescription,
-          DATE: new Date().toISOString().split('T')[0],
-        });
-        const sessionContent = ensureGuideHasRequiredSections(
-          rendered,
-          'session',
-          identifier,
-          resolvedDescription
-        );
-        await context.documents.writeGuide('session', identifier, sessionContent);
+        await context.documents.ensureGuide('session', identifier, resolvedDescription);
       } catch {
         // non-blocking
       }

@@ -111,3 +111,35 @@ export async function runGitCommand(
 
   return result;
 }
+
+// ─── Query helpers (logged; no dependency on git-manager to avoid cycles) ─
+
+export async function getCurrentBranch(): Promise<string> {
+  const result = await runGitCommand('git branch --show-current', 'getCurrentBranch');
+  if (result.success && result.output.trim()) {
+    return result.output.trim();
+  }
+  console.warn('WARNING: Could not get current git branch, defaulting to \'main\'');
+  return 'main';
+}
+
+export async function branchExists(branchName: string): Promise<boolean> {
+  const result = await runGitCommand(`git rev-parse --verify ${branchName}`, 'branchExists');
+  return result.success;
+}
+
+export async function isBranchBasedOn(childBranch: string, parentBranch: string): Promise<boolean> {
+  const mergeBaseResult = await runGitCommand(
+    `git merge-base ${parentBranch} ${childBranch}`,
+    'isBranchBasedOn-mergeBase'
+  );
+  if (!mergeBaseResult.success) return false;
+
+  const parentHeadResult = await runGitCommand(
+    `git rev-parse ${parentBranch}`,
+    'isBranchBasedOn-parentHead'
+  );
+  if (!parentHeadResult.success) return false;
+
+  return mergeBaseResult.output.trim() === parentHeadResult.output.trim();
+}

@@ -172,74 +172,13 @@ export function buildTaskSection(taskId: string, name: string): string {
   ].join('\n');
 }
 
-// --- Ensure tierDown doc files exist ---
+// --- Ensure tierDown doc files exist (guides via DocumentManager; log created here when missing) ---
 
-async function ensurePhaseGuideExists(
-  context: WorkflowCommandContext,
-  phaseId: string,
-  description: string
-): Promise<void> {
-  const guidePath = context.paths.getPhaseGuidePath(phaseId);
-  try {
-    await readProjectFile(guidePath);
-    return;
-  } catch {
-    // missing: create minimal
-  }
-  try {
-    const firstSessionId = `${phaseId}.1`;
-    const minimal = [
-      `# Phase ${phaseId} Guide: ${description}`,
-      '',
-      '**Purpose:** Phase-level guide for planning and tracking.',
-      '**Tier:** Phase',
-      '',
-      '---',
-      '',
-      '## Phase Overview',
-      '',
-      `**Phase Number:** ${phaseId}`,
-      `**Phase Name:** ${description}`,
-      '**Description:** [Fill in]',
-      '**Duration:** 1+ sessions',
-      '**Status:** Not Started',
-      '',
-      '---',
-      '',
-      '## Sessions Breakdown',
-      '',
-      `- [ ] ### Session ${firstSessionId}: ${description}`,
-      '**Description:** [Fill in]',
-      '',
-      '**Tasks:** [To be planned]',
-    ].join('\n');
-    await writeProjectFile(guidePath, minimal);
-  } catch (err) {
-    console.warn('ensure-tier-down-docs: could not create tierDown guide', phaseId, err);
-  }
-}
-
-async function ensureSessionGuideExists(
+async function ensureSessionLogExists(
   context: WorkflowCommandContext,
   sessionId: string,
   description: string
 ): Promise<void> {
-  const guidePath = context.paths.getSessionGuidePath(sessionId);
-  try {
-    await readProjectFile(guidePath);
-  } catch {
-    try {
-      const template = await context.templates.loadTemplate('session', 'guide');
-      const content = context.templates.render(template, {
-        SESSION_ID: sessionId,
-        DESCRIPTION: description,
-        DATE: new Date().toISOString().split('T')[0],
-      });
-      await context.documents.writeGuide('session', sessionId, content);
-    } catch (err) {
-      console.warn('ensure-tier-down-docs: could not create tierDown guide', sessionId, err);
-    }
-  }
   const logPath = context.paths.getSessionLogPath(sessionId);
   try {
     await readProjectFile(logPath);
@@ -281,12 +220,16 @@ async function runForFeature(ctx: TierStartWorkflowContext): Promise<void> {
     if (!hasPhaseSection(updated, phaseId)) {
       updated = updated.trimEnd() + '\n' + buildPhaseSection(phaseId, phaseDesc);
     }
-    await ensurePhaseGuideExists(context, phaseId, phaseDesc);
+    try {
+      await context.documents.ensureGuide('phase', phaseId, phaseDesc);
+    } catch (err) {
+      console.warn('ensure-tier-down-docs: could not ensure phase guide', phaseId, err);
+    }
   }
   if (updated !== content) {
     try {
       updated = ensureGuideHasRequiredSections(updated, 'feature', identifier, scopeName);
-      await writeProjectFile(guidePath, updated);
+      await context.documents.updateGuide('feature', identifier, () => updated);
     } catch (err) {
       console.warn('ensure-tier-down-docs: could not write current-tier guide', err);
     }
@@ -304,34 +247,8 @@ async function runForPhase(ctx: TierStartWorkflowContext): Promise<void> {
   } catch {
     try {
       const phaseName = await derivePhaseDescription(phaseId, context);
-      const firstSessionId = `${phaseId}.1`;
-      content = [
-        `# Phase ${phaseId} Guide: ${phaseName}`,
-        '',
-        '**Purpose:** Phase-level guide for planning and tracking.',
-        '**Tier:** Phase',
-        '',
-        '---',
-        '',
-        '## Phase Overview',
-        '',
-        `**Phase Number:** ${phaseId}`,
-        `**Phase Name:** ${phaseName}`,
-        '**Description:** [Fill in]',
-        '**Duration:** 1+ sessions',
-        '**Status:** Not Started',
-        '',
-        '---',
-        '',
-        '## Sessions Breakdown',
-        '',
-        `- [ ] ### Session ${firstSessionId}: ${phaseName}`,
-        '**Description:** [Fill in]',
-        '',
-        '**Tasks:** [To be planned]',
-      ].join('\n');
-      content = ensureGuideHasRequiredSections(content, 'phase', phaseId, phaseName);
-      await writeProjectFile(guidePath, content);
+      await context.documents.ensureGuide('phase', phaseId, phaseName);
+      content = await readProjectFile(guidePath);
     } catch (err) {
       console.warn('ensure-tier-down-docs: could not create tierDown guide', phaseId, err);
       return;
@@ -343,14 +260,21 @@ async function runForPhase(ctx: TierStartWorkflowContext): Promise<void> {
     if (!hasSessionSection(content, firstSessionId)) {
       const sessionSection = buildSessionSection(firstSessionId, scopeName);
       try {
-        await writeProjectFile(guidePath, content.trimEnd() + '\n' + sessionSection);
+        await context.documents.updateGuide('phase', phaseId, (c) =>
+          c.trimEnd() + '\n' + sessionSection
+        );
         content = content + sessionSection;
       } catch (err) {
         console.warn('ensure-tier-down-docs: could not append first tierDown section', err);
       }
       const firstDesc =
         ctx.tierDownPlanItems?.find(i => i.id === firstSessionId)?.description ?? scopeName;
-      await ensureSessionGuideExists(context, firstSessionId, firstDesc);
+      try {
+        await context.documents.ensureGuide('session', firstSessionId, firstDesc);
+        await ensureSessionLogExists(context, firstSessionId, firstDesc);
+      } catch (err) {
+        console.warn('ensure-tier-down-docs: could not ensure session guide/log', firstSessionId, err);
+      }
     }
     return;
   }
@@ -363,12 +287,17 @@ async function runForPhase(ctx: TierStartWorkflowContext): Promise<void> {
     }
     const sessionDesc =
       ctx.tierDownPlanItems?.find(i => i.id === sessionId)?.description ?? scopeName;
-    await ensureSessionGuideExists(context, sessionId, sessionDesc);
+    try {
+      await context.documents.ensureGuide('session', sessionId, sessionDesc);
+      await ensureSessionLogExists(context, sessionId, sessionDesc);
+    } catch (err) {
+      console.warn('ensure-tier-down-docs: could not ensure session guide/log', sessionId, err);
+    }
   }
   if (updated !== content) {
     try {
       updated = ensureGuideHasRequiredSections(updated, 'phase', phaseId, scopeName);
-      await writeProjectFile(guidePath, updated);
+      await context.documents.updateGuide('phase', phaseId, () => updated);
     } catch (err) {
       console.warn('ensure-tier-down-docs: could not write tierDown guide', err);
     }
@@ -409,7 +338,7 @@ async function runForSession(ctx: TierStartWorkflowContext): Promise<void> {
   if (updated !== content) {
     try {
       updated = ensureGuideHasRequiredSections(updated, 'session', sessionId, scopeName);
-      await context.documents.writeGuide('session', sessionId, updated);
+      await context.documents.updateGuide('session', sessionId, () => updated);
     } catch (err) {
       console.warn('ensure-tier-down-docs: could not write current-tier guide', sessionId, err);
     }

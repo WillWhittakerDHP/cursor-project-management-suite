@@ -3,8 +3,7 @@
  * Push to current branch
  */
 
-import { getCurrentBranch } from '../../utils/utils';
-import { runGitCommand } from '../shared/git-logger';
+import { getCurrentBranch, runGitCommand } from '../shared/git-logger';
 
 export async function gitPush(): Promise<{ success: boolean; output: string }> {
   const branch = await getCurrentBranch();

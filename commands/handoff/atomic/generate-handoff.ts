@@ -120,14 +120,9 @@ export async function generateHandoff(params: GenerateHandoffParams): Promise<st
     }
     handoffContent.push('\n');
     
-    // Write handoff
-    if (params.tier === 'feature') {
-      await context.documents.writeGuide('feature', undefined, handoffContent.join(''));
-    } else if (params.tier === 'phase') {
-      await context.documents.writeGuide('phase', params.identifier!, handoffContent.join(''));
-    } else {
-      await context.documents.writeGuide('session', params.identifier!, handoffContent.join(''));
-    }
+    // Write handoff (unified API: write + verify)
+    const id = params.tier === 'feature' ? undefined : params.identifier!;
+    await context.documents.writeHandoff(params.tier, id, handoffContent.join(''));
     
     output.push('✅ **Handoff generated successfully**\n');
     output.push(`\n**Content Preview:**\n`);

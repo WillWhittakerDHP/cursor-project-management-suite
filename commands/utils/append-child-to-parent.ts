@@ -5,7 +5,7 @@
 
 import type { TierName } from '../tiers/shared/types';
 import type { WorkflowCommandContext } from './command-context';
-import { readProjectFile, writeProjectFile } from './utils';
+import { readProjectFile } from './utils';
 import { MarkdownUtils } from './markdown-utils';
 
 export interface AppendChildResult {
@@ -74,7 +74,7 @@ export async function appendChildToParentDoc(
         }
         content = content.slice(0, sectionEnd) + (content[sectionEnd - 1] === '\n' ? '' : '\n\n') + newEntry + content.slice(sectionEnd);
       }
-      await writeProjectFile(guidePath, content);
+      await context.documents.updateGuide('phase', parentId, () => content);
       output.push(`Appended Session ${childId} to ${guidePath}`);
       return { success: true, parentDocPath: guidePath, alreadyExists: false, output };
     } catch (err) {
@@ -93,7 +93,7 @@ export async function appendChildToParentDoc(
       const phaseEntry = `- [ ] ### Phase ${childId}: ${childDescription}\n**Description:** ${childDescription}\n**Sessions:** [To be planned]\n**Success Criteria:**\n- [To be defined]`;
       guideContent = MarkdownUtils.appendToSection(guideContent, 'Phases Breakdown', phaseEntry)
         || guideContent + '\n\n' + phaseEntry;
-      await writeProjectFile(guidePath, guideContent);
+      await context.documents.updateGuide('feature', undefined, () => guideContent);
       output.push(`Appended Phase ${childId} to feature guide`);
       return { success: true, parentDocPath: guidePath, alreadyExists: false, output };
     } catch (err) {
@@ -119,7 +119,7 @@ export async function appendChildToParentDoc(
         '**Checkpoint:** [What needs to be verified]',
       ].join('\n');
       content = content + '\n\n' + newEntry;
-      await writeProjectFile(guidePath, content);
+      await context.documents.updateGuide('session', parentId, () => content);
       output.push(`Appended Task ${childId} to ${guidePath}`);
       return { success: true, parentDocPath: guidePath, alreadyExists: false, output };
     } catch (err) {
