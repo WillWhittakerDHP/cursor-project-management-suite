@@ -135,17 +135,47 @@ export function isAutoCommittable(filePath: string): boolean {
   );
 }
 
-/** Paths we never auto-commit in tier-end (same as non-blocking at checkout: .cursor, .project-manager, audit reports). */
-export function isNeverCommitPath(filePath: string): boolean {
-  return (
-    isCursorPath(filePath) ||
-    isProjectManagerPath(filePath) ||
-    isAuditReportsPath(filePath)
+/**
+ * Transient harness state files under .project-manager/ that must never be
+ * committed (they are also in .gitignore). Everything else under
+ * .project-manager/ (PROJECT_PLAN.md, feature guides, session plans, etc.)
+ * is project documentation and should be committed normally.
+ */
+const TRANSIENT_PM_FILES = [
+  '.project-manager/.audit-baseline-log.jsonl',
+  '.project-manager/.git-ops-log',
+  '.project-manager/.merge-incident-log',
+  '.project-manager/.write-log',
+  '.project-manager/.tier-scope',
+  '.project-manager/.current-feature',
+] as const;
+
+function isTransientProjectManagerFile(filePath: string): boolean {
+  const p = filePath.trim().replace(/^\.\//, '');
+  return TRANSIENT_PM_FILES.some(
+    (t) => p === t || p === t.replace(/^\./, '')
   );
 }
 
-/** Default path prefixes for tier-end "commit remaining": only app code under these is auto-committed. */
-export const DEFAULT_ALLOWED_COMMIT_PREFIXES = ['client/', 'server/'] as const;
+/**
+ * Paths we never auto-commit in tier-end.
+ * - .cursor/ (synced separately as submodule)
+ * - client/.audit-reports/ (generated artifacts)
+ * - Transient .project-manager/ dotfiles (.write-log, .tier-scope, etc.)
+ *
+ * Non-transient .project-manager/ docs (PROJECT_PLAN.md, feature guides,
+ * session plans, handoffs) are committable and covered by
+ * DEFAULT_ALLOWED_COMMIT_PREFIXES.
+ */
+export function isNeverCommitPath(filePath: string): boolean {
+  if (isCursorPath(filePath)) return true;
+  if (isAuditReportsPath(filePath)) return true;
+  if (isTransientProjectManagerFile(filePath)) return true;
+  return false;
+}
+
+/** Default path prefixes for tier-end "commit remaining": app code and project documentation. */
+export const DEFAULT_ALLOWED_COMMIT_PREFIXES = ['client/', 'server/', '.project-manager/'] as const;
 
 /** Paths to stash when only workflow artifacts are uncommitted (non-blocking flow). */
 const WORKFLOW_ARTIFACT_STASH_PATHS = '.cursor .project-manager client/.audit-reports';
