@@ -1,0 +1,97 @@
+{
+  "generatedAt": "2026-03-15T22:16:02.231Z",
+  "scope": {
+    "included": [
+      "client/src/composables/**/*.{ts,js}"
+    ],
+    "excluded": [
+      "**/__tests__/**",
+      "**/*.test.*",
+      "**/*.spec.*"
+    ]
+  },
+  "totalScanned": 279,
+  "exceptionSummary": {
+    "totalRequiresReview": 1
+  },
+  "files": [
+    {
+      "id": "client__src__composables__booking__useAvailabilityStepAccordion.ts",
+      "repoPath": "client/src/composables/booking/useAvailabilityStepAccordion.ts",
+      "absPath": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/src/composables/booking/useAvailabilityStepAccordion.ts",
+      "counts": {
+        "computed": 0,
+        "ref": 0,
+        "reactive": 0,
+        "watch": 2,
+        "watchEffect": 0,
+        "lifecycle": 2,
+        "async": 0,
+        "await": 0,
+        "vueQuery": 0,
+        "map": 0,
+        "reduce": 0,
+        "filter": 0,
+        "sort": 0,
+        "dom": 2,
+        "timers": 0,
+        "console": 0
+      },
+      "matches": [
+        {
+          "ruleId": "lifecycle",
+          "lineNumber": 9,
+          "line": "import { ref, watch, nextTick, onMounted, type ComputedRef, type Ref } from 'vue'",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "dom",
+          "lineNumber": 37,
+          "line": "const contentEl = document.getElementById(`${contentIdPrefix}${stepIndex}`)",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "dom",
+          "lineNumber": 56,
+          "line": "const headerEl = document.getElementById(`${titleIdPrefix}${stepIndex}`)",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "watch",
+          "lineNumber": 69,
+          "line": "watch(",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "watch",
+          "lineNumber": 77,
+          "line": "watch(",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "lifecycle",
+          "lineNumber": 89,
+          "line": "onMounted(() => {",
+          "suppressionStatus": "unsuppressed"
+        }
+      ],
+      "exportUseFunctions": [
+        "useAvailabilityStepAccordion"
+      ],
+      "returnKeys": [
+        "expandedIndex",
+        "onHeaderKeydown",
+        "setExpanded"
+      ],
+      "complexityScore": 6,
+      "priority": "P2",
+      "suggestions": [
+        {
+          "kind": "side_effects",
+          "priority": "P0",
+          "message": "Contains direct DOM access. Prefer isolating DOM work behind a small composable/utility and keeping core logic testable."
+        }
+      ]
+    }
+  ]
+}

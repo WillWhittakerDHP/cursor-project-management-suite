@@ -4,6 +4,7 @@
  * Purpose: Execute appropriate tier change command based on tier
  * 
  * This function routes to the appropriate tier change command:
+ * - /feature-change for feature-tier changes (pivot/rename)
  * - /session-change for session-tier changes
  * - /task-change for task-tier changes
  * - /phase-change for phase-tier changes
@@ -21,6 +22,7 @@
 import { changeRequest } from '../tiers/session/composite/session';
 import { taskChange } from '../tiers/task/composite/task';
 import { phaseChange } from '../tiers/phase/composite/phase';
+import { featureChange } from '../tiers/feature/composite/feature';
 import { WorkflowId } from './id-utils';
 import { TierAnalysis } from './tier-discriminator';
 import { resolveFeatureName } from './feature-context';
@@ -32,6 +34,8 @@ export interface ExecuteChangeRequestParams {
   taskId?: string;
   phase?: string;
   featureName?: string;
+  /** For feature-tier changes: new feature name (rename). If omitted, description is used as reason only. */
+  newFeatureName?: string;
 }
 
 export interface ExecuteChangeRequestResult {
@@ -54,7 +58,11 @@ export async function executeChangeRequest(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let changeResult: any;
     
-    if (tierAnalysis.tier === 'task' && taskId) {
+    if (tierAnalysis.tier === 'feature' && featureName) {
+      const newName = params.newFeatureName ?? featureName;
+      const output = await featureChange(featureName, newName, description);
+      changeResult = { output };
+    } else if (tierAnalysis.tier === 'task' && taskId) {
       if (!WorkflowId.isValidTaskId(taskId)) {
         throw new Error(`Invalid task ID: ${taskId}. Expected format: X.Y.Z.Z.A`);
       }
@@ -81,7 +89,7 @@ export async function executeChangeRequest(
       }, featureName);
       
     } else {
-      throw new Error(`Cannot determine execution tier. Session: ${sessionId}, Task: ${taskId}, Phase: ${phase}, Tier: ${tierAnalysis.tier}`);
+      throw new Error(`Cannot determine execution tier. Session: ${sessionId}, Task: ${taskId}, Phase: ${phase}, Feature: ${featureName}, Tier: ${tierAnalysis.tier}`);
     }
     
     return {

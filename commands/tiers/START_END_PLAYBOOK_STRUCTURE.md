@@ -8,6 +8,7 @@ All tier start/end commands (feature-start, feature-end, phase-start, phase-end,
 |-----------------|----------------------------------------------------------------|------------------|
 | feature-start   | .cursor/commands/tiers/feature/composite/feature.ts           | featureStart     |
 | feature-end     | .cursor/commands/tiers/feature/composite/feature.ts           | featureEnd       |
+| feature-change  | .cursor/commands/tiers/feature/composite/feature.ts           | featureChange    |
 | phase-start     | .cursor/commands/tiers/phase/composite/phase.ts                | phaseStart       |
 | phase-end       | .cursor/commands/tiers/phase/composite/phase.ts                | phaseEnd         |
 | session-start   | .cursor/commands/tiers/session/composite/session.ts           | sessionStart     |
@@ -18,7 +19,7 @@ All tier start/end commands (feature-start, feature-end, phase-start, phase-end,
 | session-add     | .cursor/commands/tiers/shared/tier-add.ts                      | sessionAdd       |
 | task-add        | .cursor/commands/tiers/shared/tier-add.ts                      | taskAdd          |
 
-**Invocation:** From repo root, run the export via the project's TS runner. Example: `npx tsx -e "import('<path>').then(m => m.<export>(...)).then(r => console.log(JSON.stringify(r)))"`. Use the path and export name from the table above.
+**Invocation:** From repo root, run the export via the project's TS runner. Example: `npx tsx -e "import('<path>').then(m => m.<export>(...)).then(r => console.log(JSON.stringify(r)))"`. Use the path and export name from the table above. **feature-change:** Invoke `featureChange(featureName, newFeatureName, reason)` with three string args (current feature name, new feature name for rename, reason for the change).
 
 **/audit-fix [report-path]:** Not a tier command. Use when the user chooses "Fix audit with governance context (/audit-fix)" after `audit_failed`. Invoke `auditFix({ reportPath })` from `.cursor/commands/audit/composite/audit-fix.ts`, or run `npx tsx .cursor/commands/audit/atomic/audit-fix-prompt.ts [report-path]` and paste the output into chat so governance docs and the report are attached.
 
