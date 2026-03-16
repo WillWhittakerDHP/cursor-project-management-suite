@@ -37,7 +37,7 @@ export async function updateHandoffMinimal(update: MinimalHandoffUpdate): Promis
 **Last Updated:** ${date}`;
   const nextActionSection = `## Next Action
 
-Start Session ${update.nextSession}`;
+Start Session ${update.nextSession} (see session guide and phase guide for scope).`;
   const transitionSection = update.transitionNotes
     ? `## Transition Context
 
