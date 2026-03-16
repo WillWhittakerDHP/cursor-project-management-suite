@@ -25,7 +25,7 @@ import { analyzeCodeChangeImpact } from '../../../testing/composite/test-change-
 import { CommandExecutionMode, getOptionsFromParams } from '../../../utils/command-execution-mode';
 import { buildTierEndOutcome, type TierEndOutcome, type CascadeInfo } from '../../../utils/tier-outcome';
 import { buildCascadeUp, buildCascadeAcross } from '../../../utils/tier-cascade';
-import { isLastPhaseInFeature } from '../../../utils/phase-session-utils';
+import { isLastPhaseInFeature, getNextPhaseInFeature } from '../../../utils/phase-session-utils';
 import { PHASE_CONFIG } from '../../configs/phase';
 import { FEATURE_CONFIG } from '../../configs/feature';
 import { phaseCommentCleanup } from '../../../comments/commentCleanup';
@@ -524,7 +524,13 @@ export async function phaseEndImpl(
       } catch (_error) {
         c.steps.featureEndPrompt = { success: false, output: `Parent tier check failed (non-critical): ${_error instanceof Error ? _error.message : String(_error)}` };
       }
-      const nextPhase = p.nextPhase ?? '';
+
+      let nextPhase = p.nextPhase ?? '';
+      if (!nextPhase && !isLastPhase) {
+        const detected = await getNextPhaseInFeature(c.context.feature.name, p.phaseId);
+        if (detected) nextPhase = detected;
+      }
+
       const cascadeUp = isLastPhase ? buildCascadeUp('phase', featureNameForCascade) : undefined;
       const cascadeAcross = nextPhase ? buildCascadeAcross('phase', nextPhase) : undefined;
       c.steps.afterPushShowNextStep = { success: true, output: 'Push complete. Check outcome.cascade for next step.' };

@@ -110,17 +110,17 @@ export async function areAllTasksInSessionComplete(
 }
 
 /**
- * Check if this phase is the last phase in the feature (by listing phase guides on disk).
- * Used by phase-end to prompt for feature-end when no more phases remain.
+ * Parse phase guide filenames from the phases directory into sorted IDs.
+ * Returns numerically sorted array of phase ID strings (e.g. ['6.5', '6.9', '6.10', '6.11']).
  */
-export async function isLastPhaseInFeature(feature: string, phase: string): Promise<boolean> {
+async function getPhaseIdsFromDisk(feature: string): Promise<string[]> {
   const phasesDir = join(PROJECT_ROOT, '.project-manager/features', feature, 'phases');
   let entries: string[];
   try {
     entries = await readdir(phasesDir);
   } catch (err) {
     console.warn('Phase session utils: phases dir not found or unreadable', phasesDir, err);
-    return false;
+    return [];
   }
   const phaseIds = entries
     .map((name) => {
@@ -128,7 +128,31 @@ export async function isLastPhaseInFeature(feature: string, phase: string): Prom
       return m ? m[1] : null;
     })
     .filter((id): id is string => id !== null);
+  return phaseIds.sort((a, b) => {
+    const [aMajor, aMinor] = a.split('.').map(Number);
+    const [bMajor, bMinor] = b.split('.').map(Number);
+    return aMajor !== bMajor ? aMajor - bMajor : (aMinor ?? 0) - (bMinor ?? 0);
+  });
+}
+
+/**
+ * Check if this phase is the last phase in the feature (by listing phase guides on disk).
+ * Used by phase-end to prompt for feature-end when no more phases remain.
+ */
+export async function isLastPhaseInFeature(feature: string, phase: string): Promise<boolean> {
+  const phaseIds = await getPhaseIdsFromDisk(feature);
   if (phaseIds.length === 0) return false;
-  return phaseIds.includes(phase) && phaseIds.sort().at(-1) === phase;
+  return phaseIds.includes(phase) && phaseIds[phaseIds.length - 1] === phase;
+}
+
+/**
+ * Return the next phase ID after the given one, or null if this is the last.
+ * Scans phase guide files on disk so it works without explicit nextPhase params.
+ */
+export async function getNextPhaseInFeature(feature: string, phase: string): Promise<string | null> {
+  const phaseIds = await getPhaseIdsFromDisk(feature);
+  const idx = phaseIds.indexOf(phase);
+  if (idx < 0 || idx >= phaseIds.length - 1) return null;
+  return phaseIds[idx + 1];
 }
 

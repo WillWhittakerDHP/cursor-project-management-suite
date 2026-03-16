@@ -8,6 +8,7 @@ import { readFile } from 'fs/promises';
 import { WorkflowCommandContext } from '../../../utils/command-context';
 import { PHASE_CONFIG } from '../../configs/phase';
 import { getExcerptEndMarker } from '../../shared/context-policy';
+import { getNextPhaseInFeature } from '../../../utils/phase-session-utils';
 
 export interface MarkPhaseCompleteParams {
   phase: string;
@@ -67,7 +68,58 @@ export async function markPhaseCompleteImpl(params: MarkPhaseCompleteParams): Pr
     });
     output.push(`✅ Updated handoff: ${handoffPath}`);
   } catch (_error) {
-    output.push(`⚠️ Could not update handoff: ${_error instanceof Error ? _error.message : String(_error)}`);
+    output.push(`⚠️ Could not update feature handoff: ${_error instanceof Error ? _error.message : String(_error)}`);
+  }
+
+  try {
+    const sessionsList = params.sessionsCompleted?.length ? params.sessionsCompleted.join(', ') : 'All sessions';
+    const lastSession = params.sessionsCompleted?.length
+      ? params.sessionsCompleted[params.sessionsCompleted.length - 1]
+      : `Phase ${params.phase}`;
+    const nextPhaseId = await getNextPhaseInFeature(context.feature.name, params.phase);
+    const nextPhaseLabel = nextPhaseId ?? 'TBD';
+
+    const phaseHandoff = [
+      `# Phase ${params.phase} Handoff`,
+      '',
+      `**Phase Status:** Complete`,
+      `**Last Updated:** ${getCurrentDate()}`,
+      `**Next Phase:** ${nextPhaseLabel}`,
+      '',
+      '---',
+      '',
+      '## Current Status',
+      '',
+      `**Phase ${params.phase}:** Complete`,
+      `**Last Completed Session:** ${lastSession}`,
+      `**Next Phase:** ${nextPhaseLabel}`,
+      '',
+      '---',
+      '',
+      '## Transition Context',
+      '',
+      '**Where we left off:**',
+      `Phase ${params.phase} completed with sessions: ${sessionsList}.`,
+      '',
+      `**What you need to start Phase ${nextPhaseLabel}:**`,
+      `- Review phase ${params.phase} guide for any outstanding notes`,
+      `- Check feature handoff for overall feature status`,
+      '',
+      '---',
+      '',
+      '## Phase Summary',
+      '',
+      `**Sessions Completed:** ${sessionsList}`,
+      '',
+      '---',
+      '',
+    ].join('\n');
+
+    await context.documents.writeHandoff('phase', params.phase, phaseHandoff);
+    const phaseHandoffPath = context.paths.getPhaseHandoffPath(params.phase);
+    output.push(`✅ Created phase handoff: ${phaseHandoffPath}`);
+  } catch (_error) {
+    output.push(`⚠️ Could not create phase handoff: ${_error instanceof Error ? _error.message : String(_error)}`);
   }
 
   let logContent = '';
