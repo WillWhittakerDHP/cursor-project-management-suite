@@ -145,7 +145,7 @@ export function isNeverCommitPath(filePath: string): boolean {
 }
 
 /** Default path prefixes for tier-end "commit remaining": only app code under these is auto-committed. */
-export const DEFAULT_ALLOWED_COMMIT_PREFIXES = ['frontend-root/', 'server/'] as const;
+export const DEFAULT_ALLOWED_COMMIT_PREFIXES = ['client/', 'server/'] as const;
 
 /** Paths to stash when only workflow artifacts are uncommitted (non-blocking flow). */
 const WORKFLOW_ARTIFACT_STASH_PATHS = '.cursor .project-manager client/.audit-reports';
@@ -918,11 +918,19 @@ export async function mergeTierBranch(
     }
   }
 
-  // ── Step 2: Final comprehensive commit ────────────────────────────
+  // ── Step 2: Final selective commit (skip workflow artifacts) ─────
   const preMergeStatus = await runGitCommand('git status --porcelain --ignore-submodules=dirty', 'mergeTierBranch-preStatus');
   if (preMergeStatus.success && preMergeStatus.output.trim()) {
-    const addResult = await runGitCommand('git add -A', 'mergeTierBranch-preAdd');
-    if (addResult.success) {
+    const statusLines = preMergeStatus.output.trim().split('\n').filter(l => l.length > 0);
+    const pathsToStage = statusLines
+      .map(l => normalizeStatusPath(l.slice(3).trim()))
+      .filter(p => p.length > 0 && !isNeverCommitPath(p));
+
+    if (pathsToStage.length > 0) {
+      for (const p of pathsToStage) {
+        const safePath = p.replace(/'/g, "'\\''");
+        await runGitCommand(`git add -- '${safePath}'`, 'mergeTierBranch-preAdd');
+      }
       const safeMsg = `[${config.name} ${tierId}] pre-merge: all remaining artifacts`.replace(/'/g, "'\\''");
       const preMergeCommit = await runGitCommand(`git commit -m '${safeMsg}'`, 'mergeTierBranch-preCommit');
       if (preMergeCommit.success) {
