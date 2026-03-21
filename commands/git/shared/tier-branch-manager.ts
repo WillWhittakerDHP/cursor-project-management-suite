@@ -258,6 +258,54 @@ function parsePortcelainPaths(porcelainOutput: string): string[] {
 }
 
 /**
+ * Recover from a failed `git stash pop` by resetting unmerged (conflicted) files
+ * to HEAD and dropping the broken stash. Returns a description of what was done.
+ *
+ * After a failed stash pop, git leaves conflict markers in affected files and
+ * keeps the stash entry intact. This helper:
+ *   1. Lists unmerged files via `git diff --name-only --diff-filter=U`
+ *   2. For each, runs `git checkout HEAD -- <path>` (takes the branch version)
+ *   3. Resets any remaining unstaged leftovers from the partial pop
+ *   4. Drops the stash that caused the conflict
+ */
+async function recoverFromFailedStashPop(
+  opLabel: string
+): Promise<{ recovered: boolean; detail: string }> {
+  const unmerged = await runGitCommand(
+    'git diff --name-only --diff-filter=U',
+    `${opLabel}-listUnmerged`
+  );
+
+  const unmergedPaths = unmerged.success && unmerged.output.trim()
+    ? unmerged.output.trim().split('\n').filter(Boolean)
+    : [];
+
+  if (unmergedPaths.length > 0) {
+    for (const p of unmergedPaths) {
+      const safePath = p.replace(/'/g, "'\\''");
+      await runGitCommand(`git checkout HEAD -- '${safePath}'`, `${opLabel}-resetUnmerged`);
+    }
+  }
+
+  await runGitCommand('git checkout -- .', `${opLabel}-cleanPartialPop`);
+  await runGitCommand('git stash drop', `${opLabel}-dropConflictedStash`);
+
+  const detail = unmergedPaths.length > 0
+    ? `Recovered ${unmergedPaths.length} conflicted file(s) by keeping branch version: ${unmergedPaths.join(', ')}`
+    : 'Stash pop failed; cleaned up and dropped stash.';
+
+  warnGitOp({
+    timestamp: new Date().toISOString(),
+    operation: `${opLabel}-stashPopRecovery`,
+    command: 'recoverFromFailedStashPop',
+    success: true,
+    output: detail,
+  });
+
+  return { recovered: true, detail };
+}
+
+/**
  * Check for uncommitted changes and resolve them before checkout.
  *
  * When theirBranch is provided (target for start, expected for end):
@@ -269,9 +317,9 @@ function parsePortcelainPaths(porcelainOutput: string): string[] {
  *
  * Resolution:
  * - No changes → clean
- * - Only workflow artifacts → stash them; pop after checkout
+ * - Only workflow artifacts → commit them on current branch (no stash, no pop, no conflict markers)
  * - Blocking files and (no theirBranch or current === theirBranch) → return unresolved
- * - Blocking files and theirBranch and current !== theirBranch → stash blocking, then workflow if any; clean
+ * - Blocking files and theirBranch and current !== theirBranch → commit workflow, stash blocking only; clean
  */
 async function resolveUncommittedBeforeCheckout(
   theirBranch?: string | null
@@ -286,8 +334,26 @@ async function resolveUncommittedBeforeCheckout(
   const autoFiles = changedFiles.filter((f) => isAutoCommittable(f));
   const blockingFiles = changedFiles.filter((f) => !isAutoCommittable(f));
 
-  // Only workflow artifacts uncommitted: stash and allow checkout
+  // Only workflow artifacts uncommitted: commit on current branch (avoids stash-pop conflicts)
   if (autoFiles.length > 0 && blockingFiles.length === 0) {
+    for (const f of autoFiles) {
+      const safePath = f.replace(/'/g, "'\\''");
+      await runGitCommand(`git add -- '${safePath}'`, 'resolveUncommitted-auto-add');
+    }
+    const commitResult = await runGitCommand(
+      `git commit -m '[auto] workflow artifacts before branch switch'`,
+      'resolveUncommitted-auto-commit'
+    );
+    if (commitResult.success) {
+      return {
+        clean: true,
+        stashedWorkflowArtifacts: false,
+        blockingFiles: [],
+        message: 'Committed workflow artifacts (.cursor, .project-manager, audit reports) on current branch before switch.',
+      };
+    }
+    // Commit failed — fallback to stash so the checkout can still proceed
+    await runGitCommand('git reset HEAD -- .', 'resolveUncommitted-auto-reset');
     const stashResult = await runGitCommand(
       `git stash push -m "workflow artifacts (non-blocking)" -- ${WORKFLOW_ARTIFACT_STASH_PATHS}`,
       'resolveUncommitted-stash-workflow'
@@ -296,7 +362,7 @@ async function resolveUncommittedBeforeCheckout(
       return {
         clean: false,
         blockingFiles: autoFiles,
-        message: `Failed to stash workflow artifacts: ${stashResult.error || stashResult.output}`,
+        message: `Failed to commit or stash workflow artifacts: ${stashResult.error || stashResult.output}`,
       };
     }
     return {
@@ -304,8 +370,8 @@ async function resolveUncommittedBeforeCheckout(
       stashedWorkflowArtifacts: true,
       blockingFiles: [],
       message:
-        'Stashed workflow artifacts (.cursor, .project-manager, audit reports) so we can switch branches. ' +
-        'Planning docs and other open files under .project-manager will briefly disappear from the working tree (e.g. show as deleted/red in the editor) and will be restored automatically after checkout. No files were deleted.',
+        'Could not commit workflow artifacts; stashed them instead. ' +
+        'They will be restored automatically after checkout.',
     };
   }
 
@@ -323,7 +389,21 @@ async function resolveUncommittedBeforeCheckout(
       };
     }
 
-    // current !== theirBranch: stash blocking first, then workflow if any; do not block
+    // current !== theirBranch: commit workflow artifacts, then stash blocking files
+    if (autoFiles.length > 0) {
+      for (const f of autoFiles) {
+        const safePath = f.replace(/'/g, "'\\''");
+        await runGitCommand(`git add -- '${safePath}'`, 'resolveUncommitted-auto-add-mixed');
+      }
+      const commitWorkflow = await runGitCommand(
+        `git commit -m '[auto] workflow artifacts before branch switch'`,
+        'resolveUncommitted-auto-commit-mixed'
+      );
+      if (!commitWorkflow.success) {
+        await runGitCommand('git reset HEAD -- .', 'resolveUncommitted-auto-reset-mixed');
+      }
+    }
+
     const blockingPathsSafe = blockingFiles
       .map((p) => `'${p.replace(/'/g, "'\\''")}'`)
       .join(' ');
@@ -339,33 +419,13 @@ async function resolveUncommittedBeforeCheckout(
       };
     }
 
-    let stashedWorkflow = false;
-    if (autoFiles.length > 0) {
-      const stashWorkflowResult = await runGitCommand(
-        `git stash push -m "workflow artifacts (non-blocking)" -- ${WORKFLOW_ARTIFACT_STASH_PATHS}`,
-        'resolveUncommitted-stash-workflow2'
-      );
-      if (!stashWorkflowResult.success) {
-        await runGitCommand('git stash pop', 'resolveUncommitted-stash-pop-restore'); // restore blocking stash
-        return {
-          clean: false,
-          blockingFiles,
-          message: `Failed to stash workflow after stashing other branch work: ${stashWorkflowResult.error || stashWorkflowResult.output}`,
-        };
-      }
-      stashedWorkflow = true;
-    }
-
     return {
       clean: true,
-      stashedWorkflowArtifacts: stashedWorkflow,
+      stashedWorkflowArtifacts: false,
       stashedBlockingFiles: true,
       blockingFiles: [],
       message:
         'Uncommitted work is on another branch; stashed it so we can switch to the command branch. ' +
-        (stashedWorkflow
-          ? 'Workflow artifacts were also stashed and will be restored after checkout. '
-          : '') +
         'Apply the "uncommitted (other branch)" stash on that branch when you switch back.',
     };
   }
@@ -411,9 +471,10 @@ async function ensureOnBranch(expectedBranch: string): Promise<EnsureOnBranchRes
   if (needStashPop) {
     const popResult = await runGitCommand('git stash pop', 'ensureOnBranch-stash-pop');
     if (!popResult.success) {
+      const recovery = await recoverFromFailedStashPop('ensureOnBranch');
       return {
         success: true,
-        output: `Switched to ${expectedBranch}. Stash pop had issues: ${popResult.error || popResult.output}. Resolve manually if needed.`,
+        output: `Switched to ${expectedBranch}. ${recovery.detail}`,
       };
     }
   }
@@ -468,11 +529,15 @@ export async function commitUncommittedNonCursor(
         }
         const popResult = await runGitCommand('git stash pop', 'commitUncommitted-stash-pop');
         if (!popResult.success) {
-          await runGitCommand('git stash push -u -m "uncommitted (other branch) - carry failed"', 'commitUncommitted-restash');
-          console.warn(
-            '[tier-branch-manager] Stash pop failed after branch switch; re-stashed as "uncommitted (other branch) - carry failed".',
-            popResult.error || popResult.output
-          );
+          const recovery = await recoverFromFailedStashPop('commitUncommitted');
+          if (recovery.recovered) {
+            console.warn(`[tier-branch-manager] ${recovery.detail}`);
+            return {
+              committed: false,
+              success: false,
+              output: `Source code stash pop conflicted on ${options.expectedBranch}. ${recovery.detail} Re-apply your source-branch changes manually if needed.`,
+            };
+          }
           return {
             committed: false,
             success: false,
@@ -959,9 +1024,9 @@ export async function ensureTierBranch(
         'Restored stashed workflow artifacts (.cursor, .project-manager, audit reports) on current branch. Planning docs and other .project-manager files are back in the working tree.'
       );
     } else {
+      const recovery = await recoverFromFailedStashPop('ensureTierBranch');
       messages.push(
-        `Stash pop had issues (e.g. conflicts): ${popResult.error || popResult.output}. ` +
-          'Resolve manually if needed; workflow artifacts remain in stash.'
+        `Stash pop conflicted after branch switch. ${recovery.detail}`
       );
     }
   }

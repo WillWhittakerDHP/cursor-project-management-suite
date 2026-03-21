@@ -274,13 +274,17 @@ export async function stepTierGit(
   return hooks.runGit(ctx);
 }
 
-/** Propagate shared files (PROJECT_PLAN.md, .gitignore, .cursor) to other tier branches. Phase and session only; non-blocking. */
+/** Propagate shared files (PROJECT_PLAN.md, .gitignore, .cursor) to other tier branches. Phase and session only; non-blocking. Scoped to the current feature's branches to minimize git checkouts. */
 export async function stepPropagateShared(ctx: TierEndWorkflowContext): Promise<void> {
   const tier = ctx.config.name;
   if (tier !== 'phase' && tier !== 'session') return;
 
   try {
-    const result = await propagateSharedFiles(undefined, { dryRun: false });
+    const featureBranch = `feature/${ctx.context.feature.name}`;
+    const result = await propagateSharedFiles(undefined, {
+      dryRun: false,
+      featureScope: { tierId: ctx.identifier, featureBranchName: featureBranch },
+    });
     ctx.steps.propagateShared = {
       success: result.success,
       output: result.summary + (result.details.length ? '\n' + result.details.map((d) => `${d.branch}: ${d.status} — ${d.message}`).join('\n') : ''),
