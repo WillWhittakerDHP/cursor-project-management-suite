@@ -189,6 +189,30 @@ function normalizeStatusPath(path: string): string {
 }
 
 /**
+ * Parse `git status --porcelain` output into an array of file paths.
+ *
+ * Porcelain v1 format: `XY PATH` — two status chars (X=index, Y=working tree)
+ * followed by a space, then the path. Renames add ` -> NEW` after the original.
+ *
+ * Previous code used `output.trim().split('\n')` + `slice(3)` which **corrupted
+ * dotfile paths** (e.g. `.project-manager/`) because `trim()` strips the leading
+ * space when X is blank, making `slice(3)` eat the dot.
+ */
+function parsePortcelainPaths(porcelainOutput: string): string[] {
+  if (!porcelainOutput) return [];
+  return porcelainOutput
+    .split('\n')
+    .filter(line => line.length >= 4)
+    .map(line => {
+      const raw = line.substring(3);
+      const arrowIdx = raw.indexOf(' -> ');
+      const filePart = arrowIdx >= 0 ? raw.substring(arrowIdx + 4) : raw;
+      return normalizeStatusPath(filePart);
+    })
+    .filter(p => p.length > 0);
+}
+
+/**
  * Check for uncommitted changes and resolve them before checkout.
  *
  * When theirBranch is provided (target for start, expected for end):
@@ -207,13 +231,12 @@ function normalizeStatusPath(path: string): string {
 async function resolveUncommittedBeforeCheckout(
   theirBranch?: string | null
 ): Promise<UncommittedResolution> {
-  const status = await runGitCommand('git status --porcelain', 'resolveUncommitted-status');
+  const status = await runGitCommand('git status --porcelain --ignore-submodules=dirty', 'resolveUncommitted-status');
   if (!status.success || !status.output.trim()) {
     return { clean: true, blockingFiles: [], message: '' };
   }
 
-  const lines = status.output.trim().split('\n').filter(l => l.length > 0);
-  const changedFiles = lines.map((l) => normalizeStatusPath(l.slice(3).trim()));
+  const changedFiles = parsePortcelainPaths(status.output);
 
   const autoFiles = changedFiles.filter((f) => isAutoCommittable(f));
   const blockingFiles = changedFiles.filter((f) => !isAutoCommittable(f));
@@ -416,15 +439,12 @@ export async function commitUncommittedNonCursor(
     }
   }
 
-  const status = await runGitCommand('git status --porcelain', 'commitUncommitted-status');
+  const status = await runGitCommand('git status --porcelain --ignore-submodules=dirty', 'commitUncommitted-status');
   if (!status.success || !status.output.trim()) {
     return { committed: false, success: true, output: '' };
   }
 
-  const lines = status.output.trim().split('\n').filter((l) => l.length > 0);
-  const changedPaths = lines
-    .map((l) => normalizeStatusPath(l.slice(3).trim()))
-    .filter((p) => p.length > 0);
+  const changedPaths = parsePortcelainPaths(status.output);
 
   const inScopePaths = changedPaths.filter((p) => {
     if (isNeverCommitPath(p)) return false;
@@ -962,10 +982,8 @@ export async function mergeTierBranch(
   // ── Step 2: Final selective commit (skip workflow artifacts) ─────
   const preMergeStatus = await runGitCommand('git status --porcelain --ignore-submodules=dirty', 'mergeTierBranch-preStatus');
   if (preMergeStatus.success && preMergeStatus.output.trim()) {
-    const statusLines = preMergeStatus.output.trim().split('\n').filter(l => l.length > 0);
-    const pathsToStage = statusLines
-      .map(l => normalizeStatusPath(l.slice(3).trim()))
-      .filter(p => p.length > 0 && !isNeverCommitPath(p));
+    const pathsToStage = parsePortcelainPaths(preMergeStatus.output)
+      .filter(p => !isNeverCommitPath(p));
 
     if (pathsToStage.length > 0) {
       for (const p of pathsToStage) {
@@ -997,13 +1015,15 @@ export async function mergeTierBranch(
     messages.push('WARNING: working tree not clean after final commit — see .git-ops-log.');
   }
 
-  // ── Step 4: Merge with skipStash ──────────────────────────────────
+  // ── Step 4: Merge — child branch wins text conflicts, auto-resolve .cursor submodule
   const syncRemote = options?.syncRemote ?? true;
   const mergeResult = await gitMerge({
     sourceBranch: tierBranch,
     targetBranch: parentBranch,
     skipStash: true,
     pullBeforeMerge: syncRemote,
+    preferSource: true,
+    autoResolveSubmodule: true,
   });
   if (!mergeResult.success) {
     messages.push(`Merge ${tierBranch} into ${parentBranch} failed: ${mergeResult.output}`);

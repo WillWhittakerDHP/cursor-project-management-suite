@@ -66,7 +66,7 @@ async function listTierBranches(): Promise<string[]> {
 }
 
 async function stashIfDirty(): Promise<boolean> {
-  const status = await runGitCommand('git status --porcelain', 'propagate-status');
+  const status = await runGitCommand('git status --porcelain --ignore-submodules=dirty', 'propagate-status');
   if (!status.success || !status.output.trim()) return false;
   const stash = await runGitCommand('git stash push -u -m "propagate-files: auto-stash"', 'propagate-stash');
   return stash.success;

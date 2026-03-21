@@ -73,9 +73,9 @@ export { runGitCommand, logGitOp, warnGitOp, getGitOpsLog };
 
 // ─── Convenience wrappers (all go through runGitCommand for logging) ────────
 
-/** Run `git status --porcelain`. Returns { success, output }. */
+/** Run `git status --porcelain --ignore-submodules=dirty`. Returns { success, output }. */
 export async function gitStatus(): Promise<{ success: boolean; output: string; error?: string }> {
-  return runGitCommand('git status --porcelain', 'gitStatus');
+  return runGitCommand('git status --porcelain --ignore-submodules=dirty', 'gitStatus');
 }
 
 /**
