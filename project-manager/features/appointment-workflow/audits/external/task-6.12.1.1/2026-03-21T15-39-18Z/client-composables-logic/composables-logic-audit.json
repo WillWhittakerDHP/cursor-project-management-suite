@@ -1,0 +1,317 @@
+{
+  "generatedAt": "2026-03-21T15:30:41.784Z",
+  "scope": {
+    "included": [
+      "client/src/composables/**/*.{ts,js}"
+    ],
+    "excluded": [
+      "**/__tests__/**",
+      "**/*.test.*",
+      "**/*.spec.*"
+    ]
+  },
+  "totalScanned": 282,
+  "exceptionSummary": {
+    "totalRequiresReview": 2
+  },
+  "files": [
+    {
+      "id": "client__src__composables__admin__useInstanceDragAndDrop.ts",
+      "repoPath": "client/src/composables/admin/useInstanceDragAndDrop.ts",
+      "absPath": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/src/composables/admin/useInstanceDragAndDrop.ts",
+      "counts": {
+        "computed": 2,
+        "ref": 7,
+        "reactive": 0,
+        "watch": 2,
+        "watchEffect": 0,
+        "lifecycle": 4,
+        "async": 1,
+        "await": 1,
+        "vueQuery": 0,
+        "map": 7,
+        "reduce": 0,
+        "filter": 3,
+        "sort": 2,
+        "dom": 0,
+        "timers": 0,
+        "console": 0
+      },
+      "matches": [
+        {
+          "ruleId": "lifecycle",
+          "lineNumber": 5,
+          "line": "import { ref, watch, computed, nextTick, onMounted, onBeforeUnmount, onUnmounted, isRef, type Ref, type ComponentPublicInstance, type ComputedRef } from 'vue'",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "map",
+          "lineNumber": 34,
+          "line": ".map(([shapeId, list]) => `${shapeId}:${[...list].map((i) => i.id).sort().join(',')}`)",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "sort",
+          "lineNumber": 34,
+          "line": ".map(([shapeId, list]) => `${shapeId}:${[...list].map((i) => i.id).sort().join(',')}`)",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "sort",
+          "lineNumber": 35,
+          "line": ".sort()",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "filter",
+          "lineNumber": 56,
+          "line": "const grouped = blockInstancesByShape.value.get(blockShapeId)?.filter((e) => !isAdminStandaloneSection(e)) ?? []",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "map",
+          "lineNumber": 58,
+          "line": "groupedEntityIds.value = grouped.map((e) => e.id)",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "async",
+          "lineNumber": 61,
+          "line": "return async (): Promise<void> => {",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "map",
+          "lineNumber": 64,
+          "line": "const idToEntity = new Map(all.map((e) => [e.id, e]))",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "filter",
+          "lineNumber": 65,
+          "line": "const mainOrderedStable = all.filter((e) => isAdminStandaloneSection(e))",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "map",
+          "lineNumber": 67,
+          "line": ".map((id) => idToEntity.get(id))",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "filter",
+          "lineNumber": 68,
+          "line": ".filter((e): e is GlobalEntity<'blockInstance'> => e !== undefined)",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "map",
+          "lineNumber": 70,
+          "line": "const updates = merged.map((entity, index) => ({",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "await",
+          "lineNumber": 75,
+          "line": "await patchOrderIndex(updates)",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "ref",
+          "lineNumber": 107,
+          "line": "const isMounted = ref(false)",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "ref",
+          "lineNumber": 109,
+          "line": "const dragReinitNonce = ref(0)",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "watch",
+          "lineNumber": 114,
+          "line": "watch(",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "ref",
+          "lineNumber": 127,
+          "line": "blockInstancesLists.value.set(blockShapeId, ref([...instances]))",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "ref",
+          "lineNumber": 128,
+          "line": "blockInstanceIdsMap.value.set(blockShapeId, ref(instances.map((i) => i.id)))",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "map",
+          "lineNumber": 128,
+          "line": "blockInstanceIdsMap.value.set(blockShapeId, ref(instances.map((i) => i.id)))",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 130,
+          "line": "const filteredInstances = computed(() => {",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "ref",
+          "lineNumber": 159,
+          "line": "blockInstancesLists.value.set(zoneKey, ref([...instances]))",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "ref",
+          "lineNumber": 160,
+          "line": "blockInstanceIdsMap.value.set(zoneKey, ref(instances.map((i) => i.id)))",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "map",
+          "lineNumber": 160,
+          "line": "blockInstanceIdsMap.value.set(zoneKey, ref(instances.map((i) => i.id)))",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 162,
+          "line": "const filteredGrouped = computed(() => {",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "ref",
+          "lineNumber": 270,
+          "line": "const panelsRefForDrag = ref(panelsEl)",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "watch",
+          "lineNumber": 328,
+          "line": "watch(",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "lifecycle",
+          "lineNumber": 367,
+          "line": "onMounted(() => {",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "lifecycle",
+          "lineNumber": 371,
+          "line": "onBeforeUnmount(() => {",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "lifecycle",
+          "lineNumber": 378,
+          "line": "onUnmounted(() => {",
+          "suppressionStatus": "unsuppressed"
+        }
+      ],
+      "exportUseFunctions": [
+        "useInstanceDragAndDrop"
+      ],
+      "returnKeys": [
+        "blockInstanceIdsMap",
+        "blockInstancesLists",
+        "groupContainers",
+        "groupDragHandlers",
+        "groupDragInstances",
+        "groupPanelsContainers",
+        "groupPanelsGroupedContainers"
+      ],
+      "complexityScore": 29,
+      "priority": "P1",
+      "suggestions": [
+        {
+          "kind": "split_candidate",
+          "priority": "P1",
+          "message": "Moderate complexity score. Consider separating query/mutations from derived state and formatting."
+        }
+      ]
+    },
+    {
+      "id": "client__src__composables__booking__useAvailabilityStepAccordion.ts",
+      "repoPath": "client/src/composables/booking/useAvailabilityStepAccordion.ts",
+      "absPath": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/src/composables/booking/useAvailabilityStepAccordion.ts",
+      "counts": {
+        "computed": 0,
+        "ref": 0,
+        "reactive": 0,
+        "watch": 2,
+        "watchEffect": 0,
+        "lifecycle": 2,
+        "async": 0,
+        "await": 0,
+        "vueQuery": 0,
+        "map": 0,
+        "reduce": 0,
+        "filter": 0,
+        "sort": 0,
+        "dom": 2,
+        "timers": 0,
+        "console": 0
+      },
+      "matches": [
+        {
+          "ruleId": "lifecycle",
+          "lineNumber": 9,
+          "line": "import { ref, watch, nextTick, onMounted, type ComputedRef, type Ref } from 'vue'",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "dom",
+          "lineNumber": 37,
+          "line": "const contentEl = document.getElementById(`${contentIdPrefix}${stepIndex}`)",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "dom",
+          "lineNumber": 56,
+          "line": "const headerEl = document.getElementById(`${titleIdPrefix}${stepIndex}`)",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "watch",
+          "lineNumber": 69,
+          "line": "watch(",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "watch",
+          "lineNumber": 77,
+          "line": "watch(",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "lifecycle",
+          "lineNumber": 89,
+          "line": "onMounted(() => {",
+          "suppressionStatus": "unsuppressed"
+        }
+      ],
+      "exportUseFunctions": [
+        "useAvailabilityStepAccordion"
+      ],
+      "returnKeys": [
+        "expandedIndex",
+        "onHeaderKeydown",
+        "setExpanded"
+      ],
+      "complexityScore": 6,
+      "priority": "P2",
+      "suggestions": [
+        {
+          "kind": "side_effects",
+          "priority": "P0",
+          "message": "Contains direct DOM access. Prefer isolating DOM work behind a small composable/utility and keeping core logic testable."
+        }
+      ]
+    }
+  ]
+}

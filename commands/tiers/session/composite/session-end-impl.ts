@@ -668,16 +668,22 @@ if (isEntryPoint) {
     const sessionId = process.argv[2] ?? process.env.SESSION_ID ?? '';
     const runTests = process.argv.includes('--test');
     const planMode = process.argv.includes('--plan');
+    const continuePastVerification = process.argv.includes('--continue-past-verification');
     if (!sessionId || !/^\d+\.\d+\.\d+$/.test(sessionId)) {
       const usage =
-        `Usage: npx tsx .cursor/commands/tiers/session/composite/session-end-impl.ts <sessionId> [--test|--no-tests] [--plan]. ` +
+        `Usage: npx tsx .cursor/commands/tiers/session/composite/session-end-impl.ts <sessionId> [--test|--no-tests] [--plan] [--continue-past-verification]. ` +
         `Example sessionId: 4.1.3. Got: ${sessionId || '<sessionId>'}`;
       console.log(stringifyCliResult(buildCliValidationErrorEnvelope(usage)));
       process.exit(1);
       return;
     }
     const { sessionEnd } = await import('./session');
-    const result = await sessionEnd({ sessionId, runTests, mode: planMode ? 'plan' : 'execute' });
+    const result = await sessionEnd({
+      sessionId,
+      runTests,
+      mode: planMode ? 'plan' : 'execute',
+      ...(continuePastVerification ? { continuePastVerification: true } : {}),
+    });
     console.log(stringifyCliResult(result));
     process.exit(result.success ? 0 : 1);
   })().catch((err) => {
