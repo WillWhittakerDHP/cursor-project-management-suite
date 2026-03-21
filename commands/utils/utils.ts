@@ -106,7 +106,9 @@ export async function runCommand(command: string, cwd?: string): Promise<{ succe
       cwd: cwd || PROJECT_ROOT,
       stdio: 'pipe'
     });
-    return { success: true, output: output.trim() };
+    // trimEnd only: full trim() strips a leading space from git porcelain line 1
+    // (e.g. ` M path` → `M path`), corrupting XY path parsing in tier-branch-manager.
+    return { success: true, output: output.trimEnd() };
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     return {

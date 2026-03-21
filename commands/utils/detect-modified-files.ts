@@ -6,6 +6,7 @@
  * PATTERN: Fallback chain: session logs → git history → empty array
  */
 
+import { execSync } from 'child_process';
 import { readFile } from 'fs/promises';
 import { existsSync } from 'fs';
 import { join } from 'path';

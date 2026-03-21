@@ -185,7 +185,12 @@ function normalizeStatusPath(path: string): string {
   let p = path.trim();
   if (p.startsWith('./')) p = p.slice(2);
   if (p.length >= 2 && p.startsWith('"') && p.endsWith('"')) p = p.slice(1, -1);
-  return p.trim();
+  p = p.trim();
+  // WHY: Some porcelain lines collapse Y + separator so substring(3) ate the leading dot; recover workflow root.
+  if (p.startsWith('project-manager/') || p === 'project-manager') {
+    p = `.${p}`;
+  }
+  return p;
 }
 
 /**
@@ -197,6 +202,9 @@ function normalizeStatusPath(path: string): string {
  * Previous code used `output.trim().split('\n')` + `slice(3)` which **corrupted
  * dotfile paths** (e.g. `.project-manager/`) because `trim()` strips the leading
  * space when X is blank, making `slice(3)` eat the dot.
+ *
+ * PATTERN: Prefer `^(.)(.)\\s+(.*)$` so path starts after XY and whitespace; avoids
+ * `substring(3)` eating `.` when the line is `M .file` (only one space before path).
  */
 function parsePortcelainPaths(porcelainOutput: string): string[] {
   if (!porcelainOutput) return [];
@@ -204,10 +212,27 @@ function parsePortcelainPaths(porcelainOutput: string): string[] {
     .split('\n')
     .filter(line => line.length >= 4)
     .map(line => {
+      // Prefer XY + path first. Running the ` -> ` branch first mis-parsed valid
+      // paths (e.g. ` M client/...`) when a substring/slice path interacted badly
+      // with rename-style handling, yielding `lient/...` and blocking checkout.
+      const m = line.match(/^(.)(.)\s+(.*)$/);
+      if (m?.[3] != null) {
+        const pathPart = m[3];
+        const arrowIdx = pathPart.indexOf(' -> ');
+        if (arrowIdx >= 0) {
+          return normalizeStatusPath(pathPart.substring(arrowIdx + 4));
+        }
+        return normalizeStatusPath(pathPart);
+      }
+      const arrowInTail = line.indexOf(' -> ', 2);
+      if (arrowInTail >= 0) {
+        const afterPrefix = line.slice(3);
+        const arrowIdx = afterPrefix.indexOf(' -> ');
+        const filePart = arrowIdx >= 0 ? afterPrefix.substring(arrowIdx + 4) : afterPrefix;
+        return normalizeStatusPath(filePart);
+      }
       const raw = line.substring(3);
-      const arrowIdx = raw.indexOf(' -> ');
-      const filePart = arrowIdx >= 0 ? raw.substring(arrowIdx + 4) : raw;
-      return normalizeStatusPath(filePart);
+      return normalizeStatusPath(raw);
     })
     .filter(p => p.length > 0);
 }
