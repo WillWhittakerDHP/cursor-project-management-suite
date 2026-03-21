@@ -252,15 +252,34 @@ export class DocumentManager {
   }
 
   /**
+   * True if project-relative path exists (.project-manager/… or legacy project-manager/…).
+   * Silent — used by ensureHandoff so first-run create does not log spurious readFile warnings.
+   */
+  private async projectFileExists(projectRelativePath: string): Promise<boolean> {
+    const existsAt = async (rel: string): Promise<boolean> => {
+      try {
+        await access(join(this.PROJECT_ROOT, rel));
+        return true;
+      } catch {
+        return false;
+      }
+    };
+    if (await existsAt(projectRelativePath)) return true;
+    if (projectRelativePath.startsWith('.project-manager/')) {
+      const fallback = projectRelativePath.replace('.project-manager/', 'project-manager/');
+      return existsAt(fallback);
+    }
+    return false;
+  }
+
+  /**
    * Ensure handoff exists: create from template with required sections if missing. Task: create minimal file if missing (no template).
    */
   async ensureHandoff(tier: HandoffTier, id: string | undefined, description?: string): Promise<void> {
     const path = this.getHandoffPath(tier, id);
-    try {
+    if (await this.projectFileExists(path)) {
       await this.readFile(path);
       return;
-    } catch {
-      // File missing: create
     }
     const desc = description ?? id ?? '';
     if (tier === 'task') {

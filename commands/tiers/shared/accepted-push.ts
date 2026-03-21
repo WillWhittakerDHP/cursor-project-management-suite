@@ -46,10 +46,11 @@ export async function acceptedPush(): Promise<AcceptedPushResult> {
   }
 
   const pushResult = await gitPush();
-  await deleteEndPending();
 
   if (!pushResult.success) {
-    const message = `Push failed. ${pushResult.error ?? pushResult.output}`;
+    const message = `Push failed. ${pushResult.output}
+
+Pending push state was kept. After fixing (credentials, network, or branch protection), run **/accepted-push** again. Check \`.project-manager/.git-ops-log\` for the exact git command. Or run **/skip-push** to clear without pushing.`;
     const decision: ControlPlaneDecision = {
       stop: true,
       requiredMode: 'plan',
@@ -60,11 +61,14 @@ export async function acceptedPush(): Promise<AcceptedPushResult> {
       output: message,
       outcome: {
         reasonCode: 'push_failed',
-        nextAction: message,
+        nextAction:
+          'Fix push (see .project-manager/.git-ops-log), then /accepted-push again, or /skip-push to abandon push.',
       },
       controlPlaneDecision: decision,
     };
   }
+
+  await deleteEndPending();
 
   const cascadeHint =
     state.cascade?.command != null

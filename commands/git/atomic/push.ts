@@ -7,7 +7,7 @@ import { getCurrentBranch, runGitCommand } from '../shared/git-logger';
 
 export async function gitPush(): Promise<{ success: boolean; output: string }> {
   const branch = await getCurrentBranch();
-  const result = await runGitCommand(`git push origin ${branch}`, 'gitPush');
+  const result = await runGitCommand(`git push -u origin ${branch}`, 'gitPush');
 
   return {
     success: result.success,

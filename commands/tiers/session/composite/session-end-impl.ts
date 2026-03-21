@@ -46,6 +46,11 @@ import type { RunRecorder, RunTraceHandle } from '../../../harness/contracts';
 export type EndShadowContext = { recorder: RunRecorder; handle: RunTraceHandle };
 import { proposeVerificationChecklistForSession } from '../../shared/verification-check';
 import { getExcerptEndMarker } from '../../shared/context-policy';
+import {
+  buildCliUnhandledErrorEnvelope,
+  buildCliValidationErrorEnvelope,
+  stringifyCliResult,
+} from '../../../utils/cli-tier-result';
 
 const FRONTEND_ROOT = 'client';
 
@@ -474,7 +479,9 @@ export async function sessionEndImpl(
         let sessionGuideContent = await readProjectFile(sessionGuidePath);
         if (!sessionGuideContent.includes(sessionMarker)) {
           sessionGuideContent = sessionGuideContent.trimEnd() + '\n\n' + sessionMarker;
-          await c.context.documents.updateGuide('session', p.sessionId, () => sessionGuideContent);
+          await c.context.documents.updateGuide('session', p.sessionId, () => sessionGuideContent, {
+            overwriteForTierEnd: true,
+          });
         }
         c.steps.excerptMarkerSessionGuide = { success: true, output: 'Session guide excerpt marker ensured' };
       } catch (_err) {
@@ -662,17 +669,19 @@ if (isEntryPoint) {
     const runTests = process.argv.includes('--test');
     const planMode = process.argv.includes('--plan');
     if (!sessionId || !/^\d+\.\d+\.\d+$/.test(sessionId)) {
-      console.error(`Usage: npx tsx .cursor/commands/tiers/session/composite/session-end-impl.ts <sessionId> [--test|--no-tests] [--plan]`);
-      console.error(`Example: npx tsx .cursor/commands/tiers/session/composite/session-end-impl.ts 4.1.3`);
-      console.error(`Session ID must be X.Y.Z (e.g. 4.1.3). Got: ${sessionId || '<sessionId>'}`);
+      const usage =
+        `Usage: npx tsx .cursor/commands/tiers/session/composite/session-end-impl.ts <sessionId> [--test|--no-tests] [--plan]. ` +
+        `Example sessionId: 4.1.3. Got: ${sessionId || '<sessionId>'}`;
+      console.log(stringifyCliResult(buildCliValidationErrorEnvelope(usage)));
       process.exit(1);
+      return;
     }
     const { sessionEnd } = await import('./session');
     const result = await sessionEnd({ sessionId, runTests, mode: planMode ? 'plan' : 'execute' });
-    console.log(JSON.stringify(result, null, 2));
+    console.log(stringifyCliResult(result));
     process.exit(result.success ? 0 : 1);
   })().catch((err) => {
-    console.error(err);
+    console.log(stringifyCliResult(buildCliUnhandledErrorEnvelope(err)));
     process.exit(1);
   });
 }
