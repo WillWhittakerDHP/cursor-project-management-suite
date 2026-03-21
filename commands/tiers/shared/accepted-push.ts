@@ -70,7 +70,11 @@ export async function acceptedPush(): Promise<AcceptedPushResult> {
     state.cascade?.command != null
       ? ` Then run **${state.cascade.command}** to continue.`
       : '';
-  const message = `Push complete.${cascadeHint}`.trim();
+  const bugbotHint =
+    state.tier !== 'task'
+      ? '\n\nTo run a Bugbot review, create a PR from this branch or comment `cursor review` on an existing PR.'
+      : '';
+  const message = `Push complete.${cascadeHint}${bugbotHint}`.trim();
   const decision: ControlPlaneDecision = {
     stop: state.cascade != null,
     requiredMode: 'plan',
