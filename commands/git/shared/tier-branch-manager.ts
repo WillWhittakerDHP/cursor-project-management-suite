@@ -849,6 +849,17 @@ export async function ensureTierBranch(
     }
     messages.push(`Created ${targetLink.tier} branch: ${targetLink.branchName}`);
 
+    // Push new branch to remote so tier-end pull/merge can find it
+    const pushNew = await runGitCommand(
+      `git push -u origin ${targetLink.branchName}`,
+      'ensureTierBranch-pushNewBranch'
+    );
+    if (pushNew.success) {
+      messages.push(`Pushed new branch ${targetLink.branchName} to remote.`);
+    } else {
+      messages.push(`Warning: could not push new branch to remote: ${pushNew.error || pushNew.output}`);
+    }
+
     // Post-create verification
     if (parentOfTarget && (await branchExists(parentOfTarget)) && !isRootBranch(parentOfTarget)) {
       const isBasedOn = await isBranchBasedOn(targetLink.branchName, parentOfTarget);

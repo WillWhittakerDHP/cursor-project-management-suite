@@ -69,20 +69,28 @@ export async function gitMerge(params: GitMergeParams): Promise<{ success: boole
     if (params.pullBeforeMerge) {
       const pullResult = await runGitCommand(`git pull origin ${targetBranch}`, 'gitMerge-pull');
       if (!pullResult.success) {
-        if (didStash) await runGitCommand('git stash pop', 'gitMerge-stash-pop');
-        return {
-          success: false,
-          output: `Failed to pull ${targetBranch} before merge: ${pullResult.error || pullResult.output}`,
-        };
+        const noRemoteRef = (pullResult.error || pullResult.output).includes("couldn't find remote ref");
+        if (noRemoteRef) {
+          // Branch exists locally but not on remote yet -- safe to continue with local state
+        } else {
+          if (didStash) await runGitCommand('git stash pop', 'gitMerge-stash-pop');
+          return {
+            success: false,
+            output: `Failed to pull ${targetBranch} before merge: ${pullResult.error || pullResult.output}`,
+          };
+        }
       }
     }
   } else if (params.pullBeforeMerge) {
     const pullResult = await runGitCommand(`git pull origin ${targetBranch}`, 'gitMerge-pull');
     if (!pullResult.success) {
-      return {
-        success: false,
-        output: `Failed to pull ${targetBranch} before merge: ${pullResult.error || pullResult.output}`,
-      };
+      const noRemoteRef = (pullResult.error || pullResult.output).includes("couldn't find remote ref");
+      if (!noRemoteRef) {
+        return {
+          success: false,
+          output: `Failed to pull ${targetBranch} before merge: ${pullResult.error || pullResult.output}`,
+        };
+      }
     }
   }
 
