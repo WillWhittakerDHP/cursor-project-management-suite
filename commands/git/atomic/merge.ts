@@ -39,6 +39,14 @@ async function hasUncommittedChanges(): Promise<boolean> {
   return status.success && status.output.trim().length > 0;
 }
 
+/** If a merge was started and left the repo conflicted, abort so files are not left with <<<<<< markers. */
+async function abortMergeIfInProgress(): Promise<void> {
+  const mergeHead = await runGitCommand('git rev-parse -q --verify MERGE_HEAD', 'gitMerge-checkMergeHead');
+  if (mergeHead.success && mergeHead.output.trim()) {
+    await runGitCommand('git merge --abort', 'gitMerge-abort-in-progress');
+  }
+}
+
 /**
  * After a failed merge, check if the only unmerged path is the .cursor submodule.
  * If so, resolve it by taking the source branch's version and commit.
@@ -182,9 +190,8 @@ export async function gitMerge(params: GitMergeParams): Promise<{ success: boole
         }
         return { success: true, output: resolution.output };
       }
-      // Auto-resolve didn't work — abort the broken merge and return failure
-      await runGitCommand('git merge --abort', 'gitMerge-abort-after-auto-resolve-fail');
     }
+    await abortMergeIfInProgress();
 
     if (didStash) await runGitCommand('git stash pop', 'gitMerge-stash-pop');
 

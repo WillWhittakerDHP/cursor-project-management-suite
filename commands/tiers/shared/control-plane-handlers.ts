@@ -31,7 +31,11 @@ function baseCascadeDecision(outcome: ControlPlaneOutcome, _requiredMode: 'plan'
 
 /** planning_doc_incomplete: BLOCKED until agent fills the planning doc. Show message; no proceed until doc is filled. */
 export function handlePlanningDocIncomplete(outcome: ControlPlaneOutcome, ctx?: ControlPlaneContext): ControlPlaneDecision {
-  const base = outcome.nextAction ?? 'Planning doc must be filled before proceeding. The agent must fill the planning doc (replace Goal/Files/Approach/Checkpoint with a concrete draft from context). Then **the user** runs /accepted-proceed again.';
+  const defaultNext =
+    ctx?.tier === 'task'
+      ? 'Planning doc must be filled before proceeding. The agent must fill the planning doc (replace Goal/Files/Approach/Checkpoint with a concrete draft from context). Then **the user** runs **/accepted-code** again.'
+      : 'Planning doc must be filled before proceeding. The agent must fill the planning doc (replace Goal/Files/Approach/Checkpoint with a concrete draft from context). Then **the user** runs /accepted-proceed again.';
+  const base = outcome.nextAction ?? defaultNext;
   const suffix = ctx ? getWorkProfileMessageSuffix(ctx.workProfile) : '';
   return {
     stop: true,
@@ -40,7 +44,7 @@ export function handlePlanningDocIncomplete(outcome: ControlPlaneOutcome, ctx?: 
   };
 }
 
-/** context_gathering: show planning doc path and deliverables. Agent fills doc; user runs /accepted-proceed (feature/phase/session) or /accepted-code (task). */
+/** context_gathering: show planning doc path and deliverables. Agent fills doc; user runs /accepted-proceed (feature/phase/session) or /accepted-code (task only — task output must not suggest /accepted-proceed). */
 export function handleContextGathering(outcome: ControlPlaneOutcome, ctx: ControlPlaneContext): ControlPlaneDecision {
   const base = outcome.deliverables ?? outcome.nextAction;
   const suffix = getWorkProfileMessageSuffix(ctx.workProfile);

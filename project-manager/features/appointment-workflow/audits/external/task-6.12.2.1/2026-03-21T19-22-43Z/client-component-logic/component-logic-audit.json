@@ -1,0 +1,10 @@
+{
+  "generatedAt": "2026-03-21T19:02:08.565Z",
+  "totalScanned": 0,
+  "exceptionSummary": {
+    "totalRequiresReview": 0
+  },
+  "files": [],
+  "deltaMode": true,
+  "baseRef": "HEAD~1"
+}

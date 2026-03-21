@@ -1,19 +1,13 @@
 {
   "tier": "session",
   "identifier": "6.12.1",
-  "overallStatus": "warn",
+  "overallStatus": "pass",
   "results": [
     {
       "category": "tier-quality",
-      "status": "warn",
-      "score": 88,
+      "status": "pass",
+      "score": 98,
       "findings": [
-        {
-          "type": "warning",
-          "message": "1 file(s) with high complexity scores",
-          "location": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/.audit-reports/composables-logic-audit.json",
-          "suggestion": "Review client/.audit-reports/composables-logic-audit.md for top hotspots"
-        },
         {
           "type": "info",
           "message": "constants-consolidation audit produced output (review JSON for details)",
@@ -21,10 +15,8 @@
           "suggestion": "Review client/.audit-reports/constants-consolidation-audit.json for findings"
         }
       ],
-      "recommendations": [
-        "Review audit reports for warnings"
-      ],
-      "summary": "Ran 9 session-tier audits; found 0 error(s), 1 warning(s), 1 info signal(s)."
+      "recommendations": [],
+      "summary": "Ran 9 session-tier audits; found 0 error(s), 0 warning(s), 1 info signal(s)."
     },
     {
       "category": "docs",
@@ -38,24 +30,14 @@
     },
     {
       "category": "vue-architecture",
-      "status": "warn",
-      "score": 90,
-      "findings": [
-        {
-          "type": "warning",
-          "message": "Composable export name does not match file name: useBookingWizardSettingsSingleton vs bookingWizardSettingsSingleton",
-          "location": "client/src/composables/booking/bookingWizardSettingsSingleton.ts",
-          "suggestion": "Rename the file or export so `useX.ts` exports `useX` (reduces drift and improves discoverability)."
-        }
-      ],
-      "recommendations": [
-        "Review `.project-manager/patterns/vue-architecture-contract.md` and move domain logic out of components.",
-        "Review `.project-manager/patterns/composable-taxonomy.md` and standardize composable naming/return shapes."
-      ],
-      "summary": "Scanned 182 .vue file(s); found 0 error(s), 1 warning(s)."
+      "status": "pass",
+      "score": 100,
+      "findings": [],
+      "recommendations": [],
+      "summary": "Scanned 182 .vue file(s); found 0 error(s), 0 warning(s)."
     }
   ],
-  "timestamp": "2026-03-21T18:11:42.950Z",
+  "timestamp": "2026-03-21T18:37:22.173Z",
   "reportPath": "",
   "featureName": "appointment-workflow",
   "auditType": "end",

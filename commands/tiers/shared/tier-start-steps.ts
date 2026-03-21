@@ -943,7 +943,7 @@ ${refLines.join('\n')}
 /**
  * Context gathering: plan-mode only. Writes short planning doc (contract + continuity + 4 slots + reference links),
  * sets ctx.planningDocPath, and returns early exit with reasonCode context_gathering.
- * When mode is execute (e.g. from /accepted-proceed), this step is skipped.
+ * When mode is execute (e.g. from /accepted-proceed for feature/phase/session or /accepted-code for task), this step is skipped.
  */
 export async function stepContextGathering(
   ctx: TierStartWorkflowContext,
@@ -1032,16 +1032,27 @@ export async function stepContextGathering(
     ctx.planningDocPath = planningDocPath;
   }
 
-  const messageLines: string[] = [
-    `Planning document created: \`${planningDocPath}\``,
-    '',
-    '**REQUIRED before /accepted-proceed (Step 1 — Light collection):**',
-    '1. Read the Reference section links in the planning doc — governance reports, inventory audits, and playbooks define the patterns and standards you must follow.',
-    '2. Fill ## Goal, ## Files, ## Approach, ## Checkpoint, and ## How we build the tierDown with concrete content.',
-    '3. The ## How we build the tierDown section must be one line per phase/session/task in the format `- **Session X.Y.Z:** short name` (no paragraphs).',
-    '4. Save the file.',
-    '',
-  ];
+  const isTask = tier === 'task';
+  const messageLines: string[] = isTask
+    ? [
+        `Planning document created: \`${planningDocPath}\``,
+        '',
+        '**REQUIRED before /accepted-code (Step 1 — Light collection):**',
+        '1. Read the Reference section links in the planning doc — governance reports, inventory audits, and playbooks define the patterns and standards you must follow.',
+        '2. Fill ## Goal, ## Files, ## Approach, and ## Checkpoint with concrete content.',
+        '3. Save the file.',
+        '',
+      ]
+    : [
+        `Planning document created: \`${planningDocPath}\``,
+        '',
+        '**REQUIRED before /accepted-proceed (Step 1 — Light collection):**',
+        '1. Read the Reference section links in the planning doc — governance reports, inventory audits, and playbooks define the patterns and standards you must follow.',
+        '2. Fill ## Goal, ## Files, ## Approach, ## Checkpoint, and ## How we build the tierDown with concrete content.',
+        '3. The ## How we build the tierDown section must be one line per phase/session/task in the format `- **Session X.Y.Z:** short name` (no paragraphs).',
+        '4. Save the file.',
+        '',
+      ];
 
   messageLines.push('**Context for filling slots:**');
   if (tierGoals?.trim()) {
@@ -1060,9 +1071,13 @@ export async function stepContextGathering(
   messageLines.push(
     ...questions.map((q, i) => formatContextItemBlock(q, i)),
     '',
-    'When ready, run /accepted-proceed.',
+    isTask ? 'When ready, run **/accepted-code**.' : 'When ready, run /accepted-proceed.',
   );
   const deliverables = messageLines.join('\n\n');
+
+  const nextAction = isTask
+    ? 'Context gathering: the agent must fill the planning doc (Goal, Files, Approach, Checkpoint) using provided context; then **the user** runs **/accepted-code**. /accepted-code is blocked until the doc is filled. Do not run or invoke the command yourself.'
+    : 'Context gathering: the agent must fill the planning doc (Goal, Files, Approach, Checkpoint, and How we build the tierDown) using provided context; then **the user** runs /accepted-proceed. /accepted-proceed is blocked until the doc is filled. Do not run or invoke the command yourself.';
 
   return {
     success: true,
@@ -1070,7 +1085,7 @@ export async function stepContextGathering(
     outcome: {
       status: 'plan',
       reasonCode: 'context_gathering',
-      nextAction: 'Context gathering: the agent must fill the planning doc (Goal, Files, Approach, Checkpoint, and How we build the tierDown) using provided context; then **the user** runs /accepted-proceed. /accepted-proceed is blocked until the doc is filled. Do not run or invoke the command yourself.',
+      nextAction,
       deliverables,
     },
   };

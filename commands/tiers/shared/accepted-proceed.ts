@@ -8,7 +8,7 @@
 import { runTierStart, type TierStartResultWithControlPlane } from './tier-start';
 import { getConfigForTier } from '../configs';
 import type { TierConfig } from './types';
-import { readTierStartPending, deleteTierStartPending } from './pending-state';
+import { readTierStartPending, deleteTierStartPending, readTaskStartPending } from './pending-state';
 import type { ControlPlaneDecision } from './control-plane-types';
 import { getPlanningDocPathForTier, isPlanningDocFilled, isGuideFilled } from './tier-start-steps';
 import { readProjectFile } from '../../utils/utils';
@@ -53,6 +53,26 @@ After the agent has updated the doc, **the user** runs /accepted-proceed again. 
 export async function acceptedProceed(): Promise<TierStartResultWithControlPlane> {
   const state = await readTierStartPending();
   if (!state) {
+    const taskPending = await readTaskStartPending();
+    if (taskPending) {
+      const msg =
+        `You have a pending **task** start (\`${taskPending.taskId}\`). Tasks use **/accepted-code** after the planning doc is filled — not /accepted-proceed. Run **/accepted-code** when ready.`;
+      const decision: ControlPlaneDecision = {
+        stop: true,
+        requiredMode: 'plan',
+        message: msg,
+      };
+      return {
+        success: false,
+        output: msg,
+        outcome: {
+          status: 'blocked',
+          reasonCode: 'no_pending_proceed',
+          nextAction: msg,
+        },
+        controlPlaneDecision: decision,
+      };
+    }
     const decision: ControlPlaneDecision = {
       stop: true,
       requiredMode: 'plan',

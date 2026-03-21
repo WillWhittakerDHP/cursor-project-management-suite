@@ -29,6 +29,8 @@ import {
 } from '../tiers/shared/tier-end-steps';
 import { runTierAuditsParallel } from '../audit/atomic/audit-tier-quality';
 import type { AuditTier } from '../audit/types';
+import { scanHarnessRootsForConflictMarkers } from '../utils/conflict-marker-guard';
+import { buildTierEndOutcome } from '../utils/tier-outcome';
 
 async function recordEndStep(
   ctx: TierEndWorkflowContext,
@@ -63,6 +65,27 @@ export async function runTierEndWorkflow(
   hooks: TierEndWorkflowHooks
 ): Promise<TierEndWorkflowResult | TierEndWorkflowResultWithShadow> {
   if (ctx.stepPath == null) ctx.stepPath = [];
+
+  await recordEndStep(ctx, 'conflict_marker_guard', 'enter');
+  const markerScan = await scanHarnessRootsForConflictMarkers();
+  await recordEndStep(ctx, 'conflict_marker_guard', markerScan.ok ? 'exit_success' : 'exit_failure');
+  if (!markerScan.ok) {
+    ctx.output.push(markerScan.message);
+    ctx.steps.conflict_marker_guard = { success: false, output: markerScan.message };
+    return attachEndShadowPayload(ctx, {
+      success: false,
+      output: ctx.output.join('\n\n'),
+      steps: ctx.steps,
+      outcome: buildTierEndOutcome(
+        'blocked_fix_required',
+        'CONFLICT_MARKERS_IN_TREE',
+        'Remove <<<<<<< / ======= / >>>>>>> markers from the listed paths, then re-run tier-end.',
+        undefined,
+        markerScan.relativePaths.join('\n')
+      ),
+    });
+  }
+  ctx.steps.conflict_marker_guard = { success: true, output: 'No conflict markers in .project-manager, client, or server.' };
 
   // Pre-warm: spawn all tier audit scripts in parallel immediately.
   // They run concurrently with the rest of the pipeline; stepEndAudit awaits the result.

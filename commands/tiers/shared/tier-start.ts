@@ -50,7 +50,7 @@ export async function runTierStart(
   params: TierStartParams,
   options?: CommandExecutionOptions
 ): Promise<TierStartResultWithControlPlane> {
-  // Default plan so start always creates planning doc and exits; execute only via /accepted-proceed or /accepted-code.
+  // Default plan so start always creates planning doc and exits; execute via /accepted-proceed (feature/phase/session) or /accepted-code (task).
   const executionMode = resolveCommandExecutionMode(options, 'plan');
 
   const shadowRecorder = getDefaultShadowRecorder();

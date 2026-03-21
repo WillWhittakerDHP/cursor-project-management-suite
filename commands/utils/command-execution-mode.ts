@@ -31,7 +31,7 @@ export interface CommandExecutionOptions {
 
 /**
  * Resolve the execution mode from options.
- * defaultMode: used when options.mode is not set. Start commands default to 'plan'; execute only via /accepted-proceed or /accepted-code. End commands default to 'execute'.
+ * defaultMode: used when options.mode is not set. Start commands default to 'plan'; execute via /accepted-proceed (feature/phase/session) or /accepted-code (task). End commands default to 'execute'.
  */
 export function resolveCommandExecutionMode(
   options?: CommandExecutionOptions,

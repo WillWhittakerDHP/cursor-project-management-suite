@@ -1099,21 +1099,30 @@ export interface MergeChildBranchesResult {
 
 /**
  * List branches matching pattern (e.g. "session-6.10*"), merge each into targetBranch
- * with skipStash: true, optionally delete each merged branch. Used by phase-end.
+ * with skipStash: true, child-wins text conflicts, submodule auto-resolve, optional pull.
+ * Optionally delete each merged branch. Used by phase-end.
  */
 export async function mergeChildBranches(
   pattern: string,
   targetBranch: string,
-  options?: { deleteMerged?: boolean }
+  options?: { deleteMerged?: boolean; pullBeforeMerge?: boolean }
 ): Promise<MergeChildBranchesResult> {
   const prefix = pattern.endsWith('*') ? pattern.slice(0, -1) : pattern;
+  const pullBeforeMerge = options?.pullBeforeMerge ?? true;
   const branches = await listBranchesByPrefix(prefix);
   const merged: string[] = [];
   const failed: string[] = [];
   const messages: string[] = [];
 
   for (const branch of branches) {
-    const mergeResult = await gitMerge({ sourceBranch: branch, targetBranch, skipStash: true });
+    const mergeResult = await gitMerge({
+      sourceBranch: branch,
+      targetBranch,
+      skipStash: true,
+      pullBeforeMerge,
+      preferSource: true,
+      autoResolveSubmodule: true,
+    });
     if (mergeResult.success) {
       merged.push(branch);
       if (options?.deleteMerged) {
