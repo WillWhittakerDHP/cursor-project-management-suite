@@ -106,7 +106,9 @@ export async function acceptedCode(): Promise<TierStartResultWithControlPlane> {
     }
   );
 
-  await deleteTaskStartPending();
+  if (result.outcome?.reasonCode === 'start_ok') {
+    await deleteTaskStartPending();
+  }
 
   return result;
 }

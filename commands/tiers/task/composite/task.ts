@@ -240,11 +240,12 @@ export async function markTaskComplete(params: MarkTaskCompleteParams): Promise<
 
     return output.join('\n');
   } catch (_error) {
-    const fullPath = join(PROJECT_ROOT, sessionGuidePath);
+    const guidePath = context.paths.getSessionGuidePath(sessionId);
+    const fullPath = join(PROJECT_ROOT, guidePath);
     throw new Error(
       `ERROR: Failed to mark task complete\n` +
       `Task ID: ${params.taskId}\n` +
-      `Session Guide Path: ${sessionGuidePath}\n` +
+      `Session Guide Path: ${guidePath}\n` +
       `Full Path: ${fullPath}\n` +
       `Tier: Task (Tier 3 - Low-Level)\n` +
       `Error Details: ${_error instanceof Error ? _error.message : String(_error)}\n` +

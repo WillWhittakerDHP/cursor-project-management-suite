@@ -193,8 +193,23 @@ function normalizeStatusPath(path: string): string {
   return p;
 }
 
+interface PortcelainEntry {
+  /** Two-character XY status code (e.g. ' M', 'UU', '??', 'A '). */
+  xy: string;
+  path: string;
+}
+
 /**
- * Parse `git status --porcelain` output into an array of file paths.
+ * True when the two-character XY status contains 'U' (unmerged file).
+ * Unmerged statuses: UU (both modified), UA, AU, DU, UD, AA, DD.
+ * Git uses 'U' in X or Y to mark unmerged; AA and DD are also unmerged.
+ */
+function isUnmergedStatus(xy: string): boolean {
+  return xy.includes('U') || xy === 'AA' || xy === 'DD';
+}
+
+/**
+ * Parse `git status --porcelain` output into entries preserving XY status codes.
  *
  * Porcelain v1 format: `XY PATH` — two status chars (X=index, Y=working tree)
  * followed by a space, then the path. Renames add ` -> NEW` after the original.
@@ -206,35 +221,40 @@ function normalizeStatusPath(path: string): string {
  * PATTERN: Prefer `^(.)(.)\\s+(.*)$` so path starts after XY and whitespace; avoids
  * `substring(3)` eating `.` when the line is `M .file` (only one space before path).
  */
-function parsePortcelainPaths(porcelainOutput: string): string[] {
+function parsePortcelainEntries(porcelainOutput: string): PortcelainEntry[] {
   if (!porcelainOutput) return [];
   return porcelainOutput
     .split('\n')
     .filter(line => line.length >= 4)
     .map(line => {
-      // Prefer XY + path first. Running the ` -> ` branch first mis-parsed valid
-      // paths (e.g. ` M client/...`) when a substring/slice path interacted badly
-      // with rename-style handling, yielding `lient/...` and blocking checkout.
       const m = line.match(/^(.)(.)\s+(.*)$/);
-      if (m?.[3] != null) {
+      if (m?.[1] != null && m[2] != null && m[3] != null) {
+        const xy = m[1] + m[2];
         const pathPart = m[3];
         const arrowIdx = pathPart.indexOf(' -> ');
-        if (arrowIdx >= 0) {
-          return normalizeStatusPath(pathPart.substring(arrowIdx + 4));
-        }
-        return normalizeStatusPath(pathPart);
+        const resolved = arrowIdx >= 0
+          ? normalizeStatusPath(pathPart.substring(arrowIdx + 4))
+          : normalizeStatusPath(pathPart);
+        return { xy, path: resolved };
       }
       const arrowInTail = line.indexOf(' -> ', 2);
       if (arrowInTail >= 0) {
+        const xy = line.substring(0, 2);
         const afterPrefix = line.slice(3);
         const arrowIdx = afterPrefix.indexOf(' -> ');
         const filePart = arrowIdx >= 0 ? afterPrefix.substring(arrowIdx + 4) : afterPrefix;
-        return normalizeStatusPath(filePart);
+        return { xy, path: normalizeStatusPath(filePart) };
       }
+      const xy = line.substring(0, 2);
       const raw = line.substring(3);
-      return normalizeStatusPath(raw);
+      return { xy, path: normalizeStatusPath(raw) };
     })
-    .filter(p => p.length > 0);
+    .filter(e => e.path.length > 0);
+}
+
+/** Thin wrapper: returns only the file paths (no status codes). */
+function parsePortcelainPaths(porcelainOutput: string): string[] {
+  return parsePortcelainEntries(porcelainOutput).map(e => e.path);
 }
 
 /**
@@ -469,12 +489,26 @@ export async function commitUncommittedNonCursor(
     return { committed: false, success: true, output: '' };
   }
 
-  const changedPaths = parsePortcelainPaths(status.output);
+  const entries = parsePortcelainEntries(status.output);
 
-  const inScopePaths = changedPaths.filter((p) => {
-    if (isNeverCommitPath(p)) return false;
-    return allowedPrefixes.some((prefix) => p === prefix || p.startsWith(prefix));
-  });
+  const unmergedPaths = entries.filter(e => isUnmergedStatus(e.xy)).map(e => e.path);
+  if (unmergedPaths.length > 0) {
+    warnGitOp({
+      timestamp: new Date().toISOString(),
+      operation: 'commitUncommitted-unmerged',
+      command: 'git status --porcelain',
+      success: true,
+      output: `Skipping ${unmergedPaths.length} unmerged file(s) — resolve conflicts before committing: ${unmergedPaths.join(', ')}`,
+    });
+  }
+
+  const inScopePaths = entries
+    .filter(e => !isUnmergedStatus(e.xy))
+    .map(e => e.path)
+    .filter((p) => {
+      if (isNeverCommitPath(p)) return false;
+      return allowedPrefixes.some((prefix) => p === prefix || p.startsWith(prefix));
+    });
 
   if (inScopePaths.length === 0) {
     return { committed: false, success: true, output: '' };
@@ -1004,10 +1038,23 @@ export async function mergeTierBranch(
     }
   }
 
-  // ── Step 2: Final selective commit (skip workflow artifacts) ─────
+  // ── Step 2: Final selective commit (skip workflow artifacts and unmerged files) ─────
   const preMergeStatus = await runGitCommand('git status --porcelain --ignore-submodules=dirty', 'mergeTierBranch-preStatus');
   if (preMergeStatus.success && preMergeStatus.output.trim()) {
-    const pathsToStage = parsePortcelainPaths(preMergeStatus.output)
+    const preMergeEntries = parsePortcelainEntries(preMergeStatus.output);
+    const unmergedPreMerge = preMergeEntries.filter(e => isUnmergedStatus(e.xy));
+    if (unmergedPreMerge.length > 0) {
+      warnGitOp({
+        timestamp: new Date().toISOString(),
+        operation: 'mergeTierBranch-unmerged',
+        command: 'git status --porcelain',
+        success: true,
+        output: `Skipping ${unmergedPreMerge.length} unmerged file(s) in pre-merge commit: ${unmergedPreMerge.map(e => e.path).join(', ')}`,
+      });
+    }
+    const pathsToStage = preMergeEntries
+      .filter(e => !isUnmergedStatus(e.xy))
+      .map(e => e.path)
       .filter(p => !isNeverCommitPath(p));
 
     if (pathsToStage.length > 0) {

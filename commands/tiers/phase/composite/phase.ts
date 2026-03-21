@@ -17,6 +17,8 @@ import type { MarkPhaseCompleteParams as ImplParams } from './mark-phase-complet
 import type { ValidatePhaseResult } from './validate-phase-impl';
 import type { ChangeRequest, ChangeScope } from '../../../utils/change-request';
 import { TierStartResult } from '../../../utils/tier-outcome';
+import { getCompletedSessionsInPhase } from '../../../utils/phase-session-utils';
+import { resolveFeatureName } from '../../../utils/feature-context';
 
 export type { PhaseEndParams, PhaseEndResult };
 export type MarkPhaseCompleteParams = ImplParams;
@@ -47,10 +49,9 @@ export async function phaseStart(
 
 export async function phaseEnd(paramsOrId: PhaseEndParams | string): Promise<PhaseEndResult> {
   if (typeof paramsOrId === 'string') {
-    throw new Error(
-      `phaseEnd requires a params object with completedSessions. ` +
-      `Use: phaseEnd({ phaseId: '${paramsOrId}', completedSessions: [...] })`
-    );
+    const featureName = await resolveFeatureName();
+    const completedSessions = await getCompletedSessionsInPhase(featureName, paramsOrId);
+    return runTierEnd(PHASE_CONFIG, { phaseId: paramsOrId, completedSessions }) as Promise<PhaseEndResult>;
   }
   return runTierEnd(PHASE_CONFIG, paramsOrId) as Promise<PhaseEndResult>;
 }

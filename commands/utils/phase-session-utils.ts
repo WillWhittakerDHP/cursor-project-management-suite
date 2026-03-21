@@ -58,6 +58,34 @@ function extractSessionIds(guide: string): string[] {
 }
 
 /**
+ * Extract session IDs that are marked complete in a phase guide.
+ * Matches patterns like `- [x] ### Session X.Y.Z:` or `- [x] Session X.Y.Z:`.
+ */
+function extractCompletedSessionIds(guide: string): string[] {
+  const completedMatches = guide.matchAll(/-\s*\[x\]\s*(?:###?\s*)?Session\s+(\d+\.\d+\.\d+):/gi);
+  const ids: string[] = [];
+  for (const match of completedMatches) {
+    if (WorkflowId.isValidSessionId(match[1])) {
+      ids.push(match[1]);
+    }
+  }
+  return ids;
+}
+
+/**
+ * Get the list of completed session IDs for a phase by reading the phase guide.
+ * Used by phaseEnd when called with just a string ID (auto-derives completedSessions).
+ */
+export async function getCompletedSessionsInPhase(
+  feature: string,
+  phaseId: string
+): Promise<string[]> {
+  const context = new WorkflowCommandContext(feature);
+  const phaseGuide = await context.readPhaseGuide(phaseId);
+  return extractCompletedSessionIds(phaseGuide);
+}
+
+/**
  * Check if all sessions in a phase are completed
  */
 export async function areAllSessionsCompleted(
@@ -110,10 +138,10 @@ export async function areAllTasksInSessionComplete(
 }
 
 /**
- * Parse phase guide filenames from the phases directory into sorted IDs.
+ * Get all phase IDs for a feature (from disk). Exported for featureEnd auto-derive.
  * Returns numerically sorted array of phase ID strings (e.g. ['6.5', '6.9', '6.10', '6.11']).
  */
-async function getPhaseIdsFromDisk(feature: string): Promise<string[]> {
+export async function getPhaseIdsFromDisk(feature: string): Promise<string[]> {
   const phasesDir = join(PROJECT_ROOT, '.project-manager/features', feature, 'phases');
   let entries: string[];
   try {
