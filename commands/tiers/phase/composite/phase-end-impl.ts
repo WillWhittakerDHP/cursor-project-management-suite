@@ -466,7 +466,11 @@ export async function phaseEndImpl(
         const phasePushResult = await gitPush();
         c.steps.gitPushPhase = { success: phasePushResult.success, output: phasePushResult.output };
 
-        const mergeToFeature = await mergeTierBranch(PHASE_CONFIG, p.phaseId, c.context, { push: true, auditPrewarmPromise: c.auditPrewarmPromise });
+        const mergeToFeature = await mergeTierBranch(PHASE_CONFIG, p.phaseId, c.context, {
+          push: true,
+          deleteBranch: true,
+          auditPrewarmPromise: c.auditPrewarmPromise,
+        });
         c.steps.gitMergePhaseToFeature = { success: mergeToFeature.success, output: mergeToFeature.messages.join('\n') };
         if (!mergeToFeature.success) {
           return {

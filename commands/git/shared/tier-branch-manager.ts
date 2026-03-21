@@ -1181,12 +1181,24 @@ export async function mergeTierBranch(
   // Delete
   let deleted = false;
   if (deleteBranch) {
-    const deleteResult = await runGitCommand(`git branch -d ${tierBranch}`, 'mergeTierBranch-delete');
+    const safeTierBranch = tierBranch.replace(/'/g, "'\\''");
+    const deleteResult = await runGitCommand(`git branch -d '${safeTierBranch}'`, 'mergeTierBranch-delete');
     deleted = deleteResult.success;
     messages.push(deleted
       ? `Deleted branch: ${tierBranch}`
       : `Could not delete branch (non-critical): ${deleteResult.error || deleteResult.output}`
     );
+    if (deleted) {
+      const remoteDel = await runGitCommand(
+        `git push origin --delete '${safeTierBranch}'`,
+        'mergeTierBranch-delete-remote'
+      );
+      messages.push(
+        remoteDel.success
+          ? `Deleted remote branch: ${tierBranch}`
+          : `Remote branch delete (non-critical): ${remoteDel.error || remoteDel.output}`
+      );
+    }
   }
 
   // Push

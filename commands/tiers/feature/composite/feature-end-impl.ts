@@ -2,6 +2,8 @@
  * Feature-end implementation. Thin adapter: builds hooks and runs shared end workflow.
  */
 
+import { readdir } from 'fs/promises';
+import { join } from 'path';
 import { featureSummarize } from '../atomic/feature-summarize';
 import { featureClose } from '../atomic/feature-close';
 import { runWithLintVerification } from '../../../utils/utils';
@@ -19,6 +21,14 @@ import { buildTierEndOutcome, type TierEndOutcome } from '../../../utils/tier-ou
 import { resolveFeatureId } from '../../../utils/feature-context';
 import { getOptionsFromParams } from '../../../utils/command-execution-mode';
 import { FEATURE_CONFIG } from '../../configs/feature';
+import {
+  gitCommit,
+  gitPush,
+  ensureTierBranch,
+  mergeTierBranch,
+  mergeChildBranches,
+  getCurrentBranch,
+} from '../../../git/shared/git-manager';
 import type {
   TierEndWorkflowContext,
   TierEndWorkflowHooks,
@@ -53,6 +63,34 @@ export interface FeatureEndResult {
 
 const CLEANUP_FILE_THRESHOLD = 100;
 const CLEANUP_COMMENT_THRESHOLD = 500;
+
+/**
+ * Prefix for local phase branches belonging to this feature (e.g. phase-6.5-foo → phase-6.).
+ * WHY: mergeChildBranches lists by prefix; we must not merge another feature's phase-* branches.
+ */
+async function resolvePhaseBranchPrefixForFeature(
+  featureName: string,
+  completedPhases: string[] | undefined
+): Promise<string | null> {
+  const majorFromParams = completedPhases
+    ?.map((p) => p.trim().split('.')[0])
+    .find((m) => m !== undefined && m !== '' && /^\d+$/.test(m));
+  if (majorFromParams) return `phase-${majorFromParams}.`;
+
+  const phasesDir = join(process.cwd(), '.project-manager/features', featureName, 'phases');
+  try {
+    const entries = await readdir(phasesDir);
+    const majors = new Set<string>();
+    for (const name of entries) {
+      const m = name.match(/^phase-(\d+)\./);
+      if (m) majors.add(m[1]);
+    }
+    if (majors.size === 1) return `phase-${[...majors][0]}.`;
+  } catch {
+    // Missing or unreadable phases dir — caller skips phase merges.
+  }
+  return null;
+}
 
 /** When provided (e.g. from harness), use this context instead of re-resolving feature. */
 export async function featureEndImpl(
@@ -322,6 +360,8 @@ export async function featureEndImpl(
     },
 
     async runGit(): Promise<StepExitResult> {
+      const p = ctx.params as FeatureEndParams;
+
       ctx.steps.gitReady = {
         success: true,
         output: [
@@ -331,11 +371,108 @@ export async function featureEndImpl(
           '- All documentation updated',
         ].join('\n'),
       };
-      ctx.steps.gitCommit = { success: true, output: 'Commit pending. See outcome.reasonCode.' };
-      ctx.steps.checkoutDevelop = { success: true, output: 'Checkout pending. See outcome.reasonCode.' };
-      ctx.steps.gitMerge = { success: true, output: `Merge feature/${ctx.identifier} pending. See outcome.reasonCode.` };
-      ctx.steps.deleteBranch = { success: true, output: 'Branch deletion pending. See outcome.reasonCode.' };
-      ctx.steps.gitPush = { success: true, output: 'Push pending. See outcome.reasonCode.' };
+
+      try {
+        const featureBranchName = FEATURE_CONFIG.getBranchName(ctx.context, ctx.identifier);
+        if (!featureBranchName) {
+          ctx.steps.ensureFeatureBranch = { success: false, output: 'Could not resolve feature branch name from config.' };
+          throw new Error('Cannot proceed: feature branch name is null');
+        }
+
+        const ensureResult = await ensureTierBranch(FEATURE_CONFIG, ctx.identifier, ctx.context, { createIfMissing: true });
+        ctx.steps.ensureFeatureBranch = { success: ensureResult.success, output: ensureResult.messages.join('\n') };
+        if (!ensureResult.success) {
+          throw new Error('Cannot proceed: could not ensure feature branch');
+        }
+
+        const resolvedFeatureBranch = await getCurrentBranch();
+        const phasePrefix = await resolvePhaseBranchPrefixForFeature(featureName, p.completedPhases);
+
+        if (phasePrefix) {
+          const childResult = await mergeChildBranches(phasePrefix, resolvedFeatureBranch, { deleteMerged: true });
+          const allPhaseBranches = [...childResult.merged, ...childResult.failed];
+          ctx.steps.findPhaseBranches = {
+            success: true,
+            output: `Phase branch prefix ${phasePrefix}* — found ${allPhaseBranches.length} branch(es): ${allPhaseBranches.join(', ') || 'none'}`,
+          };
+          ctx.steps.mergePhaseBranches = {
+            success: childResult.failed.length === 0,
+            output: `${childResult.messages.join('\n')}\nMerged ${childResult.merged.length}/${allPhaseBranches.length} phase branch(es).`,
+          };
+          if (childResult.failed.length > 0) {
+            return {
+              success: false,
+              output: ctx.output.join('\n'),
+              steps: ctx.steps,
+              outcome: buildTierEndOutcome(
+                'blocked_fix_required',
+                'git_failed',
+                `Merging phase branches into feature failed. ${childResult.messages.join(' ')} Fix and re-run /feature-end.`
+              ),
+            };
+          }
+        } else {
+          ctx.steps.mergePhaseBranches = {
+            success: true,
+            output:
+              'Skipped merging phase-* branches: could not resolve phase prefix (pass completedPhases or ensure .project-manager/features/<feature>/phases/ has phase guides).',
+          };
+        }
+
+        const commitPrefix = `[feature ${ctx.identifier}]`;
+        const featureCommitMessage = p.commitMessage || `${commitPrefix} completion`;
+        const featureCommitResult = await gitCommit(featureCommitMessage);
+        ctx.steps.gitCommit = { success: featureCommitResult.success, output: featureCommitResult.output };
+
+        const featurePushResult = await gitPush();
+        ctx.steps.gitPush = { success: featurePushResult.success, output: featurePushResult.output };
+
+        const mergeToDevelop = await mergeTierBranch(FEATURE_CONFIG, ctx.identifier, ctx.context, {
+          push: true,
+          deleteBranch: true,
+          auditPrewarmPromise: ctx.auditPrewarmPromise,
+        });
+        ctx.steps.gitMerge = { success: mergeToDevelop.success, output: mergeToDevelop.messages.join('\n') };
+        ctx.steps.deleteBranch = {
+          success: mergeToDevelop.deletedBranch,
+          output: mergeToDevelop.deletedBranch
+            ? 'Feature branch deleted locally (and remote delete attempted).'
+            : 'Feature branch not deleted (see merge step output).',
+        };
+        ctx.steps.checkoutDevelop = {
+          success: mergeToDevelop.success,
+          output: mergeToDevelop.success ? `Merged into ${mergeToDevelop.mergedInto}.` : 'Merge into develop did not complete.',
+        };
+
+        if (!mergeToDevelop.success) {
+          return {
+            success: false,
+            output: ctx.output.join('\n'),
+            steps: ctx.steps,
+            outcome: buildTierEndOutcome(
+              'blocked_fix_required',
+              'git_failed',
+              `Feature merge into develop failed. ${mergeToDevelop.messages.join(' ')} Fix and re-run /feature-end.`
+            ),
+          };
+        }
+      } catch (_error) {
+        ctx.steps.gitOperations = {
+          success: false,
+          output: `Git operations failed: ${_error instanceof Error ? _error.message : String(_error)}`,
+        };
+        return {
+          success: false,
+          output: ctx.output.join('\n'),
+          steps: ctx.steps,
+          outcome: buildTierEndOutcome(
+            'blocked_fix_required',
+            'git_failed',
+            `Feature git operations threw an error: ${_error instanceof Error ? _error.message : String(_error)}. Fix and re-run /feature-end.`
+          ),
+        };
+      }
+
       ctx.steps.githubFinalValidation = {
         success: true,
         output:

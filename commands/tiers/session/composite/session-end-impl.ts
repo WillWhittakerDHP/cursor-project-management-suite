@@ -514,7 +514,11 @@ export async function sessionEndImpl(
 
       if (!p.skipGit) {
         try {
-          const mergeResult = await mergeTierBranch(SESSION_CONFIG, p.sessionId, c.context, { push: false, auditPrewarmPromise: c.auditPrewarmPromise });
+          const mergeResult = await mergeTierBranch(SESSION_CONFIG, p.sessionId, c.context, {
+            push: false,
+            deleteBranch: true,
+            auditPrewarmPromise: c.auditPrewarmPromise,
+          });
           c.steps.gitMerge = { success: mergeResult.success, output: mergeResult.messages.join('\n') };
           if (!mergeResult.success) {
             return {
