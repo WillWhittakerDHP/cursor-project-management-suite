@@ -59,18 +59,6 @@ function findSectionEndLine(lines: string[], startLine: number): number {
   return lines.length;
 }
 
-/** Count of #### Task or ### Task X.Y.Z.N blocks in content (session guide task blocks). */
-function countTaskBlocksInSection(sectionContent: string): number {
-  const taskHeadingRegex = /(?:^|\n)(?:-\s*\[\s*x?\s*\]\s*)?(?:####|###)\s+Task\s+\d+\.\d+\.\d+\.\d+[\s:]/im;
-  let count = 0;
-  let _m: RegExpExecArray | null;
-  while ((_m = taskHeadingRegex.exec(sectionContent)) !== null) {
-    count++;
-    if (count >= 2) return 2; // safeguard only needs to know "more than one"
-  }
-  return count;
-}
-
 // --- Minimal content builders (each yields a block so extractSection returns >= MIN_SECTION_LENGTH) ---
 
 function buildMinimalFeatureOverview(identifier: string, description: string): string {
@@ -194,10 +182,9 @@ function buildMinimalSection(
 }
 
 /**
- * Ensure content has all REQUIRED_GUIDE_SECTIONS for the tier, each with at least MIN_SECTION_LENGTH
- * characters. Replaces short or missing sections with minimal content; appends if section not found.
- * Uses the same bounds for "short?" check and replacement so we never replace a range we didn't deem short.
- * Session "Tasks": never replace if the section already has 2+ task blocks (preserve tierDown list).
+ * Ensure content has all REQUIRED_GUIDE_SECTIONS for the tier by **appending** any missing section
+ * headings. If a section already exists (matched heading), its body is **never** rewritten — avoids
+ * clobbering user-filled guides when a section is short or oddly shaped. Docs audit still flags weak sections.
  */
 export function ensureGuideHasRequiredSections(
   content: string,
@@ -217,28 +204,9 @@ export function ensureGuideHasRequiredSections(
     if (startIdx === -1) {
       const minimal = buildMinimalSection(tier, sectionTitle, identifier, description);
       result = result.trimEnd() + '\n\n---\n\n' + minimal;
-      // Refresh lines after append so next section uses updated content
       currentLines.length = 0;
       currentLines.push(...result.split('\n'));
-      continue;
     }
-
-    const endIdx = findSectionEndLine(currentLines, startIdx);
-    const sectionContent = currentLines.slice(startIdx, endIdx).join('\n');
-
-    // Session "Tasks": preserve section if it already has multiple task blocks (tierDown list from tierUp).
-    if (tier === 'session' && sectionTitle === 'Tasks' && countTaskBlocksInSection(sectionContent) >= 2) {
-      continue;
-    }
-
-    if (sectionContent.trim().length >= MIN_SECTION_LENGTH) continue;
-
-    const minimal = buildMinimalSection(tier, sectionTitle, identifier, description);
-    const before = currentLines.slice(0, startIdx).join('\n');
-    const after = currentLines.slice(endIdx).join('\n');
-    result = (before ? before + '\n\n' : '') + minimal + (after ? '\n\n' + after : '');
-    currentLines.length = 0;
-    currentLines.push(...result.split('\n'));
   }
 
   return result;

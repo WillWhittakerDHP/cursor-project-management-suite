@@ -40,6 +40,27 @@ export interface TierContextReadParams {
 }
 
 /**
+ * Create phase handoff from template when missing so session-start tierUp handoff load succeeds
+ * (readTierUpContext → loadHandoffForTier → readPhaseHandoff).
+ */
+async function ensurePhaseHandoffIfMissing(
+  context: WorkflowCommandContext,
+  phaseId: string,
+  description: string
+): Promise<void> {
+  try {
+    await context.readPhaseHandoff(phaseId);
+  } catch {
+    try {
+      const desc = description.trim() || `Phase ${phaseId}`;
+      await context.documents.ensureHandoff('phase', phaseId, desc);
+    } catch {
+      // non-blocking
+    }
+  }
+}
+
+/**
  * Ensure tier scaffold exists before reading (phase/session: guide from template when missing; feature/task no-op).
  */
 export async function ensureTierScaffold(params: TierContextReadParams): Promise<void> {
@@ -60,10 +81,11 @@ export async function ensureTierScaffold(params: TierContextReadParams): Promise
         // non-blocking
       }
     }
+    await ensurePhaseHandoffIfMissing(context, identifier, resolvedDescription);
     return;
   }
 
-  // Session: create session guide and log if missing
+  // Session: create session guide and log if missing; ensure parent phase handoff for tierUp context
   if (tier === 'session') {
     try {
       await context.readSessionGuide(identifier);
@@ -90,6 +112,14 @@ export async function ensureTierScaffold(params: TierContextReadParams): Promise
       } catch {
         // non-blocking
       }
+    }
+    const parsedSession = WorkflowId.parseSessionId(identifier);
+    if (parsedSession) {
+      await ensurePhaseHandoffIfMissing(
+        context,
+        parsedSession.phaseId,
+        `Phase ${parsedSession.phaseId}`
+      );
     }
   }
 }
