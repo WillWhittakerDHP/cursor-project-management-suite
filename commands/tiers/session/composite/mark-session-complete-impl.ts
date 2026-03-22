@@ -7,19 +7,27 @@ import { join } from 'path';
 import { readFile } from 'fs/promises';
 import { WorkflowId } from '../../../utils/id-utils';
 import { WorkflowCommandContext } from '../../../utils/command-context';
-import { resolveFeatureName } from '../../../utils';
+import { resolveWorkflowScope } from '../../../utils/workflow-scope';
 import { SESSION_CONFIG } from '../../configs/session';
 
 export interface MarkSessionCompleteParams {
   sessionId: string;
   tasksCompleted?: string[];
   accomplishments?: string[];
+  featureId?: string;
   featureName?: string;
 }
 
 export async function markSessionCompleteImpl(params: MarkSessionCompleteParams): Promise<string> {
   const output: string[] = [];
-  const featureName = await resolveFeatureName(params.featureName);
+  const { featureName } = await resolveWorkflowScope({
+    mode: 'fromTierParams',
+    tier: 'feature',
+    params: {
+      ...(params.featureId?.trim() ? { featureId: params.featureId.trim() } : {}),
+      ...(params.featureName?.trim() ? { featureName: params.featureName.trim() } : {}),
+    },
+  });
   const context = new WorkflowCommandContext(featureName);
 
   const parsed = WorkflowId.parseSessionId(params.sessionId);

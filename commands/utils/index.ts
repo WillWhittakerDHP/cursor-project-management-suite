@@ -8,7 +8,9 @@
 export { WorkflowPathResolver } from './path-resolver';
 export { WorkflowId } from './id-utils';
 export type { ParsedTaskId, ParsedSessionId } from './id-utils';
-export { FeatureContext, resolveFeatureName } from './feature-context';
+export { FeatureContext } from './feature-context';
+export { resolveWorkflowScope, type ResolvedWorkflowScope, type TierName, type TierParamsBag } from './workflow-scope';
+export { workflowContextFromScope } from './command-context';
 export { MarkdownUtils } from './markdown-utils';
 export type { ExtractSectionOptions } from './markdown-utils';
 export { TemplateManager } from './template-manager';

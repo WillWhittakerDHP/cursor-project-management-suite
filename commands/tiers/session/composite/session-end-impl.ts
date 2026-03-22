@@ -65,6 +65,9 @@ export interface SessionEndOutcome {
 
 export interface SessionEndParams {
   sessionId: string;
+  /** Required for context when harness does not pass resolvedContext (numeric # or directory slug). */
+  featureId?: string;
+  featureName?: string;
   description?: string;
   nextSession?: string;
   lastCompletedTask?: string;
@@ -170,7 +173,11 @@ export async function sessionEndImpl(
     context = resolvedContext;
   } else {
     console.warn(`[session-end-impl] resolvedContext not provided; falling back to contextFromParams('session', '${params.sessionId}')`);
-    context = await WorkflowCommandContext.contextFromParams('session', { sessionId: params.sessionId });
+    context = await WorkflowCommandContext.contextFromParams('session', {
+      sessionId: params.sessionId,
+      ...(params.featureId?.trim() ? { featureId: params.featureId.trim() } : {}),
+      ...(params.featureName?.trim() ? { featureName: params.featureName.trim() } : {}),
+    });
   }
   const description = params.description !== undefined
     ? params.description
@@ -669,14 +676,28 @@ const currentFile = fileURLToPath(import.meta.url);
 const isEntryPoint = typeof process !== 'undefined' && process.argv[1] && resolve(process.argv[1]) === resolve(currentFile);
 if (isEntryPoint) {
   (async () => {
-    const sessionId = process.argv[2] ?? process.env.SESSION_ID ?? '';
-    const runTests = process.argv.includes('--test');
-    const planMode = process.argv.includes('--plan');
-    const continuePastVerification = process.argv.includes('--continue-past-verification');
+    const argv = process.argv;
+    const flagIdx = argv.indexOf('--feature');
+    const featureRef =
+      (flagIdx >= 0 && argv[flagIdx + 1] ? argv[flagIdx + 1] : undefined) ??
+      process.env.FEATURE_REF ??
+      process.env.FEATURE_ID ??
+      '';
+    const sessionId = argv[2] && !argv[2].startsWith('--') ? argv[2] : process.env.SESSION_ID ?? '';
+    const runTests = argv.includes('--test');
+    const planMode = argv.includes('--plan');
+    const continuePastVerification = argv.includes('--continue-past-verification');
     if (!sessionId || !/^\d+\.\d+\.\d+$/.test(sessionId)) {
       const usage =
-        `Usage: npx tsx .cursor/commands/tiers/session/composite/session-end-impl.ts <sessionId> [--test|--no-tests] [--plan] [--continue-past-verification]. ` +
-        `Example sessionId: 4.1.3. Got: ${sessionId || '<sessionId>'}`;
+        `Usage: npx tsx .cursor/commands/tiers/session/composite/session-end-impl.ts <sessionId> --feature <#|slug> [--test|--no-tests] [--plan] [--continue-past-verification]. ` +
+        `Or set FEATURE_REF / FEATURE_ID. Example: 4.1.3 --feature 6. Got: ${sessionId || '<sessionId>'}`;
+      console.log(stringifyCliResult(buildCliValidationErrorEnvelope(usage)));
+      process.exit(1);
+      return;
+    }
+    if (!String(featureRef).trim()) {
+      const usage =
+        'Missing feature scope: pass `--feature <#|directory-slug>` or set FEATURE_REF / FEATURE_ID (see PROJECT_PLAN.md).';
       console.log(stringifyCliResult(buildCliValidationErrorEnvelope(usage)));
       process.exit(1);
       return;
@@ -685,6 +706,7 @@ if (isEntryPoint) {
     const result = await sessionEnd({
       sessionId,
       runTests,
+      featureId: String(featureRef).trim(),
       mode: planMode ? 'plan' : 'execute',
       ...(continuePastVerification ? { continuePastVerification: true } : {}),
     });

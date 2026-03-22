@@ -31,9 +31,9 @@ import {
 
 export type TierStartParams =
   | { featureId: string }
-  | { phaseId: string }
-  | { sessionId: string; description?: string }
-  | { taskId: string; featureId?: string };
+  | ({ phaseId: string } & ({ featureId: string } | { featureName: string }))
+  | ({ sessionId: string; description?: string } & ({ featureId: string } | { featureName: string }))
+  | ({ taskId: string } & ({ featureId: string } | { featureName: string }));
 
 function getIdentifierFromParams(config: TierConfig, params: TierStartParams): string {
   switch (config.name) {
@@ -148,10 +148,11 @@ export async function runTierStart(
           workProfile,
         });
       } else if (config.name === 'task') {
-        const p = params as { taskId: string; featureId?: string };
+        const p = params as { taskId: string; featureId?: string; featureName?: string };
         await writeTaskStartPending({
           taskId: p.taskId,
-          featureId: p.featureId,
+          ...(p.featureId != null && p.featureId.trim() !== '' && { featureId: p.featureId.trim() }),
+          ...(p.featureName != null && p.featureName.trim() !== '' && { featureName: p.featureName.trim() }),
           workProfile,
         });
       }

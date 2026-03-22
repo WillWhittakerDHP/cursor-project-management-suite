@@ -44,6 +44,9 @@ import { proposeVerificationChecklistForPhase } from '../../shared/verification-
 
 export interface PhaseEndParams {
   phaseId: string;
+  /** Required for context when harness does not pass resolvedContext (numeric # or directory slug). */
+  featureId?: string;
+  featureName?: string;
   completedSessions: string[];
   nextPhase?: string;
   totalTasks?: number;
@@ -79,7 +82,11 @@ export async function phaseEndImpl(
     context = resolvedContext;
   } else {
     console.warn(`[phase-end-impl] resolvedContext not provided; falling back to contextFromParams('phase', '${params.phaseId}')`);
-    context = await WorkflowCommandContext.contextFromParams('phase', { phaseId: params.phaseId });
+    context = await WorkflowCommandContext.contextFromParams('phase', {
+      phaseId: params.phaseId,
+      ...(params.featureId?.trim() ? { featureId: params.featureId.trim() } : {}),
+      ...(params.featureName?.trim() ? { featureName: params.featureName.trim() } : {}),
+    });
   }
   const steps: Record<string, { success: boolean; output: string }> = {};
   const outcome = buildTierEndOutcome('completed', 'pending_push_confirmation', '');
@@ -130,6 +137,7 @@ export async function phaseEndImpl(
           phase: p.phaseId,
           sessionsCompleted: p.completedSessions,
           totalTasks: p.totalTasks,
+          featureName: c.context.feature.name,
         };
         const markCompleteOutput = await markPhaseComplete(markCompleteParams);
         c.steps.markPhaseComplete = { success: true, output: markCompleteOutput };

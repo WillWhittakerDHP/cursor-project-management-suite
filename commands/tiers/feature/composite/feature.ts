@@ -17,7 +17,7 @@ import { featureCheckpoint } from '../atomic/feature-checkpoint';
 import { WorkflowCommandContext } from '../../../utils/command-context';
 import { TierStartResult } from '../../../utils/tier-outcome';
 import { getPhaseIdsFromDisk } from '../../../utils/phase-session-utils';
-import { resolveFeatureId } from '../../../utils/feature-context';
+import { resolveWorkflowScope } from '../../../utils/workflow-scope';
 
 export type { FeatureEndParams, FeatureEndResult };
 
@@ -30,9 +30,13 @@ export async function featureStart(
 
 export async function featureEnd(paramsOrId: FeatureEndParams | string): Promise<FeatureEndResult> {
   if (typeof paramsOrId === 'string') {
-    const featureName = await resolveFeatureId(paramsOrId);
+    const { featureName } = await resolveWorkflowScope({
+      mode: 'fromTierParams',
+      tier: 'feature',
+      params: { featureId: paramsOrId.trim() },
+    });
     const completedPhases = await getPhaseIdsFromDisk(featureName);
-    return runTierEnd(FEATURE_CONFIG, { featureId: paramsOrId, completedPhases }) as Promise<FeatureEndResult>;
+    return runTierEnd(FEATURE_CONFIG, { featureId: paramsOrId.trim(), completedPhases }) as Promise<FeatureEndResult>;
   }
   return runTierEnd(FEATURE_CONFIG, paramsOrId) as Promise<FeatureEndResult>;
 }

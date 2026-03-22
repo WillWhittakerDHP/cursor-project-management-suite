@@ -677,6 +677,20 @@ export function buildBranchChain(
 }
 
 /**
+ * Tier that owns the **leaf** git branch for this workflow (feature / phase / session).
+ * Task-end resolves to **session** because tasks have no branch; the session branch is the commit target.
+ */
+export function getLeafBranchTierFromChain(
+  config: TierConfig,
+  tierId: string,
+  context: WorkflowCommandContext
+): TierName | null {
+  const chain = buildBranchChain(config, tierId, context);
+  if (chain.length === 0) return null;
+  return chain[chain.length - 1].tier;
+}
+
+/**
  * Return the expected branch name for the given tier (leaf of branch chain).
  * Resolves slug-style names via prefix matching (e.g. phase-6.9 → phase-6.9-availability-step-mini-wizard).
  * Used before commit to verify we are on the correct branch. Returns null for tiers with no branch (e.g. task).

@@ -133,14 +133,19 @@ export async function sessionStartImpl(
   description?: string,
   options?: import('../../../utils/command-execution-mode').CommandExecutionOptions,
   shadow?: ShadowContext,
-  resolvedContext?: WorkflowCommandContext
+  resolvedContext?: WorkflowCommandContext,
+  featureRef?: { featureId?: string; featureName?: string }
 ): Promise<TierStartResult | TierStartWorkflowResult> {
   let context: WorkflowCommandContext;
   if (resolvedContext) {
     context = resolvedContext;
   } else {
     console.warn(`[session-start-impl] resolvedContext not provided; falling back to contextFromParams('session', '${sessionId}')`);
-    context = await WorkflowCommandContext.contextFromParams('session', { sessionId });
+    context = await WorkflowCommandContext.contextFromParams('session', {
+      sessionId,
+      ...(featureRef?.featureId?.trim() ? { featureId: featureRef.featureId.trim() } : {}),
+      ...(featureRef?.featureName?.trim() ? { featureName: featureRef.featureName.trim() } : {}),
+    });
   }
   const rawDescription =
     description != null && description !== ''

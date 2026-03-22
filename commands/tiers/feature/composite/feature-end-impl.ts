@@ -9,7 +9,7 @@ import { featureClose } from '../atomic/feature-close';
 import { runWithLintVerification } from '../../../utils/utils';
 import { gitCheckout } from '../../../git/shared/git-manager';
 import { featureCommentCleanup } from '../../../comments/commentCleanup';
-import { WorkflowCommandContext } from '../../../utils/command-context';
+import { WorkflowCommandContext, workflowContextFromScope } from '../../../utils/command-context';
 import { detectFeatureModifiedFiles } from '../../../utils/detect-modified-files';
 import { validateTestGoals } from '../../../testing/composite/test-goal-validator';
 import { analyzeTestError } from '../../../testing/composite/test-error-analyzer';
@@ -18,7 +18,7 @@ import { TEST_CONFIG } from '../../../testing/utils/test-config';
 import { analyzeCodeChangeImpact } from '../../../testing/composite/test-change-detector';
 import { testEndWorkflow } from '../../../testing/composite/test-end-workflow';
 import { buildTierEndOutcome, type TierEndOutcome } from '../../../utils/tier-outcome';
-import { resolveFeatureId } from '../../../utils/feature-context';
+import { resolveWorkflowScope } from '../../../utils/workflow-scope';
 import { getOptionsFromParams } from '../../../utils/command-execution-mode';
 import { FEATURE_CONFIG } from '../../configs/feature';
 import {
@@ -100,10 +100,15 @@ export async function featureEndImpl(
 ): Promise<FeatureEndResult | (FeatureEndResult & TierEndWorkflowResultWithShadow)> {
   const context =
     resolvedContext ??
-    new WorkflowCommandContext(
-      (params.featureId != null && params.featureId.trim() !== ''
-        ? await resolveFeatureId(params.featureId)
-        : null) ?? params.featureName ?? ''
+    workflowContextFromScope(
+      await resolveWorkflowScope({
+        mode: 'fromTierParams',
+        tier: 'feature',
+        params: {
+          ...(params.featureId?.trim() ? { featureId: params.featureId.trim() } : {}),
+          ...(params.featureName?.trim() ? { featureName: params.featureName.trim() } : {}),
+        },
+      })
     );
   const featureName = context.feature.name;
 

@@ -8,8 +8,22 @@ import { markPhaseCompleteImpl, type MarkPhaseCompleteParams } from '../phase/co
 import { markSessionCompleteImpl, type MarkSessionCompleteParams } from '../session/composite/mark-session-complete-impl';
 
 export type TierCompleteParams =
-  | { tier: 'phase'; phase: string; sessionsCompleted?: string[]; totalTasks?: number }
-  | { tier: 'session'; sessionId: string; tasksCompleted?: string[]; accomplishments?: string[]; featureName?: string };
+  | {
+      tier: 'phase';
+      phase: string;
+      sessionsCompleted?: string[];
+      totalTasks?: number;
+      featureId?: string;
+      featureName?: string;
+    }
+  | {
+      tier: 'session';
+      sessionId: string;
+      tasksCompleted?: string[];
+      accomplishments?: string[];
+      featureId?: string;
+      featureName?: string;
+    };
 
 export async function runTierComplete(
   config: TierConfig,

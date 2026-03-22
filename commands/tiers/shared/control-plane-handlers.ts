@@ -169,3 +169,15 @@ export function handleWrongBranchBeforeCommit(outcome: ControlPlaneOutcome): Con
     message: outcome.deliverables ?? outcome.nextAction ?? 'Wrong branch. Checkout the correct tier branch and re-run tier-end.',
   };
 }
+
+/** expected_branch_missing_run_tier_start: resolved expected branch (from tier chain) does not exist locally; tier-start creates branches — same UX as wrong_branch (plan stop, message only). */
+export function handleExpectedBranchMissingRunTierStart(outcome: ControlPlaneOutcome): ControlPlaneDecision {
+  return {
+    stop: true,
+    requiredMode: 'plan',
+    message:
+      outcome.deliverables ??
+      outcome.nextAction ??
+      'Expected tier branch missing locally. Run the matching tier-start (see harness message), then re-run tier-end.',
+  };
+}

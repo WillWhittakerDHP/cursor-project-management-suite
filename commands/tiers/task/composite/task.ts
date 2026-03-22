@@ -16,7 +16,7 @@ import { WorkflowId } from '../../../utils/id-utils';
 import { formatTaskEntry, type TaskEntry } from '../atomic/format-task-entry';
 import { appendLog } from '../../../utils/append-log';
 import { WorkflowCommandContext } from '../../../utils/command-context';
-import { resolveFeatureName, resolveFeatureId } from '../../../utils/feature-context';
+import { resolveWorkflowScope } from '../../../utils/workflow-scope';
 import { readProjectFile, writeProjectFile, PROJECT_ROOT, getCurrentDate } from '../../../utils/utils';
 import { join } from 'path';
 import { readFile } from 'fs/promises';
@@ -43,7 +43,8 @@ export interface TaskChangeRequestResult {
 export interface MarkTaskCompleteParams {
   taskId: string;
   entry?: Partial<TaskEntry>;
-  featureId?: string;
+  /** Numeric # or feature directory slug (required). */
+  featureId: string;
 }
 
 export async function validateTask(taskId: string): Promise<ValidateTaskResult> {
@@ -64,37 +65,32 @@ export function formatTaskValidation(result: ValidateTaskResult, taskId: string)
 }
 
 /**
- * Start the task tier. Second argument can be featureId (string) or options (object with mode).
- * taskStart(id), taskStart(id, { mode: 'execute' }), and taskStart(id, featureId, options) all work.
+ * Start the task tier. `featureRef` is required: numeric # or feature directory slug (PROJECT_PLAN).
  */
 export async function taskStart(
   taskId: string,
-  featureIdOrOptions?: string | CommandExecutionOptions,
+  featureRef: string,
   options?: CommandExecutionOptions
 ): Promise<TierStartResult> {
-  let featureId: string | undefined;
-  let opts: CommandExecutionOptions | undefined;
-  if (typeof featureIdOrOptions === 'string') {
-    featureId = featureIdOrOptions;
-    opts = options;
-  } else if (
-    featureIdOrOptions != null &&
-    typeof featureIdOrOptions === 'object' &&
-    'mode' in featureIdOrOptions
-  ) {
-    featureId = undefined;
-    opts = featureIdOrOptions;
-  } else {
-    featureId = undefined;
-    opts = options;
-  }
-  return runTierStart(TASK_CONFIG, { taskId, featureId }, opts);
+  return runTierStart(TASK_CONFIG, { taskId, featureId: featureRef.trim() }, options);
 }
 
-export async function taskEnd(paramsOrId: TaskEndParams | string): Promise<TierEndResult> {
-  const params: TaskEndParams = typeof paramsOrId === 'string'
-    ? { taskId: paramsOrId }
-    : paramsOrId;
+export async function taskEnd(
+  paramsOrId: TaskEndParams | string,
+  featureRef?: string
+): Promise<TierEndResult> {
+  let params: TaskEndParams;
+  if (typeof paramsOrId === 'string') {
+    const raw = (featureRef ?? '').trim();
+    if (!raw) {
+      throw new Error(
+        'taskEnd(taskId, featureRef): featureRef is required when using a string task id (numeric # or feature directory slug).'
+      );
+    }
+    params = { taskId: paramsOrId, featureId: raw };
+  } else {
+    params = paramsOrId;
+  }
   return runTierEnd(TASK_CONFIG, params);
 }
 
@@ -108,7 +104,7 @@ export async function planTask(
 
 export async function taskChange(
   params: TaskChangeRequestParams,
-  featureName?: string
+  featureRef: string
 ): Promise<TaskChangeRequestResult> {
   const parsed = WorkflowId.parseTaskId(params.taskId);
   if (!parsed) {
@@ -121,7 +117,7 @@ export async function taskChange(
       description: params.description,
       scope: params.scope,
     },
-    featureName
+    featureRef
   );
   return {
     success: result.success,
@@ -136,10 +132,12 @@ export async function taskChange(
 /**
  * Append a task entry to the session log. Task is the tier below session (tierDown from session).
  */
-export async function logTask(entry: TaskEntry, featureId?: string): Promise<void> {
-  const resolved = featureId != null && featureId.trim() !== ''
-    ? await resolveFeatureId(featureId)
-    : await resolveFeatureName();
+export async function logTask(entry: TaskEntry, featureRef: string): Promise<void> {
+  const { featureName: resolved } = await resolveWorkflowScope({
+    mode: 'fromTierParams',
+    tier: 'feature',
+    params: { featureId: featureRef.trim() },
+  });
   const formatted = formatTaskEntry(entry);
   const parsed = WorkflowId.parseTaskId(entry.id);
   const sessionId = parsed ? parsed.sessionId : undefined;
@@ -148,9 +146,11 @@ export async function logTask(entry: TaskEntry, featureId?: string): Promise<voi
 
 export async function markTaskComplete(params: MarkTaskCompleteParams): Promise<string> {
   const output: string[] = [];
-  const featureName = params.featureId != null && params.featureId.trim() !== ''
-    ? await resolveFeatureId(params.featureId)
-    : await resolveFeatureName();
+  const { featureName } = await resolveWorkflowScope({
+    mode: 'fromTierParams',
+    tier: 'feature',
+    params: { featureId: params.featureId.trim() },
+  });
   const context = new WorkflowCommandContext(featureName);
   const parsed = WorkflowId.parseTaskId(params.taskId);
   if (!parsed) {

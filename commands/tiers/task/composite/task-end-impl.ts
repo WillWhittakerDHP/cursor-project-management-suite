@@ -42,6 +42,7 @@ export interface TaskEndParams {
   runTests?: boolean;
   testTarget?: string;
   featureId?: string;
+  featureName?: string;
   addComments?: boolean;
   modifiedFiles?: string[];
   mode?: CommandExecutionMode;
@@ -72,7 +73,8 @@ export async function taskEndImpl(
     console.warn(`[task-end-impl] resolvedContext not provided; falling back to contextFromParams('task', '${params.taskId}')`);
     context = await WorkflowCommandContext.contextFromParams('task', {
       taskId: params.taskId,
-      featureId: params.featureId,
+      ...(params.featureId?.trim() ? { featureId: params.featureId.trim() } : {}),
+      ...(params.featureName?.trim() ? { featureName: params.featureName.trim() } : {}),
     });
   }
 

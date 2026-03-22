@@ -51,9 +51,33 @@ export async function acceptedCode(): Promise<TierStartResultWithControlPlane> {
     };
   }
 
+  const hasFeature =
+    (state.featureId != null && state.featureId.trim() !== '') ||
+    (state.featureName != null && state.featureName.trim() !== '');
+  if (!hasFeature) {
+    const msg =
+      'Pending task state is missing **featureId** or **featureName**. Re-run **task-start** with an explicit feature (e.g. numeric # or `appointment-workflow`).';
+    const decision: ControlPlaneDecision = {
+      stop: true,
+      requiredMode: 'plan',
+      message: msg,
+    };
+    return {
+      success: false,
+      output: msg,
+      outcome: {
+        status: 'blocked',
+        reasonCode: 'planning_doc_incomplete',
+        nextAction: msg,
+      },
+      controlPlaneDecision: decision,
+    };
+  }
+
   const context = await WorkflowCommandContext.contextFromParams('task', {
     taskId: state.taskId,
-    featureId: state.featureId,
+    ...(state.featureId != null && state.featureId.trim() !== '' && { featureId: state.featureId.trim() }),
+    ...(state.featureName != null && state.featureName.trim() !== '' && { featureName: state.featureName.trim() }),
   });
   const basePath = context.paths.getBasePath();
   const planningDocPath = getPlanningDocPathForTier('task', state.taskId, basePath);
@@ -98,7 +122,11 @@ export async function acceptedCode(): Promise<TierStartResultWithControlPlane> {
 
   const result = await runTierStart(
     TASK_CONFIG,
-    { taskId: state.taskId, featureId: state.featureId },
+    {
+      taskId: state.taskId,
+      ...(state.featureId != null && state.featureId.trim() !== '' && { featureId: state.featureId.trim() }),
+      ...(state.featureName != null && state.featureName.trim() !== '' && { featureName: state.featureName.trim() }),
+    },
     {
       mode: 'execute',
       resumeAfterStep: 'ensure_branch',

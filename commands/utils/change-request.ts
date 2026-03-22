@@ -8,7 +8,7 @@
 
 import { execSync } from 'child_process';
 import type { TierConfig, TierName } from '../tiers/shared/types';
-import { resolveFeatureName } from './feature-context';
+import { resolveWorkflowScope } from './workflow-scope';
 import { WorkflowCommandContext } from './command-context';
 import { getCurrentDate, PROJECT_ROOT, FRONTEND_ROOT } from './utils';
 import { modeGateText } from './command-execution-mode';
@@ -521,12 +521,22 @@ ${getImplementationNotes(changeRequest)}
 export async function runTierChange(
   config: TierConfig,
   params: TierChangeParams,
-  featureName?: string,
+  featureRef: string,
   options?: RunTierChangeOptions
 ): Promise<TierChangeResult> {
   const gate = modeGateText('plan', `${config.name}-change`);
 
-  const resolved = await resolveFeatureName(featureName);
+  const trimmed = featureRef.trim();
+  if (!trimmed) {
+    throw new Error(
+      'runTierChange: featureRef is required (numeric # or feature directory slug from PROJECT_PLAN).'
+    );
+  }
+  const { featureName: resolved } = await resolveWorkflowScope({
+    mode: 'fromTierParams',
+    tier: 'feature',
+    params: { featureId: trimmed },
+  });
   const context = new WorkflowCommandContext(resolved);
 
   const parsed = config.parseId(params.identifier);

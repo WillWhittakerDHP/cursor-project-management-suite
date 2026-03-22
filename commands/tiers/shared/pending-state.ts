@@ -12,11 +12,11 @@ const TIER_PENDING_PATH = '.cursor/commands/.tier-start-pending.json';
 const TASK_PENDING_PATH = '.cursor/commands/.task-start-pending.json';
 const TIER_END_PENDING_PATH = '.cursor/commands/.tier-end-pending.json';
 
-/** Params shape stored for reinvoke (matches TierStartParams for feature/phase/session). */
+/** Params shape stored for reinvoke; phase/session must include featureId or featureName. */
 export type TierStartPendingParams =
   | { featureId: string }
-  | { phaseId: string }
-  | { sessionId: string; description?: string };
+  | ({ phaseId: string } & ({ featureId: string } | { featureName: string }))
+  | ({ sessionId: string; description?: string } & ({ featureId: string } | { featureName: string }));
 
 /** State for session/phase/feature start: pass 1 = after context_gathering; /accepted-proceed runs execute. */
 export interface TierStartPendingState {
@@ -34,7 +34,9 @@ export interface TierStartPendingState {
 /** State for task start: user will run /accepted-code to run task start with execute. */
 export interface TaskStartPendingState {
   taskId: string;
+  /** Required: numeric # or directory slug (same as tier commands). */
   featureId?: string;
+  featureName?: string;
   /** Optional work classifier; preserved across /accepted-code for consistent spec. */
   workProfile?: WorkProfile;
 }
@@ -93,14 +95,28 @@ export async function deleteTierStartPending(): Promise<void> {
 export async function readTaskStartPending(): Promise<TaskStartPendingState | null> {
   try {
     const raw = await readProjectFile(TASK_PENDING_PATH);
-    const parsed = safeParse<{ taskId?: string; featureId?: string; workProfile?: WorkProfile }>(
+    const parsed = safeParse<{
+      taskId?: string;
+      featureId?: string;
+      featureName?: string;
+      workProfile?: WorkProfile;
+    }>(
       TASK_PENDING_PATH,
       raw
     );
     if (!parsed?.taskId) return null;
+    const hasFeature =
+      (typeof parsed.featureId === 'string' && parsed.featureId.trim() !== '') ||
+      (typeof parsed.featureName === 'string' && parsed.featureName.trim() !== '');
+    if (!hasFeature) return null;
     return {
       taskId: parsed.taskId,
-      ...(parsed.featureId != null && { featureId: parsed.featureId }),
+      ...(parsed.featureId != null &&
+        typeof parsed.featureId === 'string' &&
+        parsed.featureId.trim() !== '' && { featureId: parsed.featureId.trim() }),
+      ...(parsed.featureName != null &&
+        typeof parsed.featureName === 'string' &&
+        parsed.featureName.trim() !== '' && { featureName: parsed.featureName.trim() }),
       ...(parsed.workProfile != null && { workProfile: parsed.workProfile }),
     };
   } catch {

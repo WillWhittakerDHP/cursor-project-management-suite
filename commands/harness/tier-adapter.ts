@@ -59,17 +59,36 @@ export function createTierAdapter(opts: TierAdapterOptions): ITierAdapter {
               resolvedCtx
             );
             break;
-          case 'phase':
+          case 'phase': {
+            const p = startParams as {
+              phaseId: string;
+              featureId?: string;
+              featureName?: string;
+            };
             result = await phaseStartImpl(
-              (startParams as { phaseId: string }).phaseId,
+              p.phaseId,
               options,
               shadowContext,
-              resolvedCtx
+              resolvedCtx,
+              { featureId: p.featureId, featureName: p.featureName }
             );
             break;
+          }
           case 'session': {
-            const p = startParams as { sessionId: string; description?: string };
-            result = await sessionStartImpl(p.sessionId, p.description, options, shadowContext, resolvedCtx);
+            const p = startParams as {
+              sessionId: string;
+              description?: string;
+              featureId?: string;
+              featureName?: string;
+            };
+            result = await sessionStartImpl(
+              p.sessionId,
+              p.description,
+              options,
+              shadowContext,
+              resolvedCtx,
+              { featureId: p.featureId, featureName: p.featureName }
+            );
             break;
           }
           case 'task':

@@ -20,7 +20,7 @@ import { markComplete } from '../../task/atomic/mark-complete';
 import { addTaskSection, type TaskSection } from '../../task/atomic/add-task-section';
 import { updateNextAction } from '../../../utils/update-next-action';
 import { updateTimestamp } from '../../../utils/update-timestamp';
-import { resolveFeatureName } from '../../../utils';
+import { resolveWorkflowScope } from '../../../utils/workflow-scope';
 import { generatePrompt } from '../../../utils/generate-prompt';
 import { TierStartResult } from '../../../utils/tier-outcome';
 
@@ -49,12 +49,16 @@ export interface UpdateHandoffParams {
   newTask?: TaskSection;
   nextAction?: string;
   sessionId: string;
+  /** One of featureId / featureName required (numeric # or directory slug). */
+  featureId?: string;
   featureName?: string;
 }
 
 export interface NewAgentParams {
   nextSession: string;
   description: string;
+  featureId?: string;
+  featureName?: string;
   summary?: {
     accomplished: string[];
     next: string[];
@@ -65,16 +69,33 @@ export interface NewAgentParams {
 
 export async function sessionStart(
   sessionId: string,
+  featureRef: string,
   description?: string,
   options?: CommandExecutionOptions
 ): Promise<TierStartResult> {
-  return runTierStart(SESSION_CONFIG, { sessionId, description }, options);
+  return runTierStart(
+    SESSION_CONFIG,
+    { sessionId, description, featureId: featureRef.trim() },
+    options
+  );
 }
 
-export async function sessionEnd(paramsOrId: SessionEndParams | string): Promise<SessionEndResult> {
-  const params: SessionEndParams = typeof paramsOrId === 'string'
-    ? { sessionId: paramsOrId, runTests: false }
-    : paramsOrId;
+export async function sessionEnd(
+  paramsOrId: SessionEndParams | string,
+  featureRef?: string
+): Promise<SessionEndResult> {
+  let params: SessionEndParams;
+  if (typeof paramsOrId === 'string') {
+    const raw = (featureRef ?? '').trim();
+    if (!raw) {
+      throw new Error(
+        'sessionEnd(sessionId, featureRef): featureRef is required when using a string session id (numeric # or feature directory slug).'
+      );
+    }
+    params = { sessionId: paramsOrId, runTests: false, featureId: raw };
+  } else {
+    params = paramsOrId;
+  }
   return runTierEnd(SESSION_CONFIG, params) as Promise<SessionEndResult>;
 }
 
@@ -104,7 +125,8 @@ export async function markSessionComplete(params: MarkSessionCompleteParams): Pr
     sessionId: params.sessionId,
     tasksCompleted: params.tasksCompleted,
     accomplishments: params.accomplishments,
-    featureName: params.featureName,
+    ...(params.featureId?.trim() ? { featureId: params.featureId.trim() } : {}),
+    ...(params.featureName?.trim() ? { featureName: params.featureName.trim() } : {}),
   });
 }
 
@@ -132,7 +154,7 @@ export async function validateSessionCommand(sessionId: string): Promise<string>
 
 export async function changeRequest(
   params: ChangeRequestParams,
-  featureName?: string
+  featureRef: string
 ): Promise<ChangeRequestResult> {
   const result = await runTierChange(
     SESSION_CONFIG,
@@ -142,7 +164,7 @@ export async function changeRequest(
       scope: params.scope,
       tiers: params.tiers,
     },
-    featureName,
+    featureRef,
     { replanCommand: (id, desc, f) => planSession(id, desc, f) }
   );
   return {
@@ -158,7 +180,14 @@ export async function changeRequest(
 export const midSessionChange = changeRequest;
 
 export async function updateHandoff(params: UpdateHandoffParams): Promise<void> {
-  const featureName = await resolveFeatureName(params.featureName);
+  const { featureName } = await resolveWorkflowScope({
+    mode: 'fromTierParams',
+    tier: 'feature',
+    params: {
+      ...(params.featureId?.trim() ? { featureId: params.featureId.trim() } : {}),
+      ...(params.featureName?.trim() ? { featureName: params.featureName.trim() } : {}),
+    },
+  });
   if (params.completedTasks) {
     for (const id of params.completedTasks) {
       await markComplete(id, featureName);
@@ -182,6 +211,8 @@ export async function newAgent(params: NewAgentParams): Promise<{
   const handoffParams: UpdateHandoffParams = {
     nextAction: `Start Session ${params.nextSession}: ${params.description}`,
     sessionId: params.nextSession,
+    ...(params.featureId?.trim() ? { featureId: params.featureId.trim() } : {}),
+    ...(params.featureName?.trim() ? { featureName: params.featureName.trim() } : {}),
   };
   await updateHandoff(handoffParams);
   const prompt = await generatePrompt(params.nextSession, params.description);

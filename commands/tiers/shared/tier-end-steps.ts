@@ -13,9 +13,12 @@ import { resolveRunTests, buildPlanModeResult } from '../../utils/tier-end-utils
 import { workflowCleanupReadmes } from '../../readme/composite/readme-workflow-cleanup';
 import { runEndAuditForTier } from '../../audit/run-end-audit-for-tier';
 import { buildTierEndOutcome } from '../../utils/tier-outcome';
+import { WorkflowId } from '../../utils/id-utils';
 import {
+  branchExists,
   commitRemaining,
   getExpectedBranchForTier,
+  getLeafBranchTierFromChain,
   DEFAULT_ALLOWED_COMMIT_PREFIXES,
   propagateSharedFiles,
 } from '../../git/shared/git-manager';
@@ -222,9 +225,75 @@ export async function stepReadmeCleanup(
 }
 
 /**
- * Commit only in-scope touched files (frontend-root/, server/) with a scope-from-context message.
- * Verifies current branch matches expected tier branch before committing; if wrong branch, returns early exit.
- * Never commits .cursor, .project-manager, or audit reports. Runs before stepTierGit.
+ * Identifier to pass into slash-command hints for the **leaf** git tier (session / phase / feature).
+ * WHY: Task-end targets the session branch; hints must say `/session-start` with session id, not task id.
+ */
+function slashStartIdentifierForHint(ctx: TierEndWorkflowContext, leafTier: TierName): string {
+  const id = ctx.identifier;
+  if (leafTier === 'feature') return ctx.context.feature.name;
+  if (leafTier === 'phase') {
+    if (ctx.config.name === 'phase') return id;
+    const parts = id.split('.');
+    return parts.length >= 2 ? `${parts[0]}.${parts[1]}` : id;
+  }
+  if (leafTier === 'session') {
+    if (ctx.config.name === 'session') return id;
+    const parsed = WorkflowId.parseTaskId(id);
+    return parsed?.sessionId ?? id;
+  }
+  return id;
+}
+
+/** User-facing message when the resolved expected branch does not exist locally (tier-start is the fix). */
+function tierStartHintForMissingBranch(
+  ctx: TierEndWorkflowContext,
+  expectedBranchName: string,
+  leafTier: TierName | null
+): string {
+  const feature = ctx.context.feature.name;
+  const tier = leafTier ?? ctx.config.name;
+  const startId = slashStartIdentifierForHint(ctx, tier);
+  const fetchHint =
+    'If the branch already exists on the remote, run **`git fetch`** (then **`git checkout`** the branch) before re-running tier-end.';
+  if (tier === 'feature') {
+    return [
+      `Expected tier branch **${expectedBranchName}** is not present locally (no matching prefix branch).`,
+      '',
+      `Branches are created at **tier-start**. Run **/feature-start** with **featureName** \`${feature}\`, then re-run tier-end.`,
+      '',
+      fetchHint,
+    ].join('\n');
+  }
+  if (tier === 'phase') {
+    return [
+      `Expected tier branch **${expectedBranchName}** is not present locally (no matching prefix branch).`,
+      '',
+      `Branches are created at **tier-start**. Run **/phase-start** with **phaseId** \`${startId}\` and **featureName** \`${feature}\`, then re-run tier-end.`,
+      '',
+      fetchHint,
+    ].join('\n');
+  }
+  if (tier === 'session') {
+    return [
+      `Expected tier branch **${expectedBranchName}** is not present locally (no matching prefix branch).`,
+      '',
+      `Branches are created at **tier-start**. Run **/session-start** with **sessionId** \`${startId}\` and **featureName** \`${feature}\`, then re-run tier-end.`,
+      '',
+      fetchHint,
+    ].join('\n');
+  }
+  return [
+    `Expected tier branch **${expectedBranchName}** is not present locally.`,
+    `Run the appropriate **tier-start** for your tier, then re-run tier-end.`,
+    '',
+    fetchHint,
+  ].join('\n');
+}
+
+/**
+ * Commit only in-scope touched files (`client/`, `server/`, `.project-manager/`) with a scope-from-context message.
+ * Fails before commit if the **resolved** expected branch does not exist locally — tier-end does not create branches
+ * (that is **tier-start**). Otherwise verifies checkout matches expected branch. Runs before stepTierGit.
  */
 function commitPrefixFromContext(identifier: string): string {
   return `[${identifier}]`;
@@ -236,6 +305,25 @@ export async function stepCommitUncommittedNonCursor(
   const expectedBranch = await getExpectedBranchForTier(ctx.config, ctx.identifier, ctx.context);
   const prefix = commitPrefixFromContext(ctx.identifier);
   const commitMessage = `${prefix} tier-end: commit remaining work`;
+
+  if (expectedBranch != null && !(await branchExists(expectedBranch))) {
+    const leafTier = getLeafBranchTierFromChain(ctx.config, ctx.identifier, ctx.context);
+    const detail = tierStartHintForMissingBranch(ctx, expectedBranch, leafTier);
+    ctx.steps.expectedBranchMissing = { success: false, output: detail };
+    const outcome = buildTierEndOutcome(
+      'blocked_fix_required',
+      'expected_branch_missing_run_tier_start',
+      detail,
+      undefined,
+      detail
+    );
+    return {
+      success: false,
+      output: ctx.output.join('\n\n'),
+      steps: ctx.steps,
+      outcome,
+    };
+  }
 
   const result = await commitRemaining(commitMessage, {
     expectedBranch: expectedBranch ?? undefined,

@@ -6,6 +6,7 @@ import { readProjectFile, writeProjectFile, PROJECT_ROOT, getCurrentDate } from 
 import { join } from 'path';
 import { readFile } from 'fs/promises';
 import { WorkflowCommandContext } from '../../../utils/command-context';
+import { resolveWorkflowScope } from '../../../utils/workflow-scope';
 import { PHASE_CONFIG } from '../../configs/phase';
 import { getExcerptEndMarker } from '../../shared/context-policy';
 import { getNextPhaseInFeature } from '../../../utils/phase-session-utils';
@@ -14,11 +15,22 @@ export interface MarkPhaseCompleteParams {
   phase: string;
   sessionsCompleted?: string[];
   totalTasks?: number;
+  /** Numeric # or feature directory slug (required). */
+  featureId?: string;
+  featureName?: string;
 }
 
 export async function markPhaseCompleteImpl(params: MarkPhaseCompleteParams): Promise<string> {
   const output: string[] = [];
-  const context = await WorkflowCommandContext.getCurrent();
+  const { featureName } = await resolveWorkflowScope({
+    mode: 'fromTierParams',
+    tier: 'feature',
+    params: {
+      ...(params.featureId?.trim() ? { featureId: params.featureId.trim() } : {}),
+      ...(params.featureName?.trim() ? { featureName: params.featureName.trim() } : {}),
+    },
+  });
+  const context = new WorkflowCommandContext(featureName);
   const phaseGuidePath = context.paths.getPhaseGuidePath(params.phase);
   const phaseLogPath = context.paths.getPhaseLogPath(params.phase);
   const handoffPath = context.paths.getFeatureHandoffPath();

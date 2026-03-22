@@ -1,42 +1,53 @@
 /**
  * Unified Command Context
- * 
+ *
  * Single entry point providing all utilities to commands.
  * Simplifies command implementation by providing pre-configured utilities.
- * 
+ *
  * WHY: Commands need multiple utilities; context provides them in one place
  * PATTERN: Facade pattern providing simplified interface to complex utility system
  */
 
-import { FeatureContext, resolveFeatureId } from './feature-context';
+import { FeatureContext } from './feature-context';
 import { WorkflowPathResolver } from './path-resolver';
 import { DocumentManager } from './document-manager';
 import { TemplateManager } from './template-manager';
 import { FileCache } from './file-cache';
 import { WorkflowId } from './id-utils';
 import { readProjectFile } from './utils';
-import { readTierScope, type TierScopeSnapshot } from './tier-scope-writer';
+import type { TierScopeSnapshot } from './tier-scope-writer';
+import {
+  resolveWorkflowScope,
+  type ResolvedWorkflowScope,
+  type TierName,
+  type TierParamsBag,
+} from './workflow-scope';
+
+export type { DocumentTier } from './template-manager';
+
+export type { TierName, TierParamsBag } from './workflow-scope';
+
+export { resolveWorkflowScope, type ResolvedWorkflowScope } from './workflow-scope';
 
 /**
- * Document tier types
+ * Build command context from a resolved scope (single path from resolveWorkflowScope).
  */
-export type DocumentTier = 'feature' | 'phase' | 'session';
-
-/** Params bag for contextFromParams: start and end both pass a shape with tier-specific ids. */
-export type TierParamsBag = {
-  featureId?: string;
-  featureName?: string;
-  phaseId?: string;
-  phaseNumber?: string;
-  sessionId?: string;
-  taskId?: string;
-};
-
-export type TierName = 'feature' | 'phase' | 'session' | 'task';
+export function workflowContextFromScope(
+  resolved: ResolvedWorkflowScope,
+  cache?: FileCache
+): WorkflowCommandContext {
+  return new WorkflowCommandContext(
+    resolved.featureName,
+    cache,
+    resolved.tier,
+    resolved.identifier,
+    resolved.scope
+  );
+}
 
 /**
  * WorkflowCommandContext class
- * 
+ *
  * Provides single entry point with all workflow utilities.
  * Commands should create one instance at the start and use it throughout.
  * When built via contextFromParams, tier and identifier are set so context carries "what param" was used.
@@ -51,7 +62,7 @@ export class WorkflowCommandContext {
   readonly tier?: TierName;
   /** Set when created via contextFromParams; the identifier (featureId, phaseId, sessionId, taskId) used. */
   readonly identifier?: string;
-  /** Populated from .tier-scope when context is built via contextFromParams or getCurrent; used for branch resolution. */
+  /** Populated from .tier-scope when context is built via contextFromParams; used for branch resolution. */
   readonly scope?: TierScopeSnapshot;
 
   /**
@@ -80,17 +91,6 @@ export class WorkflowCommandContext {
   }
 
   /**
-   * Create context from current feature (auto-detected)
-   * @param cache Optional file cache
-   * @returns Command context with auto-detected feature
-   */
-  static async getCurrent(cache?: FileCache): Promise<WorkflowCommandContext> {
-    const feature = await FeatureContext.getCurrent();
-    const scope = (await readTierScope()) ?? undefined;
-    return new WorkflowCommandContext(feature.name, cache, undefined, undefined, scope);
-  }
-
-  /**
    * Create context from tier + params (F/P/S/T). Single entry point for "params → context".
    * Sets tier and identifier on the returned context so it carries "what param" was used.
    */
@@ -99,46 +99,8 @@ export class WorkflowCommandContext {
     params: TierParamsBag,
     cache?: FileCache
   ): Promise<WorkflowCommandContext> {
-    let featureName: string;
-    let identifier: string;
-    switch (tier) {
-      case 'feature': {
-        const id = (params.featureId ?? params.featureName ?? '').trim();
-        if (!id) throw new Error('contextFromParams(feature): featureId or featureName required');
-        featureName = await resolveFeatureId(id);
-        identifier = id;
-        break;
-      }
-      case 'phase': {
-        const phaseId = (params.phaseId ?? params.phaseNumber ?? '').trim();
-        if (!phaseId) throw new Error('contextFromParams(phase): phaseId or phaseNumber required');
-        featureName = await FeatureContext.featureNameFromTierAndId('phase', phaseId);
-        identifier = phaseId;
-        break;
-      }
-      case 'session': {
-        const sessionId = (params.sessionId ?? '').trim();
-        if (!sessionId) throw new Error('contextFromParams(session): sessionId required');
-        featureName = await FeatureContext.featureNameFromTierAndId('session', sessionId);
-        identifier = sessionId;
-        break;
-      }
-      case 'task': {
-        const taskId = (params.taskId ?? '').trim();
-        if (!taskId) throw new Error('contextFromParams(task): taskId required');
-        if (params.featureId?.trim()) {
-          featureName = await resolveFeatureId(params.featureId.trim());
-        } else {
-          featureName = await FeatureContext.featureNameFromTierAndId('task', taskId);
-        }
-        identifier = taskId;
-        break;
-      }
-      default:
-        throw new Error(`contextFromParams: unknown tier ${tier}`);
-    }
-    const scope = (await readTierScope()) ?? undefined;
-    return new WorkflowCommandContext(featureName, cache, tier, identifier, scope);
+    const resolved = await resolveWorkflowScope({ mode: 'fromTierParams', tier, params });
+    return workflowContextFromScope(resolved, cache);
   }
 
   // Convenience methods for common operations
@@ -276,4 +238,3 @@ export class WorkflowCommandContext {
     return WorkflowId;
   }
 }
-

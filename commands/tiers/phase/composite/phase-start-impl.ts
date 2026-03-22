@@ -34,14 +34,19 @@ export async function phaseStartImpl(
   phaseId: string,
   options?: import('../../../utils/command-execution-mode').CommandExecutionOptions,
   shadow?: ShadowContext,
-  resolvedContext?: WorkflowCommandContext
+  resolvedContext?: WorkflowCommandContext,
+  featureRef?: { featureId?: string; featureName?: string }
 ): Promise<TierStartResult | TierStartWorkflowResult> {
   let context: WorkflowCommandContext;
   if (resolvedContext) {
     context = resolvedContext;
   } else {
     console.warn(`[phase-start-impl] resolvedContext not provided; falling back to contextFromParams('phase', '${phaseId}')`);
-    context = await WorkflowCommandContext.contextFromParams('phase', { phaseId });
+    context = await WorkflowCommandContext.contextFromParams('phase', {
+      phaseId,
+      ...(featureRef?.featureId?.trim() ? { featureId: featureRef.featureId.trim() } : {}),
+      ...(featureRef?.featureName?.trim() ? { featureName: featureRef.featureName.trim() } : {}),
+    });
   }
   const phase = phaseId;
   const output: string[] = [];

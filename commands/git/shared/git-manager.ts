@@ -13,6 +13,7 @@ import {
   mergeTierBranch,
   mergeChildBranches,
   getExpectedBranchForTier,
+  getLeafBranchTierFromChain,
   formatBranchHierarchyFromConfig,
   isAutoCommittable,
   isNeverCommitPath,
@@ -46,7 +47,14 @@ export type { EnsureTierBranchResult, MergeTierBranchResult, MergeChildBranchesR
 export type { GitOpEntry, PropagateOptions, PropagateResult };
 
 // ─── Branch operations ─────────────────────────────────────────────────
-export { ensureTierBranch, mergeTierBranch, mergeChildBranches, getExpectedBranchForTier, formatBranchHierarchyFromConfig };
+export {
+  ensureTierBranch,
+  mergeTierBranch,
+  mergeChildBranches,
+  getExpectedBranchForTier,
+  getLeafBranchTierFromChain,
+  formatBranchHierarchyFromConfig,
+};
 
 // ─── Query (from git-logger, logged via runGitCommand) ───────────────────
 export { getCurrentBranch, branchExists, isBranchBasedOn };

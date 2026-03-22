@@ -18,7 +18,7 @@ import type { ValidatePhaseResult } from './validate-phase-impl';
 import type { ChangeRequest, ChangeScope } from '../../../utils/change-request';
 import { TierStartResult } from '../../../utils/tier-outcome';
 import { getCompletedSessionsInPhase } from '../../../utils/phase-session-utils';
-import { resolveFeatureName } from '../../../utils/feature-context';
+import { resolveWorkflowScope } from '../../../utils/workflow-scope';
 
 export type { PhaseEndParams, PhaseEndResult };
 export type MarkPhaseCompleteParams = ImplParams;
@@ -42,16 +42,34 @@ export interface PhaseChangeRequestResult {
 
 export async function phaseStart(
   phaseId: string,
+  featureRef: string,
   options?: CommandExecutionOptions
 ): Promise<TierStartResult> {
-  return runTierStart(PHASE_CONFIG, { phaseId }, options);
+  return runTierStart(PHASE_CONFIG, { phaseId, featureId: featureRef.trim() }, options);
 }
 
-export async function phaseEnd(paramsOrId: PhaseEndParams | string): Promise<PhaseEndResult> {
+export async function phaseEnd(
+  paramsOrId: PhaseEndParams | string,
+  featureRef?: string
+): Promise<PhaseEndResult> {
   if (typeof paramsOrId === 'string') {
-    const featureName = await resolveFeatureName();
+    const raw = (featureRef ?? '').trim();
+    if (!raw) {
+      throw new Error(
+        'phaseEnd(phaseId, featureRef): second argument featureRef is required (numeric # or feature directory slug from PROJECT_PLAN).'
+      );
+    }
+    const { featureName } = await resolveWorkflowScope({
+      mode: 'fromTierParams',
+      tier: 'phase',
+      params: { phaseId: paramsOrId, featureId: raw },
+    });
     const completedSessions = await getCompletedSessionsInPhase(featureName, paramsOrId);
-    return runTierEnd(PHASE_CONFIG, { phaseId: paramsOrId, completedSessions }) as Promise<PhaseEndResult>;
+    return runTierEnd(PHASE_CONFIG, {
+      phaseId: paramsOrId,
+      completedSessions,
+      featureId: raw,
+    }) as Promise<PhaseEndResult>;
   }
   return runTierEnd(PHASE_CONFIG, paramsOrId) as Promise<PhaseEndResult>;
 }
@@ -82,6 +100,8 @@ export async function markPhaseComplete(params: MarkPhaseCompleteParams): Promis
     phase: params.phase,
     sessionsCompleted: params.sessionsCompleted,
     totalTasks: params.totalTasks,
+    ...(params.featureId?.trim() ? { featureId: params.featureId.trim() } : {}),
+    ...(params.featureName?.trim() ? { featureName: params.featureName.trim() } : {}),
   });
 }
 
@@ -109,7 +129,7 @@ export async function validatePhaseCommand(phase: string): Promise<string> {
 
 export async function phaseChange(
   params: PhaseChangeRequestParams,
-  featureName?: string
+  featureRef: string
 ): Promise<PhaseChangeRequestResult> {
   const result = await runTierChange(
     PHASE_CONFIG,
@@ -119,7 +139,7 @@ export async function phaseChange(
       scope: params.scope,
       tiers: params.tiers,
     },
-    featureName,
+    featureRef,
     { replanCommand: (id, desc, f) => planPhase(id, desc, f) }
   );
   return {
