@@ -7,6 +7,7 @@
 
 import { readFile } from 'fs/promises';
 import { join } from 'path';
+import { REQUIRED_GUIDE_SECTIONS, type GuideTier } from '../tiers/shared/guide-required-sections';
 
 export const PROJECT_MANAGER_WRITE_LOG = '.project-manager/.write-log';
 
@@ -48,9 +49,25 @@ function isPlanningDocFilled(content: string): boolean {
   return true;
 }
 
-function isGuideFilled(content: string): boolean {
+/** Infer guide tier from filename so we can check required sections. */
+function inferGuideTier(filename: string): GuideTier | null {
+  const n = filename.replace(/\\/g, '/');
+  if (n.includes('feature-') && n.endsWith('-guide.md')) return 'feature';
+  if (n.includes('phase-') && n.endsWith('-guide.md')) return 'phase';
+  if (n.includes('session-') && n.endsWith('-guide.md')) return 'session';
+  return null;
+}
+
+function isGuideFilled(content: string, filename: string): boolean {
   for (const p of GUIDE_TIERDOWN_PLACEHOLDERS) {
     if (content.includes(p)) return false;
+  }
+  const tier = inferGuideTier(filename);
+  if (tier) {
+    const required = REQUIRED_GUIDE_SECTIONS[tier];
+    for (const section of required) {
+      if (!content.includes(`## ${section}`)) return false;
+    }
   }
   return true;
 }
@@ -59,7 +76,7 @@ function isGuideFilled(content: string): boolean {
 export function isProtectedPathFilled(filename: string, content: string): boolean {
   const n = filename.replace(/\\/g, '/');
   if (n.endsWith('-planning.md')) return isPlanningDocFilled(content);
-  if (n.endsWith('-guide.md')) return isGuideFilled(content);
+  if (n.endsWith('-guide.md')) return isGuideFilled(content, filename);
   return false;
 }
 

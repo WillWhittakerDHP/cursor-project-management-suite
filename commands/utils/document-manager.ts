@@ -133,6 +133,8 @@ export class DocumentManager {
 
   /**
    * Write guide document, then verify (throws DocVerifyError if verification fails).
+   * If the write guard blocks the write, verification is skipped (the on-disk content
+   * was not changed, so verifying stale content would produce misleading errors).
    * @param tier Document tier
    * @param id Document ID (required for phase/session, optional for feature)
    * @param content Document content (must be structurally valid for verification to pass)
@@ -145,7 +147,11 @@ export class DocumentManager {
     options?: ShouldBlockProjectManagerWriteOptions
   ): Promise<void> {
     const path = this.getDocumentPath(tier, id, 'guide');
-    await this.writeFile(path, content, options);
+    const written = await this.writeFile(path, content, options);
+    if (!written) {
+      console.warn(`[DocumentManager] writeGuide blocked by guard for ${path} — skipping verification`);
+      return;
+    }
     const result = await this.verifyGuide(tier, id);
     if (!result.ok) {
       throw new DocVerifyError(result);
@@ -552,20 +558,23 @@ export class DocumentManager {
   /**
    * Write file and invalidate cache.
    * Protected paths (guides/planning under .project-manager) go through writeProjectFile for guard and audit.
+   * @returns true if the file was written; false if the write guard blocked it.
    * @private
    */
   private async writeFile(
     path: string,
     content: string,
     options?: ShouldBlockProjectManagerWriteOptions
-  ): Promise<void> {
+  ): Promise<boolean> {
+    let written = true;
     if (isProjectManagerProtectedPath(path)) {
-      await writeProjectFile(path, content, options);
+      written = await writeProjectFile(path, content, options);
     } else {
       const fullPath = join(this.PROJECT_ROOT, path);
       await writeFile(fullPath, content, 'utf-8');
     }
     this.cache.invalidate(path);
+    return written;
   }
 }
 

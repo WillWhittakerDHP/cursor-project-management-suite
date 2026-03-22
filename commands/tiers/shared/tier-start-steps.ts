@@ -15,7 +15,7 @@ import type {
 import type { TierStartResult, CascadeInfo } from '../../utils/tier-outcome';
 import type { CannotStartTier } from '../../utils/tier-start-utils';
 import { formatBranchHierarchy, formatCannotStart } from '../../utils/tier-start-utils';
-import { isAutoCommittable } from '../../git/shared/git-manager';
+import { isAutoCommittable, runGitCommand } from '../../git/shared/git-manager';
 import { resolveCommandExecutionMode, isPlanMode } from '../../utils/command-execution-mode';
 import { runTierPlan } from './tier-plan';
 import { buildCascadeDown } from '../../utils/tier-cascade';
@@ -153,6 +153,58 @@ export async function stepEnsureStartBranch(
     await hooks.afterBranch(ctx);
   }
   return null;
+}
+
+/**
+ * After branch checkout, planning docs and guides may be missing on the target branch
+ * because they were auto-committed to the source branch before the switch. This helper
+ * recovers them: for each expected path, if the file is absent on disk, it searches all
+ * branches for the most recent commit that touched it and writes the content to the
+ * working tree so subsequent steps (syncPlannedTierDownToGuide, isGuideFilled) find them.
+ */
+export async function recoverPlanningArtifactsAfterCheckout(
+  ctx: TierStartWorkflowContext
+): Promise<void> {
+  const tier = ctx.config.name;
+  if (tier === 'task') return;
+
+  const planningPath = getPlanningDocPath(ctx);
+  const guidePath =
+    tier === 'feature'
+      ? ctx.context.paths.getFeatureGuidePath()
+      : tier === 'phase'
+        ? ctx.context.paths.getPhaseGuidePath(ctx.identifier)
+        : ctx.context.paths.getSessionGuidePath(ctx.identifier);
+
+  for (const relPath of [planningPath, guidePath]) {
+    const absPath = join(PROJECT_ROOT, relPath);
+    if (existsSync(absPath)) continue;
+
+    const logResult = await runGitCommand(
+      `git log --all -1 --format=%H -- "${relPath}"`,
+      'recoverArtifact-findCommit'
+    );
+    const commitHash = logResult.success ? logResult.output.trim() : '';
+    if (!commitHash) continue;
+
+    const showResult = await runGitCommand(
+      `git show ${commitHash}:"${relPath}"`,
+      'recoverArtifact-show'
+    );
+    if (!showResult.success || !showResult.output) continue;
+
+    try {
+      const { writeFile: fsWriteFile, mkdir } = await import('fs/promises');
+      const { dirname } = await import('path');
+      await mkdir(dirname(absPath), { recursive: true });
+      await fsWriteFile(absPath, showResult.output, 'utf-8');
+      ctx.output.push(
+        `Recovered \`${relPath}\` from commit ${commitHash.slice(0, 8)} (auto-committed on source branch before checkout).`
+      );
+    } catch (err) {
+      console.warn(`recoverPlanningArtifactsAfterCheckout: failed to write ${relPath}`, err);
+    }
+  }
 }
 
 /** Extract content of "## How we build the tierDown to achieve them" section (up to next ## or end). */

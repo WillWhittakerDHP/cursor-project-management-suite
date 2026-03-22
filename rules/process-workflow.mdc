@@ -16,4 +16,6 @@ This applies to: cascade confirmation, verification options, failure retry/audit
 
 **Vue-only development:** All new features and changes in the Vue frontend (frontend root directory). React codebase removed (archived in react-codebase-archive-2025-11-26). All development focuses exclusively on the Vue application.
 
+**Migration authority:** Do NOT run `npm run migrate`, `npm run db:reset`, `npx sequelize-cli db:migrate`, or any other migration/DDL command unless `DB_HOST` in `server/.env.development` is `localhost` or `127.0.0.1`. When `DB_HOST` points to a remote IP, this machine is a consumer of a shared database — only the host machine runs migrations. You may author migration files and commit them; execution happens elsewhere. The migration scripts enforce this with a hard guard, but do not attempt to bypass it.
+
 **Tier workflow skill:** For detailed agent behavior on tier slash commands, control-plane messages, reason codes, cascade, session structure, and handoffs, see `.cursor/skills/tier-workflow-agent/SKILL.md` (and `reason-codes.md` in the same folder).

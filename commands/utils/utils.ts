@@ -69,23 +69,25 @@ export async function readProjectFile(filename: string): Promise<string> {
  * - Lock: skips the write and logs "BLOCKED overwrite" if the file already exists and is "filled" (no placeholders).
  * Set TIER_LOG_WRITES=1 to capture all protected-path writes in .project-manager/.write-log.
  * Pass options.overwriteForTierEnd: true only for tier-end workflow (e.g. task-end checkbox).
+ * @returns true if the file was actually written; false if blocked by the write guard.
  */
 export async function writeProjectFile(
   filename: string,
   content: string,
   options?: ShouldBlockProjectManagerWriteOptions
-): Promise<void> {
+): Promise<boolean> {
   const filePath = join(PROJECT_ROOT, filename);
   if (isProjectManagerProtectedPath(filename)) {
     const caller = getCallerFromStack();
     const blocked = await shouldBlockProjectManagerWrite(PROJECT_ROOT, filename, options);
     if (blocked) {
       logProjectManagerWrite({ path: filename, blocked: true, caller });
-      return;
+      return false;
     }
     logProjectManagerWrite({ path: filename, blocked: false, caller });
   }
   await writeFile(filePath, content, 'utf-8');
+  return true;
 }
 
 

@@ -13,6 +13,7 @@ import {
   stepContextGathering,
   stepEnsureStartBranch,
   stepEnsureGuideFromPlan,
+  recoverPlanningArtifactsAfterCheckout,
   stepReadStartContext,
   stepFillDirectTierDown,
   stepGatherContext,
@@ -161,6 +162,7 @@ export async function runTierStartWorkflow(
       await recordStep(ctx, 'ensure_branch', branchExit ? 'exit_failure' : 'exit_success');
       logStepTiming('ensure_branch', 'exit');
       if (branchExit) return attachShadowPayload(ctx, branchExit);
+      await recoverPlanningArtifactsAfterCheckout(ctx);
     }
 
     if (shouldRunStep('ensure_guide_from_plan')) {
