@@ -17,6 +17,7 @@ import { WorkflowCommandContext } from '../../../utils/command-context';
 import { WorkflowId } from '../../../utils/id-utils';
 import { detectPhaseModifiedFiles } from '../../../utils/detect-modified-files';
 import { runWithLintVerification, getCurrentDate, readProjectFile, writeProjectFile } from '../../../utils/utils';
+import { assertExistingPhaseLogReadableOrThrow } from '../../../utils/phase-log-guard';
 import { validateTestGoals } from '../../../testing/composite/test-goal-validator';
 import { analyzeTestError } from '../../../testing/composite/test-error-analyzer';
 import { requestTestFileFixPermission } from '../../../testing/composite/test-file-fix-permission';
@@ -41,6 +42,7 @@ import type { RunRecorder, RunTraceHandle } from '../../../harness/contracts';
 
 export type EndShadowContext = { recorder: RunRecorder; handle: RunTraceHandle };
 import { proposeVerificationChecklistForPhase } from '../../shared/verification-check';
+import { createPullRequest, shouldSkipHarnessPrCreate } from '../../../scripts/create-pr';
 
 export interface PhaseEndParams {
   phaseId: string;
@@ -254,7 +256,16 @@ export async function phaseEndImpl(
         try {
           phaseLogContent = await readProjectFile(phaseLogPath);
         } catch (err) {
-          console.warn(`[phase-end-impl] Phase log not found at ${phaseLogPath}; creating fresh log`, err);
+          try {
+            assertExistingPhaseLogReadableOrThrow(phaseLogPath, err, 'phase-end (test execution log)');
+          } catch (refuse) {
+            c.steps.testExecutionTracking = {
+              success: false,
+              output: refuse instanceof Error ? refuse.message : String(refuse),
+            };
+            return null;
+          }
+          console.warn(`[phase-end-impl] Phase log not on disk yet at ${phaseLogPath}; creating minimal log for test line`, err);
           phaseLogContent = `# Phase ${p.phaseId} Log\n\n`;
         }
         phaseLogContent += `\n**Tests Run:** ${getCurrentDate()} ${testTarget} ${testResult.success ? 'PASSED' : 'FAILED'}\n`;
@@ -509,9 +520,37 @@ export async function phaseEndImpl(
         };
       }
 
+      if (!p.skipGit) {
+        if (!shouldSkipHarnessPrCreate()) {
+          const headBranch = await getCurrentBranch();
+          if (headBranch !== 'main' && headBranch !== 'master') {
+            const featLabel = c.context.feature.name;
+            const prTitle = `Phase ${p.phaseId} (${featLabel}): merged to feature branch`;
+            const sessions = p.completedSessions?.length ? p.completedSessions.join(', ') : 'see phase guide';
+            const prBody =
+              `Automated **phase-end**: merged phase \`${p.phaseId}\` into the feature branch for **${featLabel}**.\n\n` +
+              `**Sessions (from params):** ${sessions}\n\nReview diff and CI on this PR.`;
+            const prResult = await createPullRequest(prTitle, prBody, false);
+            c.steps.createPR = {
+              success: prResult.success,
+              output:
+                prResult.success && prResult.url
+                  ? `✅ Pull request created: ${prResult.url}`
+                  : `⚠️ Could not open PR: ${prResult.error ?? 'unknown error'}`,
+            };
+          } else {
+            c.steps.createPR = { success: true, output: 'Skipped PR — checked out main/master.' };
+          }
+        } else {
+          c.steps.createPR = { success: true, output: 'Skipped PR (HARNESS_SKIP_PR).' };
+        }
+      } else {
+        c.steps.createPR = { success: true, output: 'Skipped PR (skipGit=true).' };
+      }
+
       c.steps.githubValidation = {
         success: true,
-        output: `\n🔍 **Phase ${p.phaseId} Complete - GitHub Validation Required**\n\nPlease visit GitHub to verify all session PRs from this phase are merged:\n🔗 https://github.com/WillWhittakerDHP/DHP_Differential_Scheduler/pulls\n\n**Validation Checklist:**\n☐ All session PRs from Phase ${p.phaseId} are merged\n☐ No outstanding review comments\n☐ Phase branch is clean and up-to-date with main\n☐ Ready to merge phase to main (if applicable)\n\n**Note:** This is a manual verification step. The agent cannot automatically check PR status.\n`,
+        output: `\n🔍 **Phase ${p.phaseId} — GitHub**\n\nThe harness runs \`gh pr create\` after merging into the feature branch (unless HARNESS_SKIP_PR is set). Follow-up: review PRs and CI — https://github.com/WillWhittakerDHP/DHP_Differential_Scheduler/pulls\n`,
       };
       return null;
     },
@@ -549,8 +588,14 @@ export async function phaseEndImpl(
       return cascadeUp ?? cascadeAcross ?? null;
     },
 
-    getSuccessOutcome(_c): TierEndOutcome {
-      return buildTierEndOutcome('completed', 'pending_push_confirmation', 'Push pending. Then cascade if present.');
+    getSuccessOutcome(c): TierEndOutcome {
+      let nextAction = 'Push pending. Then cascade if present.';
+      const prOut = c.steps.createPR?.output ?? '';
+      const prUrlMatch = prOut.match(/https:\/\/github\.com\/[^\s)]+/);
+      if (prUrlMatch) {
+        nextAction = `PR: ${prUrlMatch[0]}. ${nextAction}`;
+      }
+      return buildTierEndOutcome('completed', 'pending_push_confirmation', nextAction, c.outcome.cascade);
     },
   };
 

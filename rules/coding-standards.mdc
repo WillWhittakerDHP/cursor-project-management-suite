@@ -6,7 +6,7 @@ Coding standards:
 
 **Mutability and data flow:** Use functional approaches (map, reduce, filter) over mutations. Avoid forEach for transformations; use map. Use for...of only for early returns or side effects. Avoid mutating arrays/objects in loops. Create clear, typed, well-documented transformation functions instead of complex nested transformations or prop-drilling.
 
-**Return types and errors:** Include explicit return types in function definitions to avoid type casting. Handle errors with explicit logging; no silent fallbacks or filters that hide errors; log and propagate appropriately.
+**Return types and errors:** Include explicit return types in function definitions to avoid type casting. **Catch blocks:** You MUST not use empty catches or comment-only placeholders. Call the project logger (`createLogger` → `logger.warn` / `logger.error` / `logger.info` / `logger.debug`) so the path is visible in logs. On the server, `handleRouteError` / `handleGeneralError` / `handleSequelizeValidationError` satisfy this because they log inside. ESLint enforces this for `client/src/**` and `server/src/**` via `scheduler-local/require-logger-in-catch`. No silent fallbacks or filters that hide errors; propagate appropriately when the flow should fail.
 
 **Types:** Avoid unnecessary type assertions (as any, as unknown as). Prefer type guards (value is Type) over assertions. Use keyof/typeof only when necessary for constraints. Maintain generic patterns with runtime configs over specific type definitions (e.g. EntityBase<GlobalEntityKey> with ENTITY_CONFIGS). Use descriptive generic names (GlobalEntityKey not K, GlobalPropertyKey not P).
 

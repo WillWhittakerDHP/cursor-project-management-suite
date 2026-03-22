@@ -262,8 +262,8 @@ for (const item of items) {
 
 ---
 
-### Rule 8: Explicit Error Handling
-Handle errors safely with explicit logging. Do not create silent fallbacks or filters that hide errors. Log errors explicitly and let them propagate appropriately.
+### Rule 8: Explicit Error Handling (enforced in app code)
+Handle errors safely with explicit logging. Do not create silent fallbacks or filters that hide errors. **Every `catch` block in `client/src/**` and `server/src/**` MUST** either call the project logger (`createLogger` then `logger.warn` / `logger.error` / `logger.info` / `logger.debug`) or, on the server only, delegate via `handleRouteError`, `handleGeneralError`, or `handleSequelizeValidationError` (they log internally). Empty `catch {}` bodies and comment-only placeholders are not allowed; ESLint rule `scheduler-local/require-logger-in-catch` fails the build if this is violated.
 
 **Bad Example:**
 ```typescript
@@ -276,19 +276,29 @@ try {
 }
 ```
 
-**Good Example:**
+**Good Example (client / shared TS):**
 ```typescript
-// ✅ Explicit logging
+import { createLogger } from '@/utils/logger' // or server path to createLogger
+
+const logger = createLogger('MyFeature')
+
 try {
   const result = riskyOperation();
   return result;
 } catch (error) {
-  console.error('Failed to perform riskyOperation:', error); // ✅ Explicit logging
-  throw error; // ✅ Propagate appropriately
+  logger.error('Failed to perform riskyOperation', { error });
+  throw error;
 }
 ```
 
-**Scope:** Applies to error handling. Default values for optional properties are acceptable.
+**Good Example (server route — delegate to shared handler that logs):**
+```typescript
+} catch (error) {
+  handleRouteError(error, res, ERROR_MESSAGES.FETCH_ONE, 'fetching resource', resourceName);
+}
+```
+
+**Scope:** Applies to error handling. Default values for optional properties are acceptable. Audit/tooling scripts under `client/.scripts/` are outside the `src/**` ESLint scope for this rule.
 
 ---
 

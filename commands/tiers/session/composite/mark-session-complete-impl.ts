@@ -3,6 +3,7 @@
  */
 
 import { readProjectFile, writeProjectFile, PROJECT_ROOT, getCurrentDate } from '../../../utils/utils';
+import { assertExistingPhaseLogReadableOrThrow } from '../../../utils/phase-log-guard';
 import { join } from 'path';
 import { readFile } from 'fs/promises';
 import { WorkflowId } from '../../../utils/id-utils';
@@ -48,7 +49,8 @@ export async function markSessionCompleteImpl(params: MarkSessionCompleteParams)
   try {
     logContent = await readProjectFile(phaseLogPath);
   } catch (err) {
-    console.warn('Mark session complete: phase log not found, using template', phaseLogPath, err);
+    assertExistingPhaseLogReadableOrThrow(phaseLogPath, err, 'mark-session-complete');
+    console.warn('Mark session complete: phase log missing; bootstrapping from template', phaseLogPath, err);
     const templatePath = join(PROJECT_ROOT, '.cursor/commands/tiers/phase/templates/phase-log.md');
     try {
       const template = await readFile(templatePath, 'utf-8');

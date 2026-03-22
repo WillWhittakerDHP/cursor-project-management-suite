@@ -3,6 +3,7 @@
  */
 
 import { readProjectFile, writeProjectFile, PROJECT_ROOT, getCurrentDate } from '../../../utils/utils';
+import { assertExistingPhaseLogReadableOrThrow } from '../../../utils/phase-log-guard';
 import { join } from 'path';
 import { readFile } from 'fs/promises';
 import { WorkflowCommandContext } from '../../../utils/command-context';
@@ -138,7 +139,8 @@ export async function markPhaseCompleteImpl(params: MarkPhaseCompleteParams): Pr
   try {
     logContent = await readProjectFile(phaseLogPath);
   } catch (err) {
-    console.warn('Mark phase complete: phase log not found, using template', phaseLogPath, err);
+    assertExistingPhaseLogReadableOrThrow(phaseLogPath, err, 'mark-phase-complete');
+    console.warn('Mark phase complete: phase log missing; bootstrapping from template', phaseLogPath, err);
     const templatePath = join(PROJECT_ROOT, '.cursor/commands/tiers/phase/templates/phase-log.md');
     try {
       const template = await readFile(templatePath, 'utf-8');

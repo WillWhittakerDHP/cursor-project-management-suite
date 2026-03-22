@@ -40,6 +40,7 @@ import type { RunRecorder, RunTraceHandle } from '../../../harness/contracts';
 
 export type EndShadowContext = { recorder: RunRecorder; handle: RunTraceHandle };
 import { proposeVerificationChecklistForFeature } from '../../shared/verification-check';
+import { createPullRequest, shouldSkipHarnessPrCreate } from '../../../scripts/create-pr';
 
 export interface FeatureEndParams {
   featureId?: string;
@@ -478,11 +479,33 @@ export async function featureEndImpl(
         };
       }
 
+      if (!shouldSkipHarnessPrCreate()) {
+        const headBranch = await getCurrentBranch();
+        if (headBranch !== 'main' && headBranch !== 'master') {
+          const phases = p.completedPhases?.length ? p.completedPhases.join(', ') : 'see feature guide';
+          const prTitle = `Feature ${ctx.identifier}: complete`;
+          const prBody =
+            `Automated **feature-end** for **${ctx.identifier}**.\n\n` +
+            `**Phases completed:** ${phases}\n\nReview CI and merge toward the default branch when ready.`;
+          const prResult = await createPullRequest(prTitle, prBody, false);
+          ctx.steps.createPR = {
+            success: prResult.success,
+            output:
+              prResult.success && prResult.url
+                ? `✅ Pull request created: ${prResult.url}`
+                : `⚠️ Could not open PR: ${prResult.error ?? 'unknown error'}`,
+          };
+        } else {
+          ctx.steps.createPR = { success: true, output: 'Skipped PR — on main/master.' };
+        }
+      } else {
+        ctx.steps.createPR = { success: true, output: 'Skipped PR (HARNESS_SKIP_PR).' };
+      }
+
       ctx.steps.githubFinalValidation = {
         success: true,
         output:
-          `\n🎯 **Feature Complete - Final GitHub Validation**\n\nPlease visit GitHub to verify all work is integrated.\n` +
-          `**Final Checklist:**\n☐ All phase PRs merged to main\n☐ Feature branch fully integrated\n☐ All reviews complete and approved\n☐ CI/CD checks passing\n`,
+          `\n🎯 **Feature complete — GitHub**\n\nHarness attempted \`gh pr create\` from the current branch after merging the feature into its parent. Confirm PR and CI: https://github.com/WillWhittakerDHP/DHP_Differential_Scheduler/pulls\n`,
       };
       return null;
     },
@@ -503,10 +526,16 @@ export async function featureEndImpl(
     },
 
     getSuccessOutcome() {
+      let nextAction = 'Push pending. Feature complete.';
+      const prOut = ctx.steps.createPR?.output ?? '';
+      const prUrlMatch = prOut.match(/https:\/\/github\.com\/[^\s)]+/);
+      if (prUrlMatch) {
+        nextAction = `PR: ${prUrlMatch[0]}. ${nextAction}`;
+      }
       return buildTierEndOutcome(
         'completed',
         'pending_push_confirmation',
-        'Push pending. Feature complete.',
+        nextAction,
         ctx.outcome.cascade
       );
     },

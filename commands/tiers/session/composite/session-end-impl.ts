@@ -27,7 +27,7 @@ import { SESSION_CONFIG } from '../../configs/session';
 import { fileURLToPath } from 'node:url';
 import { resolve, join } from 'node:path';
 import { execSync } from 'node:child_process';
-import { checkGitHubCLI, createPullRequest } from '../../../scripts/create-pr';
+import { createPullRequest, shouldSkipHarnessPrCreate } from '../../../scripts/create-pr';
 import type { CascadeInfo } from '../../../utils/tier-outcome';
 import { buildTierEndOutcome } from '../../../utils/tier-outcome';
 import { buildCascadeUp, buildCascadeAcross } from '../../../utils/tier-cascade';
@@ -564,25 +564,41 @@ export async function sessionEndImpl(
 
       if (!p.skipGit) {
         try {
-          const currentBranch = await getCurrentBranch();
-          if (currentBranch !== 'main' && currentBranch !== 'master' && await checkGitHubCLI()) {
-            const prTitle = `Session ${p.sessionId}: ${p.description}`;
-            const prBody = p.transitionNotes ? `## Summary\n\n${p.description}\n\n## Next Steps\n\n${p.transitionNotes}` : `Session ${p.sessionId} complete: ${p.description}`;
-            const prResult = await createPullRequest(prTitle, prBody, false);
-            if (prResult.success) {
-              c.steps.createPR = { success: true, output: `✅ Pull request created:\n🔗 ${prResult.url}\n\n**Note:** Assign reviewers if needed before continuing to next session.` };
-            } else {
-              const errorMessage = prResult.error ? String(prResult.error) : 'Unknown error - PR creation failed without error details';
-              c.steps.createPR = { success: false, output: `⚠️ Could not create PR automatically (non-critical): ${errorMessage}\n\n**Create PR manually:** https://github.com/WillWhittakerDHP/DHP_Differential_Scheduler/compare/main...${currentBranch}` };
-            }
-          } else if (currentBranch === 'main' || currentBranch === 'master') {
-            c.steps.createPR = { success: true, output: 'Skipped PR creation - on main/master branch' };
+          if (shouldSkipHarnessPrCreate()) {
+            c.steps.createPR = {
+              success: true,
+              output: 'Skipped PR creation (HARNESS_SKIP_PR). Unset to let the harness run `gh pr create`.',
+            };
           } else {
-            c.steps.createPR = { success: true, output: 'Skipped PR creation - GitHub CLI not authenticated' };
+            const currentBranch = await getCurrentBranch();
+            if (currentBranch === 'main' || currentBranch === 'master') {
+              c.steps.createPR = { success: true, output: 'Skipped PR creation - on main/master branch' };
+            } else {
+              const prTitle = `Session ${p.sessionId}: ${p.description}`;
+              const prBody = p.transitionNotes
+                ? `## Summary\n\n${p.description}\n\n## Next Steps\n\n${p.transitionNotes}`
+                : `Session ${p.sessionId} complete: ${p.description}`;
+              const prResult = await createPullRequest(prTitle, prBody, false);
+              if (prResult.success && prResult.url) {
+                c.steps.createPR = {
+                  success: true,
+                  output: `✅ Pull request created:\n🔗 ${prResult.url}\n\n**Note:** Assign reviewers if needed before continuing to next session.`,
+                };
+              } else {
+                const errorMessage = prResult.error ? String(prResult.error) : 'PR creation failed without details';
+                c.steps.createPR = {
+                  success: false,
+                  output: `⚠️ Harness could not open a PR automatically: ${errorMessage}\n\nFix \`gh auth login\` / remote sync if needed, or open a compare URL from the create-pr script output in logs.`,
+                };
+              }
+            }
           }
         } catch (_error) {
           const currentBranch = await getCurrentBranch();
-          c.steps.createPR = { success: false, output: `PR creation failed (non-critical): ${_error instanceof Error ? _error.message : String(_error)}\n\n**Create PR manually:** https://github.com/WillWhittakerDHP/DHP_Differential_Scheduler/compare/main...${currentBranch}` };
+          c.steps.createPR = {
+            success: false,
+            output: `PR creation threw: ${_error instanceof Error ? _error.message : String(_error)} (current branch: ${currentBranch})`,
+          };
         }
       } else {
         c.steps.createPR = { success: true, output: 'Skipped (skipGit=true)' };
@@ -650,9 +666,14 @@ export async function sessionEndImpl(
 
     getSuccessOutcome(c): import('../../../utils/tier-outcome').TierEndOutcome {
       const p = c.params as SessionEndParams & { nextSession: string };
-      const nextAction = !p.skipGit
+      let nextAction = !p.skipGit
         ? 'Push pending. Then cascade if present.'
         : 'Cascade if present.';
+      const prOut = c.steps.createPR?.output ?? '';
+      const prUrlMatch = prOut.match(/https:\/\/github\.com\/[^\s)]+/);
+      if (prUrlMatch) {
+        nextAction = `PR: ${prUrlMatch[0]}. ${nextAction}`;
+      }
       return buildTierEndOutcome('completed', 'pending_push_confirmation', nextAction, c.outcome.cascade);
     },
   };
