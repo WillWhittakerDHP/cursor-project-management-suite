@@ -149,7 +149,7 @@ export function formatInheritedQuestionsBlock(
   const lines: string[] = [
     `## Inherited Open Questions (from ${sourceTier} ${sourceIdentifier})`,
     '',
-    `> These questions were unresolved in the parent ${sourceTier} guide. Address or acknowledge them during planning.`,
+    `> Unresolved items from the parent **Open Questions** sections — **planning input** for the agent, not a hard gate.`,
     '',
   ];
 
@@ -159,6 +159,25 @@ export function formatInheritedQuestionsBlock(
   }
 
   return lines.join('\n');
+}
+
+/**
+ * Full section for the short tier planning doc: inherited notes + explicit agent synthesis contract.
+ */
+export function formatInheritedQuestionsPlanningDocSection(
+  unresolvedQuestions: OpenQuestion[],
+  sourceTier: string,
+  sourceIdentifier: string
+): string {
+  if (unresolvedQuestions.length === 0) return '';
+  const block = formatInheritedQuestionsBlock(unresolvedQuestions, sourceTier, sourceIdentifier);
+  return (
+    `${block}\n` +
+    `### Agent: required synthesis\n\n` +
+    `- Treat each item as **design input**: fold decisions, alternatives, and structure hints into **Goal**, **Approach**, **Checkpoint**, and **How we build the tierDown** where they affect scope or sequencing.\n` +
+    `- If an item is **deferred**, say so in **Approach** or **Checkpoint** (where and when it will be decided).\n` +
+    `- **Do not** require the human to run \`/resolve-question\` before continuing tier-start; **filling this planning doc** is the contract. Optionally record decisions in the parent guide later with \`/resolve-question\`.\n`
+  );
 }
 
 /**
@@ -178,11 +197,11 @@ export function formatOpenQuestionsWarning(
   const moreNote = count > 3 ? `\n  *(+${count - 3} more — see Inherited Open Questions in planning doc)*` : '';
 
   return [
-    `**⚠ ${count} unresolved open ${plural} from ${sourceTier} ${sourceIdentifier}:**`,
+    `**${count} open ${plural} inherited from ${sourceTier} ${sourceIdentifier}** (design notes — not a block):`,
     preview,
     moreNote,
     '',
-    'Address these during planning or run `/resolve-question` to record decisions.',
+    'The agent must **synthesize** these into the planning doc (Goal / Approach / tierDown). Optional later: `/resolve-question` on the parent guide to record decisions.',
   ].filter(Boolean).join('\n');
 }
 
