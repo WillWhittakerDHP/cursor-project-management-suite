@@ -71,6 +71,8 @@ export interface AutofixEntry {
 export interface AutofixResult {
   tier: AuditTier;
   scriptFixesApplied: number;
+  /** Every script autofix attempt (applied or not); used to fail tier-end when a command errors */
+  scriptFixEntries: AutofixEntry[];
   agentFixEntries: AutofixEntry[];
   affectedFiles: string[];
   /** Results from lower-tier re-audits */

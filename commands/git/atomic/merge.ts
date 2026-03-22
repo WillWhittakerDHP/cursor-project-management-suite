@@ -28,6 +28,11 @@ export interface GitMergeParams {
   skipStash?: boolean;
   /** When true, pull target branch from origin after checkout and before merge (multi-machine sync). */
   pullBeforeMerge?: boolean;
+  /**
+   * When true with pullBeforeMerge, a missing remote ref for the target branch is a hard failure.
+   * When false (default), "couldn't find remote ref" is ignored so local-only targets can merge.
+   */
+  strictPull?: boolean;
   /** When true, use `-X theirs` so the source (child) branch wins text conflicts. */
   preferSource?: boolean;
   /** When true, auto-resolve .cursor submodule conflicts by taking source branch's version. */
@@ -146,13 +151,15 @@ export async function gitMerge(params: GitMergeParams): Promise<{ success: boole
       const pullResult = await runGitCommand(`git pull origin ${targetBranch} --no-rebase`, 'gitMerge-pull');
       if (!pullResult.success) {
         const noRemoteRef = (pullResult.error || pullResult.output).includes("couldn't find remote ref");
-        if (noRemoteRef) {
-          // Branch exists locally but not on remote yet -- safe to continue with local state
+        if (noRemoteRef && !(params.strictPull ?? false)) {
+          // Local-only target: allowed only when strictPull is false
         } else {
           if (didStash) await runGitCommand('git stash pop', 'gitMerge-stash-pop');
           return {
             success: false,
-            output: `Failed to pull ${targetBranch} before merge: ${pullResult.error || pullResult.output}`,
+            output: noRemoteRef && (params.strictPull ?? false)
+              ? `Strict pull: ${targetBranch} has no remote tracking ref on origin. Push the parent branch first, then retry.`
+              : `Failed to pull ${targetBranch} before merge: ${pullResult.error || pullResult.output}`,
           };
         }
       }
@@ -161,10 +168,14 @@ export async function gitMerge(params: GitMergeParams): Promise<{ success: boole
     const pullResult = await runGitCommand(`git pull origin ${targetBranch} --no-rebase`, 'gitMerge-pull');
     if (!pullResult.success) {
       const noRemoteRef = (pullResult.error || pullResult.output).includes("couldn't find remote ref");
-      if (!noRemoteRef) {
+      if (noRemoteRef && !(params.strictPull ?? false)) {
+        // Local-only target when not strict
+      } else {
         return {
           success: false,
-          output: `Failed to pull ${targetBranch} before merge: ${pullResult.error || pullResult.output}`,
+          output: noRemoteRef && (params.strictPull ?? false)
+            ? `Strict pull: ${targetBranch} has no remote tracking ref on origin. Push the parent branch first, then retry.`
+            : `Failed to pull ${targetBranch} before merge: ${pullResult.error || pullResult.output}`,
         };
       }
     }

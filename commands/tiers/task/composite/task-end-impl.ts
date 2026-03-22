@@ -345,31 +345,26 @@ export async function taskEndImpl(
     async getCascade(c): Promise<import('../../../utils/tier-outcome').CascadeInfo | null> {
       const p = c.params as TaskEndParams & { sessionId: string; parsed: { task: string } };
       const sessionId = p.sessionId;
-      try {
-        const taskNum = parseInt(p.parsed.task, 10);
-        const nextTaskId = `${sessionId}.${taskNum + 1}`;
-        const sessionGuidePath = c.context.paths.getSessionGuidePath(sessionId);
-        let guideContent = '';
-        try {
-          guideContent = await readProjectFile(sessionGuidePath);
-        } catch (err) {
-          console.warn(`[task-end-impl] Could not read session guide at ${sessionGuidePath}; proceeding with empty content`, err);
-          guideContent = '';
-        }
-        // Match session guide lines like "- [ ] #### Task 6.3.3.2: Name" or "#### Task 6.3.3.2: Name"
-        const nextTaskExists = new RegExp(`Task\\s+${nextTaskId.replace(/\./g, '\\.')}:`).test(guideContent);
-        const nextTaskComplete = nextTaskExists && (await TASK_CONFIG.controlDoc.readStatus(c.context, nextTaskId)) === 'complete';
+      const taskNum = parseInt(p.parsed.task, 10);
+      const nextTaskId = `${sessionId}.${taskNum + 1}`;
+      const sessionGuidePath = c.context.paths.getSessionGuidePath(sessionId);
+      if (!(await c.context.documents.guideExists('session', sessionId))) {
+        throw new Error(
+          `Session guide missing at ${sessionGuidePath}. Run /session-start ${sessionId} in execute mode, then retry task-end.`
+        );
+      }
+      const guideContent = await c.context.documents.readGuide('session', sessionId);
+      // Match session guide lines like "- [ ] #### Task 6.3.3.2: Name" or "#### Task 6.3.3.2: Name"
+      const nextTaskExists = new RegExp(`Task\\s+${nextTaskId.replace(/\./g, '\\.')}:`).test(guideContent);
+      const nextTaskComplete = nextTaskExists && (await TASK_CONFIG.controlDoc.readStatus(c.context, nextTaskId)) === 'complete';
 
-        if (nextTaskExists && !nextTaskComplete) {
-          return buildCascadeAcross('task', nextTaskId) ?? null;
-        }
-        const allTasksComplete = await areAllTasksInSessionComplete(c.context.feature.name, sessionId);
-        if (allTasksComplete) {
-          const cascadeUp = buildCascadeUp('task', sessionId);
-          return cascadeUp ?? null;
-        }
-      } catch (err) {
-        console.warn('Task end: cascade check failed (non-blocking)', err);
+      if (nextTaskExists && !nextTaskComplete) {
+        return buildCascadeAcross('task', nextTaskId) ?? null;
+      }
+      const allTasksComplete = await areAllTasksInSessionComplete(c.context.feature.name, sessionId);
+      if (allTasksComplete) {
+        const cascadeUp = buildCascadeUp('task', sessionId);
+        return cascadeUp ?? null;
       }
       return null;
     },

@@ -27,6 +27,7 @@ import {
   ensureTierBranch,
   mergeTierBranch,
   mergeChildBranches,
+  deleteMergedChildBranchesAfterPush,
   getCurrentBranch,
 } from '../../../git/shared/git-manager';
 import type {
@@ -393,9 +394,11 @@ export async function featureEndImpl(
 
         const resolvedFeatureBranch = await getCurrentBranch();
         const phasePrefix = await resolvePhaseBranchPrefixForFeature(featureName, p.completedPhases);
+        let mergedPhaseBranches: string[] = [];
 
         if (phasePrefix) {
-          const childResult = await mergeChildBranches(phasePrefix, resolvedFeatureBranch, { deleteMerged: true });
+          const childResult = await mergeChildBranches(phasePrefix, resolvedFeatureBranch, { deleteMerged: false });
+          mergedPhaseBranches = childResult.merged;
           const allPhaseBranches = [...childResult.merged, ...childResult.failed];
           ctx.steps.findPhaseBranches = {
             success: true,
@@ -429,9 +432,50 @@ export async function featureEndImpl(
         const featureCommitMessage = p.commitMessage || `${commitPrefix} completion`;
         const featureCommitResult = await gitCommit(featureCommitMessage);
         ctx.steps.gitCommit = { success: featureCommitResult.success, output: featureCommitResult.output };
+        if (!featureCommitResult.success) {
+          return {
+            success: false,
+            output: ctx.output.join('\n'),
+            steps: ctx.steps,
+            outcome: buildTierEndOutcome(
+              'blocked_fix_required',
+              'git_failed',
+              `Feature completion commit failed. ${featureCommitResult.output} Fix and re-run /feature-end.`
+            ),
+          };
+        }
 
         const featurePushResult = await gitPush();
         ctx.steps.gitPush = { success: featurePushResult.success, output: featurePushResult.output };
+        if (!featurePushResult.success) {
+          return {
+            success: false,
+            output: ctx.output.join('\n'),
+            steps: ctx.steps,
+            outcome: buildTierEndOutcome(
+              'blocked_fix_required',
+              'git_failed',
+              `Feature branch push failed; phase branches were not deleted. ${featurePushResult.output} Fix and re-run /feature-end.`
+            ),
+          };
+        }
+
+        if (mergedPhaseBranches.length > 0) {
+          const delChildren = await deleteMergedChildBranchesAfterPush(mergedPhaseBranches);
+          ctx.steps.deletePhaseBranchesAfterPush = { success: delChildren.success, output: delChildren.messages.join('\n') };
+          if (!delChildren.success) {
+            return {
+              success: false,
+              output: ctx.output.join('\n'),
+              steps: ctx.steps,
+              outcome: buildTierEndOutcome(
+                'blocked_fix_required',
+                'git_failed',
+                `Deleting merged phase branches failed after push. ${delChildren.messages.join(' ')} Fix and re-run /feature-end.`
+              ),
+            };
+          }
+        }
 
         const mergeToDevelop = await mergeTierBranch(FEATURE_CONFIG, ctx.identifier, ctx.context, {
           push: true,

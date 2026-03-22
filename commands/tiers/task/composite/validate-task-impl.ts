@@ -3,7 +3,6 @@
  */
 
 import { WorkflowCommandContext } from '../../../utils/command-context';
-import { readProjectFile } from '../../../utils/utils';
 import { WorkflowId } from '../../../utils/id-utils';
 import { TASK_CONFIG } from '../../configs/task';
 import { SESSION_CONFIG } from '../../configs/session';
@@ -37,14 +36,13 @@ export async function validateTaskImpl(
     const sessionGuidePath = context.paths.getSessionGuidePath(sessionId);
     let sessionGuideContent: string;
     try {
-      sessionGuideContent = await readProjectFile(sessionGuidePath);
-    } catch (err) {
-      console.warn('Validate task: session guide not found', sessionGuidePath, err);
+      sessionGuideContent = await context.documents.readGuide('session', sessionId);
+    } catch {
       return {
         canStart: false,
         reason: 'Session guide not found',
         details: [
-          `Session guide does not exist at: ${sessionGuidePath}`,
+          `Session guide does not exist or is unreadable at: ${sessionGuidePath}`,
           `Run /session-start ${sessionId} in execute mode to create the session guide and task sections.`,
         ],
       };

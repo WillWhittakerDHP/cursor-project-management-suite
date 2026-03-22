@@ -1,6 +1,9 @@
 /**
  * Recover planning docs / guides from git history after checkout when files were
  * auto-committed on the source branch and are missing on the target branch.
+ *
+ * INTERNAL: uses git-logger (not git-manager) because git-manager imports this module.
+ * Callers outside `git/` must use `recoverPlanningArtifactsAfterCheckout` from git-manager only.
  */
 
 import { join } from 'path';
@@ -10,6 +13,7 @@ import { PROJECT_ROOT } from '../../utils/utils';
 import { resolvePlanningDocRelativePath } from '../../utils/planning-doc-paths';
 import type { PlanningTier } from '../../utils/planning-doc-paths';
 import { runGitCommand } from './git-logger';
+import { WorkflowId } from '../../utils/id-utils';
 
 /**
  * For each expected workflow path, if missing on disk, restore blob from `git log --all`.
@@ -21,16 +25,30 @@ export async function recoverPlanningArtifactsAfterCheckout(
   preferredRelativePaths?: string[]
 ): Promise<void> {
   const tier = ctx.config.name;
-  if (tier === 'task') return;
-
   const base = ctx.context.paths.getBasePath();
-  const planningPath = resolvePlanningDocRelativePath(base, tier as PlanningTier, ctx.identifier);
-  const guidePath =
-    tier === 'feature'
-      ? ctx.context.paths.getFeatureGuidePath()
-      : tier === 'phase'
-        ? ctx.context.paths.getPhaseGuidePath(ctx.identifier)
-        : ctx.context.paths.getSessionGuidePath(ctx.identifier);
+
+  let planningPath: string;
+  let guidePath: string;
+
+  if (tier === 'task') {
+    const parsed = WorkflowId.parseTaskId(ctx.identifier);
+    if (!parsed) {
+      throw new Error(
+        `recoverPlanningArtifactsAfterCheckout: invalid task id "${ctx.identifier}" (expected X.Y.Z.A)`
+      );
+    }
+    const sessionId = parsed.sessionId;
+    planningPath = resolvePlanningDocRelativePath(base, 'session', sessionId);
+    guidePath = ctx.context.paths.getSessionGuidePath(sessionId);
+  } else {
+    planningPath = resolvePlanningDocRelativePath(base, tier as PlanningTier, ctx.identifier);
+    guidePath =
+      tier === 'feature'
+        ? ctx.context.paths.getFeatureGuidePath()
+        : tier === 'phase'
+          ? ctx.context.paths.getPhaseGuidePath(ctx.identifier)
+          : ctx.context.paths.getSessionGuidePath(ctx.identifier);
+  }
 
   const expected = [planningPath, guidePath];
   const defaultSet = new Set(expected);
@@ -66,7 +84,9 @@ export async function recoverPlanningArtifactsAfterCheckout(
         `Recovered \`${relPath}\` from commit ${commitHash.slice(0, 8)} (auto-committed on source branch before checkout).`
       );
     } catch (err) {
-      console.warn(`recoverPlanningArtifactsAfterCheckout: failed to write ${relPath}`, err);
+      throw new Error(
+        `recoverPlanningArtifactsAfterCheckout: failed to write ${relPath}: ${err instanceof Error ? err.message : String(err)}`
+      );
     }
   }
 }

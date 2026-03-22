@@ -44,7 +44,7 @@ export async function markSessionCompleteImpl(params: MarkSessionCompleteParams)
     await SESSION_CONFIG.controlDoc.writeStatus(context, params.sessionId, 'complete');
     output.push(`✅ Updated phase guide: ${phaseGuidePath}`);
 
-  const guideContent = await readProjectFile(phaseGuidePath);
+  const guideContent = await context.documents.readGuide('phase', phase);
   let logContent = '';
   try {
     logContent = await readProjectFile(phaseLogPath);

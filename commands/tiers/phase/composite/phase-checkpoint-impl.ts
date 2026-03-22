@@ -4,7 +4,6 @@
  */
 
 import { getCurrentDate } from '../../../utils/utils';
-import { readProjectFile } from '../../../utils/utils';
 import { WorkflowCommandContext } from '../../../utils/command-context';
 import { resolveFeatureDirectoryFromPlan } from '../../../utils';
 
@@ -22,7 +21,7 @@ export async function phaseCheckpointImpl(
 
   try {
     const phaseGuidePath = context.paths.getPhaseGuidePath(phase);
-    const guideContent = await readProjectFile(phaseGuidePath);
+    const guideContent = await context.documents.readGuide('phase', phase);
 
     const phaseStatus = await (await import('../../configs/phase')).PHASE_CONFIG.controlDoc.readStatus(context, phase);
     output.push('## Phase Status\n');

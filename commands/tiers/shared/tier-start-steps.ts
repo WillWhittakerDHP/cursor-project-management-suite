@@ -41,6 +41,7 @@ import { resolvePlanningDocRelativePath } from '../../utils/planning-doc-paths';
 import type { PlanningTier } from '../../utils/planning-doc-paths';
 import type { WorkflowCommandContext } from '../../utils/command-context';
 import { tierDown } from '../../utils/tier-navigation';
+import { WorkflowId } from '../../utils/id-utils';
 import {
   formatOpenQuestionsWarning,
   formatInheritedQuestionsPlanningDocSection,
@@ -310,9 +311,7 @@ function mergeSessionTaskItemsFromPhaseAndPlan(
 /**
  * Sync planned tierDown IDs and descriptions from the planning doc into the current-tier guide:
  * parse "How we build the tierDown", store on ctx.tierDownPlanItems, append missing headings.
- * When the guide is missing and parsedItems is non-empty, create the guide from the plan (instead of bailing).
- * Session: never overwrite an existing guide file; when creating, merge task list from phase guide so we don't lose tasks.
- * No-op if planning doc missing or no tierDown section. Execute mode only; called before stepEnsureTierDownDocs.
+ * Execute mode only. Feature/phase require a planning doc on disk. Session may run without one and scaffolds from the phase guide + minimal tasks.
  */
 async function syncPlannedTierDownToGuide(ctx: TierStartWorkflowContext): Promise<void> {
   const tier = ctx.config.name;
@@ -320,13 +319,19 @@ async function syncPlannedTierDownToGuide(ctx: TierStartWorkflowContext): Promis
   const docTier = tier as 'feature' | 'phase' | 'session';
   const planningTier = tier as PlanningTier;
   const dm = ctx.context.documents;
-  if (!(await dm.planningDocExists(planningTier, ctx.identifier))) {
-    return;
+
+  let parsedItems: TierDownPlanItem[] = [];
+  if (await dm.planningDocExists(planningTier, ctx.identifier)) {
+    const planningContent = await dm.readPlanningDoc(planningTier, ctx.identifier);
+    const sectionContent = extractTierDownBuildPlanSection(planningContent);
+    const tierDownKind = tierDown(tier)!;
+    parsedItems = parseTierDownBuildPlanPerItem(sectionContent, tierDownKind);
+  } else if (tier !== 'session') {
+    const rel = dm.getPlanningDocRelativePath(planningTier, ctx.identifier);
+    throw new Error(
+      `Planning doc missing at ${rel}. Create it before ${tier} tier-start in execute mode.`
+    );
   }
-  const planningContent = await dm.readPlanningDoc(planningTier, ctx.identifier);
-  const sectionContent = extractTierDownBuildPlanSection(planningContent);
-  const tierDownKind = tierDown(tier)!; // task returns early above; child tier is always phase | session | task
-  const parsedItems = parseTierDownBuildPlanPerItem(sectionContent, tierDownKind);
   ctx.tierDownPlanItems = parsedItems.length > 0 ? parsedItems : undefined;
 
   let guidePath: string;
@@ -340,66 +345,44 @@ async function syncPlannedTierDownToGuide(ctx: TierStartWorkflowContext): Promis
   } catch {
     if (tier === 'session') {
       if (await dm.guideExists('session', ctx.identifier)) {
-        try {
-          guideContent = await dm.readGuide('session', ctx.identifier);
-        } catch (e) {
-          console.warn(
-            'syncPlannedTierDownToGuide: session guide exists but unreadable, skipping overwrite',
-            guidePath,
-            e
-          );
-          return;
-        }
-      } else {
-        let phaseGuideContent = '';
-        try {
-          const phaseId = ctx.identifier.split('.').slice(0, 2).join('.');
-          phaseGuideContent = await dm.readGuide('phase', phaseId);
-        } catch {
-          /* optional */
-        }
-        const mergedItems =
-          phaseGuideContent.trim() !== ''
-            ? mergeSessionTaskItemsFromPhaseAndPlan(phaseGuideContent, ctx.identifier, parsedItems)
-            : parsedItems.length > 0
-              ? parsedItems
-              : [{ id: `${ctx.identifier}.1`, description: `Task ${ctx.identifier}.1` }];
-        const description = ctx.resolvedDescription ?? ctx.identifier;
-        guideContent = buildGuideFromPlanItems(tier, ctx.identifier, description, mergedItems);
-        ctx.tierDownPlanItems = mergedItems;
-        guideContent = ensureGuideHasRequiredSections(guideContent, tier, ctx.identifier, description);
-        try {
-          await ctx.context.documents.writeGuide('session', ctx.identifier, guideContent);
-        } catch (err) {
-          console.warn(`[tier-start-steps] Failed to write session guide at ${guidePath}`, err);
-          return;
-        }
+        throw new Error(
+          `Session guide exists at ${guidePath} but could not be read. Fix the file on disk.`
+        );
       }
+      let phaseGuideContent = '';
+      try {
+        const phaseId = ctx.identifier.split('.').slice(0, 2).join('.');
+        phaseGuideContent = await dm.readGuide('phase', phaseId);
+      } catch {
+        /* session may scaffold minimal task without phase guide */
+      }
+      const mergedItems =
+        phaseGuideContent.trim() !== ''
+          ? mergeSessionTaskItemsFromPhaseAndPlan(phaseGuideContent, ctx.identifier, parsedItems)
+          : parsedItems.length > 0
+            ? parsedItems
+            : [{ id: `${ctx.identifier}.1`, description: `Task ${ctx.identifier}.1` }];
+      const description = ctx.resolvedDescription ?? ctx.identifier;
+      guideContent = buildGuideFromPlanItems(tier, ctx.identifier, description, mergedItems);
+      ctx.tierDownPlanItems = mergedItems;
+      guideContent = ensureGuideHasRequiredSections(guideContent, tier, ctx.identifier, description);
+      await ctx.context.documents.writeGuide('session', ctx.identifier, guideContent);
     } else {
-      // Feature or phase: initial read failed. If file actually exists, use its content instead of overwriting.
       if (await dm.guideExists(docTier, ctx.identifier)) {
-        try {
-          guideContent = await dm.readGuide(docTier, ctx.identifier);
-        } catch (err) {
-          console.warn(`[tier-start-steps] Guide exists at ${guidePath} but is unreadable; skipping overwrite`, err);
-          return;
-        }
-      } else {
-        if (parsedItems.length === 0) return;
-        const description = ctx.resolvedDescription ?? ctx.identifier;
-        guideContent = buildGuideFromPlanItems(tier, ctx.identifier, description, parsedItems);
-        guideContent = ensureGuideHasRequiredSections(guideContent, tier, ctx.identifier, description);
-        try {
-          await ctx.context.documents.writeGuide(tier, ctx.identifier, guideContent);
-        } catch (err) {
-          console.warn(`[tier-start-steps] Failed to write guide at ${guidePath}`, err);
-          return;
-        }
+        throw new Error(`Guide exists at ${guidePath} but could not be read. Fix the file on disk.`);
       }
+      if (parsedItems.length === 0) {
+        throw new Error(
+          `Guide missing at ${guidePath} and planning doc has no parseable tierDown items. Fill "How we build the tierDown" in the planning doc.`
+        );
+      }
+      const description = ctx.resolvedDescription ?? ctx.identifier;
+      guideContent = buildGuideFromPlanItems(tier, ctx.identifier, description, parsedItems);
+      guideContent = ensureGuideHasRequiredSections(guideContent, tier, ctx.identifier, description);
+      await ctx.context.documents.writeGuide(tier, ctx.identifier, guideContent);
     }
   }
 
-  // Fix 4: When planning doc had no parseable bullets, derive tierDown list from existing guide.
   let itemsToAppend = parsedItems;
   if (parsedItems.length === 0 && guideContent) {
     const fromGuide = deriveTierDownPlanItemsFromGuide(guideContent, tier);
@@ -409,8 +392,7 @@ async function syncPlannedTierDownToGuide(ctx: TierStartWorkflowContext): Promis
     }
   }
 
-  // Never append placeholder-heavy sections to an already-filled guide (avoids loop: proceed → add placeholders → guide_incomplete).
-  if (tier !== 'feature' && contentIsGuideFilled(guideContent)) {
+  if (tier === 'feature' && contentIsGuideFilled(guideContent)) {
     return;
   }
 
@@ -431,11 +413,7 @@ async function syncPlannedTierDownToGuide(ctx: TierStartWorkflowContext): Promis
       ctx.identifier,
       ctx.resolvedDescription ?? ctx.identifier
     );
-    try {
-      await ctx.context.documents.writeGuide(tier, ctx.identifier, updated);
-    } catch (err) {
-      console.warn(`[tier-start-steps] Failed to write updated guide at ${guidePath} (non-blocking)`, err);
-    }
+    await ctx.context.documents.writeGuide(tier, ctx.identifier, updated);
   }
 }
 
@@ -445,7 +423,11 @@ export async function stepSyncPlannedTierDownToGuide(
   _hooks: TierStartWorkflowHooks
 ): Promise<void> {
   const executionMode = resolveCommandExecutionMode(ctx.options, 'plan');
-  if (isPlanMode(executionMode)) return;
+  if (isPlanMode(executionMode)) {
+    throw new Error(
+      'stepSyncPlannedTierDownToGuide requires execute mode (plan mode fails at stepEnsureGuideFromPlan).'
+    );
+  }
   if (ctx.config.name === 'task') return;
   await syncPlannedTierDownToGuide(ctx);
 }
@@ -456,24 +438,106 @@ export async function stepEnsureTierDownDocs(
   _hooks: TierStartWorkflowHooks
 ): Promise<void> {
   const executionMode = resolveCommandExecutionMode(ctx.options, 'plan');
-  if (isPlanMode(executionMode)) return;
+  if (isPlanMode(executionMode)) {
+    throw new Error('stepEnsureTierDownDocs requires execute mode.');
+  }
   await runEnsureTierDownDocsForTier(ctx);
+}
+
+function buildGuideMaterializationPlanModeFailure(ctx: TierStartWorkflowContext): TierStartResult {
+  const tier = ctx.config.name;
+  const guidePath =
+    tier === 'phase'
+      ? ctx.context.paths.getPhaseGuidePath(ctx.identifier)
+      : tier === 'session'
+        ? ctx.context.paths.getSessionGuidePath(ctx.identifier)
+        : ctx.context.paths.getFeatureGuidePath();
+  const planningPath = ctx.context.documents.getPlanningDocRelativePath(
+    ctx.config.name as PlanningTier,
+    ctx.identifier
+  );
+  const output = [
+    '# Guide materialization requires execute mode',
+    '',
+    'Guides are not written to disk in **plan** mode.',
+    '',
+    `- **Guide:** \`${guidePath}\``,
+    `- **Planning:** \`${planningPath}\``,
+    '',
+    'Run **/accepted-proceed** or re-invoke this tier-start in **execute** mode.',
+  ].join('\n');
+  return {
+    success: false,
+    output,
+    outcome: {
+      status: 'failed',
+      reasonCode: 'guide_materialization_requires_execute',
+      nextAction:
+        'Run /accepted-proceed or tier-start in execute mode so guides and planning artifacts can be materialized.',
+      guidePath,
+    },
+  };
+}
+
+async function ensureSessionGuideMaterializedForTaskStart(
+  ctx: TierStartWorkflowContext
+): Promise<void> {
+  const parsed = WorkflowId.parseTaskId(ctx.identifier);
+  if (!parsed) {
+    throw new Error(`ensureSessionGuideMaterializedForTaskStart: invalid task id "${ctx.identifier}"`);
+  }
+  const sessionId = parsed.sessionId;
+  if (await ctx.context.documents.guideExists('session', sessionId)) {
+    return;
+  }
+  const desc = ctx.resolvedDescription ?? sessionId;
+  await ctx.context.documents.ensureGuide('session', sessionId, desc);
 }
 
 /**
  * Single "ensure guide from plan" step: sync plan → current-tier guide (create or append only, never overwrite),
- * then ensure child tierDown docs exist. Replaces the previous sequence of stepSyncPlannedTierDownToGuide,
- * stepEnsureTierDownDocs, and stepSyncGuideFromPlanningDoc so the guide is generated once and only filled afterward.
+ * then ensure child tierDown docs exist. Plan mode returns a hard failure (no disk writes).
  */
 export async function stepEnsureGuideFromPlan(
   ctx: TierStartWorkflowContext,
   _hooks: TierStartWorkflowHooks
-): Promise<void> {
+): Promise<TierStartResult | null> {
   const executionMode = resolveCommandExecutionMode(ctx.options, 'plan');
-  if (isPlanMode(executionMode)) return;
-  if (ctx.config.name === 'task') return;
+  if (isPlanMode(executionMode)) {
+    if (ctx.config.name === 'task') {
+      const parsed = WorkflowId.parseTaskId(ctx.identifier);
+      if (!parsed) return null;
+      const sessionId = parsed.sessionId;
+      if (!(await ctx.context.documents.guideExists('session', sessionId))) {
+        const gp = ctx.context.paths.getSessionGuidePath(sessionId);
+        return {
+          success: false,
+          output: [
+            '# Session guide missing (plan mode)',
+            '',
+            `Expected: \`${gp}\``,
+            '',
+            'Run **/session-start** in **execute** mode (or /accepted-proceed), then retry task-start.',
+          ].join('\n'),
+          outcome: {
+            status: 'failed',
+            reasonCode: 'guide_materialization_requires_execute',
+            nextAction: `Materialize session guide at ${gp} via session-start in execute mode.`,
+            guidePath: gp,
+          },
+        };
+      }
+      return null;
+    }
+    return buildGuideMaterializationPlanModeFailure(ctx);
+  }
+  if (ctx.config.name === 'task') {
+    await ensureSessionGuideMaterializedForTaskStart(ctx);
+    return null;
+  }
   await syncPlannedTierDownToGuide(ctx);
   await runEnsureTierDownDocsForTier(ctx);
+  return null;
 }
 
 /** Legacy: ensure child docs. Execute mode only. No hook on interface; step is no-op. Use stepEnsureTierDownDocs instead. */
@@ -482,7 +546,9 @@ export async function stepEnsureChildDocs(
   _hooks: TierStartWorkflowHooks
 ): Promise<void> {
   const executionMode = resolveCommandExecutionMode(ctx.options, 'plan');
-  if (isPlanMode(executionMode)) return;
+  if (isPlanMode(executionMode)) {
+    throw new Error('stepEnsureChildDocs requires execute mode.');
+  }
 }
 
 /** Read handoff/guide/label and append to output (optional step). */
@@ -507,7 +573,9 @@ export async function stepFillDirectTierDown(
   _hooks: TierStartWorkflowHooks
 ): Promise<void> {
   const executionMode = resolveCommandExecutionMode(ctx.options, 'plan');
-  if (isPlanMode(executionMode)) return;
+  if (isPlanMode(executionMode)) {
+    throw new Error('stepFillDirectTierDown requires execute mode (no guide mutations in plan mode).');
+  }
   if (ctx.config.name === 'task') return;
   await fillDirectTierDownInGuide(ctx);
 }

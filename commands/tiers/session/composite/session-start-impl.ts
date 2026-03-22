@@ -5,7 +5,6 @@
 import { join, resolve } from 'path';
 import { execSync } from 'child_process';
 import { readGuide } from '../../../utils/read-guide';
-import { readProjectFile } from '../../../utils/utils';
 import { WorkflowCommandContext } from '../../../utils/command-context';
 import { sessionExecutionPolicy } from '../policies/execution-policy';
 import { sessionGitPolicy } from '../policies/git-policy';
@@ -395,12 +394,9 @@ export async function sessionStartImpl(
 
     async getTierDownBuildPlan(): Promise<string> {
       // Fix 1: Prefer current-tier (session) guide when it exists so planning doc is seeded from the real list.
-      const sessionGuidePath = context.paths.getSessionGuidePath(sessionId);
       let guide = '';
-      try {
-        guide = await readProjectFile(sessionGuidePath);
-      } catch {
-        // Session guide not on disk; use tierUp context (phase guide excerpt).
+      if (await context.documents.guideExists('session', sessionId)) {
+        guide = await context.documents.readGuide('session', sessionId);
       }
       if (!guide) guide = ctx.readResult?.guide ?? '';
       const tasks = extractTaskDetails(guide, sessionId);

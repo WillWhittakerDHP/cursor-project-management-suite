@@ -4,7 +4,6 @@
  */
 
 import { getCurrentDate } from '../../../utils/utils';
-import { readProjectFile } from '../../../utils/utils';
 import { WorkflowCommandContext } from '../../../utils/command-context';
 import { resolveFeatureDirectoryFromPlan } from '../../../utils';
 import { MarkdownUtils } from '../../../utils/markdown-utils';
@@ -25,7 +24,7 @@ export async function sessionCheckpointImpl(
 
   try {
     const sessionGuidePath = context.paths.getSessionGuidePath(sessionId);
-    const guideContent = await readProjectFile(sessionGuidePath);
+    const guideContent = await context.documents.readGuide('session', sessionId);
 
     const sessionStatus = await (await import('../../configs/session')).SESSION_CONFIG.controlDoc.readStatus(context, sessionId);
     output.push('## Session Status\n');

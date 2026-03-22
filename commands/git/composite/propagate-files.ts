@@ -1,4 +1,8 @@
 /**
+ * INTERNAL git composite: imports git-logger to avoid a circular import with
+ * git-manager (which re-exports propagate*). All other `.cursor/commands` code
+ * must use `git/shared/git-manager.ts` only for git operations.
+ *
  * Propagate shared files from a source branch to all active tier branches.
  *
  * Uses git worktrees so the main working tree is never modified — this avoids

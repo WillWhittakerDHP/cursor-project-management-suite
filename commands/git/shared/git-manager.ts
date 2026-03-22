@@ -1,7 +1,8 @@
 /**
  * Single entry point for all tier git operations.
- * All callers outside git/ should import from here. Internal git modules use
- * runGitCommand from git-logger and re-export through this facade.
+ * All callers outside git/ should import from here only (see
+ * `scripts/check-cursor-git-import-boundary.mjs`). `tier-branch-manager` uses
+ * `git-logger` for queries to avoid a circular import with this module.
  */
 
 import { gitCommit as gitCommitFromAtomic } from '../atomic/commit';
@@ -12,6 +13,7 @@ import {
   ensureTierBranch,
   mergeTierBranch,
   mergeChildBranches,
+  deleteMergedChildBranchesAfterPush,
   getExpectedBranchForTier,
   getLeafBranchTierFromChain,
   formatBranchHierarchyFromConfig,
@@ -52,6 +54,7 @@ export {
   ensureTierBranch,
   mergeTierBranch,
   mergeChildBranches,
+  deleteMergedChildBranchesAfterPush,
   getExpectedBranchForTier,
   getLeafBranchTierFromChain,
   formatBranchHierarchyFromConfig,
@@ -86,6 +89,11 @@ export { runGitCommand, logGitOp, warnGitOp, getGitOpsLog };
 /** Run `git status --porcelain --ignore-submodules=dirty`. Returns { success, output }. */
 export async function gitStatus(): Promise<{ success: boolean; output: string; error?: string }> {
   return runGitCommand('git status --porcelain --ignore-submodules=dirty', 'gitStatus');
+}
+
+/** Run `git status --porcelain` (strict working tree snapshot; no submodule ignore). */
+export async function gitStatusPorcelain(): Promise<{ success: boolean; output: string; error?: string }> {
+  return runGitCommand('git status --porcelain', 'gitStatusPorcelain');
 }
 
 /**

@@ -32,7 +32,7 @@ export interface RunEndAuditResult {
 }
 
 /**
- * Run the end audit for the given tier. Returns audit output and optional autofix result for runAfterAudit.
+ * Run the end audit for the given tier. Returns audit output and optional autofix result (committed in `stepAfterAudit`).
  * After reports are emitted, commits client/.audit-reports/ and feature audits dir.
  */
 export async function runEndAuditForTier(params: RunEndAuditParams): Promise<RunEndAuditResult | string> {

@@ -101,7 +101,11 @@ export async function phaseStartImpl(
     async getPlanContentSummary(): Promise<string | undefined> {
       try {
         const phaseDesc = await derivePhaseDescription(phase, context);
-        const content = ctx.readResult?.guide ?? (await readProjectFile(context.paths.getPhaseGuidePath(phase)));
+        const content =
+          ctx.readResult?.guide ??
+          (await context.documents.guideExists('phase', phase)
+            ? await context.documents.readGuide('phase', phase)
+            : '');
         const sessionMatches = content.matchAll(/Session\s+(\d+\.\d+\.\d+):?\s*([^\n]*)/gi);
         const sessionLines: string[] = [];
         for (const m of sessionMatches) {
@@ -174,12 +178,9 @@ export async function phaseStartImpl(
 
     async getTierDownBuildPlan(): Promise<string> {
       // Fix 1: Prefer current-tier (phase) guide when it exists so planning doc is seeded from the real list.
-      const phaseGuidePath = context.paths.getPhaseGuidePath(phase);
       let content = '';
-      try {
-        content = await readProjectFile(phaseGuidePath);
-      } catch {
-        // Phase guide not on disk; use tierUp context (feature guide excerpt).
+      if (await context.documents.guideExists('phase', phase)) {
+        content = await context.documents.readGuide('phase', phase);
       }
       if (!content) content = ctx.readResult?.guide ?? '';
       // Match ### Session X.Y.Z: Name (same style as ensure-tier-down-docs).

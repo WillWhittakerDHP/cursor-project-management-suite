@@ -5,7 +5,6 @@
 
 import { join } from 'path';
 import { resolveFeatureDirectoryFromPlan } from '../../../utils';
-import { access } from 'fs/promises';
 import { FEATURE_CONFIG } from '../../configs/feature';
 import { WorkflowCommandContext } from '../../../utils/command-context';
 import { readProjectFile, writeProjectFile, PROJECT_ROOT } from '../../../utils/utils';
@@ -49,15 +48,18 @@ export async function featureReopenImpl(
     getStatusUpdateMessage: () => '✅ Feature PROJECT_PLAN: Status → Reopened',
     updateGuideAndLog: async (c): Promise<void> => {
       const featureGuidePath = c.context.paths.getFeatureGuidePath();
-      try {
-        await access(join(PROJECT_ROOT, featureGuidePath));
-        let guideContent = await readProjectFile(featureGuidePath);
-        guideContent = flipCompleteToReopened(guideContent);
-        await writeProjectFile(featureGuidePath, guideContent);
-        c.output.push('✅ Feature guide: Status → Reopened');
-      } catch (err) {
-        console.warn('Feature reopen: guide update skipped', err);
+      if (!(await c.context.documents.guideExists('feature'))) {
+        throw new Error(
+          `Feature reopen: feature guide missing at ${featureGuidePath}. Restore or create the guide before reopening.`
+        );
       }
+      await c.context.documents.updateGuide(
+        'feature',
+        undefined,
+        (guideContent) => flipCompleteToReopened(guideContent),
+        { overwriteForTierEnd: true }
+      );
+      c.output.push('✅ Feature guide: Status → Reopened');
       const featureLogPath = c.context.paths.getFeatureLogPath();
       try {
         let logContent = await readProjectFile(featureLogPath);

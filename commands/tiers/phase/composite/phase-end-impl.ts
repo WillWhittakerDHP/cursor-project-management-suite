@@ -9,8 +9,10 @@ import {
   ensureTierBranch,
   mergeTierBranch,
   mergeChildBranches,
+  deleteMergedChildBranchesAfterPush,
   getCurrentBranch,
-  runGitCommand,
+  gitStatusPorcelain,
+  gitCheckout,
 } from '../../../git/shared/git-manager';
 import { markPhaseComplete, MarkPhaseCompleteParams } from './phase';
 import { WorkflowCommandContext } from '../../../utils/command-context';
@@ -317,7 +319,7 @@ export async function phaseEndImpl(
 
       if (!p.skipGit) {
         try {
-          const statusResult = await runGitCommand('git status --porcelain', 'phase-end-backup-status');
+          const statusResult = await gitStatusPorcelain();
           if (statusResult.success && statusResult.output.trim()) {
             const backupCommitMessage = `Phase ${p.phaseId} pre-audit backup: ${p.completedSessions.length} session(s) completed`;
             const backupCommitResult = await gitCommit(backupCommitMessage);
@@ -403,7 +405,7 @@ export async function phaseEndImpl(
 
       if (!p.skipGit) {
         try {
-          const preCleanupStatus = await runGitCommand('git status --porcelain', 'phase-end-preCleanup-status');
+          const preCleanupStatus = await gitStatusPorcelain();
           if (preCleanupStatus.success && preCleanupStatus.output.trim()) {
             await gitCommit(`Phase ${p.phaseId} pre-comment-cleanup backup`);
           }
@@ -422,7 +424,7 @@ export async function phaseEndImpl(
       } else {
         const verified = await runWithLintVerification(
           () => phaseCommentCleanup({ dryRun: false, paths: cleanupPaths }),
-          async () => { await runGitCommand('git checkout -- .', 'phase-end-revert-cleanup'); }
+          async () => { await gitCheckout('-- .'); }
         );
         const cleanupResult = verified.cleanupResult;
         c.steps.commentCleanup = {
@@ -474,7 +476,9 @@ export async function phaseEndImpl(
 
         const resolvedPhaseBranch = await getCurrentBranch();
         const sessionBranchPattern = `session-${p.phaseId}*`;
-        const childResult = await mergeChildBranches(sessionBranchPattern, resolvedPhaseBranch, { deleteMerged: true });
+        const childResult = await mergeChildBranches(sessionBranchPattern, resolvedPhaseBranch, {
+          deleteMerged: false,
+        });
         const allSessionBranches = [...childResult.merged, ...childResult.failed];
         c.steps.findSessionBranches = { success: true, output: `Found ${allSessionBranches.length} session branch(es): ${allSessionBranches.join(', ') || 'none'}` };
         c.steps.mergeSessionBranches = { success: childResult.failed.length === 0, output: `Merged ${childResult.merged.length}/${allSessionBranches.length} session branch(es).` };
@@ -483,8 +487,49 @@ export async function phaseEndImpl(
         const phaseCommitMessage = p.commitMessage || `${commitPrefix} completion`;
         const phaseCommitResult = await gitCommit(phaseCommitMessage);
         c.steps.gitCommitPhase = { success: phaseCommitResult.success, output: phaseCommitResult.output };
+        if (!phaseCommitResult.success) {
+          return {
+            success: false,
+            output: c.output.join('\n'),
+            steps: c.steps,
+            outcome: buildTierEndOutcome(
+              'blocked_fix_required',
+              'git_failed',
+              `Phase completion commit failed. ${phaseCommitResult.output} Fix and re-run /phase-end.`
+            ),
+          };
+        }
         const phasePushResult = await gitPush();
         c.steps.gitPushPhase = { success: phasePushResult.success, output: phasePushResult.output };
+        if (!phasePushResult.success) {
+          return {
+            success: false,
+            output: c.output.join('\n'),
+            steps: c.steps,
+            outcome: buildTierEndOutcome(
+              'blocked_fix_required',
+              'git_failed',
+              `Phase branch push failed; session branches were not deleted. ${phasePushResult.output} Fix and re-run /phase-end.`
+            ),
+          };
+        }
+
+        if (childResult.merged.length > 0) {
+          const delChildren = await deleteMergedChildBranchesAfterPush(childResult.merged);
+          c.steps.deleteSessionBranchesAfterPush = { success: delChildren.success, output: delChildren.messages.join('\n') };
+          if (!delChildren.success) {
+            return {
+              success: false,
+              output: c.output.join('\n'),
+              steps: c.steps,
+              outcome: buildTierEndOutcome(
+                'blocked_fix_required',
+                'git_failed',
+                `Deleting merged session branches failed after push. ${delChildren.messages.join(' ')} Fix and re-run /phase-end.`
+              ),
+            };
+          }
+        }
 
         const mergeToFeature = await mergeTierBranch(PHASE_CONFIG, p.phaseId, c.context, {
           push: true,

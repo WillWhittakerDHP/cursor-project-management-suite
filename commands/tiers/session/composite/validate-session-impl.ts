@@ -3,7 +3,6 @@
  */
 
 import { WorkflowCommandContext } from '../../../utils/command-context';
-import { readProjectFile } from '../../../utils/utils';
 import { getCurrentBranch, branchExists, isBranchBasedOn } from '../../../git/shared/git-manager';
 import { WorkflowId } from '../../../utils/id-utils';
 import { SESSION_CONFIG } from '../../configs/session';
@@ -40,14 +39,13 @@ export async function validateSessionImpl(
     const phaseGuidePath = context.paths.getPhaseGuidePath(phase);
     let phaseGuideContent = '';
     try {
-      phaseGuideContent = await readProjectFile(phaseGuidePath);
-    } catch (err) {
-      console.warn('Validate session: validation check failed', err);
+      phaseGuideContent = await context.documents.readGuide('phase', phase);
+    } catch {
       return {
         canStart: false,
         reason: 'Phase guide not found',
         details: [
-          `Phase guide does not exist at: ${phaseGuidePath}`,
+          `Phase guide does not exist or is unreadable at: ${phaseGuidePath}`,
           `Create the phase guide first using /phase-plan ${phase}`,
         ],
       };
@@ -57,9 +55,15 @@ export async function validateSessionImpl(
     const sessionIsListedInPhaseGuide = new RegExp(`\\bSession\\s+${escapedSessionId}(?::|\\b)`, 'i').test(phaseGuideContent);
     if (!sessionIsListedInPhaseGuide) {
       const [hasSessionGuide, hasSessionLog, hasSessionHandoff] = await Promise.all([
-        readProjectFile(context.paths.getSessionGuidePath(sessionId)).then(() => true).catch(() => false),
-        readProjectFile(context.paths.getSessionLogPath(sessionId)).then(() => true).catch(() => false),
-        readProjectFile(context.paths.getSessionHandoffPath(sessionId)).then(() => true).catch(() => false),
+        context.documents.guideExists('session', sessionId),
+        context.documents
+          .readLog('session', sessionId)
+          .then(() => true)
+          .catch(() => false),
+        context.documents
+          .readHandoff('session', sessionId)
+          .then(() => true)
+          .catch(() => false),
       ]);
       if (!hasSessionGuide && !hasSessionLog && !hasSessionHandoff) {
         return {

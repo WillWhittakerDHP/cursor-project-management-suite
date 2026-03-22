@@ -21,7 +21,6 @@ import { TEST_CONFIG } from '../../../testing/utils/test-config';
 import { getCurrentDate } from '../../../utils/utils';
 import { runCatchUpTests } from '../../../testing/composite/test-catchup-workflow';
 import { analyzeCodeChangeImpact } from '../../../testing/composite/test-change-detector';
-import { commitAutofixChanges } from '../../../audit/autofix/commit-autofix';
 import { WorkflowId } from '../../../utils/id-utils';
 import { SESSION_CONFIG } from '../../configs/session';
 import { fileURLToPath } from 'node:url';
@@ -288,19 +287,6 @@ export async function sessionEndImpl(
       );
     },
 
-    async runAfterAudit(c): Promise<StepExitResult> {
-      const p = c.params as SessionEndParams & { skipGit?: boolean };
-      if (!c.autofixResult) return null;
-      const commitResult = await commitAutofixChanges(
-        'session',
-        c.identifier,
-        c.autofixResult,
-        { skipGit: p.skipGit }
-      );
-      c.steps.gitCommitAuditFixes = { success: commitResult.success, output: commitResult.output };
-      return null;
-    },
-
     async runVerificationCheck(c): Promise<{ suggested: boolean; checklist?: string; productChecklist?: string; artifactChecklist?: string } | null> {
       const p = c.params as SessionEndParams;
       return proposeVerificationChecklistForSession(p.sessionId, c.context);
@@ -483,8 +469,7 @@ export async function sessionEndImpl(
         c.steps.excerptMarkerSessionLog = { success: false, output: `Session log marker step skipped: ${_err instanceof Error ? _err.message : String(_err)}` };
       }
       try {
-        const sessionGuidePath = c.context.paths.getSessionGuidePath(p.sessionId);
-        let sessionGuideContent = await readProjectFile(sessionGuidePath);
+        let sessionGuideContent = await c.context.documents.readGuide('session', p.sessionId);
         if (!sessionGuideContent.includes(sessionMarker)) {
           sessionGuideContent = sessionGuideContent.trimEnd() + '\n\n' + sessionMarker;
           await c.context.documents.updateGuide('session', p.sessionId, () => sessionGuideContent, {
@@ -613,7 +598,7 @@ export async function sessionEndImpl(
             '- App starts',
             '- Linting passed',
             '- Feature work committed',
-            c.autofixResult ? '- Audit fixes committed (via runAfterAudit)' : '',
+            c.autofixResult ? '- Audit fixes committed after end audit (when autofix changed files)' : '',
             '- Session log updated',
             '- Handoff document updated',
             '- Session guide updated',

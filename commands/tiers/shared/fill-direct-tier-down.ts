@@ -6,7 +6,6 @@
 
 import type { TierStartWorkflowContext } from './tier-start-workflow-types';
 import type { WorkflowCommandContext } from '../../utils/command-context';
-import { readProjectFile } from '../../utils/utils';
 
 const PLACEHOLDER_PATTERN = /\[Fill in\]|\[Files to work with\]|\[What needs to be verified\]|\[To be planned\]|\[To be identified during planning\]|\[To be defined\]/i;
 
@@ -31,8 +30,7 @@ async function fillTaskSectionsInSessionGuide(
   context: WorkflowCommandContext,
   mode: DecompositionModeForFill
 ): Promise<void> {
-  const guidePath = context.paths.getSessionGuidePath(sessionId);
-  let content = await readProjectFile(guidePath);
+  let content = await context.documents.readGuide('session', sessionId);
   const taskSectionRegex = new RegExp(
     `((-?\\s*\\[[ x]\\])?\\s*(?:####|###) Task \\d+\\.\\d+\\.\\d+\\.\\d+:[^\\n]*)([\\s\\S]*?)(?=(?:-?\\s*\\[|#### Task|### Task|## |$))`,
     'g'
@@ -84,8 +82,7 @@ async function fillSessionSectionsInPhaseGuide(
   context: WorkflowCommandContext,
   mode: DecompositionModeForFill
 ): Promise<void> {
-  const guidePath = context.paths.getPhaseGuidePath(phaseId);
-  let content = await readProjectFile(guidePath);
+  let content = await context.documents.readGuide('phase', phaseId);
   const sessionSectionRegex = new RegExp(
     `((-?\\s*\\[[ x]\\])?\\s*### Session \\d+\\.\\d+\\.\\d+:[^\\n]*)([\\s\\S]*?)(?=(?:-?\\s*\\[|### Session|## |$))`,
     'g'
@@ -127,8 +124,7 @@ async function fillPhaseSectionsInFeatureGuide(
   context: WorkflowCommandContext,
   mode: DecompositionModeForFill
 ): Promise<void> {
-  const guidePath = context.paths.getFeatureGuidePath();
-  let content = await readProjectFile(guidePath);
+  let content = await context.documents.readGuide('feature');
   const phaseSectionRegex = new RegExp(
     `((-?\\s*\\[[ x]\\])?\\s*### Phase \\d+\\.\\d+:[^\\n]*)([\\s\\S]*?)(?=(?:-?\\s*\\[|### Phase|## |$))`,
     'g'
@@ -182,15 +178,11 @@ export async function fillDirectTierDownInGuide(ctx: TierStartWorkflowContext): 
   const scope = resolvedDescription ?? identifier;
   const mode: DecompositionModeForFill = options?.workProfile?.decompositionMode ?? 'moderate';
   if (config.name === 'task') return; // lowest tier
-  try {
-    if (config.name === 'session') {
-      await fillTaskSectionsInSessionGuide(identifier, scope, context, mode);
-    } else if (config.name === 'phase') {
-      await fillSessionSectionsInPhaseGuide(identifier, scope, context, mode);
-    } else if (config.name === 'feature') {
-      await fillPhaseSectionsInFeatureGuide(scope, context, mode);
-    }
-  } catch (err) {
-    console.warn('fill-direct-tier-down: non-blocking failure', config.name, identifier, err);
+  if (config.name === 'session') {
+    await fillTaskSectionsInSessionGuide(identifier, scope, context, mode);
+  } else if (config.name === 'phase') {
+    await fillSessionSectionsInPhaseGuide(identifier, scope, context, mode);
+  } else if (config.name === 'feature') {
+    await fillPhaseSectionsInFeatureGuide(scope, context, mode);
   }
 }

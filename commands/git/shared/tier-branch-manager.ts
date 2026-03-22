@@ -12,8 +12,7 @@ import type { TierConfig, TierName } from '../../tiers/shared/types';
 import type { WorkflowCommandContext } from '../../utils/command-context';
 import { tierUp } from '../../utils/tier-navigation';
 import { getConfigForTier } from '../../tiers/configs/index';
-import { getCurrentBranch, branchExists, isBranchBasedOn } from './git-manager';
-import { runGitCommand, warnGitOp } from './git-logger';
+import { getCurrentBranch, branchExists, isBranchBasedOn, runGitCommand, warnGitOp } from './git-logger';
 import { createBranch } from '../atomic/create-branch';
 import { gitMerge } from '../atomic/merge';
 import { gitPush } from '../atomic/push';
@@ -45,6 +44,8 @@ export interface MergeTierBranchResult {
   messages: string[];
   mergedInto: string;
   deletedBranch: boolean;
+  /** Stable machine reason when success is false (e.g. wrong_branch_before_merge). */
+  reasonCode?: string;
 }
 
 export interface ScopeCoherenceResult {
@@ -714,7 +715,12 @@ export async function getExpectedBranchForTier(
   let branchName = chain[chain.length - 1].branchName;
   if (!(await branchExists(branchName))) {
     const prefixMatches = await listBranchesByPrefix(branchName);
-    if (prefixMatches.length >= 1) branchName = prefixMatches[0];
+    if (prefixMatches.length > 1) {
+      return null;
+    }
+    if (prefixMatches.length === 1) {
+      branchName = prefixMatches[0];
+    }
   }
   return branchName;
 }
@@ -794,8 +800,14 @@ export async function ensureTierBranch(
   const targetLink = chain[chain.length - 1];
   if (!(await branchExists(targetLink.branchName))) {
     const prefixMatches = await listBranchesByPrefix(targetLink.branchName);
-    if (prefixMatches.length === 1) targetLink.branchName = prefixMatches[0];
-    else if (prefixMatches.length > 1) targetLink.branchName = prefixMatches[0];
+    if (prefixMatches.length === 1) {
+      targetLink.branchName = prefixMatches[0];
+    } else if (prefixMatches.length > 1) {
+      messages.push(
+        `Ambiguous target branches for ${targetLink.branchName}: ${prefixMatches.join(', ')}. Resolve to one local branch before tier-start.`
+      );
+      return { success: false, messages, finalBranch: await getCurrentBranch(), chain };
+    }
   }
   const targetBranch = targetLink.branchName;
 
@@ -826,26 +838,24 @@ export async function ensureTierBranch(
     const link = chain[i];
     const parentBranch = link.parentBranchName;
 
-    // Root branch handling (develop/main)
+    // Root branch (config-defined; no implicit main/master fallback)
     if (link.isRoot && parentBranch) {
-      const rootExists = await branchExists(parentBranch);
-      if (!rootExists) {
-        const altRoot = parentBranch === 'develop'
-          ? ((await branchExists('main')) ? 'main' : 'master')
-          : parentBranch;
-        if (!(await branchExists(altRoot))) {
-          messages.push(`Root branch ${parentBranch} does not exist.`);
-          return { success: false, messages, finalBranch: await getCurrentBranch(), chain };
-        }
-        messages.push(`Root branch ${parentBranch} not found; using ${altRoot}.`);
+      if (!(await branchExists(parentBranch))) {
+        messages.push(
+          `Root branch ${parentBranch} does not exist locally. Fetch it or align tier config with your default branch.`
+        );
+        return { success: false, messages, finalBranch: await getCurrentBranch(), chain };
       }
       if (pullRoot) {
-        const pullResult = await runGitCommand(`git checkout ${parentBranch} && git pull origin ${parentBranch}`, 'ensureTierBranch-pullRoot');
-        if (pullResult.success) {
-          messages.push(`Pulled latest ${parentBranch}.`);
-        } else {
-          messages.push(`Warning: could not pull ${parentBranch}: ${pullResult.error || pullResult.output}`);
+        const pullResult = await runGitCommand(
+          `git checkout ${parentBranch} && git pull origin ${parentBranch}`,
+          'ensureTierBranch-pullRoot'
+        );
+        if (!pullResult.success) {
+          messages.push(`Failed to pull root ${parentBranch}: ${pullResult.error || pullResult.output}`);
+          return { success: false, messages, finalBranch: await getCurrentBranch(), chain };
         }
+        messages.push(`Pulled latest ${parentBranch}.`);
       }
     }
 
@@ -857,9 +867,10 @@ export async function ensureTierBranch(
         ancestorBranch = prefixMatches[0];
         link.branchName = ancestorBranch;
       } else if (prefixMatches.length > 1) {
-        ancestorBranch = prefixMatches[0];
-        link.branchName = ancestorBranch;
-        messages.push(`Multiple branches match ${link.branchName}; using ${ancestorBranch}.`);
+        messages.push(
+          `Ambiguous ancestor branches for ${link.branchName}: ${prefixMatches.join(', ')}. Resolve before tier-start.`
+        );
+        return { success: false, messages, finalBranch: await getCurrentBranch(), chain };
       } else {
         messages.push(
           `Ancestor branch ${link.branchName} (${link.tier}) does not exist. ` +
@@ -915,11 +926,11 @@ export async function ensureTierBranch(
         `git pull origin ${link.branchName}`,
         'ensureTierBranch-pullAncestor'
       );
-      if (pullResult.success) {
-        messages.push(`Pulled latest ${link.branchName} from remote.`);
-      } else {
-        messages.push(`Warning: could not pull ${link.branchName}: ${pullResult.error || pullResult.output}`);
+      if (!pullResult.success) {
+        messages.push(`Failed to pull ${link.branchName}: ${pullResult.error || pullResult.output}`);
+        return { success: false, messages, finalBranch: await getCurrentBranch(), chain };
       }
+      messages.push(`Pulled latest ${link.branchName} from remote.`);
       // Re-check ancestry after pull; pulling can introduce old history that breaks the relationship
       if (resolvedParent && !isRootBranch(resolvedParent) && (await branchExists(resolvedParent))) {
         const stillBasedOn = await isBranchBasedOn(link.branchName, resolvedParent);
@@ -955,28 +966,27 @@ export async function ensureTierBranch(
     // Feature-start: pull latest from root before creating feature branch
     if (pullRoot && isRootBranch(parentOfTarget)) {
       const pullResult = await runGitCommand(`git pull origin ${parentOfTarget}`, 'ensureTierBranch-pull');
-      if (pullResult.success) {
-        messages.push(`Pulled latest ${parentOfTarget}.`);
-      } else {
-        messages.push(`Warning: could not pull ${parentOfTarget}: ${pullResult.error || pullResult.output}`);
+      if (!pullResult.success) {
+        messages.push(`Failed to pull ${parentOfTarget}: ${pullResult.error || pullResult.output}`);
+        return { success: false, messages, finalBranch: await getCurrentBranch(), chain };
       }
+      messages.push(`Pulled latest ${parentOfTarget}.`);
     }
-    // Phase/session-start: pull latest non-root parent before creating child branch so the new branch includes latest harness/feature updates
+    // Tier-up: always refresh non-root parent from origin when syncing (before create or switching to existing leaf)
     if (
-      createIfMissing &&
+      syncRemote &&
       !isRootBranch(parentOfTarget) &&
-      (await branchExists(parentOfTarget)) &&
-      !(await branchExists(targetLink.branchName))
+      (await branchExists(parentOfTarget))
     ) {
       const pullResult = await runGitCommand(
         `git pull origin ${parentOfTarget}`,
-        'ensureTierBranch-pullParentBeforeCreate'
+        'ensureTierBranch-pullParentBeforeLeaf'
       );
-      if (pullResult.success) {
-        messages.push(`Pulled latest ${parentOfTarget} before creating ${targetLink.tier} branch.`);
-      } else {
-        messages.push(`Warning: could not pull ${parentOfTarget}: ${pullResult.error || pullResult.output}`);
+      if (!pullResult.success) {
+        messages.push(`Failed to pull tier-up branch ${parentOfTarget}: ${pullResult.error || pullResult.output}`);
+        return { success: false, messages, finalBranch: await getCurrentBranch(), chain };
       }
+      messages.push(`Pulled latest tier-up branch ${parentOfTarget}.`);
     }
   }
 
@@ -994,14 +1004,20 @@ export async function ensureTierBranch(
         `git pull origin ${targetLink.branchName}`,
         'ensureTierBranch-pullTarget'
       );
-      if (pullTarget.success) {
-        messages.push(`Pulled latest ${targetLink.branchName} from remote.`);
-      } else {
+      if (!pullTarget.success) {
         const combined = `${pullTarget.error ?? ''}${pullTarget.output ?? ''}`;
         const noRemoteRef = combined.includes("couldn't find remote ref");
-        if (!noRemoteRef) {
-          messages.push(`Warning: could not pull ${targetLink.branchName}: ${combined}`);
+        if (noRemoteRef) {
+          // Allowed only when this leaf has never been pushed; tier-start will push -u after create elsewhere
+          messages.push(
+            `No remote ref for ${targetLink.branchName} yet; continuing with local branch only (push -u after first create).`
+          );
+        } else {
+          messages.push(`Failed to pull ${targetLink.branchName}: ${combined}`);
+          return { success: false, messages, finalBranch: await getCurrentBranch(), chain };
         }
+      } else {
+        messages.push(`Pulled latest ${targetLink.branchName} from remote.`);
       }
     }
 
@@ -1038,17 +1054,19 @@ export async function ensureTierBranch(
       `git push -u origin ${targetLink.branchName}`,
       'ensureTierBranch-pushNewBranch'
     );
-    if (pushNew.success) {
-      messages.push(`Pushed new branch ${targetLink.branchName} to remote.`);
-    } else {
-      messages.push(`Warning: could not push new branch to remote: ${pushNew.error || pushNew.output}`);
+    if (!pushNew.success) {
+      messages.push(`Failed to push new branch to remote: ${pushNew.error || pushNew.output}`);
+      return { success: false, messages, finalBranch: await getCurrentBranch(), chain };
     }
+    messages.push(`Pushed new branch ${targetLink.branchName} to remote.`);
 
-    // Post-create verification
     if (parentOfTarget && (await branchExists(parentOfTarget)) && !isRootBranch(parentOfTarget)) {
       const isBasedOn = await isBranchBasedOn(targetLink.branchName, parentOfTarget);
       if (!isBasedOn) {
-        messages.push(`Warning: ${targetLink.branchName} created but based-on verification failed. Verify branch hierarchy manually.`);
+        messages.push(
+          `${targetLink.branchName} was created but is not based on ${parentOfTarget}. Fix branch base and retry tier-start.`
+        );
+        return { success: false, messages, finalBranch: await getCurrentBranch(), chain };
       }
     }
   } else {
@@ -1116,23 +1134,89 @@ export async function mergeTierBranch(
     return { success: true, messages: ['Tier has no branch; skip merge.'], mergedInto: '', deletedBranch: false };
   }
   if (!parentBranch) {
-    return { success: false, messages: [`No parent branch defined for ${config.name} tier.`], mergedInto: '', deletedBranch: false };
+    return {
+      success: false,
+      messages: [`No parent branch defined for ${config.name} tier.`],
+      mergedInto: '',
+      deletedBranch: false,
+      reasonCode: 'no_parent_branch',
+    };
+  }
+
+  if (deleteBranch && !shouldPush) {
+    return {
+      success: false,
+      messages: [
+        'deleteBranch requires push: true so the merged parent is on the remote before removing the child branch.',
+      ],
+      mergedInto: '',
+      deletedBranch: false,
+      reasonCode: 'invalid_merge_options',
+    };
   }
 
   // Resolve tier and parent by prefix when exact name does not exist (descriptor-style names)
   if (!(await branchExists(tierBranch))) {
     const tierMatches = await listBranchesByPrefix(tierBranch);
-    if (tierMatches.length >= 1) tierBranch = tierMatches[0];
+    if (tierMatches.length === 0) {
+      return {
+        success: false,
+        messages: [`No local branch matches tier branch prefix ${tierBranch}.`],
+        mergedInto: '',
+        deletedBranch: false,
+        reasonCode: 'tier_branch_not_found',
+      };
+    }
+    if (tierMatches.length > 1) {
+      return {
+        success: false,
+        messages: [
+          `Ambiguous tier branches for ${tierBranch}: ${tierMatches.join(', ')}. Resolve to a single branch before merge.`,
+        ],
+        mergedInto: '',
+        deletedBranch: false,
+        reasonCode: 'ambiguous_branch_prefix',
+      };
+    }
+    tierBranch = tierMatches[0];
   }
   if (!isRootBranch(parentBranch) && !(await branchExists(parentBranch))) {
     const parentMatches = await listBranchesByPrefix(parentBranch);
-    if (parentMatches.length >= 1) parentBranch = parentMatches[0];
+    if (parentMatches.length === 0) {
+      return {
+        success: false,
+        messages: [`Parent branch ${parentBranch} does not exist locally.`],
+        mergedInto: '',
+        deletedBranch: false,
+        reasonCode: 'parent_branch_not_found',
+      };
+    }
+    if (parentMatches.length > 1) {
+      return {
+        success: false,
+        messages: [
+          `Ambiguous parent branches for ${parentBranch}: ${parentMatches.join(', ')}. Resolve before merge.`,
+        ],
+        mergedInto: '',
+        deletedBranch: false,
+        reasonCode: 'ambiguous_branch_prefix',
+      };
+    }
+    parentBranch = parentMatches[0];
   }
 
   const currentBranch = await getCurrentBranch();
   if (currentBranch !== tierBranch && !currentBranch.startsWith(tierBranch + '-')) {
-    messages.push(`Not on ${config.name} branch (current: ${currentBranch}). Skipping merge.`);
-    return { success: true, messages, mergedInto: '', deletedBranch: false };
+    messages.push(
+      `Not on ${config.name} tier branch (expected ${tierBranch}, current: ${currentBranch}). Checkout the tier branch and re-run tier-end.`
+    );
+    return {
+      success: false,
+      messages,
+      mergedInto: '',
+      deletedBranch: false,
+      reasonCode: 'wrong_branch_before_merge',
+    };
   }
 
   // ── Step 1: Await background work ─────────────────────────────────
@@ -1174,7 +1258,14 @@ export async function mergeTierBranch(
       if (preMergeCommit.success) {
         messages.push('Committed all remaining artifacts on tier branch before merge.');
       } else {
-        messages.push(`Pre-merge commit note: ${preMergeCommit.error || preMergeCommit.output}`);
+        messages.push(`Pre-merge commit failed: ${preMergeCommit.error || preMergeCommit.output}`);
+        return {
+          success: false,
+          messages,
+          mergedInto: parentBranch,
+          deletedBranch: false,
+          reasonCode: 'pre_merge_commit_failed',
+        };
       }
     }
   }
@@ -1191,7 +1282,14 @@ export async function mergeTierBranch(
       error: 'DIRTY_TREE_BEFORE_MERGE',
       context: `tier=${config.name} id=${tierId} branch=${tierBranch}`,
     });
-    messages.push('WARNING: working tree not clean after final commit — see .git-ops-log.');
+    messages.push(`Working tree not clean before merge:\n${assertStatus.output.trim()}`);
+    return {
+      success: false,
+      messages,
+      mergedInto: parentBranch,
+      deletedBranch: false,
+      reasonCode: 'dirty_tree_before_merge',
+    };
   }
 
   // ── Step 4: Merge — child branch wins text conflicts, auto-resolve .cursor submodule
@@ -1201,6 +1299,7 @@ export async function mergeTierBranch(
     targetBranch: parentBranch,
     skipStash: true,
     pullBeforeMerge: syncRemote,
+    strictPull: syncRemote,
     preferSource: true,
     autoResolveSubmodule: true,
   });
@@ -1216,40 +1315,62 @@ export async function mergeTierBranch(
       error: 'MERGE_FAILED',
       context: `tier=${config.name} id=${tierId} from=${tierBranch} into=${parentBranch}`,
     });
-    return { success: false, messages, mergedInto: parentBranch, deletedBranch: false };
+    return {
+      success: false,
+      messages,
+      mergedInto: parentBranch,
+      deletedBranch: false,
+      reasonCode: 'merge_failed',
+    };
   }
   messages.push(`Merged ${tierBranch} into ${parentBranch}.`);
 
-  // Push parent before deleting child so remote reflects the merge first; helps safe
-  // delete and avoids skipping remote child cleanup when local delete was gated on sync.
   if (shouldPush) {
     const pushResult = await gitPush();
-    messages.push(pushResult.success
-      ? `Pushed ${parentBranch} to remote.`
-      : `Push failed (non-critical): ${pushResult.output}`
-    );
+    if (!pushResult.success) {
+      messages.push(`Push failed after merge; child branch not deleted: ${pushResult.output}`);
+      return {
+        success: false,
+        messages,
+        mergedInto: parentBranch,
+        deletedBranch: false,
+        reasonCode: 'push_failed_after_merge',
+      };
+    }
+    messages.push(`Pushed ${parentBranch} to remote.`);
   }
 
   let deleted = false;
   if (deleteBranch) {
     const safeTierBranch = tierBranch.replace(/'/g, "'\\''");
     const deleteResult = await runGitCommand(`git branch -d '${safeTierBranch}'`, 'mergeTierBranch-delete');
-    deleted = deleteResult.success;
-    messages.push(deleted
-      ? `Deleted branch: ${tierBranch}`
-      : `Could not delete branch (non-critical): ${deleteResult.error || deleteResult.output}`
-    );
-    if (deleted) {
-      const remoteDel = await runGitCommand(
-        `git push origin --delete '${safeTierBranch}'`,
-        'mergeTierBranch-delete-remote'
-      );
-      messages.push(
-        remoteDel.success
-          ? `Deleted remote branch: ${tierBranch}`
-          : `Remote branch delete (non-critical): ${remoteDel.error || remoteDel.output}`
-      );
+    if (!deleteResult.success) {
+      messages.push(`Local branch delete failed: ${deleteResult.error || deleteResult.output}`);
+      return {
+        success: false,
+        messages,
+        mergedInto: parentBranch,
+        deletedBranch: false,
+        reasonCode: 'delete_local_branch_failed',
+      };
     }
+    deleted = true;
+    messages.push(`Deleted branch: ${tierBranch}`);
+    const remoteDel = await runGitCommand(
+      `git push origin --delete '${safeTierBranch}'`,
+      'mergeTierBranch-delete-remote'
+    );
+    if (!remoteDel.success) {
+      messages.push(`Remote branch delete failed: ${remoteDel.error || remoteDel.output}`);
+      return {
+        success: false,
+        messages,
+        mergedInto: parentBranch,
+        deletedBranch: true,
+        reasonCode: 'delete_remote_branch_failed',
+      };
+    }
+    messages.push(`Deleted remote branch: ${tierBranch}`);
   }
 
   return { success: true, messages, mergedInto: parentBranch, deletedBranch: deleted };
@@ -1286,6 +1407,7 @@ export async function mergeChildBranches(
       targetBranch,
       skipStash: true,
       pullBeforeMerge,
+      strictPull: pullBeforeMerge,
       preferSource: true,
       autoResolveSubmodule: true,
     });
@@ -1304,6 +1426,32 @@ export async function mergeChildBranches(
   }
 
   return { merged, failed, messages };
+}
+
+/**
+ * After merged child branches are integrated and the receiving branch was pushed to origin,
+ * delete each child locally and on the remote. Fails on first error (no silent skip).
+ */
+export async function deleteMergedChildBranchesAfterPush(
+  branches: string[]
+): Promise<{ success: boolean; messages: string[] }> {
+  const messages: string[] = [];
+  for (const branch of branches) {
+    const safe = branch.replace(/'/g, "'\\''");
+    const delLocal = await runGitCommand(`git branch -d '${safe}'`, 'deleteMergedChild-local');
+    if (!delLocal.success) {
+      messages.push(`Failed to delete local branch ${branch}: ${delLocal.error || delLocal.output}`);
+      return { success: false, messages };
+    }
+    messages.push(`Deleted local branch ${branch}`);
+    const delRemote = await runGitCommand(`git push origin --delete '${safe}'`, 'deleteMergedChild-remote');
+    if (!delRemote.success) {
+      messages.push(`Failed to delete remote branch ${branch}: ${delRemote.error || delRemote.output}`);
+      return { success: false, messages };
+    }
+    messages.push(`Deleted remote branch ${branch}`);
+  }
+  return { success: true, messages };
 }
 
 // ─── formatBranchHierarchyFromConfig ─────────────────────────────────

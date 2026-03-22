@@ -12,10 +12,6 @@
 import { WorkflowCommandContext } from './command-context';
 import { resolveFeatureDirectoryFromPlan } from './workflow-scope';
 import { MarkdownUtils } from './markdown-utils';
-import { readFile } from 'fs/promises';
-import { access } from 'fs/promises';
-import { join } from 'path';
-import { PROJECT_ROOT } from './utils';
 import { WorkflowId } from './id-utils';
 export interface DownstreamMatch {
   tier: 'feature' | 'phase' | 'session';
@@ -272,38 +268,26 @@ export async function checkDownstreamPlans(
   // Search future session guides
   const futureSessionIds = getFutureSessionIds(params.currentSessionId);
   for (const sessionId of futureSessionIds) {
-    try {
-      const guidePath = join(PROJECT_ROOT, context.paths.getSessionGuidePath(sessionId));
-      await access(guidePath);
-      const content = await readFile(guidePath, 'utf-8');
-      const title = extractTitle(content);
-      const matches = searchGuideContent(content, keywords, 'session', sessionId, title);
-      allMatches.push(...matches);
-    } catch (err) {
-      console.warn('Check downstream plans: session guide not found', sessionId, err);
-    }
+    if (!(await context.documents.guideExists('session', sessionId))) continue;
+    const content = await context.documents.readGuide('session', sessionId);
+    const title = extractTitle(content);
+    const matches = searchGuideContent(content, keywords, 'session', sessionId, title);
+    allMatches.push(...matches);
   }
   
   // Search future phase guides
   const futurePhaseIds = getFuturePhaseIds(params.currentPhase);
   for (const phaseId of futurePhaseIds) {
-    try {
-      const guidePath = join(PROJECT_ROOT, context.paths.getPhaseGuidePath(phaseId));
-      await access(guidePath);
-      const content = await readFile(guidePath, 'utf-8');
-      const title = extractTitle(content);
-      const matches = searchGuideContent(content, keywords, 'phase', phaseId, title);
-      allMatches.push(...matches);
-    } catch (err) {
-      console.warn('Check downstream plans: phase guide not found', phaseId, err);
-    }
+    if (!(await context.documents.guideExists('phase', phaseId))) continue;
+    const content = await context.documents.readGuide('phase', phaseId);
+    const title = extractTitle(content);
+    const matches = searchGuideContent(content, keywords, 'phase', phaseId, title);
+    allMatches.push(...matches);
   }
   
   // Search feature guide (future phases section)
-  try {
-    const featureGuidePath = join(PROJECT_ROOT, context.paths.getFeatureGuidePath());
-    await access(featureGuidePath);
-    const content = await readFile(featureGuidePath, 'utf-8');
+  if (await context.documents.guideExists('feature')) {
+    const content = await context.documents.readGuide('feature');
     const futurePhasesSection = MarkdownUtils.extractSection(content, 'Future Phases', { includeSubsections: true }) ||
                                 MarkdownUtils.extractSection(content, 'Planned Phases', { includeSubsections: true });
     if (futurePhasesSection) {
@@ -319,8 +303,6 @@ export async function checkDownstreamPlans(
         });
       }
     }
-  } catch (err) {
-    console.warn('Check downstream plans: feature guide not found', featureName, err);
   }
   
   // Sort matches by confidence and score

@@ -167,7 +167,26 @@ export async function runTierStartWorkflow(
     if (shouldRunStep('ensure_guide_from_plan')) {
       logStepTiming('ensure_guide_from_plan', 'enter');
       await recordStep(ctx, 'ensure_guide_from_plan', 'enter');
-      await stepEnsureGuideFromPlan(ctx, hooks);
+      try {
+        const ensureExit = await stepEnsureGuideFromPlan(ctx, hooks);
+        if (ensureExit) {
+          await recordStep(ctx, 'ensure_guide_from_plan', 'exit_failure');
+          return attachShadowPayload(ctx, ensureExit);
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        await recordStep(ctx, 'ensure_guide_from_plan', 'exit_failure');
+        return attachShadowPayload(ctx, {
+          success: false,
+          output: `${ctx.output.join('\n\n')}\n\n## Guide materialization error\n\n${msg}`,
+          outcome: {
+            status: 'failed',
+            reasonCode: 'guide_materialization_failed',
+            nextAction:
+              'Fix the error above (planning doc, paths, write guard), then re-run tier-start in execute mode.',
+          },
+        });
+      }
       await recordStep(ctx, 'ensure_guide_from_plan', 'exit_success');
       logStepTiming('ensure_guide_from_plan', 'exit');
     }
@@ -249,7 +268,21 @@ export async function runTierStartWorkflow(
   if (shouldRunStep('fill_tier_down')) {
     logStepTiming('fill_tier_down', 'enter');
     await recordStep(ctx, 'fill_tier_down', 'enter');
-    await stepFillDirectTierDown(ctx, hooks);
+    try {
+      await stepFillDirectTierDown(ctx, hooks);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      await recordStep(ctx, 'fill_tier_down', 'exit_failure');
+      return attachShadowPayload(ctx, {
+        success: false,
+        output: `${ctx.output.join('\n\n')}\n\n## Fill tierDown error\n\n${msg}`,
+        outcome: {
+          status: 'failed',
+          reasonCode: 'fill_tier_down_failed',
+          nextAction: 'Fix the error above and re-run tier-start in execute mode.',
+        },
+      });
+    }
     await recordStep(ctx, 'fill_tier_down', 'exit_success');
     logStepTiming('fill_tier_down', 'exit');
   }

@@ -12,6 +12,8 @@ import { resolveCommandExecutionMode, isPlanMode } from '../../utils/command-exe
 import { resolveRunTests, buildPlanModeResult } from '../../utils/tier-end-utils';
 import { workflowCleanupReadmes } from '../../readme/composite/readme-workflow-cleanup';
 import { runEndAuditForTier } from '../../audit/run-end-audit-for-tier';
+import type { AuditTier } from '../../audit/types';
+import { commitAutofixChanges } from '../../audit/autofix/commit-autofix';
 import { buildTierEndOutcome } from '../../utils/tier-outcome';
 import { WorkflowId } from '../../utils/id-utils';
 import {
@@ -510,13 +512,52 @@ export async function stepEndAudit(
   return null;
 }
 
-/** Run runAfterAudit hook when provided (e.g. commit autofix changes). */
+/**
+ * Optional tier-specific hook, then shared commit of script-applied autofix (all tier ends).
+ * Fails tier-end if commit fails (strict).
+ */
 export async function stepAfterAudit(
   ctx: TierEndWorkflowContext,
   hooks: TierEndWorkflowHooks
 ): Promise<StepExitResult> {
-  if (!hooks.runAfterAudit) return null;
-  return hooks.runAfterAudit(ctx);
+  if (hooks.runAfterAudit) {
+    const hookExit = await hooks.runAfterAudit(ctx);
+    if (hookExit) return hookExit;
+  }
+
+  const params = ctx.params as { skipGit?: boolean } | undefined;
+  if (params?.skipGit || !ctx.autofixResult) {
+    return null;
+  }
+
+  const tier = ctx.config.name as AuditTier;
+  const commitResult = await commitAutofixChanges(tier, ctx.identifier, ctx.autofixResult, {
+    skipGit: params.skipGit,
+  });
+  ctx.steps.gitCommitAuditFixes = { success: commitResult.success, output: commitResult.output };
+
+  if (!commitResult.success) {
+    return {
+      success: false,
+      output: ctx.output.join('\n\n'),
+      steps: ctx.steps,
+      outcome: buildTierEndOutcome(
+        'blocked_fix_required',
+        'audit_fix_commit_failed',
+        'Autofix produced changes but committing them failed. Resolve git state and re-run this tier-end.'
+      ),
+    };
+  }
+
+  if (
+    commitResult.output &&
+    !commitResult.output.includes('No audit fixes to commit') &&
+    !commitResult.output.includes('Skipped (skipGit=true)')
+  ) {
+    ctx.output.push(commitResult.output);
+  }
+
+  return null;
 }
 
 /** Build cascade from hook and set ctx.outcome.cascade. */

@@ -8,7 +8,7 @@
 
 import { TierAuditResult, AuditParams, AutofixResult } from '../types';
 import { auditTierQuality } from '../atomic/audit-tier-quality';
-import { runTierAutofix } from '../autofix/run-tier-autofix';
+import { hasFailedScriptAutofix, runTierAutofix } from '../autofix/run-tier-autofix';
 import { WorkflowCommandContext } from '../../utils/command-context';
 import { resolveFeatureDirectoryFromPlan } from '../../utils';
 import { writeAuditReport, calculateOverallStatus, getRelativePath } from '../utils';
@@ -66,9 +66,15 @@ export async function auditTask(params: AuditTaskParams): Promise<{
   }
 
   // Create audit result
-  const overallStatus = calculateOverallStatus(results);
+  let overallStatus = calculateOverallStatus(results);
+  if (hasFailedScriptAutofix(autofixResult)) {
+    overallStatus = 'fail';
+    errors.push(
+      'One or more automatic audit fix commands failed (see Autofix section). Fix the underlying issue or run the fix command manually, then re-run tier-end.'
+    );
+  }
   const timestamp = new Date().toISOString();
-  
+
   const auditResult: TierAuditResult = {
     tier: 'task',
     identifier: params.taskId,

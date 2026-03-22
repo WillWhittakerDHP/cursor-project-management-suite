@@ -8,6 +8,7 @@ import { featureResearch } from '../atomic/feature-research';
 import { resolvePlanningDescription } from '../../../planning/utils/resolve-planning-description';
 import { runPlanningWithChecks } from '../../../planning/utils/run-planning-pipeline';
 import { WorkflowCommandContext } from '../../../utils/command-context';
+import { appendChildToParentDoc } from '../../../utils/append-child-to-parent';
 export async function planFeatureImpl(featureId: string, description?: string): Promise<string> {
   const featureName = await resolveFeatureDirectoryFromPlan(featureId);
   const context = new WorkflowCommandContext(featureName);
@@ -70,10 +71,8 @@ export async function planFeatureImpl(featureId: string, description?: string): 
   try {
     const featureGuidePath = context.paths.getFeatureGuidePath();
     let guideContent = '';
-    try {
-      guideContent = await readProjectFile(featureGuidePath);
-    } catch {
-      guideContent = '';
+    if (await context.documents.guideExists('feature')) {
+      guideContent = await context.documents.readGuide('feature');
     }
     const hasPhases = /\bPhase\s+[1-9]\d*:/i.test(guideContent);
     if (!hasPhases) {

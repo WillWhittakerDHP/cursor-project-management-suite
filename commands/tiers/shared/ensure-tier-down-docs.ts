@@ -3,11 +3,13 @@
  * in the current-tier guide, and create tierDown doc files where applicable. Used by
  * stepEnsureTierDownDocs for all tiers (lowest tier is no-op). Language:
  * tierUp/tierDown/tierAcross only; no parent/child or concrete tier names in generic prose.
+ *
+ * Guide reads/writes go through DocumentManager only. Errors propagate (no warn-and-continue).
  */
 
 import type { TierStartWorkflowContext, TierDownPlanItem } from './tier-start-workflow-types';
 import type { WorkflowCommandContext } from '../../utils/command-context';
-import { readProjectFile, writeProjectFile } from '../../utils/utils';
+import { writeProjectFile } from '../../utils/utils';
 import { derivePhaseDescription } from '../../planning/utils/resolve-planning-description';
 import { ensureGuideHasRequiredSections } from './guide-required-sections';
 
@@ -172,8 +174,7 @@ export function buildTaskSection(taskId: string, name: string): string {
   ].join('\n');
 }
 
-// --- Ensure tierDown doc files exist (guides via DocumentManager; log created here when missing) ---
-
+/** Session logs are not session guides; create minimal log file when missing. */
 async function ensureSessionLogExists(
   context: WorkflowCommandContext,
   sessionId: string,
@@ -181,12 +182,11 @@ async function ensureSessionLogExists(
 ): Promise<void> {
   const logPath = context.paths.getSessionLogPath(sessionId);
   try {
-    await readProjectFile(logPath);
+    await context.documents.readLog('session', sessionId);
   } catch {
-    try {
-      await writeProjectFile(logPath, `# Session ${sessionId}: ${description}\n\n`);
-    } catch (logErr) {
-      console.warn('ensure-tier-down-docs: could not create tierDown log', sessionId, logErr);
+    const written = await writeProjectFile(logPath, `# Session ${sessionId}: ${description}\n\n`);
+    if (!written) {
+      throw new Error(`ensureSessionLogExists: write blocked or failed for ${logPath}`);
     }
   }
 }
@@ -196,13 +196,13 @@ async function ensureSessionLogExists(
 async function runForFeature(ctx: TierStartWorkflowContext): Promise<void> {
   const { context, identifier, resolvedDescription } = ctx;
   const scopeName = resolvedDescription ?? identifier;
-  const guidePath = context.paths.getFeatureGuidePath();
   let content: string;
   try {
-    content = await readProjectFile(guidePath);
+    content = await context.documents.readGuide('feature');
   } catch {
-    console.warn('ensure-tier-down-docs: current-tier guide not found, skipping', guidePath);
-    return;
+    throw new Error(
+      `ensure-tier-down-docs: feature guide not found at ${context.paths.getFeatureGuidePath()}`
+    );
   }
   const phaseIds = enumeratePhaseIdsFromFeatureGuide(content);
   if (phaseIds.length === 0) return;
@@ -214,25 +214,17 @@ async function runForFeature(ctx: TierStartWorkflowContext): Promise<void> {
       try {
         phaseDesc = await derivePhaseDescription(phaseId, context);
       } catch {
-        // keep fallback
+        phaseDesc = `Phase ${phaseId}`;
       }
     }
     if (!hasPhaseSection(updated, phaseId)) {
       updated = updated.trimEnd() + '\n' + buildPhaseSection(phaseId, phaseDesc);
     }
-    try {
-      await context.documents.ensureGuide('phase', phaseId, phaseDesc);
-    } catch (err) {
-      console.warn('ensure-tier-down-docs: could not ensure phase guide', phaseId, err);
-    }
+    await context.documents.ensureGuide('phase', phaseId, phaseDesc);
   }
   if (updated !== content) {
-    try {
-      updated = ensureGuideHasRequiredSections(updated, 'feature', identifier, scopeName);
-      await context.documents.updateGuide('feature', identifier, () => updated);
-    } catch (err) {
-      console.warn('ensure-tier-down-docs: could not write current-tier guide', err);
-    }
+    updated = ensureGuideHasRequiredSections(updated, 'feature', identifier, scopeName);
+    await context.documents.updateGuide('feature', identifier, () => updated);
   }
 }
 
@@ -240,41 +232,25 @@ async function runForPhase(ctx: TierStartWorkflowContext): Promise<void> {
   const { context, identifier, resolvedDescription } = ctx;
   const phaseId = identifier;
   const scopeName = resolvedDescription ?? phaseId;
-  const guidePath = context.paths.getPhaseGuidePath(phaseId);
   let content: string;
   try {
-    content = await readProjectFile(guidePath);
+    content = await context.documents.readGuide('phase', phaseId);
   } catch {
-    try {
-      const phaseName = await derivePhaseDescription(phaseId, context);
-      await context.documents.ensureGuide('phase', phaseId, phaseName);
-      content = await readProjectFile(guidePath);
-    } catch (err) {
-      console.warn('ensure-tier-down-docs: could not create tierDown guide', phaseId, err);
-      return;
-    }
+    const phaseName = await derivePhaseDescription(phaseId, context);
+    await context.documents.ensureGuide('phase', phaseId, phaseName);
+    content = await context.documents.readGuide('phase', phaseId);
   }
   const sessionIds = enumerateSessionIdsFromPhaseGuide(content);
   if (sessionIds.length === 0) {
     const firstSessionId = `${phaseId}.1`;
     if (!hasSessionSection(content, firstSessionId)) {
       const sessionSection = buildSessionSection(firstSessionId, scopeName);
-      try {
-        await context.documents.updateGuide('phase', phaseId, (c) =>
-          c.trimEnd() + '\n' + sessionSection
-        );
-        content = content + sessionSection;
-      } catch (err) {
-        console.warn('ensure-tier-down-docs: could not append first tierDown section', err);
-      }
+      await context.documents.updateGuide('phase', phaseId, (c) => c.trimEnd() + '\n' + sessionSection);
+      content = content + sessionSection;
       const firstDesc =
         ctx.tierDownPlanItems?.find(i => i.id === firstSessionId)?.description ?? scopeName;
-      try {
-        await context.documents.ensureGuide('session', firstSessionId, firstDesc);
-        await ensureSessionLogExists(context, firstSessionId, firstDesc);
-      } catch (err) {
-        console.warn('ensure-tier-down-docs: could not ensure session guide/log', firstSessionId, err);
-      }
+      await context.documents.ensureGuide('session', firstSessionId, firstDesc);
+      await ensureSessionLogExists(context, firstSessionId, firstDesc);
     }
     return;
   }
@@ -287,20 +263,12 @@ async function runForPhase(ctx: TierStartWorkflowContext): Promise<void> {
     }
     const sessionDesc =
       ctx.tierDownPlanItems?.find(i => i.id === sessionId)?.description ?? scopeName;
-    try {
-      await context.documents.ensureGuide('session', sessionId, sessionDesc);
-      await ensureSessionLogExists(context, sessionId, sessionDesc);
-    } catch (err) {
-      console.warn('ensure-tier-down-docs: could not ensure session guide/log', sessionId, err);
-    }
+    await context.documents.ensureGuide('session', sessionId, sessionDesc);
+    await ensureSessionLogExists(context, sessionId, sessionDesc);
   }
   if (updated !== content) {
-    try {
-      updated = ensureGuideHasRequiredSections(updated, 'phase', phaseId, scopeName);
-      await context.documents.updateGuide('phase', phaseId, () => updated);
-    } catch (err) {
-      console.warn('ensure-tier-down-docs: could not write tierDown guide', err);
-    }
+    updated = ensureGuideHasRequiredSections(updated, 'phase', phaseId, scopeName);
+    await context.documents.updateGuide('phase', phaseId, () => updated);
   }
 }
 
@@ -308,23 +276,19 @@ async function runForSession(ctx: TierStartWorkflowContext): Promise<void> {
   const { context, identifier, resolvedDescription } = ctx;
   const sessionId = identifier;
   const scopeName = resolvedDescription ?? sessionId;
-  const guidePath = context.paths.getSessionGuidePath(sessionId);
-  let content: string;
-  try {
-    content = await readProjectFile(guidePath);
-  } catch {
-    // Session guide creation is owned by context-policy (ensureSessionScaffold in readContext)
-    return;
+  if (!(await context.documents.guideExists('session', sessionId))) {
+    await context.documents.ensureGuide('session', sessionId, scopeName);
   }
+  const content = await context.documents.readGuide('session', sessionId);
   let phaseGuideContent = '';
-  try {
-    const parsed = sessionId.match(/^(\d+)\.(\d+)\.(\d+)$/);
-    if (parsed) {
-      const phaseId = `${parsed[1]}.${parsed[2]}`;
-      phaseGuideContent = await readProjectFile(context.paths.getPhaseGuidePath(phaseId));
+  const parsed = sessionId.match(/^(\d+)\.(\d+)\.(\d+)$/);
+  if (parsed) {
+    const phaseId = `${parsed[1]}.${parsed[2]}`;
+    try {
+      phaseGuideContent = await context.documents.readGuide('phase', phaseId);
+    } catch {
+      phaseGuideContent = '';
     }
-  } catch {
-    // optional for tierDown enumeration
   }
   const taskIds = enumerateTaskIdsForSession(phaseGuideContent, content, sessionId);
   let updated = content;
@@ -336,28 +300,20 @@ async function runForSession(ctx: TierStartWorkflowContext): Promise<void> {
     }
   }
   if (updated !== content) {
-    try {
-      updated = ensureGuideHasRequiredSections(updated, 'session', sessionId, scopeName);
-      await context.documents.updateGuide('session', sessionId, () => updated);
-    } catch (err) {
-      console.warn('ensure-tier-down-docs: could not write current-tier guide', sessionId, err);
-    }
+    updated = ensureGuideHasRequiredSections(updated, 'session', sessionId, scopeName);
+    await context.documents.updateGuide('session', sessionId, () => updated);
   }
 }
 
 /**
  * Run tier-generic ensure tierDown docs: enumerate all direct tierDown, append missing
- * sections to current-tier guide, and ensure tierDown doc files exist (tierDown guide and log).
- * No-op for lowest tier. Non-blocking on errors (log and continue).
+ * sections to the current-tier guide, and ensure tierDown doc files exist (tierDown guide and log).
+ * No-op for lowest tier (task). Errors propagate.
  */
 export async function runEnsureTierDownDocsForTier(ctx: TierStartWorkflowContext): Promise<void> {
   const tier = ctx.config.name;
-  if (tier === 'task') return; // lowest tier: no tierDown
-  try {
-    if (tier === 'feature') await runForFeature(ctx);
-    else if (tier === 'phase') await runForPhase(ctx);
-    else if (tier === 'session') await runForSession(ctx);
-  } catch (err) {
-    console.warn('ensure-tier-down-docs: non-blocking failure', tier, ctx.identifier, err);
-  }
+  if (tier === 'task') return;
+  if (tier === 'feature') await runForFeature(ctx);
+  else if (tier === 'phase') await runForPhase(ctx);
+  else if (tier === 'session') await runForSession(ctx);
 }

@@ -79,6 +79,14 @@ export type TemplateReplacements = Record<string, string>;
 
 const EXCERPT_SESSION_MARKER = '<!-- end excerpt session -->';
 
+/** Write guard blocked the operation; callers must not treat the write as successful. */
+export class DocumentManagerWriteBlockedError extends Error {
+  constructor(public readonly relativePath: string) {
+    super(`DocumentManager: write blocked by guard for ${relativePath}`);
+    this.name = 'DocumentManagerWriteBlockedError';
+  }
+}
+
 /** First line that looks like a session log task heading (### / #### Task X.Y.Z:). */
 function extractFirstTaskLogHeadingLine(content: string): string | null {
   const lines = content.split('\n');
@@ -285,8 +293,7 @@ export class DocumentManager {
 
   /**
    * Write guide document, then verify (throws DocVerifyError if verification fails).
-   * If the write guard blocks the write, verification is skipped (the on-disk content
-   * was not changed, so verifying stale content would produce misleading errors).
+   * Throws {@link DocumentManagerWriteBlockedError} if the write guard blocks the write.
    * @param tier Document tier
    * @param id Document ID (required for phase/session, optional for feature)
    * @param content Document content (must be structurally valid for verification to pass)
@@ -301,8 +308,7 @@ export class DocumentManager {
     const path = this.getDocumentPath(tier, id, 'guide');
     const written = await this.writeFile(path, content, options);
     if (!written) {
-      console.warn(`[DocumentManager] writeGuide blocked by guard for ${path} — skipping verification`);
-      return;
+      throw new DocumentManagerWriteBlockedError(path);
     }
     const result = await this.verifyGuide(tier, id);
     if (!result.ok) {
@@ -615,8 +621,7 @@ export class DocumentManager {
       ? this.markdown.appendToSection(fullContent, sectionTitle, content)
       : this.markdown.replaceSection(fullContent, sectionTitle, content);
 
-    // Write back
-    await this.writeFile(path, updatedContent);
+    await this.writeGuide(tier, id, updatedContent);
   }
 
   /**
@@ -712,31 +717,19 @@ export class DocumentManager {
   }
 
   /**
-   * Read file with caching
-   * Falls back to project-manager/ if file not found in .project-manager/
+   * Read file with caching. Uses canonical `.project-manager/` paths only (no legacy `project-manager/` fallback).
    * @private
    */
   private async readFile(path: string): Promise<string> {
     return this.cache.get(path, false, async (filePath: string) => {
-      // Try .project-manager/ location first
-      let fullPath = join(this.PROJECT_ROOT, filePath);
+      const fullPath = join(this.PROJECT_ROOT, filePath);
       try {
         await access(fullPath);
         return await readFile(fullPath, 'utf-8');
       } catch (err) {
-        console.warn('Document manager: primary path not found, trying fallback', filePath, err);
-        if (filePath.startsWith('.project-manager/')) {
-          const fallbackPath = filePath.replace('.project-manager/', 'project-manager/');
-          fullPath = join(this.PROJECT_ROOT, fallbackPath);
-          try {
-            await access(fullPath);
-            return await readFile(fullPath, 'utf-8');
-          } catch (fallbackErr) {
-            console.warn('Document manager: fallback path also failed', fallbackPath, fallbackErr);
-            throw new Error(`File not found: ${filePath} or ${fallbackPath}`);
-          }
-        }
-        throw new Error(`File not found: ${filePath}`);
+        throw new Error(
+          `File not found: ${filePath}${err instanceof Error ? ` (${err.message})` : ''}`
+        );
       }
     });
   }

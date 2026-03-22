@@ -8,7 +8,6 @@ import { runPlanningWithChecks } from '../../../planning/utils/run-planning-pipe
 import { WorkflowCommandContext } from '../../../utils/command-context';
 import { MarkdownUtils } from '../../../utils/markdown-utils';
 import { appendChildToParentDoc } from '../../../utils/append-child-to-parent';
-import { readProjectFile } from '../../../utils/utils';
 import { WorkflowId } from '../../../utils/id-utils';
 
 export async function planPhaseImpl(
@@ -103,10 +102,8 @@ export async function planPhaseImpl(
   try {
     const phaseGuidePath = context.paths.getPhaseGuidePath(phase);
     let guideContent = '';
-    try {
-      guideContent = await readProjectFile(phaseGuidePath);
-    } catch {
-      guideContent = '';
+    if (await context.documents.guideExists('phase', phase)) {
+      guideContent = await context.documents.readGuide('phase', phase);
     }
     const sessionMatches = guideContent.matchAll(/Session\s+(\d+\.\d+\.\d+):/g);
     const existingSessions: string[] = [];

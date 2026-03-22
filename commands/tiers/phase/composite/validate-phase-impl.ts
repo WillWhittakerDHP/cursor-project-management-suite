@@ -3,7 +3,6 @@
  */
 
 import { WorkflowCommandContext } from '../../../utils/command-context';
-import { readProjectFile } from '../../../utils/utils';
 import { getCurrentBranch, gitListBranches } from '../../../git/shared/git-manager';
 import { PHASE_CONFIG } from '../../configs/phase';
 
@@ -30,13 +29,16 @@ export async function validatePhaseImpl(
     const phaseIsListedInFeatureGuide = featureGuideContent !== ''
       && new RegExp(`\\bPhase\\s+${escapedPhase}(?::|\\b)`, 'i').test(featureGuideContent);
 
-    const phaseGuidePath = context.paths.getPhaseGuidePath(phase);
-    const phaseLogPath = context.paths.getPhaseLogPath(phase);
-    const phaseHandoffPath = context.paths.getPhaseHandoffPath(phase);
     const [hasPhaseGuideFile, hasPhaseLogFile, hasPhaseHandoffFile] = await Promise.all([
-      readProjectFile(phaseGuidePath).then(() => true).catch(() => false),
-      readProjectFile(phaseLogPath).then(() => true).catch(() => false),
-      readProjectFile(phaseHandoffPath).then(() => true).catch(() => false),
+      context.documents.guideExists('phase', phase),
+      context.documents
+        .readLog('phase', phase)
+        .then(() => true)
+        .catch(() => false),
+      context.documents
+        .readHandoff('phase', phase)
+        .then(() => true)
+        .catch(() => false),
     ]);
 
     if (!phaseIsListedInFeatureGuide && !hasPhaseGuideFile && !hasPhaseLogFile && !hasPhaseHandoffFile) {

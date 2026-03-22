@@ -268,9 +268,18 @@ export async function runTierAutofix(
   return {
     tier,
     scriptFixesApplied,
+    scriptFixEntries: scriptEntries,
     agentFixEntries,
     affectedFiles: allAffected,
     cascadeResults,
     summary: summaryParts.join(' '),
   };
+}
+
+/** True if any script autofix command was attempted and failed (including cascade re-audits). */
+export function hasFailedScriptAutofix(autofix: AutofixResult | undefined): boolean {
+  if (!autofix) return false;
+  const scriptFailed = autofix.scriptFixEntries.some((e) => e.action === 'script' && !e.applied);
+  if (scriptFailed) return true;
+  return autofix.cascadeResults.some((c) => hasFailedScriptAutofix(c));
 }

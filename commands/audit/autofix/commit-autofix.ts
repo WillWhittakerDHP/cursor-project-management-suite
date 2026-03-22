@@ -1,6 +1,6 @@
 /**
  * Shared helper to commit autofix changes after a tier-end audit.
- * Used by all tier-end runGit steps so impls stay thin.
+ * Invoked from `stepAfterAudit` in `tier-end-steps.ts` for every tier (unless `skipGit`).
  */
 
 import type { AuditTier, AutofixResult } from '../types';

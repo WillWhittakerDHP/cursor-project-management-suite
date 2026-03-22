@@ -8,7 +8,6 @@ import { WorkflowCommandContext } from '../../../utils/command-context';
 import { WorkflowId } from '../../../utils/id-utils';
 import { resolveFeatureDirectoryFromPlan } from '../../../utils';
 import { appendChildToParentDoc } from '../../../utils/append-child-to-parent';
-import { readProjectFile } from '../../../utils/utils';
 
 export async function planSessionImpl(
   sessionId: string,
@@ -71,9 +70,9 @@ export async function planSessionImpl(
   const sessionGuidePath = context.paths.getSessionGuidePath(sessionId);
 
   let existingGuide: string | null = null;
-  try {
-    existingGuide = await readProjectFile(sessionGuidePath);
-  } catch { /* guide does not exist yet */ }
+  if (await context.documents.guideExists('session', sessionId)) {
+    existingGuide = await context.documents.readGuide('session', sessionId);
+  }
 
   let sessionGuideContent: string;
   if (existingGuide && !planContent) {
