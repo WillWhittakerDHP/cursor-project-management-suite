@@ -4,9 +4,9 @@
  */
 
 import type { TierConfig } from './types';
+import type { EnsureTierBranchResult } from '../../git/shared/git-manager';
 import type { WorkflowCommandContext } from '../../utils/command-context';
 import type { TierStartResult, CascadeInfo } from '../../utils/tier-outcome';
-import type { EnsureTierBranchResult } from '../../git/shared/git-manager';
 import type { FormatBranchHierarchyOptions } from '../../utils/tier-start-utils';
 import type { CommandExecutionOptions } from '../../utils/command-execution-mode';
 import type { RunRecorder, RunTraceHandle } from '../../harness/contracts';
@@ -48,6 +48,8 @@ export interface TierStartWorkflowContext {
   runTraceHandle?: RunTraceHandle;
   /** Ordered list of step ids that ran (for checksum). Defaults to [] when not provided. */
   stepPath?: string[];
+  /** Last result from ensureBranch hook (success path); used for targeted artifact recovery after checkout. */
+  branchEnsureResult?: EnsureTierBranchResult;
 }
 
 /**

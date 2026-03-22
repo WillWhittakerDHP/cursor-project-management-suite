@@ -24,6 +24,7 @@ import {
   type MergeChildBranchesResult,
   type CommitUncommittedOptions,
 } from './tier-branch-manager';
+import { recoverPlanningArtifactsAfterCheckout } from './artifact-branch-recovery';
 import {
   runGitCommand,
   logGitOp,
@@ -54,6 +55,7 @@ export {
   getExpectedBranchForTier,
   getLeafBranchTierFromChain,
   formatBranchHierarchyFromConfig,
+  recoverPlanningArtifactsAfterCheckout,
 };
 
 // ─── Query (from git-logger, logged via runGitCommand) ───────────────────

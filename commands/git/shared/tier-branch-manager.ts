@@ -36,6 +36,8 @@ export interface EnsureTierBranchResult {
   blockedByUncommitted?: boolean;
   /** File paths that blocked checkout (non-.cursor files needing user decision). */
   uncommittedFiles?: string[];
+  /** Paths auto-committed on the source branch before checkout (workflow artifacts). Used for targeted recovery on the target branch. */
+  autoCommittedPaths?: string[];
 }
 
 export interface MergeTierBranchResult {
@@ -85,6 +87,8 @@ interface UncommittedResolution {
   /** Non-auto-committable files (need user decision). */
   blockingFiles: string[];
   message: string;
+  /** Paths included in the auto-commit of workflow artifacts (when commit succeeded). */
+  autoCommittedPaths?: string[];
 }
 
 /**
@@ -350,6 +354,7 @@ async function resolveUncommittedBeforeCheckout(
         stashedWorkflowArtifacts: false,
         blockingFiles: [],
         message: 'Committed workflow artifacts (.cursor, .project-manager, audit reports) on current branch before switch.',
+        autoCommittedPaths: [...autoFiles],
       };
     }
     // Commit failed — fallback to stash so the checkout can still proceed
@@ -390,6 +395,7 @@ async function resolveUncommittedBeforeCheckout(
     }
 
     // current !== theirBranch: commit workflow artifacts, then stash blocking files
+    let mixedAutoCommittedPaths: string[] | undefined;
     if (autoFiles.length > 0) {
       for (const f of autoFiles) {
         const safePath = f.replace(/'/g, "'\\''");
@@ -399,7 +405,9 @@ async function resolveUncommittedBeforeCheckout(
         `git commit -m '[auto] workflow artifacts before branch switch'`,
         'resolveUncommitted-auto-commit-mixed'
       );
-      if (!commitWorkflow.success) {
+      if (commitWorkflow.success) {
+        mixedAutoCommittedPaths = [...autoFiles];
+      } else {
         await runGitCommand('git reset HEAD -- .', 'resolveUncommitted-auto-reset-mixed');
       }
     }
@@ -427,6 +435,7 @@ async function resolveUncommittedBeforeCheckout(
       message:
         'Uncommitted work is on another branch; stashed it so we can switch to the command branch. ' +
         'Apply the "uncommitted (other branch)" stash on that branch when you switch back.',
+      autoCommittedPaths: mixedAutoCommittedPaths,
     };
   }
 
@@ -792,6 +801,7 @@ export async function ensureTierBranch(
 
   // Step 0c: Resolve uncommitted: block only when current === target and there are non-workflow files
   const uncommitted = await resolveUncommittedBeforeCheckout(targetBranch);
+  const autoCommittedPaths = uncommitted.autoCommittedPaths;
   const needStashPop = uncommitted.clean && uncommitted.stashedWorkflowArtifacts === true;
   if (needStashPop && uncommitted.message) {
     messages.push(uncommitted.message);
@@ -979,6 +989,22 @@ export async function ensureTierBranch(
     }
     messages.push(`Switched to existing ${targetLink.tier} branch: ${targetLink.branchName}`);
 
+    if (syncRemote) {
+      const pullTarget = await runGitCommand(
+        `git pull origin ${targetLink.branchName}`,
+        'ensureTierBranch-pullTarget'
+      );
+      if (pullTarget.success) {
+        messages.push(`Pulled latest ${targetLink.branchName} from remote.`);
+      } else {
+        const combined = `${pullTarget.error ?? ''}${pullTarget.output ?? ''}`;
+        const noRemoteRef = combined.includes("couldn't find remote ref");
+        if (!noRemoteRef) {
+          messages.push(`Warning: could not pull ${targetLink.branchName}: ${combined}`);
+        }
+      }
+    }
+
     if (parentOfTarget && (await branchExists(parentOfTarget)) && !isRootBranch(parentOfTarget)) {
       const isBasedOn = await isBranchBasedOn(targetLink.branchName, parentOfTarget);
       if (!isBasedOn) {
@@ -1050,6 +1076,7 @@ export async function ensureTierBranch(
     messages,
     finalBranch: targetLink.branchName,
     chain,
+    autoCommittedPaths,
   };
 }
 

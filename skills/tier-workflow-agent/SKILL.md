@@ -14,6 +14,8 @@ description: >-
 
 This skill complements [`.cursor/rules/process-workflow.mdc`](../../rules/process-workflow.mdc) (always-applied workflow directives) and the canonical playbook [`.cursor/commands/tiers/START_END_PLAYBOOK_STRUCTURE.md`](../../commands/tiers/START_END_PLAYBOOK_STRUCTURE.md). The playbook remains the **source of truth** for edge cases, full tables, and architecture notes. Use this skill for fast recall; open the playbook when behavior is ambiguous.
 
+**Harness implementation map:** How `DocumentManager` handles planning docs and logs, and how git differs between **tier-start** (`ensureTierBranch`) and **tier-end** (`commitRemaining`), lives in [`.project-manager/HARNESS_CHARTER.md`](../../../.project-manager/HARNESS_CHARTER.md) §4 (Current implementation notes).
+
 ## Execute slash commands; do not summarize
 
 - Any file under `.cursor/commands/` invoked as a **slash command** is an **executable workflow**.

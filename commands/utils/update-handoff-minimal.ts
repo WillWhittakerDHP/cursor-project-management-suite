@@ -1,10 +1,10 @@
 /**
  * Atomic Command: /update-handoff-minimal
  * Update session handoff document with minimal transition context only
- * 
+ *
  * Tier: Session (Tier 2 - Medium-Level)
  * Operates on: Session handoff document (transition context between sessions)
- * 
+ *
  * Focus: Where we left off, what's next (not instructions or detailed notes)
  */
 
@@ -15,11 +15,76 @@ import { WorkflowCommandContext } from './command-context';
 import { getExcerptEndMarker } from '../tiers/shared/context-policy';
 
 export interface MinimalHandoffUpdate {
-  lastCompletedTask: string; // Format: X.Y.Z (e.g., "1.3.4") - last task completed
-  nextSession: string; // Format: X.Y (e.g., "1.4") - next session to start
-  transitionNotes?: string; // Minimal notes about what changed/where we left off
-  sessionId?: string; // Current session ID (extracted from lastCompletedTask if not provided)
-  featureName?: string; // Optional: resolved from .current-feature or git branch if not set
+  lastCompletedTask: string;
+  nextSession: string;
+  transitionNotes?: string;
+  sessionId?: string;
+  featureName?: string;
+}
+
+function isLevel2Heading(line: string): boolean {
+  return /^##\s+/.test(line.trim());
+}
+
+function managedSessionHandoffHeading(line: string): boolean {
+  const t = line.trim().replace(/^##\s+/, '');
+  return (
+    t.startsWith('Current Status') ||
+    t.startsWith('Next Action') ||
+    t.startsWith('Transition Context')
+  );
+}
+
+/** Remove all ## Current Status / Next Action / Transition Context blocks and duplicate excerpt markers. */
+function stripManagedSessionHandoffSections(content: string): string {
+  const lines = content.split('\n');
+  const out: string[] = [];
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    if (isLevel2Heading(line) && managedSessionHandoffHeading(line)) {
+      i++;
+      while (i < lines.length && !isLevel2Heading(lines[i])) {
+        i++;
+      }
+      continue;
+    }
+    if (line.trim() === '<!-- end excerpt session -->') {
+      i++;
+      continue;
+    }
+    out.push(line);
+    i++;
+  }
+  return out.join('\n').replace(/\n{3,}/g, '\n\n').trimEnd();
+}
+
+function findInsertIndexForSessionHandoffExcerpt(stripped: string): number {
+  const anchors: RegExp[] = [
+    /\n## Document Structure Guidelines/m,
+    /\n## Maintenance/m,
+    /\n## Related Documents/m,
+    /\n## Notes/m,
+  ];
+  let best = -1;
+  for (const re of anchors) {
+    const m = stripped.search(re);
+    if (m >= 0 && (best < 0 || m < best)) {
+      best = m;
+    }
+  }
+  if (best >= 0) {
+    return best;
+  }
+  const dash = stripped.search(/\n---\s*\n/);
+  if (dash >= 0) {
+    const rest = stripped.slice(dash);
+    const nextHeading = rest.search(/\n##\s+/);
+    if (nextHeading >= 0) {
+      return dash + nextHeading;
+    }
+  }
+  return stripped.length;
 }
 
 export async function updateHandoffMinimal(update: MinimalHandoffUpdate): Promise<void> {
@@ -54,32 +119,17 @@ Completed Task ${update.lastCompletedTask}
 
 **What you need to start:**
 - Begin Session ${update.nextSession}`;
-  await context.documents.updateHandoff('session', sessionId, (content) => {
-    const lines = content.split('\n');
-    const statusIndex = lines.findIndex(line => line.trim().startsWith('##') && line.includes('Current Status'));
-    const nextActionIndex = lines.findIndex(line => line.trim().startsWith('##') && line.includes('Next Action'));
-    const transitionIndex = lines.findIndex(line => line.trim().startsWith('##') && line.includes('Transition Context'));
-    const updatedLines: string[] = [];
-    let i = 0;
-    if (statusIndex !== -1) {
-      updatedLines.push(...lines.slice(0, statusIndex));
-    } else {
-      updatedLines.push(...lines);
+  const excerptBlock = `${statusSection}\n\n${nextActionSection}\n\n${transitionSection}\n\n${getExcerptEndMarker('session')}`;
+
+  await context.documents.updateHandoff('session', sessionId, content => {
+    const stripped = stripManagedSessionHandoffSections(content);
+    const insertAt = findInsertIndexForSessionHandoffExcerpt(stripped);
+    const before = stripped.slice(0, insertAt).trimEnd();
+    const after = stripped.slice(insertAt).trimStart();
+    const mid = excerptBlock;
+    if (!after) {
+      return `${before}\n\n${mid}\n`.trimEnd();
     }
-    updatedLines.push(statusSection, '', nextActionSection, '', transitionSection, '', getExcerptEndMarker('session'), '');
-    if (transitionIndex !== -1) {
-      for (i = transitionIndex + 1; i < lines.length; i++) {
-        const trimmed = lines[i].trim();
-        if (trimmed.startsWith('##') && (trimmed.includes('Current Status') || trimmed.includes('Next Action') || trimmed.includes('Transition Context'))) continue;
-        updatedLines.push(lines[i]);
-      }
-    } else if (statusIndex !== -1 && nextActionIndex !== -1) {
-      for (i = nextActionIndex + 1; i < lines.length; i++) {
-        if (lines[i].trim().startsWith('##')) break;
-      }
-      if (i < lines.length) updatedLines.push(...lines.slice(i));
-    }
-    return updatedLines.join('\n').trimEnd();
+    return `${before}\n\n${mid}\n\n${after}`.trimEnd();
   });
 }
-

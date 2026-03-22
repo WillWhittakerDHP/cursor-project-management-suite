@@ -10,9 +10,9 @@ import { getConfigForTier } from '../configs';
 import type { TierConfig } from './types';
 import { readTierStartPending, deleteTierStartPending, readTaskStartPending } from './pending-state';
 import type { ControlPlaneDecision } from './control-plane-types';
-import { getPlanningDocPathForTier, isPlanningDocFilled, isGuideFilled } from './tier-start-steps';
-import { readProjectFile } from '../../utils/utils';
+import { isPlanningDocFilled, isGuideFilled } from './tier-start-steps';
 import { WorkflowCommandContext } from '../../utils/command-context';
+import type { PlanningTier } from '../../utils/planning-doc-paths';
 
 const NO_PENDING_MESSAGE =
   'No pending tier start. Run a session/phase/feature start first, then discuss the plan in chat. When ready, run **/accepted-proceed** again.';
@@ -92,7 +92,12 @@ export async function acceptedProceed(): Promise<TierStartResultWithControlPlane
 
   // Gate 2 (Option A): when guide_fill_pending, check guide is filled then run Part B with guideFillComplete.
   if (state.guideFillPending && state.guidePath) {
-    const filled = await isGuideFilled(state.guidePath, state.tier);
+    const identifier = getIdentifierFromState(state);
+    const wfContext = await WorkflowCommandContext.contextFromParams(
+      state.tier,
+      state.params as import('../../utils/command-context').TierParamsBag
+    );
+    const filled = await isGuideFilled(state.tier, identifier, wfContext);
     if (!filled) {
       const msg = GUIDE_INCOMPLETE_MESSAGE(state.guidePath);
       const decision: ControlPlaneDecision = {
@@ -144,11 +149,29 @@ export async function acceptedProceed(): Promise<TierStartResultWithControlPlane
       };
     }
     const context = await WorkflowCommandContext.contextFromParams(state.tier, state.params as import('../../utils/command-context').TierParamsBag);
-    const basePath = context.paths.getBasePath();
-    const planningDocPath = getPlanningDocPathForTier(state.tier, identifier, basePath);
+    const planningTier = state.tier as PlanningTier;
+    const planningDocPath = context.documents.getPlanningDocRelativePath(planningTier, identifier);
+    if (!(await context.documents.planningDocExists(planningTier, identifier))) {
+      const msg = PLANNING_DOC_INCOMPLETE_MESSAGE(planningDocPath);
+      const decision: ControlPlaneDecision = {
+        stop: true,
+        requiredMode: 'plan',
+        message: msg,
+      };
+      return {
+        success: false,
+        output: msg,
+        outcome: {
+          status: 'blocked',
+          reasonCode: 'planning_doc_incomplete',
+          nextAction: msg,
+        },
+        controlPlaneDecision: decision,
+      };
+    }
     let content: string;
     try {
-      content = await readProjectFile(planningDocPath);
+      content = await context.documents.readPlanningDoc(planningTier, identifier);
     } catch {
       const msg = PLANNING_DOC_INCOMPLETE_MESSAGE(planningDocPath);
       const decision: ControlPlaneDecision = {

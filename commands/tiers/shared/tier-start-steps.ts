@@ -15,7 +15,7 @@ import type {
 import type { TierStartResult, CascadeInfo } from '../../utils/tier-outcome';
 import type { CannotStartTier } from '../../utils/tier-start-utils';
 import { formatBranchHierarchy, formatCannotStart } from '../../utils/tier-start-utils';
-import { isAutoCommittable, runGitCommand } from '../../git/shared/git-manager';
+import { isAutoCommittable } from '../../git/shared/git-manager';
 import { resolveCommandExecutionMode, isPlanMode } from '../../utils/command-execution-mode';
 import { runTierPlan } from './tier-plan';
 import { buildCascadeDown } from '../../utils/tier-cascade';
@@ -36,9 +36,11 @@ import {
   deriveTierDownPlanItemsFromGuide,
 } from './ensure-tier-down-docs';
 import { ensureGuideHasRequiredSections } from './guide-required-sections';
-import { readProjectFile, writeProjectFile, PROJECT_ROOT } from '../../utils/utils';
+import { readProjectFile } from '../../utils/utils';
+import { resolvePlanningDocRelativePath } from '../../utils/planning-doc-paths';
+import type { PlanningTier } from '../../utils/planning-doc-paths';
+import type { WorkflowCommandContext } from '../../utils/command-context';
 import { tierDown } from '../../utils/tier-navigation';
-import { existsSync } from 'fs';
 import {
   formatOpenQuestionsWarning,
   formatInheritedQuestionsPlanningDocSection,
@@ -112,6 +114,7 @@ export async function stepEnsureStartBranch(
 ): Promise<StepExitResult> {
   if (!hooks.ensureBranch) return null;
   const branchResult = await hooks.ensureBranch(ctx);
+  ctx.branchEnsureResult = branchResult;
   for (const msg of branchResult.messages) {
     ctx.output.push(msg);
   }
@@ -153,58 +156,6 @@ export async function stepEnsureStartBranch(
     await hooks.afterBranch(ctx);
   }
   return null;
-}
-
-/**
- * After branch checkout, planning docs and guides may be missing on the target branch
- * because they were auto-committed to the source branch before the switch. This helper
- * recovers them: for each expected path, if the file is absent on disk, it searches all
- * branches for the most recent commit that touched it and writes the content to the
- * working tree so subsequent steps (syncPlannedTierDownToGuide, isGuideFilled) find them.
- */
-export async function recoverPlanningArtifactsAfterCheckout(
-  ctx: TierStartWorkflowContext
-): Promise<void> {
-  const tier = ctx.config.name;
-  if (tier === 'task') return;
-
-  const planningPath = getPlanningDocPath(ctx);
-  const guidePath =
-    tier === 'feature'
-      ? ctx.context.paths.getFeatureGuidePath()
-      : tier === 'phase'
-        ? ctx.context.paths.getPhaseGuidePath(ctx.identifier)
-        : ctx.context.paths.getSessionGuidePath(ctx.identifier);
-
-  for (const relPath of [planningPath, guidePath]) {
-    const absPath = join(PROJECT_ROOT, relPath);
-    if (existsSync(absPath)) continue;
-
-    const logResult = await runGitCommand(
-      `git log --all -1 --format=%H -- "${relPath}"`,
-      'recoverArtifact-findCommit'
-    );
-    const commitHash = logResult.success ? logResult.output.trim() : '';
-    if (!commitHash) continue;
-
-    const showResult = await runGitCommand(
-      `git show ${commitHash}:"${relPath}"`,
-      'recoverArtifact-show'
-    );
-    if (!showResult.success || !showResult.output) continue;
-
-    try {
-      const { writeFile: fsWriteFile, mkdir } = await import('fs/promises');
-      const { dirname } = await import('path');
-      await mkdir(dirname(absPath), { recursive: true });
-      await fsWriteFile(absPath, showResult.output, 'utf-8');
-      ctx.output.push(
-        `Recovered \`${relPath}\` from commit ${commitHash.slice(0, 8)} (auto-committed on source branch before checkout).`
-      );
-    } catch (err) {
-      console.warn(`recoverPlanningArtifactsAfterCheckout: failed to write ${relPath}`, err);
-    }
-  }
 }
 
 /** Extract content of "## How we build the tierDown to achieve them" section (up to next ## or end). */
@@ -366,13 +317,13 @@ function mergeSessionTaskItemsFromPhaseAndPlan(
 async function syncPlannedTierDownToGuide(ctx: TierStartWorkflowContext): Promise<void> {
   const tier = ctx.config.name;
   if (tier === 'task') return;
-  const planningPath = getPlanningDocPath(ctx);
-  let planningContent: string;
-  try {
-    planningContent = await readProjectFile(planningPath);
-  } catch {
+  const docTier = tier as 'feature' | 'phase' | 'session';
+  const planningTier = tier as PlanningTier;
+  const dm = ctx.context.documents;
+  if (!(await dm.planningDocExists(planningTier, ctx.identifier))) {
     return;
   }
+  const planningContent = await dm.readPlanningDoc(planningTier, ctx.identifier);
   const sectionContent = extractTierDownBuildPlanSection(planningContent);
   const tierDownKind = tierDown(tier)!; // task returns early above; child tier is always phase | session | task
   const parsedItems = parseTierDownBuildPlanPerItem(sectionContent, tierDownKind);
@@ -385,13 +336,12 @@ async function syncPlannedTierDownToGuide(ctx: TierStartWorkflowContext): Promis
 
   let guideContent: string;
   try {
-    guideContent = await readProjectFile(guidePath);
+    guideContent = await dm.readGuide(docTier, ctx.identifier);
   } catch {
     if (tier === 'session') {
-      const fullPath = join(PROJECT_ROOT, guidePath);
-      if (existsSync(fullPath)) {
+      if (await dm.guideExists('session', ctx.identifier)) {
         try {
-          guideContent = await readProjectFile(guidePath);
+          guideContent = await dm.readGuide('session', ctx.identifier);
         } catch (e) {
           console.warn(
             'syncPlannedTierDownToGuide: session guide exists but unreadable, skipping overwrite',
@@ -404,7 +354,7 @@ async function syncPlannedTierDownToGuide(ctx: TierStartWorkflowContext): Promis
         let phaseGuideContent = '';
         try {
           const phaseId = ctx.identifier.split('.').slice(0, 2).join('.');
-          phaseGuideContent = await readProjectFile(ctx.context.paths.getPhaseGuidePath(phaseId));
+          phaseGuideContent = await dm.readGuide('phase', phaseId);
         } catch {
           /* optional */
         }
@@ -427,10 +377,9 @@ async function syncPlannedTierDownToGuide(ctx: TierStartWorkflowContext): Promis
       }
     } else {
       // Feature or phase: initial read failed. If file actually exists, use its content instead of overwriting.
-      const fullPath = join(PROJECT_ROOT, guidePath);
-      if (existsSync(fullPath)) {
+      if (await dm.guideExists(docTier, ctx.identifier)) {
         try {
-          guideContent = await readProjectFile(guidePath);
+          guideContent = await dm.readGuide(docTier, ctx.identifier);
         } catch (err) {
           console.warn(`[tier-start-steps] Guide exists at ${guidePath} but is unreadable; skipping overwrite`, err);
           return;
@@ -652,13 +601,14 @@ function contentIsGuideFilled(content: string): boolean {
  * Used by /accepted-proceed for Gate 2 when state is guide_fill_pending.
  */
 export async function isGuideFilled(
-  guidePath: string,
-  tier: 'feature' | 'phase' | 'session'
+  tier: 'feature' | 'phase' | 'session',
+  identifier: string,
+  context: WorkflowCommandContext
 ): Promise<boolean> {
   if (tier === 'feature') return true; // feature has no "fill guide" gate in Option A
   let content: string;
   try {
-    content = await readProjectFile(guidePath);
+    content = await context.documents.readGuide(tier, identifier);
   } catch {
     return false;
   }
@@ -706,42 +656,27 @@ export function isPlanningDocFilled(content: string): boolean {
 }
 
 /**
- * Build planning doc path from tier, identifier, and base path.
- * Used by acceptedProceed and acceptedCode to locate the doc when validating before proceed/execute.
- * All tiers (feature, phase, session, task) use the same planning-doc fill check.
+ * Build project-relative planning doc path from tier, identifier, and base path.
+ *
+ * @deprecated Prefer `WorkflowCommandContext.documents.getPlanningDocRelativePath(tier, id)` so path
+ * resolution stays centralized on `DocumentManager`. Kept for rare call sites that only have
+ * `(tier, identifier, basePath)` without a `WorkflowCommandContext`.
  */
 export function getPlanningDocPathForTier(
   tier: 'feature' | 'phase' | 'session' | 'task',
   identifier: string,
   basePath: string
 ): string {
-  if (tier === 'feature') {
-    return `${basePath}/feature-planning.md`;
-  }
-  if (tier === 'phase') {
-    return `${basePath}/phases/phase-${identifier}-planning.md`;
-  }
-  if (tier === 'task') {
-    return `${basePath}/sessions/task-${identifier}-planning.md`;
-  }
-  return `${basePath}/sessions/session-${identifier}-planning.md`;
+  return resolvePlanningDocRelativePath(basePath, tier, identifier);
 }
 
 /** Build planning doc path for task or session (sessions dir). */
 function getPlanningDocPath(ctx: TierStartWorkflowContext): string {
-  const base = ctx.context.paths.getBasePath();
-  const tier = ctx.config.name;
-  const id = ctx.identifier;
-  if (tier === 'feature') {
-    return `${base}/feature-planning.md`;
-  }
-  if (tier === 'phase') {
-    return `${base}/phases/phase-${id}-planning.md`;
-  }
-  if (tier === 'task') {
-    return `${base}/sessions/task-${id}-planning.md`;
-  }
-  return `${base}/sessions/session-${id}-planning.md`;
+  return resolvePlanningDocRelativePath(
+    ctx.context.paths.getBasePath(),
+    ctx.config.name as PlanningTier,
+    ctx.identifier
+  );
 }
 
 /** Extract ## Goal, ## Files, ## Approach, ## Checkpoint from planning doc content. Used to sync guide and todos from planning doc at tier-start. */
@@ -806,19 +741,18 @@ export async function getTierUpPlanningDocSections(
   ctx: TierStartWorkflowContext
 ): Promise<ParsedPlanningSections | null> {
   const tier = ctx.config.name;
-  const basePath = ctx.context.paths.getBasePath();
   const tierUpSource = TIER_CONTEXT_SOURCES[tier].guide;
 
-  let path: string;
-  if (tierUpSource === 'project') {
-    path = join(PROJECT_ROOT, '.project-manager', 'PROJECT_PLAN.md');
-  } else {
-    const parentId = resolveParentIdentifier(ctx, tierUpSource);
-    path = getPlanningDocPathForTier(tierUpSource, parentId, basePath);
-  }
-
   try {
-    const content = await readProjectFile(path);
+    if (tierUpSource === 'project') {
+      const content = await readProjectFile('.project-manager/PROJECT_PLAN.md');
+      return parsePlanningDocSections(content);
+    }
+    const parentId = resolveParentIdentifier(ctx, tierUpSource);
+    const content = await ctx.context.documents.readPlanningDoc(
+      tierUpSource as PlanningTier,
+      parentId
+    );
     return parsePlanningDocSections(content);
   } catch {
     return null;
@@ -1052,11 +986,15 @@ export async function stepContextGathering(
   }
 
   const planningDocPath = getPlanningDocPath(ctx);
+  const planningTier = tier as PlanningTier;
   let existingContent: string | null = null;
-  try {
-    existingContent = await readProjectFile(planningDocPath);
-  } catch {
-    /* doc missing or unreadable */
+  if (await ctx.context.documents.planningDocExists(planningTier, ctx.identifier)) {
+    try {
+      existingContent = await ctx.context.documents.readPlanningDoc(planningTier, ctx.identifier);
+    } catch {
+      /* exists but unreadable — treat as missing for rewrite path */
+      existingContent = null;
+    }
   }
   if (existingContent !== null && isPlanningDocFilled(existingContent)) {
     ctx.planningDocPath = planningDocPath;
@@ -1073,7 +1011,7 @@ export async function stepContextGathering(
       contextWorkBrief,
       inheritedPlanningSection
     );
-    await writeProjectFile(planningDocPath, content);
+    await ctx.context.documents.writePlanningDoc(planningTier, ctx.identifier, content);
     ctx.planningDocPath = planningDocPath;
   }
 

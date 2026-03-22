@@ -5,6 +5,8 @@
 
 import type { TierStartWorkflowContext, TierStartWorkflowHooks, TierStartWorkflowResult } from '../tiers/shared/tier-start-workflow-types';
 import type { TierStartResult } from '../utils/tier-outcome';
+import type { PlanningTier } from '../utils/planning-doc-paths';
+import { recoverPlanningArtifactsAfterCheckout } from '../git/shared/git-manager';
 import {
   stepAppendHeaderAndBranchHierarchy,
   stepAppendBranchHierarchy,
@@ -13,7 +15,6 @@ import {
   stepContextGathering,
   stepEnsureStartBranch,
   stepEnsureGuideFromPlan,
-  recoverPlanningArtifactsAfterCheckout,
   stepReadStartContext,
   stepFillDirectTierDown,
   stepGatherContext,
@@ -22,7 +23,6 @@ import {
   stepStartAudit,
   stepRunTierPlan,
   stepBuildStartCascade,
-  getPlanningDocPathForTier,
   isGuideFilled,
 } from '../tiers/shared/tier-start-steps';
 
@@ -109,10 +109,9 @@ export async function runTierStartWorkflow(
   // When resuming past context_gathering, set planning doc path so later steps have it.
   if (resumeAfterStep && firstStepIndex > START_WORKFLOW_STEP_IDS.indexOf('context_gathering')) {
     if (!ctx.planningDocPath) {
-      ctx.planningDocPath = getPlanningDocPathForTier(
-        ctx.config.name,
-        ctx.identifier,
-        ctx.context.paths.getBasePath()
+      ctx.planningDocPath = ctx.context.documents.getPlanningDocRelativePath(
+        ctx.config.name as PlanningTier,
+        ctx.identifier
       );
     }
   }
@@ -162,7 +161,7 @@ export async function runTierStartWorkflow(
       await recordStep(ctx, 'ensure_branch', branchExit ? 'exit_failure' : 'exit_success');
       logStepTiming('ensure_branch', 'exit');
       if (branchExit) return attachShadowPayload(ctx, branchExit);
-      await recoverPlanningArtifactsAfterCheckout(ctx);
+      await recoverPlanningArtifactsAfterCheckout(ctx, ctx.branchEnsureResult?.autoCommittedPaths);
     }
 
     if (shouldRunStep('ensure_guide_from_plan')) {
@@ -180,7 +179,7 @@ export async function runTierStartWorkflow(
         tier === 'phase'
           ? ctx.context.paths.getPhaseGuidePath(ctx.identifier)
           : ctx.context.paths.getSessionGuidePath(ctx.identifier);
-      const guideAlreadyFilled = await isGuideFilled(guidePath, tier);
+      const guideAlreadyFilled = await isGuideFilled(tier, ctx.identifier, ctx.context);
       if (!guideAlreadyFilled) {
         return attachShadowPayload(ctx, {
           success: true,

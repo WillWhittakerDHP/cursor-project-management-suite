@@ -22,8 +22,7 @@ import type {
 import { runTierStartWorkflow } from '../../../harness/run-start-steps';
 import type { RunRecorder, RunTraceHandle } from '../../../harness/contracts';
 import { getInventoryMatchesForFiles } from '../../../audit/governance-context';
-import { getPlanningDocPathForTier, getTierUpPlanningDocSections, parsePlanningDocSections } from '../../shared/tier-start-steps';
-import { readProjectFile } from '../../../utils/utils';
+import { getTierUpPlanningDocSections, parsePlanningDocSections } from '../../shared/tier-start-steps';
 import { writeTierScope } from '../../../utils/tier-scope-writer';
 import { getExpectedBranchForTier } from '../../../git/shared/git-manager';
 import { getConfigForTier } from '../../configs/index';
@@ -362,23 +361,23 @@ export async function taskStartImpl(
     },
 
     async getTrailingOutput(): Promise<string> {
-      const basePath = context.paths.getBasePath();
-      const planningDocPath = getPlanningDocPathForTier('task', taskId, basePath);
       let goal = '';
       let files = '';
       let approach = '';
       let checkpoint = '';
-      try {
-        const content = await readProjectFile(planningDocPath);
-        const parsed = parsePlanningDocSections(content);
-        if (parsed) {
-          goal = parsed.goal?.trim() ?? '';
-          files = parsed.files?.trim() ?? '';
-          approach = parsed.approach?.trim() ?? '';
-          checkpoint = parsed.checkpoint?.trim() ?? '';
+      if (await context.documents.planningDocExists('task', taskId)) {
+        try {
+          const content = await context.documents.readPlanningDoc('task', taskId);
+          const parsed = parsePlanningDocSections(content);
+          if (parsed) {
+            goal = parsed.goal?.trim() ?? '';
+            files = parsed.files?.trim() ?? '';
+            approach = parsed.approach?.trim() ?? '';
+            checkpoint = parsed.checkpoint?.trim() ?? '';
+          }
+        } catch {
+          // planning doc unreadable
         }
-      } catch {
-        // planning doc missing or unreadable
       }
       if (!goal && !files && !approach && !checkpoint) {
         const taskSectionContent = ctx.readResult?.guide ?? '';

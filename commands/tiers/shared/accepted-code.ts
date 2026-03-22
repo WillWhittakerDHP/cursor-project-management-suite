@@ -8,8 +8,7 @@ import { runTierStart, type TierStartResultWithControlPlane } from './tier-start
 import { TASK_CONFIG } from '../configs';
 import { readTaskStartPending, deleteTaskStartPending } from './pending-state';
 import type { ControlPlaneDecision } from './control-plane-types';
-import { getPlanningDocPathForTier, isPlanningDocFilled } from './tier-start-steps';
-import { readProjectFile } from '../../utils/utils';
+import { isPlanningDocFilled } from './tier-start-steps';
 import { WorkflowCommandContext } from '../../utils/command-context';
 
 const NO_PENDING_MESSAGE =
@@ -79,29 +78,47 @@ export async function acceptedCode(): Promise<TierStartResultWithControlPlane> {
     ...(state.featureId != null && state.featureId.trim() !== '' && { featureId: state.featureId.trim() }),
     ...(state.featureName != null && state.featureName.trim() !== '' && { featureName: state.featureName.trim() }),
   });
-  const basePath = context.paths.getBasePath();
-  const planningDocPath = getPlanningDocPathForTier('task', state.taskId, basePath);
+  const planningDocPath = context.documents.getPlanningDocRelativePath('task', state.taskId);
+  if (!(await context.documents.planningDocExists('task', state.taskId))) {
+    const msg = PLANNING_DOC_INCOMPLETE_MESSAGE(planningDocPath);
+    const decision: ControlPlaneDecision = {
+      stop: true,
+      requiredMode: 'plan',
+      message: msg,
+    };
+    return {
+      success: false,
+      output: msg,
+      outcome: {
+        status: 'blocked',
+        reasonCode: 'planning_doc_incomplete',
+        nextAction: msg,
+      },
+      controlPlaneDecision: decision,
+    };
+  }
+  let content: string;
   try {
-    const content = await readProjectFile(planningDocPath);
-    if (!isPlanningDocFilled(content)) {
-      const msg = PLANNING_DOC_INCOMPLETE_MESSAGE(planningDocPath);
-      const decision: ControlPlaneDecision = {
-        stop: true,
-        requiredMode: 'plan',
-        message: msg,
-      };
-      return {
-        success: false,
-        output: msg,
-        outcome: {
-          status: 'blocked',
-          reasonCode: 'planning_doc_incomplete',
-          nextAction: msg,
-        },
-        controlPlaneDecision: decision,
-      };
-    }
+    content = await context.documents.readPlanningDoc('task', state.taskId);
   } catch {
+    const msg = PLANNING_DOC_INCOMPLETE_MESSAGE(planningDocPath);
+    const decision: ControlPlaneDecision = {
+      stop: true,
+      requiredMode: 'plan',
+      message: msg,
+    };
+    return {
+      success: false,
+      output: msg,
+      outcome: {
+        status: 'blocked',
+        reasonCode: 'planning_doc_incomplete',
+        nextAction: msg,
+      },
+      controlPlaneDecision: decision,
+    };
+  }
+  if (!isPlanningDocFilled(content)) {
     const msg = PLANNING_DOC_INCOMPLETE_MESSAGE(planningDocPath);
     const decision: ControlPlaneDecision = {
       stop: true,

@@ -30,6 +30,10 @@ import {
   type GuideTier,
   type HandoffTierForSections,
 } from '../tiers/shared/guide-required-sections';
+import { resolvePlanningDocRelativePath } from './planning-doc-paths';
+import type { PlanningTier } from './planning-doc-paths';
+
+export type { PlanningTier } from './planning-doc-paths';
 
 /**
  * Document tier types
@@ -72,6 +76,119 @@ export class DocVerifyError extends Error {
  * Template replacements map
  */
 export type TemplateReplacements = Record<string, string>;
+
+const EXCERPT_SESSION_MARKER = '<!-- end excerpt session -->';
+
+/** First line that looks like a session log task heading (### / #### Task X.Y.Z:). */
+function extractFirstTaskLogHeadingLine(content: string): string | null {
+  const lines = content.split('\n');
+  for (const line of lines) {
+    const t = line.trim();
+    if (/^#{2,4}\s+Task\s+[\d.]+\s*:/.test(t)) {
+      return line.trimEnd();
+    }
+  }
+  return null;
+}
+
+function headingPrefixLength(line: string): number {
+  const m = line.match(/^(\s*)(#+)\s/);
+  return m ? m[2].length : 99;
+}
+
+/**
+ * Replace the block starting at headingLine, or append if not found.
+ * Block ends at the next line whose # prefix length is <= that of the task heading.
+ */
+function upsertMarkdownBlockByHeading(
+  existing: string,
+  headingLine: string,
+  newBlock: string
+): string {
+  const lines = existing.split('\n');
+  const startLevel = headingPrefixLength(headingLine);
+  const normalizedHeading = headingLine.trim();
+  let startIdx = -1;
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].trim() === normalizedHeading || lines[i].trimEnd() === normalizedHeading) {
+      startIdx = i;
+      break;
+    }
+  }
+  if (startIdx === -1) {
+    const sep = existing.trim() ? '\n\n' : '';
+    return `${existing}${sep}${newBlock}`.trimEnd();
+  }
+  let endIdx = lines.length;
+  for (let j = startIdx + 1; j < lines.length; j++) {
+    const line = lines[j];
+    if (/^\s*#+\s/.test(line)) {
+      const lvl = headingPrefixLength(line);
+      if (lvl <= startLevel) {
+        endIdx = j;
+        break;
+      }
+    }
+  }
+  const before = lines.slice(0, startIdx).join('\n');
+  const after = lines.slice(endIdx).join('\n');
+  const mid = newBlock.trimEnd();
+  return [before.trimEnd(), mid, after.trimStart()].filter(Boolean).join('\n\n').trimEnd();
+}
+
+function dedupeFirstLevel2Section(content: string, sectionTitle: string): string {
+  const lines = content.split('\n');
+  const re = new RegExp(`^##\\s+${sectionTitle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*$`, 'i');
+  const out: string[] = [];
+  let seen = false;
+  let skipping = false;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (line.trim().match(/^##\s+/) && re.test(line.trim())) {
+      if (seen) {
+        skipping = true;
+        continue;
+      }
+      seen = true;
+      skipping = false;
+      out.push(line);
+      continue;
+    }
+    if (skipping) {
+      if (line.trim().match(/^##\s+/)) {
+        skipping = false;
+        out.push(line);
+      }
+      continue;
+    }
+    out.push(line);
+  }
+  return out.join('\n');
+}
+
+function dedupeExcerptSessionMarkers(content: string): string {
+  const lines = content.split('\n');
+  const out: string[] = [];
+  let kept = false;
+  for (const line of lines) {
+    if (line.trim() === EXCERPT_SESSION_MARKER) {
+      if (!kept) {
+        out.push(line);
+        kept = true;
+      }
+      continue;
+    }
+    out.push(line);
+  }
+  return out.join('\n');
+}
+
+function normalizeSessionLogAfterAppend(content: string): string {
+  let c = dedupeExcerptSessionMarkers(content);
+  c = dedupeFirstLevel2Section(c, 'Test Status');
+  c = dedupeFirstLevel2Section(c, 'Completed Tasks');
+  return c;
+}
 
 /**
  * DocumentManager class
@@ -129,6 +246,41 @@ export class DocumentManager {
   async readHandoff(tier: HandoffTier, id?: string): Promise<string> {
     const path = this.getHandoffPath(tier, id);
     return this.readFile(path);
+  }
+
+  /**
+   * Project-relative path to planning doc for tier + id (canonical; replaces ad-hoc path assembly).
+   */
+  getPlanningDocRelativePath(tier: PlanningTier, id: string): string {
+    return resolvePlanningDocRelativePath(this.context.paths.getBasePath(), tier, id);
+  }
+
+  async readPlanningDoc(tier: PlanningTier, id: string): Promise<string> {
+    const path = this.getPlanningDocRelativePath(tier, id);
+    return this.readFile(path);
+  }
+
+  /** @returns true if the file was written; false if the write guard blocked it. */
+  async writePlanningDoc(
+    tier: PlanningTier,
+    id: string,
+    content: string,
+    options?: ShouldBlockProjectManagerWriteOptions
+  ): Promise<boolean> {
+    const path = this.getPlanningDocRelativePath(tier, id);
+    return this.writeFile(path, content, options);
+  }
+
+  /**
+   * True if the tier planning file exists on disk (same path as {@link readPlanningDoc}).
+   * Prefer this over try/catch around `readPlanningDoc` when branching on presence.
+   */
+  async planningDocExists(tier: PlanningTier, id: string): Promise<boolean> {
+    return this.projectFileExists(this.getPlanningDocRelativePath(tier, id));
+  }
+
+  async guideExists(tier: DocumentTier, id?: string): Promise<boolean> {
+    return this.projectFileExists(this.getDocumentPath(tier, id, 'guide'));
   }
 
   /**
@@ -372,8 +524,7 @@ export class DocumentManager {
    */
   async appendLog(tier: DocumentTier, id: string | undefined, content: string): Promise<void> {
     const path = this.getDocumentPath(tier, id, 'log');
-    
-    // Read existing content
+
     let existingContent = '';
     try {
       existingContent = await this.readFile(path);
@@ -382,9 +533,44 @@ export class DocumentManager {
       existingContent = '';
     }
 
-    // Append new content
-    const newContent = existingContent + (existingContent ? '\n\n' : '') + content;
-    await this.writeFile(path, newContent);
+    const taskHeading = extractFirstTaskLogHeadingLine(content);
+    let merged: string;
+    if (taskHeading) {
+      merged = upsertMarkdownBlockByHeading(existingContent, taskHeading, content);
+    } else {
+      merged = existingContent + (existingContent ? '\n\n' : '') + content;
+    }
+    merged = normalizeSessionLogAfterAppend(merged);
+    await this.writeFile(path, merged);
+  }
+
+  /**
+   * Re-apply the same markdown normalization as {@link appendLog} to an existing feature/phase/session log
+   * (dedupe `<!-- end excerpt session -->`, duplicate `## Test Status`, duplicate `## Completed Tasks`).
+   * Use to repair logs that accumulated duplicates before idempotent `appendLog` behavior existed.
+   * @returns Whether the file was rewritten and its project-relative path.
+   */
+  async coalesceLogNormalization(
+    tier: DocumentTier,
+    id: string | undefined
+  ): Promise<{ changed: boolean; path: string }> {
+    const path = this.getDocumentPath(tier, id, 'log');
+    let raw = '';
+    try {
+      raw = await this.readFile(path);
+    } catch {
+      return { changed: false, path };
+    }
+    const normalized = normalizeSessionLogAfterAppend(raw);
+    if (normalized === raw) {
+      return { changed: false, path };
+    }
+    const written = await this.writeFile(path, normalized);
+    if (!written) {
+      console.warn('[DocumentManager] coalesceLogNormalization: write blocked by guard', path);
+      return { changed: false, path };
+    }
+    return { changed: true, path };
   }
 
   /**
