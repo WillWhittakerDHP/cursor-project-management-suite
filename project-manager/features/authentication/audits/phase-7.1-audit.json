@@ -1,0 +1,58 @@
+{
+  "tier": "phase",
+  "identifier": "7.1",
+  "overallStatus": "pass",
+  "results": [
+    {
+      "category": "tier-quality",
+      "status": "pass",
+      "score": 92,
+      "findings": [
+        {
+          "type": "info",
+          "message": "12 type-similarity group(s) with UNIFY/BRAND action",
+          "location": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/.audit-reports/type-similarity-audit.json",
+          "suggestion": "Review client/.audit-reports/type-similarity-audit.json for type consolidation"
+        },
+        {
+          "type": "info",
+          "message": "67 duplication group(s) with high consolidation leverage",
+          "location": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/.audit-reports/duplication-audit.json",
+          "suggestion": "Review client/.audit-reports/duplication-audit.md for DRY opportunities"
+        },
+        {
+          "type": "info",
+          "message": "8 file(s) with P0/P1 deprecation findings",
+          "location": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/.audit-reports/deprecation-audit.json",
+          "suggestion": "Review client/.audit-reports/deprecation-audit.json for deprecation cleanup"
+        },
+        {
+          "type": "info",
+          "message": "data-flow audit produced output (review JSON for details)",
+          "location": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/.audit-reports/data-flow-audit.json",
+          "suggestion": "Review client/.audit-reports/data-flow-audit.json for findings"
+        }
+      ],
+      "recommendations": [
+        "Review duplication audit for consolidation opportunities"
+      ],
+      "summary": "Ran 12 phase-tier audits; found 0 error(s), 0 warning(s), 4 info signal(s)."
+    }
+  ],
+  "timestamp": "2026-03-22T17:41:35.472Z",
+  "reportPath": "",
+  "featureName": "authentication",
+  "auditType": "end",
+  "baselineComparison": [
+    {
+      "category": "tier-quality-coverage",
+      "startScore": 100,
+      "status": "missing"
+    },
+    {
+      "category": "tier-quality",
+      "endScore": 92,
+      "status": "new"
+    }
+  ]
+}
