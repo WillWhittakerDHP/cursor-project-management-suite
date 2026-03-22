@@ -10,7 +10,7 @@ import { auditPhase } from './composite/audit-phase';
 import { auditSession } from './composite/audit-session';
 import { auditTask } from './composite/audit-task';
 import { commitAuditReports } from './commit-audit-reports';
-import { resolveFeatureName } from '../utils';
+import { resolveFeatureDirectoryFromPlan } from '../utils';
 
 export interface RunEndAuditParams {
   tier: TierName;
@@ -37,7 +37,7 @@ export interface RunEndAuditResult {
  */
 export async function runEndAuditForTier(params: RunEndAuditParams): Promise<RunEndAuditResult | string> {
   const { tier, identifier, params: rawParams, featureName: rawFeatureName, auditsComplete } = params;
-  const featureName = await resolveFeatureName(rawFeatureName);
+  const featureName = await resolveFeatureDirectoryFromPlan(rawFeatureName);
 
   let out: RunEndAuditResult | string;
 

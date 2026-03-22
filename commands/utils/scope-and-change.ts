@@ -28,6 +28,7 @@
  */
 
 import { scopeAndSummarize, ScopeAndSummarizeParams, ScopeAndSummarizeResult, cleanupScopeDocument } from './scope-and-summarize';
+import { resolveFeatureDirectoryFromPlan } from './workflow-scope';
 import { changeRequest } from '../tiers/session/composite/session';
 import { taskChange } from '../tiers/task/composite/task';
 import { WorkflowCommandContext } from './command-context';
@@ -35,8 +36,6 @@ import { MarkdownUtils } from './markdown-utils';
 import { WorkflowId } from './id-utils';
 import { appendLog } from './append-log';
 import { getCurrentDate } from './utils';
-import { resolveFeatureName } from './feature-context';
-
 export interface ScopeAndChangeParams extends ScopeAndSummarizeParams {
   sessionId?: string; // Optional - will try to extract from context if not provided
   taskId?: string; // Optional - will try to extract from context if not provided
@@ -204,7 +203,7 @@ export async function scopeAndChange(
   params: ScopeAndChangeParams = {},
   featureName?: string
 ): Promise<ScopeAndChangeResult> {
-  const resolved = await resolveFeatureName(featureName);
+  const resolved = await resolveFeatureDirectoryFromPlan(featureName);
   // Step 1: Extract current context if IDs not provided
   let { sessionId, taskId, phase } = params;
   if (!sessionId && !taskId && !phase) {

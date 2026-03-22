@@ -27,7 +27,7 @@ import {
 } from '../../../testing/utils/watch-mode-handler';
 import { analyzeTestError } from '../../../testing/composite/test-error-analyzer';
 import { analyzeCodeChangeImpact, getRecentlyModifiedFiles } from '../../../testing/composite/test-change-detector';
-import { resolveFeatureName } from '../../../utils';
+import { resolveFeatureDirectoryFromPlan } from '../../../utils';
 
 export async function taskCheckpoint(
   taskId: string, 
@@ -38,7 +38,7 @@ export async function taskCheckpoint(
   success: boolean;
   output: string;
 }> {
-  const resolvedFeatureName = await resolveFeatureName(featureName);
+  const resolvedFeatureName = await resolveFeatureDirectoryFromPlan(featureName);
   const context = new WorkflowCommandContext(resolvedFeatureName);
   const target = testTarget || TEST_CONFIG.defaultTarget;
 

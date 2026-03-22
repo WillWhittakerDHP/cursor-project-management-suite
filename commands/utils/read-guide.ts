@@ -8,8 +8,8 @@
  */
 
 import { WorkflowCommandContext } from './command-context';
+import { resolveFeatureDirectoryFromPlan } from './workflow-scope';
 import { MarkdownUtils } from './markdown-utils';
-import { resolveFeatureName } from './feature-context';
 import { WorkflowId } from './id-utils';
 
 function extractSessionTaskBlocks(guideContent: string, sessionId: string): string[] {
@@ -79,7 +79,7 @@ export async function readGuide(
   sessionId?: string,
   featureName?: string
 ): Promise<string> {
-  const resolved = await resolveFeatureName(featureName);
+  const resolved = await resolveFeatureDirectoryFromPlan(featureName);
   const context = new WorkflowCommandContext(resolved);
   
   let guideContent: string;

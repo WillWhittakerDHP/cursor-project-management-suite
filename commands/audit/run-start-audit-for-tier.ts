@@ -8,7 +8,7 @@ import { auditFeatureStart } from './composite/audit-feature-start';
 import { auditPhaseStart } from './composite/audit-phase-start';
 import { auditSessionStart } from './composite/audit-session-start';
 import { auditTaskStart } from './composite/audit-task-start';
-import { resolveFeatureName } from '../utils';
+import { resolveFeatureDirectoryFromPlan } from '../utils';
 
 export interface RunStartAuditParams {
   tier: TierName;
@@ -28,7 +28,7 @@ export interface RunStartAuditResult {
  */
 export async function runStartAuditForTier(params: RunStartAuditParams): Promise<RunStartAuditResult> {
   const { tier, identifier, featureName: rawFeatureName } = params;
-  const featureName = await resolveFeatureName(rawFeatureName);
+  const featureName = await resolveFeatureDirectoryFromPlan(rawFeatureName);
 
   switch (tier) {
     case 'feature': {

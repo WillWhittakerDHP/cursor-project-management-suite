@@ -7,7 +7,7 @@
  */
 
 import { WorkflowCommandContext } from '../../utils/command-context';
-import { resolveFeatureName } from '../../utils';
+import { resolveFeatureDirectoryFromPlan } from '../../utils';
 import { WorkflowId } from '../../utils/id-utils';
 import { DocumentTier } from '../../utils/document-manager';
 import { MarkdownUtils } from '../../utils/markdown-utils';
@@ -38,7 +38,7 @@ export interface ExtractSectionResult {
 export async function extractSectionProgrammatic(
   params: ExtractSectionParams
 ): Promise<ExtractSectionResult> {
-  const featureName = await resolveFeatureName(params.featureName);
+  const featureName = await resolveFeatureDirectoryFromPlan(params.featureName);
   const context = new WorkflowCommandContext(featureName);
   
   // Validate identifier for phase/session

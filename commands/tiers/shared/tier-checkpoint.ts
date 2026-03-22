@@ -3,7 +3,7 @@
  */
 
 import type { TierConfig } from './types';
-import { resolveFeatureName } from '../../utils';
+import { resolveFeatureDirectoryFromPlan } from '../../utils';
 import { phaseCheckpointImpl } from '../phase/composite/phase-checkpoint-impl';
 import { sessionCheckpointImpl } from '../session/composite/session-checkpoint-impl';
 import { featureCheckpoint } from '../feature/atomic/feature-checkpoint';
@@ -17,7 +17,7 @@ export async function runTierCheckpoint(
   identifier: string,
   featureName?: string
 ): Promise<string> {
-  const resolved = await resolveFeatureName(featureName);
+  const resolved = await resolveFeatureDirectoryFromPlan(featureName);
 
   switch (config.name) {
     case 'feature':

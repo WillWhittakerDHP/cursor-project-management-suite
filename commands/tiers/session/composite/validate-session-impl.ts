@@ -15,7 +15,10 @@ export interface ValidateSessionResult {
   details: string[];
 }
 
-export async function validateSessionImpl(sessionId: string): Promise<ValidateSessionResult> {
+export async function validateSessionImpl(
+  sessionId: string,
+  context: WorkflowCommandContext
+): Promise<ValidateSessionResult> {
   const parsed = WorkflowId.parseSessionId(sessionId);
   if (!parsed) {
     return {
@@ -31,10 +34,7 @@ export async function validateSessionImpl(sessionId: string): Promise<ValidateSe
   const phase = parsed.phaseId;
   const session = parsed.session;
   const sessionNum = parseInt(session, 10);
-  // WHY: Resolve feature from sessionId (which feature dir contains phase-6.10-guide) so validation
-  // works regardless of current branch. getCurrent() would use branch name (e.g. session-6.10.1) as
-  // feature, producing wrong paths when starting session 6.10.2 from session-6.10.1 branch.
-  const context = await WorkflowCommandContext.contextFromParams('session', { sessionId });
+  // WHY: Caller passes WorkflowCommandContext from session-start (or runTierValidate resolves via featureId/featureName).
 
   try {
     const phaseGuidePath = context.paths.getPhaseGuidePath(phase);

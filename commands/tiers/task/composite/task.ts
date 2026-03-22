@@ -6,7 +6,7 @@ import { runTierStart } from '../../shared/tier-start';
 import { runTierEnd, TierEndResult } from '../../shared/tier-end';
 import { runTierPlan } from '../../shared/tier-plan';
 import { runTierChange } from '../../../utils/change-request';
-import { runTierValidate } from '../../shared/tier-validate';
+import { runTierValidate, type TierValidateOptions } from '../../shared/tier-validate';
 import { TASK_CONFIG } from '../../configs/task';
 import type { ValidateTaskResult } from './validate-task-impl';
 import type { CommandExecutionOptions } from '../../../utils/command-execution-mode';
@@ -47,8 +47,11 @@ export interface MarkTaskCompleteParams {
   featureId: string;
 }
 
-export async function validateTask(taskId: string): Promise<ValidateTaskResult> {
-  return runTierValidate(TASK_CONFIG, taskId);
+export async function validateTask(
+  taskId: string,
+  options?: TierValidateOptions
+): Promise<ValidateTaskResult> {
+  return runTierValidate(TASK_CONFIG, taskId, options);
 }
 
 export function formatTaskValidation(result: ValidateTaskResult, taskId: string): string {

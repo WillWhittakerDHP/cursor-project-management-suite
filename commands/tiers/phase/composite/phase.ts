@@ -8,7 +8,7 @@ import { runTierPlan } from '../../shared/tier-plan';
 import { runTierReopen } from '../../shared/tier-reopen';
 import { runTierCheckpoint } from '../../shared/tier-checkpoint';
 import { runTierComplete } from '../../shared/tier-complete';
-import { runTierValidate } from '../../shared/tier-validate';
+import { runTierValidate, type TierValidateOptions } from '../../shared/tier-validate';
 import { runTierChange } from '../../../utils/change-request';
 import { PHASE_CONFIG } from '../../configs/phase';
 import type { CommandExecutionOptions } from '../../../utils/command-execution-mode';
@@ -105,8 +105,11 @@ export async function markPhaseComplete(params: MarkPhaseCompleteParams): Promis
   });
 }
 
-export async function validatePhase(phase: string): Promise<ValidatePhaseResult> {
-  return runTierValidate(PHASE_CONFIG, phase);
+export async function validatePhase(
+  phase: string,
+  options?: TierValidateOptions
+): Promise<ValidatePhaseResult> {
+  return runTierValidate(PHASE_CONFIG, phase, options);
 }
 
 export function formatPhaseValidation(result: ValidatePhaseResult, phase: string): string {
@@ -122,8 +125,11 @@ export function formatPhaseValidation(result: ValidatePhaseResult, phase: string
   return output.join('\n');
 }
 
-export async function validatePhaseCommand(phase: string): Promise<string> {
-  const validation = await validatePhase(phase);
+export async function validatePhaseCommand(
+  phase: string,
+  options?: TierValidateOptions
+): Promise<string> {
+  const validation = await validatePhase(phase, options);
   return formatPhaseValidation(validation, phase);
 }
 

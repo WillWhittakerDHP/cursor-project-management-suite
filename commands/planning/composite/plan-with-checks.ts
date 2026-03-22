@@ -6,6 +6,7 @@
  */
 
 import { parsePlainLanguage } from '../atomic/parse-plain-language';
+import { resolveFeatureDirectoryFromPlan } from '../../utils';
 import { checkDocumentation } from '../atomic/check-documentation';
 import { checkReuse } from '../atomic/check-reuse';
 import { validatePlanningCommand } from '../atomic/validate-planning';
@@ -14,7 +15,6 @@ import { WorkflowCommandContext } from '../../utils/command-context';
 import { MarkdownUtils } from '../../utils/markdown-utils';
 import { checkDownstreamPlans } from '../../utils/check-downstream-plans';
 import { createScopeDocument } from '../../utils/create-scope-document';
-import { resolveFeatureName } from '../../utils/feature-context';
 import { parseNaturalLanguage } from '../../utils/planning-parser';
 
 
@@ -76,7 +76,7 @@ export async function planWithChecks(
   options?: PlanWithChecksOptions
 ): Promise<string> {
   const output: string[] = [];
-  const resolvedFeature = await resolveFeatureName(feature ?? options?.featureName);
+  const resolvedFeature = await resolveFeatureDirectoryFromPlan(feature ?? options?.featureName);
 
   // Step 0a: Auto-extract context from handoff when session/task/phase not provided
   let resolvedSessionId = sessionId;

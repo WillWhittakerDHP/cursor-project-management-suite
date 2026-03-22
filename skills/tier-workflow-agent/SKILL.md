@@ -51,6 +51,7 @@ Runtime outcomes may use **legacy** strings; routing normalizes them via `parseR
 | `verification_suggested` / `verification_work_suggested` | Present checklist and choice block; re-invoke tier-end with `continuePastVerification: true` or add follow-up tier per options. |
 | `uncommitted_blocking` / `uncommitted_changes_blocking` | Present blocking files; user chooses commit or stash path per playbook. |
 | `wrong_branch_before_commit` | Checkout expected branch; re-run same tier-end. |
+| `expected_branch_missing_run_tier_start` | Expected branch does not exist locally; run matching **tier-start** (or `git fetch` + checkout); then re-run tier-end — see playbook. |
 | `validation_failed` | Start blocked; present `nextAction`; no proceed until resolved. |
 | `start_ok` | Start succeeded; handle optional cascade per playbook. |
 | `end_ok` | End succeeded; handle optional cascade; may follow push gate. |

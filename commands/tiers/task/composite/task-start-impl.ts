@@ -110,7 +110,7 @@ export async function taskStartImpl(
     },
 
     async validate(): Promise<TierStartValidationResult> {
-      const validation = await validateTask(taskId);
+      const validation = await validateTask(taskId, { context });
       const validationMessage = formatTaskValidation(validation, taskId);
       return {
         canStart: validation.canStart,

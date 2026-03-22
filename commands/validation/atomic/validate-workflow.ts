@@ -7,7 +7,7 @@
  */
 
 import { WorkflowCommandContext } from '../../utils/command-context';
-import { resolveFeatureName } from '../../utils';
+import { resolveFeatureDirectoryFromPlan } from '../../utils';
 import { WorkflowId } from '../../utils/id-utils';
 import { getStatus, StatusTier } from '../../status/atomic/get-status';
 import { DocumentTier } from '../../utils/document-manager';
@@ -37,7 +37,7 @@ export interface ValidationResult {
  * @returns Formatted validation output
  */
 export async function validateWorkflow(params: ValidateWorkflowParams): Promise<string> {
-  const featureName = await resolveFeatureName(params.featureName);
+  const featureName = await resolveFeatureDirectoryFromPlan(params.featureName);
   const context = new WorkflowCommandContext(featureName);
   const output: string[] = [];
   

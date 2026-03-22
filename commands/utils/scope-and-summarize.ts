@@ -23,14 +23,13 @@
  */
 
 import { determineTier, TierAnalysis } from './tier-discriminator';
+import { resolveFeatureDirectoryFromPlan } from './workflow-scope';
 import { readFile, writeFile, unlink } from 'fs/promises';
 import { join } from 'path';
 import { PROJECT_ROOT } from './utils';
 import { extractFilePaths } from './context-gatherer';
 import { checkDownstreamPlans } from './check-downstream-plans';
 import { WorkflowCommandContext } from './command-context';
-import { resolveFeatureName } from './feature-context';
-
 export interface ScopeAndSummarizeParams {
   description?: string;
   contextFile?: string;
@@ -185,7 +184,7 @@ export async function scopeAndSummarize(
   params: ScopeAndSummarizeParams = {},
   featureName?: string
 ): Promise<ScopeAndSummarizeResult> {
-  const resolved = await resolveFeatureName(featureName);
+  const resolved = await resolveFeatureDirectoryFromPlan(featureName);
   // Read conversation context
   const context = await readConversationContext(params);
   

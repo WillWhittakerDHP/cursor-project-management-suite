@@ -7,7 +7,7 @@
  */
 
 import { WorkflowCommandContext } from '../../utils/command-context';
-import { resolveFeatureName } from '../../utils';
+import { resolveFeatureDirectoryFromPlan } from '../../utils';
 import { WorkflowId } from '../../utils/id-utils';
 import { verify } from '../../utils/verify';
 import { FEATURE_CONFIG } from '../../tiers/configs/feature';
@@ -55,7 +55,7 @@ function getConfig(tier: CheckpointTier) {
  * @returns Checkpoint result
  */
 export async function createCheckpoint(params: CreateCheckpointParams): Promise<CheckpointResult> {
-  const featureName = await resolveFeatureName(params.featureName);
+  const featureName = await resolveFeatureDirectoryFromPlan(params.featureName);
   const context = new WorkflowCommandContext(featureName);
   const output: string[] = [];
 

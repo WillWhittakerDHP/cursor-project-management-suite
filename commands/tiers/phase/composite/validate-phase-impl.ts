@@ -13,9 +13,11 @@ export interface ValidatePhaseResult {
   details: string[];
 }
 
-export async function validatePhaseImpl(phase: string): Promise<ValidatePhaseResult> {
+export async function validatePhaseImpl(
+  phase: string,
+  context: WorkflowCommandContext
+): Promise<ValidatePhaseResult> {
   const details: string[] = [];
-  const context = await WorkflowCommandContext.getCurrent();
 
   try {
     let featureGuideContent = '';

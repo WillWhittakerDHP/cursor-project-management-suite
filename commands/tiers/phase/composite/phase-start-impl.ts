@@ -79,7 +79,7 @@ export async function phaseStartImpl(
     },
 
     async validate(): Promise<TierStartValidationResult> {
-      const validation = await validatePhase(phase);
+      const validation = await validatePhase(phase, { context });
       const validationMessage = formatPhaseValidation(validation, phase);
       return {
         canStart: validation.canStart,

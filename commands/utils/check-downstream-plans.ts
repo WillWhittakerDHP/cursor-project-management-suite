@@ -10,14 +10,13 @@
  */
 
 import { WorkflowCommandContext } from './command-context';
+import { resolveFeatureDirectoryFromPlan } from './workflow-scope';
 import { MarkdownUtils } from './markdown-utils';
 import { readFile } from 'fs/promises';
 import { access } from 'fs/promises';
 import { join } from 'path';
 import { PROJECT_ROOT } from './utils';
 import { WorkflowId } from './id-utils';
-import { resolveFeatureName } from './feature-context';
-
 export interface DownstreamMatch {
   tier: 'feature' | 'phase' | 'session';
   id: string;
@@ -257,7 +256,7 @@ export async function checkDownstreamPlans(
   params: CheckDownstreamPlansParams,
   featureName?: string
 ): Promise<CheckDownstreamPlansResult> {
-  const resolved = await resolveFeatureName(featureName);
+  const resolved = await resolveFeatureDirectoryFromPlan(featureName);
   const keywords = extractKeywords(params.description);
   if (keywords.length === 0) {
     return {

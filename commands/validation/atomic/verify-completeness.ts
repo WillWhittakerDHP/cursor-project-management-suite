@@ -7,7 +7,7 @@
  */
 
 import { WorkflowCommandContext } from '../../utils/command-context';
-import { resolveFeatureName } from '../../utils';
+import { resolveFeatureDirectoryFromPlan } from '../../utils';
 import { ValidationTier } from './validate-workflow';
 import { access } from 'fs/promises';
 import { join } from 'path';
@@ -32,7 +32,7 @@ export interface CompletenessResult {
  * @returns Formatted completeness output
  */
 export async function verifyCompleteness(params: VerifyCompletenessParams): Promise<string> {
-  const featureName = await resolveFeatureName(params.featureName);
+  const featureName = await resolveFeatureDirectoryFromPlan(params.featureName);
   const context = new WorkflowCommandContext(featureName);
   const output: string[] = [];
   

@@ -3,19 +3,18 @@
  */
 
 import { resolvePlanningDescription } from '../../../planning/utils/resolve-planning-description';
+import { resolveFeatureDirectoryFromPlan, resolveActiveFeatureDirectory } from '../../../utils';
 import { runPlanningWithChecks } from '../../../planning/utils/run-planning-pipeline';
 import { WorkflowCommandContext } from '../../../utils/command-context';
 import { WorkflowId } from '../../../utils/id-utils';
-import { resolveFeatureName, resolveFeatureId } from '../../../utils/feature-context';
-
 export async function planTaskImpl(
   taskId: string,
   description?: string,
   featureId?: string
 ): Promise<string> {
   const feature = featureId != null && featureId.trim() !== ''
-    ? await resolveFeatureId(featureId)
-    : await resolveFeatureName();
+    ? await resolveFeatureDirectoryFromPlan(featureId)
+    : await resolveActiveFeatureDirectory();
   const context = new WorkflowCommandContext(feature);
   const output: string[] = [];
 

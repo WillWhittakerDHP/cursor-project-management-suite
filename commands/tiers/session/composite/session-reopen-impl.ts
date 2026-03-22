@@ -4,8 +4,8 @@
  */
 
 import { WorkflowId } from '../../../utils/id-utils';
+import { resolveActiveFeatureDirectory } from '../../../utils';
 import { SESSION_CONFIG } from '../../configs/session';
-import { resolveFeatureName } from '../../../utils/feature-context';
 import { WorkflowCommandContext } from '../../../utils/command-context';
 import { ensureTierBranch } from '../../../git/shared/git-manager';
 import { deriveSessionDescription } from '../../../planning/utils/resolve-planning-description';
@@ -17,7 +17,7 @@ export async function sessionReopenImpl(
   params: TierReopenParams,
   modeGate: string
 ): Promise<TierReopenResult> {
-  const featureName = await resolveFeatureName();
+  const featureName = await resolveActiveFeatureDirectory();
   const context = new WorkflowCommandContext(featureName);
   const output: string[] = [];
   const ctx: TierReopenWorkflowContext = {

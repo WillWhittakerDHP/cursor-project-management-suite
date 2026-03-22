@@ -150,3 +150,35 @@ export async function resolveWorkflowScope(args: ResolveWorkflowScopeArgs): Prom
   const scope = (await readTierScope()) ?? undefined;
   return { featureName, tier, identifier, scope };
 }
+
+/**
+ * Map PROJECT_PLAN Feature Summary `#` or `features/` directory slug → canonical feature directory name.
+ * Same rules as `resolveWorkflowScope` for `tier: 'feature'`.
+ */
+export async function resolveFeatureDirectoryFromPlan(featureRef: string): Promise<string> {
+  const id = featureRef.trim();
+  if (!id) {
+    throw new Error('resolveFeatureDirectoryFromPlan: featureRef is required (PROJECT_PLAN # or directory slug)');
+  }
+  const resolved = await resolveWorkflowScope({
+    mode: 'fromTierParams',
+    tier: 'feature',
+    params: { featureId: id },
+  });
+  return resolved.featureName;
+}
+
+/**
+ * Active feature directory from `.project-manager/.tier-scope` (written on successful tier-starts).
+ * WHY: Explicit scope file — no git-branch inference (see HARNESS_CHARTER / resolveWorkflowScope).
+ */
+export async function resolveActiveFeatureDirectory(): Promise<string> {
+  const scope = await readTierScope();
+  const raw = scope?.feature?.id?.trim();
+  if (!raw) {
+    throw new Error(
+      'resolveActiveFeatureDirectory: no feature in .project-manager/.tier-scope. Run a tier-start that writes scope, or pass a feature # / directory slug to the command.'
+    );
+  }
+  return resolveFeatureDirectoryFromPlan(raw);
+}

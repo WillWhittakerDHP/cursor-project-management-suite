@@ -9,7 +9,7 @@
 import { AuditResult, AuditFinding, AuditParams } from '../types';
 import { WorkflowCommandContext } from '../../utils/command-context';
 import { MarkdownUtils } from '../../utils/markdown-utils';
-import { resolveFeatureName } from '../../utils';
+import { resolveFeatureDirectoryFromPlan } from '../../utils';
 import {
   REQUIRED_GUIDE_SECTIONS,
   REQUIRED_HANDOFF_SECTIONS,
@@ -36,7 +36,7 @@ export async function auditDocs(params: AuditParams): Promise<AuditResult> {
     };
   }
   
-  const featureName = await resolveFeatureName(params.featureName);
+  const featureName = await resolveFeatureDirectoryFromPlan(params.featureName);
   const context = new WorkflowCommandContext(featureName);
   
   try {

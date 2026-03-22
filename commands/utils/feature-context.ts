@@ -1,8 +1,9 @@
 /**
  * Feature Context Abstraction
  *
- * Eliminates hardcoded feature names throughout the codebase.
- * Provides feature context with integrated path resolver.
+ * **Feature directory resolution** (PROJECT_PLAN # / slug → `features/<dir>`) lives in **`workflow-scope.ts`**:
+ * `resolveWorkflowScope`, `resolveFeatureDirectoryFromPlan`, `resolveActiveFeatureDirectory`.
+ * This module only provides `FeatureContext` + `listAvailableFeatures`.
  *
  * LEARNING: Context objects encapsulate related functionality and configuration
  * WHY: Hardcoded feature names make code inflexible and harder to test

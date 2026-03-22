@@ -488,12 +488,12 @@ async function ensureOnBranch(expectedBranch: string): Promise<EnsureOnBranchRes
 export interface CommitUncommittedOptions {
   /** If set, commit is aborted when current branch does not match (wrong branch). */
   expectedBranch?: string;
-  /** Only paths under these prefixes are staged; default is frontend-root/ and server/. Never-commit paths are always excluded. */
+  /** Only paths under these prefixes are staged; default is `client/`, `server/`, `.project-manager/` (see `DEFAULT_ALLOWED_COMMIT_PREFIXES`). Never-commit paths are always excluded. */
   allowedPrefixes?: string[];
 }
 
 /**
- * Commit only in-scope, touched files (no .cursor, .project-manager, or audit reports).
+ * Commit only in-scope, touched files (excludes `.cursor/`, `client/.audit-reports/`, transient `.project-manager/` harness files; see `isNeverCommitPath`).
  * Optionally verifies current branch matches expectedBranch before committing.
  * Use from tier-end before runGit so the final push includes this commit.
  */

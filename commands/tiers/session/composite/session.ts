@@ -8,7 +8,7 @@ import { runTierPlan } from '../../shared/tier-plan';
 import { runTierReopen } from '../../shared/tier-reopen';
 import { runTierCheckpoint } from '../../shared/tier-checkpoint';
 import { runTierComplete } from '../../shared/tier-complete';
-import { runTierValidate } from '../../shared/tier-validate';
+import { runTierValidate, type TierValidateOptions } from '../../shared/tier-validate';
 import { runTierChange } from '../../../utils/change-request';
 import { SESSION_CONFIG } from '../../configs/session';
 import type { CommandExecutionOptions } from '../../../utils/command-execution-mode';
@@ -130,8 +130,11 @@ export async function markSessionComplete(params: MarkSessionCompleteParams): Pr
   });
 }
 
-export async function validateSession(sessionId: string): Promise<ValidateSessionResult> {
-  return runTierValidate(SESSION_CONFIG, sessionId);
+export async function validateSession(
+  sessionId: string,
+  options?: TierValidateOptions
+): Promise<ValidateSessionResult> {
+  return runTierValidate(SESSION_CONFIG, sessionId, options);
 }
 
 export function formatSessionValidation(result: ValidateSessionResult, sessionId: string): string {
@@ -147,8 +150,11 @@ export function formatSessionValidation(result: ValidateSessionResult, sessionId
   return output.join('\n');
 }
 
-export async function validateSessionCommand(sessionId: string): Promise<string> {
-  const validation = await validateSession(sessionId);
+export async function validateSessionCommand(
+  sessionId: string,
+  options?: TierValidateOptions
+): Promise<string> {
+  const validation = await validateSession(sessionId, options);
   return formatSessionValidation(validation, sessionId);
 }
 

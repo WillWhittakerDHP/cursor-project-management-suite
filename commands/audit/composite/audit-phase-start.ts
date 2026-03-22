@@ -12,7 +12,7 @@
 import { TierAuditResult, AuditParams } from '../types';
 import { auditTierQuality } from '../atomic/audit-tier-quality';
 import { WorkflowCommandContext } from '../../utils/command-context';
-import { resolveFeatureName } from '../../utils';
+import { resolveFeatureDirectoryFromPlan } from '../../utils';
 import { writeAuditReport, calculateOverallStatus, getRelativePath } from '../utils';
 
 export interface AuditPhaseStartParams {
@@ -30,7 +30,7 @@ export async function auditPhaseStart(params: AuditPhaseStartParams): Promise<{
   fullReportPath?: string;
   output: string;
 }> {
-  const featureName = await resolveFeatureName(params.featureName);
+  const featureName = await resolveFeatureDirectoryFromPlan(params.featureName);
   const context = new WorkflowCommandContext(featureName);
 
   const auditParams: AuditParams = {

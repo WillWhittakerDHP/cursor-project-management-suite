@@ -4,8 +4,7 @@
  */
 
 import { readProjectFile } from './utils';
-import { resolveFeatureId } from './feature-context';
-
+import { resolveFeatureDirectoryFromPlan } from './workflow-scope';
 const PROJECT_PLAN_PATH = '.project-manager/PROJECT_PLAN.md';
 const FEATURE_SUMMARY_HEADER = '| # | Feature | Status | Directory | Key Dates |';
 
@@ -24,7 +23,7 @@ export async function getFeatureGuideFromProjectPlan(featureIdentifier: string):
     return '';
   }
 
-  const featureName = await resolveFeatureId(featureIdentifier.trim()).catch(() => null);
+  const featureName = await resolveFeatureDirectoryFromPlan(featureIdentifier.trim()).catch(() => null);
   if (!featureName) return '';
 
   const tableStart = content.indexOf(FEATURE_SUMMARY_HEADER);

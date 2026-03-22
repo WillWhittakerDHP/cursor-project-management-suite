@@ -7,7 +7,7 @@
  */
 
 import { getStatus, StatusTier, GetStatusParams } from '../atomic/get-status';
-import { resolveFeatureName } from '../../utils';
+import { resolveFeatureDirectoryFromPlan } from '../../utils';
 
 export interface StatusCrossTierParams {
   tiers: Array<{
@@ -24,7 +24,7 @@ export interface StatusCrossTierParams {
  * @returns Formatted cross-tier status output
  */
 export async function statusCrossTier(params: StatusCrossTierParams): Promise<string> {
-  const featureName = await resolveFeatureName(params.featureName);
+  const featureName = await resolveFeatureDirectoryFromPlan(params.featureName);
   const output: string[] = [];
   
   output.push(`# Cross-Tier Status\n`);

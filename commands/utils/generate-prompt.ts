@@ -7,10 +7,9 @@
  */
 
 import { WorkflowCommandContext } from './command-context';
-import { resolveFeatureName } from './feature-context';
-
+import { resolveFeatureDirectoryFromPlan } from './workflow-scope';
 export async function generatePrompt(sessionId: string, description: string, featureName?: string): Promise<string> {
-  const resolved = await resolveFeatureName(featureName);
+  const resolved = await resolveFeatureDirectoryFromPlan(featureName);
   const context = new WorkflowCommandContext(resolved);
   return `@${context.paths.getFeatureHandoffPath()} Continue - start Session ${sessionId} (${description})`;
 }

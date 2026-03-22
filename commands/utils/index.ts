@@ -9,7 +9,14 @@ export { WorkflowPathResolver } from './path-resolver';
 export { WorkflowId } from './id-utils';
 export type { ParsedTaskId, ParsedSessionId } from './id-utils';
 export { FeatureContext } from './feature-context';
-export { resolveWorkflowScope, type ResolvedWorkflowScope, type TierName, type TierParamsBag } from './workflow-scope';
+export {
+  resolveWorkflowScope,
+  resolveFeatureDirectoryFromPlan,
+  resolveActiveFeatureDirectory,
+  type ResolvedWorkflowScope,
+  type TierName,
+  type TierParamsBag,
+} from './workflow-scope';
 export { workflowContextFromScope } from './command-context';
 export { MarkdownUtils } from './markdown-utils';
 export type { ExtractSectionOptions } from './markdown-utils';

@@ -5,17 +5,19 @@
 
 import type { TierStartValidationResult } from '../../shared/tier-start-workflow-types';
 import { validateSession, formatSessionValidation } from '../composite/session';
-import { WorkflowCommandContext } from '../../../utils/command-context';
+import type { WorkflowCommandContext } from '../../../utils/command-context';
 import { WorkflowId } from '../../../utils/id-utils';
 
 export interface SessionExecutionPolicyValidateParams {
   sessionId: string;
+  /** Built in session-start-impl before validate(); same paths as tier-start (feature from params, not git). */
+  context: WorkflowCommandContext;
 }
 
 /** Session execution policy: validation and plan content. Hydration targets tierUp (phase) docs. */
 export const sessionExecutionPolicy = {
   async validate(params: SessionExecutionPolicyValidateParams): Promise<TierStartValidationResult> {
-    const validation = await validateSession(params.sessionId);
+    const validation = await validateSession(params.sessionId, { context: params.context });
     const validationMessage = formatSessionValidation(validation, params.sessionId);
     if (!validation.canStart) {
       return {
@@ -24,15 +26,12 @@ export const sessionExecutionPolicy = {
       };
     }
 
-    // Resolve feature from sessionId (e.g. 6.9.2 -> phase 6.9 -> appointment-workflow) so phase guide
-    // is read from the correct feature dir regardless of current branch.
-    const context = await WorkflowCommandContext.contextFromParams('session', { sessionId: params.sessionId });
     const parsed = WorkflowId.parseSessionId(params.sessionId);
     const hydrationWarnings: string[] = [];
 
     if (parsed) {
       try {
-        const phaseGuide = await context.readPhaseGuide(parsed.phaseId);
+        const phaseGuide = await params.context.readPhaseGuide(parsed.phaseId);
         const escaped = params.sessionId.replace(/\./g, '\\.');
         const hasSessionEntry = new RegExp(
           `(?:-\\s*\\[[ x]\\]\\s*)?###\\s*Session\\s+${escaped}:`,

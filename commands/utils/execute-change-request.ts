@@ -20,13 +20,12 @@
  */
 
 import { changeRequest } from '../tiers/session/composite/session';
+import { resolveFeatureDirectoryFromPlan } from './workflow-scope';
 import { taskChange } from '../tiers/task/composite/task';
 import { phaseChange } from '../tiers/phase/composite/phase';
 import { featureChange } from '../tiers/feature/composite/feature';
 import { WorkflowId } from './id-utils';
 import { TierAnalysis } from './tier-discriminator';
-import { resolveFeatureName } from './feature-context';
-
 export interface ExecuteChangeRequestParams {
   description: string;
   tierAnalysis: TierAnalysis;
@@ -52,7 +51,7 @@ export async function executeChangeRequest(
   params: ExecuteChangeRequestParams
 ): Promise<ExecuteChangeRequestResult> {
   const { description, tierAnalysis, sessionId, taskId, phase } = params;
-  const featureName = await resolveFeatureName(params.featureName);
+  const featureName = await resolveFeatureDirectoryFromPlan(params.featureName);
   
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

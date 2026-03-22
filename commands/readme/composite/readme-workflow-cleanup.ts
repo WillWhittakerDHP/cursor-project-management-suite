@@ -9,7 +9,7 @@
 
 import { cleanupTemporaryReadmes } from './readme-cleanup-temporary';
 import { WorkflowCommandContext } from '../../utils/command-context';
-import { resolveFeatureName } from '../../utils';
+import { resolveActiveFeatureDirectory } from '../../utils';
 
 export type WorkflowTier = 'feature' | 'phase' | 'session';
 
@@ -31,7 +31,7 @@ export interface WorkflowCleanupParams {
 export async function workflowCleanupReadmes(params: WorkflowCleanupParams): Promise<string> {
   try {
     const featureName = params.featureName ||
-                       (params.tier === 'feature' ? params.identifier : await resolveFeatureName());
+                       (params.tier === 'feature' ? params.identifier : await resolveActiveFeatureDirectory());
     const context = new WorkflowCommandContext(featureName);
     
     // Determine directory scope based on tier

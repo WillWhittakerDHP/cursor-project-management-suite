@@ -9,9 +9,9 @@
  */
 
 import { WorkflowCommandContext } from './command-context';
+import { resolveFeatureDirectoryFromPlan } from './workflow-scope';
 import { MarkdownUtils } from './markdown-utils';
 import { WorkflowId } from './id-utils';
-import { resolveFeatureName } from './feature-context';
 import { readProjectFile } from './utils';
 
 export type HandoffTier = 'phase' | 'session' | 'task';
@@ -154,7 +154,7 @@ export async function readHandoff(
   identifier?: string,
   featureName?: string
 ): Promise<string> {
-  const resolved = await resolveFeatureName(featureName);
+  const resolved = await resolveFeatureDirectoryFromPlan(featureName);
   const context = new WorkflowCommandContext(resolved);
   
   let content: string;

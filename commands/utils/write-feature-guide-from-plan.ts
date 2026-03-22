@@ -9,7 +9,7 @@
  */
 
 import { getFeatureGuideFromProjectPlan } from './project-plan-adapter';
-import { resolveFeatureId } from './feature-context';
+import { resolveFeatureDirectoryFromPlan } from './workflow-scope';
 import { writeProjectFile } from './utils';
 import { WorkflowCommandContext } from './command-context';
 
@@ -21,7 +21,7 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  const featureName = await resolveFeatureId(featureId).catch((err) => {
+  const featureName = await resolveFeatureDirectoryFromPlan(featureId).catch((err) => {
     console.error('Failed to resolve feature:', err instanceof Error ? err.message : err);
     process.exit(1);
   });

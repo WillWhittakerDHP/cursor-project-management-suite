@@ -4,11 +4,16 @@
  */
 
 import { auditPhase } from './audit/composite/audit-phase';
-import { resolveFeatureName } from './utils';
+import { resolveFeatureDirectoryFromPlan, resolveActiveFeatureDirectory } from './utils';
 
 const phase = process.argv[2] || '3';
+const featureArg = process.argv[3]?.trim();
 
-void resolveFeatureName(process.argv[3])
+const featurePromise = featureArg
+  ? resolveFeatureDirectoryFromPlan(featureArg)
+  : resolveActiveFeatureDirectory();
+
+void featurePromise
   .then((featureName) => {
     console.log(`Running audit for Phase ${phase} of feature ${featureName}...\n`);
     return auditPhase({ phase, featureName });
@@ -24,4 +29,3 @@ void resolveFeatureName(process.argv[3])
     console.error('Error running audit:', error);
     process.exit(1);
   });
-

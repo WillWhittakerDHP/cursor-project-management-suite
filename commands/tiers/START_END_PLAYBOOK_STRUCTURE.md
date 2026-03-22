@@ -117,6 +117,7 @@ Routing (use `outcome.reasonCode`):
 - If `outcome.reasonCode === 'verification_work_suggested'`: see **Per-reasonCode behavioral rules → `verification_work_suggested`** below.
 - If `outcome.reasonCode === 'uncommitted_changes_blocking'`: see **Per-reasonCode behavioral rules → `uncommitted_changes_blocking`** below.
 - If `outcome.reasonCode === 'wrong_branch_before_commit'`: see **Per-reasonCode behavioral rules → `wrong_branch_before_commit`** below.
+- If `outcome.reasonCode === 'expected_branch_missing_run_tier_start'`: see **Per-reasonCode behavioral rules → `expected_branch_missing_run_tier_start`** below.
 - **If `outcome.cascade` is present (start or end):** You MUST run **Cascade confirmation** first. Do not skip to `nextAction` or infer the next step (e.g. do not assume "session roll-up" when the cascade is to the next task). Cascade direction: `outcome.cascade.direction === 'across'` → next step is the **next tier at same level** (e.g. next task via `outcome.cascade.command`, typically `/task-start <nextTaskId>`); `'up'` → next step is **parent tier end** (e.g. `/session-end <sessionId>`). See **Per-reasonCode behavioral rules → Cascade confirmation** below.
 - If success and no push/cascade pending: show `controlPlaneDecision.message`; then use `outcome.nextAction`.
 - **If not success (HARD STOP):**
@@ -263,7 +264,7 @@ Suggested manual verification for this tier. The checklist is for **verifying wh
 
 ### `uncommitted_changes_blocking` (start/end/reopen commands)
 
-The command detected uncommitted files that would be overwritten by a branch checkout. Workflow artifacts (`.cursor`, `.project-manager`, `client/.audit-reports`) are non-blocking: they are stashed before checkout and restored (stash pop) on the target branch; they are never auto-committed by the tier-end commit step. Any other uncommitted files are blocking; `controlPlaneDecision.message` contains the list of blocking files. **Tier-end commit behavior:** All git operations for tier workflows go through **gitManager** (`.cursor/commands/git/shared/git-manager.ts`). Before committing, the workflow ensures the repo is on the tier's expected branch: if the current branch is wrong (e.g. two threads), it switches to the expected branch (stashing only workflow artifacts, then checkout, then stash pop) then commits. Only touched files under `frontend-root/` and `server/` are staged and committed; .cursor, .project-manager, and audit reports are never committed.
+The command detected uncommitted files that would be overwritten by a branch checkout. Workflow artifacts (`.cursor`, `.project-manager`, `client/.audit-reports`) are non-blocking: they are stashed before checkout and restored (stash pop) on the target branch; they are never auto-committed by the tier-end commit step. Any other uncommitted files are blocking; `controlPlaneDecision.message` contains the list of blocking files. **Tier-end commit behavior:** All git operations for tier workflows go through **gitManager** (`.cursor/commands/git/shared/git-manager.ts`). Before committing, the workflow ensures the repo is on the tier's expected branch: if the current branch is wrong (e.g. two threads), it switches to the expected branch (stashing only workflow artifacts, then checkout, then stash pop) then commits. **Staging:** touched paths under **`client/`**, **`server/`**, and **`.project-manager/`** (non-transient docs only). **Never** staged: **`.cursor/`** (submodule), **`client/.audit-reports/`**, or **transient** `.project-manager/` harness files (e.g. `.tier-scope`, `.write-log`). See `.project-manager/HARNESS_CHARTER.md` and `.project-manager/HARNESS_PLAYBOOK_ALIGNMENT.md`.
 
 **When only workflow artifacts were uncommitted:** The workflow auto-stashes them and proceeds with checkout, then runs stash pop on the target branch. The user may see planning doc (or other .project-manager) tabs show as deleted/red in the editor during that window — the file was **not** deleted by the agent; it was stashed and is restored when the workflow runs stash pop. The command output will include messages to that effect. If the user asks "why was the planning doc deleted?", explain: it was stashed for the branch switch and has been restored; no delete was run.
 
@@ -274,11 +275,18 @@ The command detected uncommitted files that would be overwritten by a branch che
 
 ### `wrong_branch_before_commit` (end commands)
 
-The tier-end commit step aborted because the current git branch does not match the tier's expected branch (e.g. running session-end for 6.5.1 while on a different session branch). Commits are only allowed when on the correct branch so work is not committed to the wrong place.
+The tier-end commit step aborted because the current git branch does not match the tier's **expected** branch (e.g. running session-end for 6.5.1 while on a different session branch). Commits are only allowed when on the correct branch so work is not committed to the wrong place.
 
 1. **Present `controlPlaneDecision.message`** to the user — it states current vs expected branch.
 2. **Checkout the correct branch:** run `git checkout <expected-branch>` (the expected branch is in the message). Resolve any uncommitted changes first (commit or stash per `uncommitted_changes_blocking` if needed).
 3. Re-run the same tier-end command (e.g. `/session-end 6.5.1`) so the workflow runs on the correct branch.
+
+### `expected_branch_missing_run_tier_start` (end commands)
+
+The expected tier branch **does not exist locally** (tier-end does **not** create branches — only **tier-start** does). Typical causes: skipped `/feature-start` / `/phase-start` / `/session-start`, branch only on remote, or deleted branch.
+
+1. **Present `controlPlaneDecision.message`** verbatim — it names the missing branch and suggests the matching **tier-start** (and optional `git fetch` if the branch exists only on remote).
+2. User runs the indicated **tier-start** (or fetches and checks out), then **re-runs the same tier-end**.
 
 ### Cascade confirmation (start and end commands)
 
@@ -430,7 +438,7 @@ Session-tier type governance is enforced via cursor rules, a reference playbook,
 
 - **Cursor rules (always-applied):** `.cursor/rules/type-governance.mdc` (inventory, Ref/ComputedRef boundaries, InjectionKey, null/undefined, type placement; session-tier type-escape and type-constant-inventory).
 - **Reference playbook:** `.project-manager/TYPE_AUTHORING_PLAYBOOK.md` — decision trees (create vs reuse vs inline), Vue reactivity boundary table, null/undefined policy, assertion policy, placement, Definition of Done, common mistakes, and audit rule mapping.
-- **Baseline comparison:** Type governance deltas are tracked through the existing session baseline. Session-start stores a `type-constant-inventory` score (derived from `frontend-root/.audit-reports/type-constant-inventory-audit.json`); session-end includes the same category in end scores. The audit report and comparison output show type-constant-inventory alongside other session categories (e.g. tier-quality, docs, vue-architecture).
+- **Baseline comparison:** Type governance deltas are tracked through the existing session baseline. Session-start stores a `type-constant-inventory` score (derived from `client/.audit-reports/type-constant-inventory-audit.json`); session-end includes the same category in end scores. The audit report and comparison output show type-constant-inventory alongside other session categories (e.g. tier-quality, docs, vue-architecture).
 - **Session-end checklist:** Immediately before the session end audit, the workflow emits a soft type-governance self-check (decision tree, no new escape hatches, Ref/ComputedRef boundaries). Enforcement remains automated via type-escape and type-constant-inventory audits in `audit:tier-session`.
 
 When creating or updating session guides (e.g. under `.project-manager/features/.../sessions/*-guide.md`), agents should follow the type-governance rule and the playbook for any new or changed types referenced in the session.
@@ -549,7 +557,7 @@ Each tier has a strict dotted-number ID format. No "or" conditions — reject ID
 **Scope is explicit in every command.** Commands receive F/P/S/T via the slash command (e.g. `/session-start 6.9.2`, `/task-start 6.10.1.3`) or via params. Context is built once with **`WorkflowCommandContext.contextFromParams(tier, params)`**; the returned context carries **tier** and **identifier** so it is the single carrier of "what param" was used. Entry points (tier-start, tier-end, accepted-code, validate) pass this context through; impls and steps read from context (e.g. `context.identifier`, `context.feature.name`) and do not re-resolve from params.
 
 **How scope is supplied:**
-- **Start/end:** The command includes the tier identifier. Entry calls `contextFromParams(config.name, params)` and passes context to the adapter and impls. Feature is derived from the identifier (which feature dir contains that session/task doc) or from explicit featureId when available.
+- **Start/end:** The command includes the tier identifier. Entry calls `contextFromParams(config.name, params)` and passes context to the adapter and impls. **Phase, session, and task** params **must** include **`featureId` or `featureName`** (PROJECT_PLAN `#` or directory slug); resolution is via **`resolveWorkflowScope`** only (no git-branch inference). See `.project-manager/HARNESS_CHARTER.md` and `HARNESS_PLAYBOOK_ALIGNMENT.md`.
 - **/audit-fix:** Pass explicit `featureName`, `tier`, and `identifier` to get tier-appropriate refs (guide + planning). Omit them to get governance refs only (no tier context).
 - **/accepted-code:** Uses pending task state (taskId; optional featureId). Builds context via `contextFromParams('task', { taskId, featureId: state.featureId })`.
 
@@ -565,7 +573,7 @@ Adjacent-tier transitions use **tierUp**, **tierAt**, and **tierDown** (see `.cu
 - **tierUp(tier)** — Parent tier: task→session, session→phase, phase→feature, feature→null. Use when there is no next unit at the current tier: the next step is to run the **parent tier end** (the command is derived from `tierUp(config.name)` — no hardcoded tier names).
 - **tierDown(tier)** — Child tier: feature→phase, phase→session, session→task, task→null. Use after a tier start for **cascade** (see below).
 
-**Identifier naming:** All tier identifiers use the `{tier}Id` pattern: `featureId`, `phaseId`, `sessionId`, `taskId`. Feature identifiers are numeric (e.g. `"3"`) and resolved to the feature name from PROJECT_PLAN.md via `resolveFeatureId`.
+**Identifier naming:** All tier identifiers use the `{tier}Id` pattern: `featureId`, `phaseId`, `sessionId`, `taskId`. Feature refs are PROJECT_PLAN **`#`** or **directory slug**; canonical directory via **`resolveFeatureDirectoryFromPlan`** / **`resolveWorkflowScope`** (`.cursor/commands/utils/workflow-scope.ts`).
 
 **Start includes plan:** Each start impl runs `runTierPlan` for the same tier internally after setup (validation, branch, context). No separate `/plan-phase`, `/plan-session`, etc. is required before start.
 
@@ -681,9 +689,10 @@ Reopened tiers are **startable** (same as In Progress). When the new work is don
 
 - **Session:** Description from session log title, then session guide (Session Name / Description), then phase guide session list. Next session from phase guide session list (next in order after current). Implemented in session-end (deriveSessionDescription, deriveNextSession); session-start derives description the same way when omitted.
 - **Phase:** Title/description from phase guide (Phase Name, Description). Next phase from feature guide phase list if needed. phase-start does not take a title parameter.
-- **Feature:** The start/end API uses **featureId** (string). Resolve to feature name via `resolveFeatureId(featureId)` (reads PROJECT_PLAN.md; `featureId` is the `#` column value, e.g. `"3"`). Then call `featureStart(featureId, options)`. No user-supplied title.
-  - **Numeric identifier (e.g. `3`):** Pass as featureId; `resolveFeatureId("3")` returns the feature directory name from PROJECT_PLAN. Do not use directory listing or index; PROJECT_PLAN is the only source for resolution.
-  - **Identifier omitted:** Scope is explicit; derive or require feature from command/params. For the API, a numeric featureId is required (from PROJECT_PLAN `#` column). Do not infer from directories.
+- **Feature:** The start/end API uses **featureId** (string). Resolve to feature directory via **`resolveFeatureDirectoryFromPlan(featureId)`** (same mapping as PROJECT_PLAN Feature Summary — `#` or slug). Then call `featureStart(featureId, options)`. No user-supplied title.
+  - **Numeric identifier (e.g. `3`):** Pass as featureId; `resolveFeatureDirectoryFromPlan("3")` returns the feature directory name. Do not use raw directory listing as authority; PROJECT_PLAN + scope helpers are the contract.
+  - **Slug (e.g. `appointment-workflow`):** Pass as featureId; same helper validates against the plan / features dir.
+  - **Identifier omitted:** Not valid for feature-start API — a feature ref is required. For utilities with no ref, use **`resolveActiveFeatureDirectory()`** (reads `.project-manager/.tier-scope`, not git).
 - **Task:** Title/description from session guide task list or handoff; next task from session guide order. task-start does not take a description parameter; task context is loaded from session guide/handoff. The session guide must list each task with a heading matching `Task X.Y.Z.N:` (e.g. `#### Task 6.4.4.2:`) so task-end can cascade across; see "Enumerate tierDowns" in the context_gathering flow.
 
 **Rule for context step:** Derive [title/description/next] from [doc paths]; do not ask the user.

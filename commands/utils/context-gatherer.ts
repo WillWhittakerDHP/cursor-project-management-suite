@@ -10,11 +10,10 @@
  */
 
 import { PROJECT_ROOT } from './utils';
+import { resolveFeatureDirectoryFromPlan } from './workflow-scope';
 import { access } from 'fs/promises';
 import { join } from 'path';
 import { WorkflowCommandContext } from './command-context';
-import { resolveFeatureName } from './feature-context';
-
 const FRONTEND_ROOT = 'client';
 const FRONTEND_PREFIX = `${FRONTEND_ROOT}/`;
 const FRONTEND_SRC_PREFIX = `${FRONTEND_ROOT}/src/`;
@@ -62,7 +61,7 @@ export interface CurrentStateSummary {
 /**
  * Extract file paths from markdown content
  * Looks for patterns like:
- * - `<frontend-root>/src/...` (Vue paths)
+ * - `client/src/...` (Vue paths; legacy docs may say `frontend-root/`)
  * - Backtick-wrapped paths
  * - Code block paths
  */
@@ -206,7 +205,7 @@ export async function extractFilesFromSessionGuide(
   featureName?: string
 ): Promise<string[]> {
   try {
-    const resolved = await resolveFeatureName(featureName);
+    const resolved = await resolveFeatureDirectoryFromPlan(featureName);
     const context = new WorkflowCommandContext(resolved);
     const guideContent = await context.readSessionGuide(sessionId);
     return extractFilePaths(guideContent);
@@ -224,7 +223,7 @@ export async function extractFilesFromPhaseGuide(
   featureName?: string
 ): Promise<string[]> {
   try {
-    const resolved = await resolveFeatureName(featureName);
+    const resolved = await resolveFeatureDirectoryFromPlan(featureName);
     const context = new WorkflowCommandContext(resolved);
     const guideContent = await context.readPhaseGuide(phase);
     return extractFilePaths(guideContent);
@@ -241,7 +240,7 @@ export async function generateCurrentStateSummary(
   sessionId: string,
   featureName?: string
 ): Promise<CurrentStateSummary> {
-  const resolved = await resolveFeatureName(featureName);
+  const resolved = await resolveFeatureDirectoryFromPlan(featureName);
   const filePaths = await extractFilesFromSessionGuide(sessionId, resolved);
   const fileStatuses = await gatherFileStatuses(filePaths);
   
@@ -291,7 +290,7 @@ export async function gatherComponentContext(
   componentName: string,
   featureName?: string
 ): Promise<FileContext> {
-  await resolveFeatureName(featureName);
+  await resolveFeatureDirectoryFromPlan(featureName);
   // Common patterns for Vue component paths
   const vuePatterns = [
     `${FRONTEND_ROOT}/src/components/${componentName}.vue`,

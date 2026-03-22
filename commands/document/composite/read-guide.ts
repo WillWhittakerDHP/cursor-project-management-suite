@@ -15,7 +15,7 @@
  * @param featureName Optional feature name (from .current-feature or git branch if omitted)
  */
 
-import { resolveFeatureName } from '../../utils';
+import { resolveFeatureDirectoryFromPlan } from '../../utils';
 import { WorkflowCommandContext } from '../../utils/command-context';
 import { WorkflowId } from '../../utils/id-utils';
 
@@ -24,7 +24,7 @@ export async function workflowReadGuide(
   identifier?: string,
   featureName?: string
 ): Promise<string> {
-  const resolved = await resolveFeatureName(featureName);
+  const resolved = await resolveFeatureDirectoryFromPlan(featureName);
   const context = new WorkflowCommandContext(resolved);
   const output: string[] = [];
   

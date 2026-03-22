@@ -10,7 +10,7 @@ import { WorkflowCommandContext } from '../../utils/command-context';
 import { WorkflowId } from '../../utils/id-utils';
 import { getStatus, StatusTier } from '../../status/atomic/get-status';
 import { DocumentTier } from '../../utils/document-manager';
-import { resolveFeatureName } from '../../utils';
+import { resolveFeatureDirectoryFromPlan } from '../../utils';
 
 export type HandoffTier = DocumentTier | 'task';
 
@@ -29,7 +29,7 @@ export interface GenerateHandoffParams {
  * @returns Formatted handoff output
  */
 export async function generateHandoff(params: GenerateHandoffParams): Promise<string> {
-  const featureName = await resolveFeatureName(params.featureName);
+  const featureName = await resolveFeatureDirectoryFromPlan(params.featureName);
   const context = new WorkflowCommandContext(featureName);
   const output: string[] = [];
   

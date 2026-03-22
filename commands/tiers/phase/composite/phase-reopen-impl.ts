@@ -4,7 +4,7 @@
  */
 
 import { PHASE_CONFIG } from '../../configs/phase';
-import { resolveFeatureName } from '../../../utils/feature-context';
+import { resolveActiveFeatureDirectory } from '../../../utils';
 import { WorkflowCommandContext } from '../../../utils/command-context';
 import { ensureTierBranch } from '../../../git/shared/git-manager';
 import { readProjectFile, writeProjectFile } from '../../../utils/utils';
@@ -18,7 +18,7 @@ export async function phaseReopenImpl(
   params: TierReopenParams,
   modeGate: string
 ): Promise<TierReopenResult> {
-  const featureName = await resolveFeatureName();
+  const featureName = await resolveActiveFeatureDirectory();
   const context = new WorkflowCommandContext(featureName);
   const output: string[] = [];
   const ctx: TierReopenWorkflowContext = {

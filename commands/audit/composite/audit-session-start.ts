@@ -14,7 +14,7 @@ import { auditTierQuality } from '../atomic/audit-tier-quality';
 import { auditDocs } from '../atomic/audit-docs';
 import { auditVueArchitecture } from '../atomic/audit-vue-architecture';
 import { WorkflowCommandContext } from '../../utils/command-context';
-import { resolveFeatureName } from '../../utils';
+import { resolveFeatureDirectoryFromPlan } from '../../utils';
 import { writeAuditReport, calculateOverallStatus, getRelativePath, getTypeConstantInventoryScore, getComposableGovernanceScore, getFunctionGovernanceScore, getComponentGovernanceScore } from '../utils';
 
 export interface AuditSessionStartParams {
@@ -32,7 +32,7 @@ export async function auditSessionStart(params: AuditSessionStartParams): Promis
   fullReportPath?: string;
   output: string;
 }> {
-  const featureName = await resolveFeatureName(params.featureName);
+  const featureName = await resolveFeatureDirectoryFromPlan(params.featureName);
   const context = new WorkflowCommandContext(featureName);
 
   const auditParams: AuditParams = {

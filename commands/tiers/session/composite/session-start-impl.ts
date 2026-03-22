@@ -184,7 +184,7 @@ export async function sessionStartImpl(
     },
 
     async validate(): Promise<TierStartValidationResult> {
-      return sessionExecutionPolicy.validate({ sessionId });
+      return sessionExecutionPolicy.validate({ sessionId, context });
     },
 
     getPlanModeSteps() {

@@ -7,7 +7,7 @@
 
 import { PlanningTemplateType, TemplateApplicationResult, PlanningOutput } from '../../utils/planning-types';
 import { WorkflowCommandContext } from '../../utils/command-context';
-import { resolveFeatureName } from '../../utils';
+import { resolveFeatureDirectoryFromPlan } from '../../utils';
 import { readFile } from 'fs/promises';
 
 /**
@@ -24,7 +24,7 @@ export async function applyTemplate(
   feature?: string
 ): Promise<TemplateApplicationResult> {
   try {
-    const resolvedFeature = await resolveFeatureName(feature);
+    const resolvedFeature = await resolveFeatureDirectoryFromPlan(feature);
     const context = new WorkflowCommandContext(resolvedFeature);
     const templatePath = context.paths.getTemplatePath('planning', templateType);
     

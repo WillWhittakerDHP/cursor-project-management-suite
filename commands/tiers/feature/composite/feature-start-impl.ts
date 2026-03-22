@@ -3,11 +3,11 @@
  */
 
 import { featureLoad } from '../atomic/feature-load';
+import { resolveFeatureDirectoryFromPlan } from '../../../utils';
 import { featureCheckpoint } from '../atomic/feature-checkpoint';
 import { WorkflowCommandContext } from '../../../utils/command-context';
 import { extractFilePaths, gatherFileStatuses } from '../../../utils/context-gatherer';
 import { formatFileStatusList } from '../../../utils/context-templates';
-import { resolveFeatureId } from '../../../utils/feature-context';
 import { FEATURE_CONFIG } from '../../configs/feature';
 import { ensureTierBranch } from '../../../git/shared/git-manager';
 import { deriveFeatureDescription } from '../../../planning/utils/resolve-planning-description';
@@ -39,9 +39,7 @@ export async function featureStartImpl(
 ): Promise<TierStartResult | TierStartWorkflowResult> {
   const context =
     resolvedContext ??
-    new WorkflowCommandContext(
-      (await resolveFeatureId(featureId)).toLowerCase().replace(/\s+/g, '-')
-    );
+    new WorkflowCommandContext(await resolveFeatureDirectoryFromPlan(featureId));
   const featureName = context.feature.name;
   const normalizedFeatureName = featureName;
   const output: string[] = [];

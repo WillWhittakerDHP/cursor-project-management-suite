@@ -6,7 +6,7 @@ import { resolvePlanningDescription } from '../../../planning/utils/resolve-plan
 import { runPlanningWithChecks } from '../../../planning/utils/run-planning-pipeline';
 import { WorkflowCommandContext } from '../../../utils/command-context';
 import { WorkflowId } from '../../../utils/id-utils';
-import { resolveFeatureName } from '../../../utils';
+import { resolveFeatureDirectoryFromPlan } from '../../../utils';
 import { appendChildToParentDoc } from '../../../utils/append-child-to-parent';
 import { readProjectFile } from '../../../utils/utils';
 
@@ -16,7 +16,7 @@ export async function planSessionImpl(
   featureName?: string,
   planContent?: string
 ): Promise<string> {
-  const feature = await resolveFeatureName(featureName);
+  const feature = await resolveFeatureDirectoryFromPlan(featureName);
   const context = new WorkflowCommandContext(feature);
   const output: string[] = [];
 

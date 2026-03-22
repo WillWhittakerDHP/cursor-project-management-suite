@@ -3,14 +3,13 @@
  */
 
 import { featureCreate } from '../atomic/feature-create';
+import { resolveFeatureDirectoryFromPlan } from '../../../utils';
 import { featureResearch } from '../atomic/feature-research';
 import { resolvePlanningDescription } from '../../../planning/utils/resolve-planning-description';
 import { runPlanningWithChecks } from '../../../planning/utils/run-planning-pipeline';
 import { WorkflowCommandContext } from '../../../utils/command-context';
-import { resolveFeatureId } from '../../../utils/feature-context';
-
 export async function planFeatureImpl(featureId: string, description?: string): Promise<string> {
-  const featureName = await resolveFeatureId(featureId);
+  const featureName = await resolveFeatureDirectoryFromPlan(featureId);
   const context = new WorkflowCommandContext(featureName);
   const output: string[] = [];
 

@@ -6,7 +6,7 @@
 import { getCurrentDate } from '../../../utils/utils';
 import { readProjectFile } from '../../../utils/utils';
 import { WorkflowCommandContext } from '../../../utils/command-context';
-import { resolveFeatureName } from '../../../utils';
+import { resolveFeatureDirectoryFromPlan } from '../../../utils';
 import { MarkdownUtils } from '../../../utils/markdown-utils';
 
 const TASK_STATUS_REGEX = /\*\*Status:\*\*\s*([^\n]+)/i;
@@ -15,7 +15,7 @@ export async function sessionCheckpointImpl(
   sessionId: string,
   featureName?: string
 ): Promise<string> {
-  const resolved = await resolveFeatureName(featureName);
+  const resolved = await resolveFeatureDirectoryFromPlan(featureName);
   const context = new WorkflowCommandContext(resolved);
   const output: string[] = [];
 

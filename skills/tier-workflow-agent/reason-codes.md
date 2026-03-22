@@ -74,6 +74,12 @@ Quick one-liners: [SKILL.md](SKILL.md) § Reason codes.
 - Tier-end commit aborted: current branch ≠ expected tier branch.
 - Present message (current vs expected). User checks out expected branch, resolves dirty tree if needed, **re-runs same tier-end**.
 
+### expected_branch_missing_run_tier_start
+
+- Tier-end commit step found the **expected branch name** but it **does not exist locally**. Tier-end does **not** create branches (only **tier-start** does).
+- Present `controlPlaneDecision.message` verbatim (hints: `/feature-start`, `/phase-start`, `/session-start`, optional `git fetch`).
+- User creates/checks out the branch per message, then **re-runs the same tier-end**.
+
 ### cascade
 
 - When `outcome.cascade` is present (after start or end success, or after push in some flows):

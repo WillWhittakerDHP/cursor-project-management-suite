@@ -4,9 +4,9 @@
  */
 
 import { join } from 'path';
+import { resolveFeatureDirectoryFromPlan } from '../../../utils';
 import { access } from 'fs/promises';
 import { FEATURE_CONFIG } from '../../configs/feature';
-import { resolveFeatureId } from '../../../utils/feature-context';
 import { WorkflowCommandContext } from '../../../utils/command-context';
 import { readProjectFile, writeProjectFile, PROJECT_ROOT } from '../../../utils/utils';
 import { branchExists, getCurrentBranch, gitCheckout } from '../../../git/shared/git-manager';
@@ -20,7 +20,7 @@ export async function featureReopenImpl(
   params: TierReopenParams,
   modeGate: string
 ): Promise<TierReopenResult> {
-  const featureName = await resolveFeatureId(params.identifier);
+  const featureName = await resolveFeatureDirectoryFromPlan(params.identifier);
   const context = new WorkflowCommandContext(featureName);
   const output: string[] = [];
   const ctx: TierReopenWorkflowContext = {

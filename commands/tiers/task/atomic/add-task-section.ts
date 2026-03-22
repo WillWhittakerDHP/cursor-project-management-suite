@@ -7,7 +7,7 @@
  */
 
 import { WorkflowCommandContext } from '../../../utils/command-context';
-import { resolveFeatureName } from '../../../utils';
+import { resolveFeatureDirectoryFromPlan } from '../../../utils';
 
 export interface TaskSection {
   id: string;
@@ -23,7 +23,7 @@ export interface TaskSection {
 }
 
 export async function addTaskSection(section: TaskSection, featureName?: string): Promise<void> {
-  const resolved = await resolveFeatureName(featureName);
+  const resolved = await resolveFeatureDirectoryFromPlan(featureName);
   const context = new WorkflowCommandContext(resolved);
   const sessionId = section.id.split('.').slice(0, 2).join('.');
   const formattedSection = `### Task ${section.id}: ${section.name} ✅
