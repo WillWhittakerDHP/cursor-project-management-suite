@@ -143,7 +143,7 @@ export async function gitMerge(params: GitMergeParams): Promise<{ success: boole
     }
 
     if (params.pullBeforeMerge) {
-      const pullResult = await runGitCommand(`git pull origin ${targetBranch}`, 'gitMerge-pull');
+      const pullResult = await runGitCommand(`git pull origin ${targetBranch} --no-rebase`, 'gitMerge-pull');
       if (!pullResult.success) {
         const noRemoteRef = (pullResult.error || pullResult.output).includes("couldn't find remote ref");
         if (noRemoteRef) {
@@ -158,7 +158,7 @@ export async function gitMerge(params: GitMergeParams): Promise<{ success: boole
       }
     }
   } else if (params.pullBeforeMerge) {
-    const pullResult = await runGitCommand(`git pull origin ${targetBranch}`, 'gitMerge-pull');
+    const pullResult = await runGitCommand(`git pull origin ${targetBranch} --no-rebase`, 'gitMerge-pull');
     if (!pullResult.success) {
       const noRemoteRef = (pullResult.error || pullResult.output).includes("couldn't find remote ref");
       if (!noRemoteRef) {
