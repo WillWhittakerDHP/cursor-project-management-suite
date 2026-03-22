@@ -5,6 +5,7 @@
  */
 
 import { readProjectFile, writeProjectFile } from '../../utils/utils';
+import { WorkflowId } from '../../utils/id-utils';
 import type { CascadeInfo } from '../../utils/tier-outcome';
 import type { WorkProfile } from '../../harness/work-profile';
 
@@ -34,7 +35,7 @@ export interface TierStartPendingState {
 /** State for task start: user will run /accepted-code to run task start with execute. */
 export interface TaskStartPendingState {
   taskId: string;
-  /** Required: numeric # or directory slug (same as tier commands). */
+  /** Numeric # or directory slug; may be omitted on disk if restored from taskId via `WorkflowId.parseTaskId`. */
   featureId?: string;
   featureName?: string;
   /** Optional work classifier; preserved across /accepted-code for consistent spec. */
@@ -105,18 +106,23 @@ export async function readTaskStartPending(): Promise<TaskStartPendingState | nu
       raw
     );
     if (!parsed?.taskId) return null;
-    const hasFeature =
-      (typeof parsed.featureId === 'string' && parsed.featureId.trim() !== '') ||
-      (typeof parsed.featureName === 'string' && parsed.featureName.trim() !== '');
-    if (!hasFeature) return null;
+    let featureId =
+      typeof parsed.featureId === 'string' && parsed.featureId.trim() !== ''
+        ? parsed.featureId.trim()
+        : '';
+    const featureName =
+      typeof parsed.featureName === 'string' && parsed.featureName.trim() !== ''
+        ? parsed.featureName.trim()
+        : '';
+    if (!featureId && !featureName) {
+      const derived = WorkflowId.parseTaskId(parsed.taskId.trim())?.feature;
+      if (derived) featureId = derived;
+    }
+    if (!featureId && !featureName) return null;
     return {
       taskId: parsed.taskId,
-      ...(parsed.featureId != null &&
-        typeof parsed.featureId === 'string' &&
-        parsed.featureId.trim() !== '' && { featureId: parsed.featureId.trim() }),
-      ...(parsed.featureName != null &&
-        typeof parsed.featureName === 'string' &&
-        parsed.featureName.trim() !== '' && { featureName: parsed.featureName.trim() }),
+      ...(featureId !== '' && { featureId }),
+      ...(featureName !== '' && { featureName }),
       ...(parsed.workProfile != null && { workProfile: parsed.workProfile }),
     };
   } catch {

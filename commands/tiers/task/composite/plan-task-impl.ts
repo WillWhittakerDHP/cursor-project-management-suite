@@ -12,8 +12,12 @@ export async function planTaskImpl(
   description?: string,
   featureId?: string
 ): Promise<string> {
-  const feature = featureId != null && featureId.trim() !== ''
-    ? await resolveFeatureDirectoryFromPlan(featureId)
+  const ref =
+    featureId != null && featureId.trim() !== ''
+      ? featureId.trim()
+      : WorkflowId.parseTaskId(taskId)?.feature ?? '';
+  const feature = ref
+    ? await resolveFeatureDirectoryFromPlan(ref)
     : await resolveActiveFeatureDirectory();
   const context = new WorkflowCommandContext(feature);
   const output: string[] = [];

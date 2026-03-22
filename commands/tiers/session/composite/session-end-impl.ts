@@ -32,6 +32,7 @@ import type { CascadeInfo } from '../../../utils/tier-outcome';
 import { buildTierEndOutcome } from '../../../utils/tier-outcome';
 import { buildCascadeUp, buildCascadeAcross } from '../../../utils/tier-cascade';
 import { isLastSessionInPhase, getPhaseFromSessionId } from '../../../utils/phase-session-utils';
+import { refreshAcrossLadderArtifacts } from '../../../utils/across-ladder';
 import { testEndWorkflow } from '../../../testing/composite/test-end-workflow';
 import type {
   TierEndWorkflowContext,
@@ -522,7 +523,7 @@ export async function sessionEndImpl(
       if (!p.skipGit) {
         try {
           const mergeResult = await mergeTierBranch(SESSION_CONFIG, p.sessionId, c.context, {
-            push: false,
+            push: true,
             deleteBranch: true,
             auditPrewarmPromise: c.auditPrewarmPromise,
           });
@@ -680,9 +681,21 @@ export async function sessionEndImpl(
 
   const result = await runTierEndWorkflow(ctx, hooks);
   const withShadow = result as TierEndWorkflowResultWithShadow;
+  let output = result.output;
+  if (result.success) {
+    try {
+      const { summary } = await refreshAcrossLadderArtifacts(context, {
+        tier: 'session_end',
+        sessionId: params.sessionId,
+      });
+      output = `${output}\n\n${summary}`.trim();
+    } catch (err) {
+      console.warn('[session-end] across-ladder refresh failed', err);
+    }
+  }
   return {
     success: result.success,
-    output: result.output,
+    output,
     steps: result.steps,
     outcome: result.outcome as SessionEndOutcome,
     ...(withShadow.__traceHandle != null && {

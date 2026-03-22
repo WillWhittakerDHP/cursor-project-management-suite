@@ -26,7 +26,7 @@ export async function isLastSessionInPhase(
   const phaseGuide = await context.readPhaseGuide(parsed.phaseId);
   
   // Extract all session IDs from phase guide
-  const sessionIds = extractSessionIds(phaseGuide);
+  const sessionIds = extractSessionIdsFromPhaseGuide(phaseGuide);
   
   if (sessionIds.length === 0) {
     return false;
@@ -44,9 +44,9 @@ export async function isLastSessionInPhase(
 }
 
 /**
- * Get all session IDs from a phase guide
+ * Get all session IDs from a phase guide (unordered; sort with compareDottedTierIds if needed).
  */
-function extractSessionIds(guide: string): string[] {
+export function extractSessionIdsFromPhaseGuide(guide: string): string[] {
   const sessionMatches = guide.matchAll(/Session\s+(\d+\.\d+\.\d+):/g);
   const sessionIds: string[] = [];
   for (const match of sessionMatches) {
@@ -95,7 +95,7 @@ export async function areAllSessionsCompleted(
   const context = new WorkflowCommandContext(feature);
   const phaseGuide = await context.readPhaseGuide(phase.toString());
   
-  const sessionIds = extractSessionIds(phaseGuide);
+  const sessionIds = extractSessionIdsFromPhaseGuide(phaseGuide);
   
   // Check if all sessions are marked as completed in the guide
   for (const sessionId of sessionIds) {
@@ -182,5 +182,15 @@ export async function getNextPhaseInFeature(feature: string, phase: string): Pro
   const idx = phaseIds.indexOf(phase);
   if (idx < 0 || idx >= phaseIds.length - 1) return null;
   return phaseIds[idx + 1];
+}
+
+/**
+ * Previous phase ID before the given one (disk order), or null if none.
+ */
+export async function getPrevPhaseInFeature(feature: string, phase: string): Promise<string | null> {
+  const phaseIds = await getPhaseIdsFromDisk(feature);
+  const idx = phaseIds.indexOf(phase);
+  if (idx <= 0) return null;
+  return phaseIds[idx - 1];
 }
 

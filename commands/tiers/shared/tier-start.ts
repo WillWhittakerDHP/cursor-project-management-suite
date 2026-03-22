@@ -23,17 +23,19 @@ import { defaultProfileDefaultsResolver } from '../../harness/spec-builder';
 import { buildSpecFromTierRun } from '../../harness/build-spec-from-tier';
 import { classifyWorkProfile } from '../../harness/work-profile-classifier';
 import { WorkflowCommandContext, type TierParamsBag } from '../../utils/command-context';
+import { WorkflowId } from '../../utils/id-utils';
 import {
   writeTierStartPending,
   writeTaskStartPending,
   type TierStartPendingParams,
+  type TaskStartPendingState,
 } from './pending-state';
 
 export type TierStartParams =
   | { featureId: string }
   | ({ phaseId: string } & ({ featureId: string } | { featureName: string }))
   | ({ sessionId: string; description?: string } & ({ featureId: string } | { featureName: string }))
-  | ({ taskId: string } & ({ featureId: string } | { featureName: string }));
+  | { taskId: string; featureId?: string; featureName?: string };
 
 function getIdentifierFromParams(config: TierConfig, params: TierStartParams): string {
   switch (config.name) {
@@ -149,12 +151,17 @@ export async function runTierStart(
         });
       } else if (config.name === 'task') {
         const p = params as { taskId: string; featureId?: string; featureName?: string };
-        await writeTaskStartPending({
+        const derived = WorkflowId.parseTaskId(p.taskId.trim())?.feature;
+        const fn = p.featureName?.trim();
+        const fid = p.featureId?.trim();
+        const pending: TaskStartPendingState = {
           taskId: p.taskId,
-          ...(p.featureId != null && p.featureId.trim() !== '' && { featureId: p.featureId.trim() }),
-          ...(p.featureName != null && p.featureName.trim() !== '' && { featureName: p.featureName.trim() }),
           workProfile,
-        });
+        };
+        if (fn) pending.featureName = fn;
+        else if (fid) pending.featureId = fid;
+        else if (derived) pending.featureId = derived;
+        await writeTaskStartPending(pending);
       }
     } else if (
       reasonCode === 'guide_fill_pending' &&

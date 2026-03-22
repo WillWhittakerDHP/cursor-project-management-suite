@@ -10,7 +10,8 @@ export type GuideTier = 'feature' | 'phase' | 'session';
 
 /** Section titles the docs audit expects; guides must include these (or equivalent) with sufficient content. */
 export const REQUIRED_GUIDE_SECTIONS: Record<GuideTier, readonly string[]> = {
-  feature: ['Overview', 'Architecture', 'Implementation Plan'],
+  /** Feature Objectives is required so template bullets like `[Objective 1]` cannot ship unfilled (see feature-guide.md). */
+  feature: ['Overview', 'Architecture', 'Implementation Plan', 'Feature Objectives'],
   phase: ['Overview', 'Objectives', 'Tasks'],
   session: ['Quick Start', 'Tasks', 'Session Workflow'],
 };
@@ -86,6 +87,44 @@ function buildMinimalFeatureImplementationPlan(): string {
     'Phases and implementation order. [Fill in from feature plan.]',
     '',
   ].join('\n');
+}
+
+function buildMinimalFeatureObjectives(identifier: string, description: string): string {
+  const label = description?.trim() || identifier;
+  return [
+    '## Feature Objectives',
+    '',
+    `- Deliver **${label}** end-to-end per PROJECT_PLAN and phase guides (migrations, server, client, and docs as scoped).`,
+    '- Meet LAUNCH_CHECKLIST and security gates that apply before beta or production cutover.',
+    '- Publish stable contracts for downstream features (APIs, session/identity semantics, or docs) defined under **Dependencies** / **Implementation Plan**.',
+    '',
+  ].join('\n');
+}
+
+/** True when the feature guide still has the stock template objective bullets. */
+function featureObjectivesStillTemplatePlaceholders(sectionBody: string): boolean {
+  return /\[Objective\s*1\]/.test(sectionBody) && /\[Objective\s*2\]/.test(sectionBody);
+}
+
+/**
+ * Replace a Feature Objectives section that still contains `feature-guide.md` template placeholders.
+ * WHY: REQUIRED_GUIDE_SECTIONS used to omit this heading, so ensureGuide never repaired it after Overview/Architecture were filled manually.
+ */
+function replaceStaleFeatureObjectivesSection(
+  content: string,
+  identifier: string,
+  description: string
+): string {
+  const lines = content.split('\n');
+  const startIdx = findSectionStartLine(lines, 'Feature Objectives');
+  if (startIdx === -1) return content;
+  const endIdx = findSectionEndLine(lines, startIdx);
+  const sectionBlock = lines.slice(startIdx, endIdx).join('\n');
+  if (!featureObjectivesStillTemplatePlaceholders(sectionBlock)) return content;
+  const fresh = buildMinimalFeatureObjectives(identifier, description);
+  const before = lines.slice(0, startIdx).join('\n');
+  const after = lines.slice(endIdx).join('\n');
+  return [before.trimEnd(), fresh.trimEnd(), after.trimStart()].filter(Boolean).join('\n\n');
 }
 
 function buildMinimalPhaseOverview(identifier: string, description: string): string {
@@ -167,6 +206,7 @@ function buildMinimalSection(
     if (sectionTitle === 'Overview') return buildMinimalFeatureOverview(identifier, description);
     if (sectionTitle === 'Architecture') return buildMinimalFeatureArchitecture();
     if (sectionTitle === 'Implementation Plan') return buildMinimalFeatureImplementationPlan();
+    if (sectionTitle === 'Feature Objectives') return buildMinimalFeatureObjectives(identifier, description);
   }
   if (tier === 'phase') {
     if (sectionTitle === 'Overview') return buildMinimalPhaseOverview(identifier, description);
@@ -207,6 +247,10 @@ export function ensureGuideHasRequiredSections(
       currentLines.length = 0;
       currentLines.push(...result.split('\n'));
     }
+  }
+
+  if (tier === 'feature') {
+    result = replaceStaleFeatureObjectivesSection(result, identifier, description);
   }
 
   return result;

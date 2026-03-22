@@ -50,9 +50,11 @@
 
 ## Feature Objectives
 
-- [Objective 1]
-- [Objective 2]
-- [Objective 3]
+Replace this list with concrete, measurable outcomes. Do **not** commit the stock placeholders `[Objective 1]` / `[Objective 2]` / `[Objective 3]` — the harness treats those as unfilled template text and will rewrite this section on `ensureGuide` when they are still present.
+
+- Outcome tied to PROJECT_PLAN / LAUNCH_CHECKLIST acceptance for this feature
+- Outcome tied to phased delivery in **Phases Breakdown** below
+- Integration or dependency outcomes other features rely on
 
 ---
 

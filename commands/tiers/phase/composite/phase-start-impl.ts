@@ -26,6 +26,7 @@ import { buildReuseOpportunitiesSection, type InventoryPayload } from '../helper
 import type { RunRecorder, RunTraceHandle } from '../../../harness/contracts';
 import { writeTierScope } from '../../../utils/tier-scope-writer';
 import { getCurrentBranch } from '../../../git/shared/git-manager';
+import { refreshAcrossLadderArtifacts } from '../../../utils/across-ladder';
 
 export type ShadowContext = { recorder: RunRecorder; handle: RunTraceHandle };
 
@@ -313,6 +314,7 @@ export async function phaseStartImpl(
   };
 
   const result = await runTierStartWorkflow(ctx, hooks);
+  let output = result.output;
   if (result.success) {
     const phaseDesc = await derivePhaseDescription(phase, context);
     const phaseName = phaseDesc || `Phase ${phase}`;
@@ -336,9 +338,18 @@ export async function phaseStartImpl(
         slug: phaseSlug,
       },
     });
+    try {
+      const { summary } = await refreshAcrossLadderArtifacts(context, {
+        tier: 'phase',
+        phaseId: phase,
+      });
+      output = `${output}\n\n${summary}`.trim();
+    } catch (err) {
+      console.warn('[phase-start] across-ladder refresh failed', err);
+    }
   }
   if (result.outcome.cascade) {
     result.outcome.nextAction = `Phase ${phaseId} planning complete. Cascade: ${result.outcome.cascade.command}`;
   }
-  return result;
+  return { ...result, output };
 }

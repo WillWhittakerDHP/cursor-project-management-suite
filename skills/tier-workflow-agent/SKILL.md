@@ -31,12 +31,21 @@ This skill complements [`.cursor/rules/process-workflow.mdc`](../../rules/proces
 - **feature-end**, **phase-end**, **session-end**, **task-end** may run **several minutes** (audits, git, tests).
 - Wait for completion; use only the returned `result`, `outcome`, and `controlPlaneDecision`. Do not assume a long run means failure.
 
+## Across ladder (cascade checks)
+
+- After tier starts/ends, the harness refreshes **`.project-manager/features/<feature>/across-ladder.json`** and may inject **## Across ladder (harness)** into handoff(s). Before suggesting `/phase-start`, `/session-start`, or `/feature-end`, read that JSON (or the handoff block) and match **`nextPhaseAcross`** / **`nextSessionAcross`** to your proposed command. If disk and the manifest disagree, re-run the relevant **tier-start** or fix phase/session guides.
+
 ## Interpreting command results
 
 - **User-facing:** Always present `controlPlaneDecision.message` (verbatim for errors and gates).
 - **Agent context:** Use `result.output` for your own understanding; **do not** dump it verbatim to the user.
 - When output includes **User choice required** (message + numbered options): present it in chat; direct the user to the listed slash command or to reply with their choice. **Do not** use an external AskQuestion tool for those choices.
 - **Routing:** Use `result.outcome.reasonCode` and `result.outcome.nextAction`; do not infer next steps from internal step prose.
+
+## Git working tree reporting
+
+- **Expected dirty (do not alarm):** `.cursor/` submodule, `client/.audit-reports/`, transient `.project-manager/` dotfiles — tier-end does not auto-commit these (`isNeverCommitPath` in `tier-branch-manager.ts`). Mention briefly; do not treat as failure by itself.
+- **Still prioritize:** `client/` and `server/` product changes, wrong branch, merge/`git_failed`, and `steps.createPR` when PR freshness matters. See [`.cursor/rules/process-workflow.mdc`](../../rules/process-workflow.mdc) (Git status / dirty tree reporting).
 
 ## Reason codes (quick reference)
 

@@ -25,6 +25,7 @@ import { runTierStartWorkflow } from '../../../harness/run-start-steps';
 import { getTierUpPlanningDocSections } from '../../shared/tier-start-steps';
 import type { RunRecorder, RunTraceHandle } from '../../../harness/contracts';
 import { writeTierScope } from '../../../utils/tier-scope-writer';
+import { refreshAcrossLadderArtifacts } from '../../../utils/across-ladder';
 
 const BLOCKED_STATUSES = ['complete', 'blocked'] as const;
 
@@ -312,10 +313,17 @@ export async function featureStartImpl(
   };
 
   const result = await runTierStartWorkflow(ctx, hooks);
+  let resultOutput = result.output;
   if (result.success) {
     await writeTierScope({
       feature: { id: context.feature.name, name: `Feature: ${context.feature.name}` },
     });
+    try {
+      const { summary } = await refreshAcrossLadderArtifacts(context, { tier: 'feature' });
+      resultOutput = `${resultOutput}\n\n${summary}`.trim();
+    } catch (err) {
+      console.warn('[feature-start] across-ladder refresh failed', err);
+    }
   }
-  return result;
+  return { ...result, output: resultOutput };
 }

@@ -2,7 +2,7 @@
  * Task tier composite: all task-level commands.
  */
 
-import { runTierStart } from '../../shared/tier-start';
+import { runTierStart, type TierStartParams } from '../../shared/tier-start';
 import { runTierEnd, TierEndResult } from '../../shared/tier-end';
 import { runTierPlan } from '../../shared/tier-plan';
 import { runTierChange } from '../../../utils/change-request';
@@ -68,14 +68,33 @@ export function formatTaskValidation(result: ValidateTaskResult, taskId: string)
 }
 
 /**
- * Start the task tier. `featureRef` is required: numeric # or feature directory slug (PROJECT_PLAN).
+ * Start the task tier.
+ * - `taskStart(taskId)` or `taskStart(taskId, { mode: 'plan' })` — when **taskId** is **X.Y.Z.A**, the feature ref defaults to the first segment (PROJECT_PLAN feature #).
+ * - `taskStart(taskId, featureRef, options?)` — explicit # or directory slug (overrides derivation; use for slugs like `appointment-workflow`).
  */
 export async function taskStart(
   taskId: string,
-  featureRef: string,
-  options?: CommandExecutionOptions
+  featureRefOrOptions?: string | CommandExecutionOptions,
+  maybeOptions?: CommandExecutionOptions
 ): Promise<TierStartResult> {
-  return runTierStart(TASK_CONFIG, { taskId, featureId: featureRef.trim() }, options);
+  const id = taskId.trim();
+  let explicitFeature: string | undefined;
+  let opts: CommandExecutionOptions | undefined;
+
+  if (featureRefOrOptions === undefined) {
+    opts = undefined;
+  } else if (typeof featureRefOrOptions === 'string') {
+    explicitFeature = featureRefOrOptions;
+    opts = maybeOptions;
+  } else {
+    opts = featureRefOrOptions;
+  }
+
+  const trimmed = explicitFeature?.trim() ?? '';
+  const params: TierStartParams =
+    trimmed !== '' ? { taskId: id, featureId: trimmed } : { taskId: id };
+
+  return runTierStart(TASK_CONFIG, params, opts);
 }
 
 export async function taskEnd(
@@ -84,13 +103,18 @@ export async function taskEnd(
 ): Promise<TierEndResult> {
   let params: TaskEndParams;
   if (typeof paramsOrId === 'string') {
-    const raw = (featureRef ?? '').trim();
+    const tid = paramsOrId.trim();
+    let raw = (featureRef ?? '').trim();
     if (!raw) {
-      throw new Error(
-        'taskEnd(taskId, featureRef): featureRef is required when using a string task id (numeric # or feature directory slug).'
-      );
+      const derived = WorkflowId.parseTaskId(tid)?.feature;
+      if (!derived) {
+        throw new Error(
+          'taskEnd(taskId, featureRef): pass featureRef (PROJECT_PLAN # or directory slug), or use task id X.Y.Z.A so the feature # can be derived from the first segment.'
+        );
+      }
+      raw = derived;
     }
-    params = { taskId: paramsOrId, featureId: raw };
+    params = { taskId: tid, featureId: raw };
   } else {
     params = paramsOrId;
   }

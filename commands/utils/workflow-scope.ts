@@ -1,17 +1,19 @@
 /**
  * Single entry for workflow scope: normalized feature directory + tier + identifier + optional .tier-scope.
- * WHY: No filesystem scan / chained fallbacks; callers pass explicit featureId or featureName for every tier.
+ * WHY: No filesystem scan / chained fallbacks; callers pass explicit featureId or featureName for phase/session (and optionally for task).
+ * Task tier: feature ref may be omitted when **taskId** is **X.Y.Z.A** — the first segment is used as the PROJECT_PLAN feature # (see `WorkflowId.parseTaskId`).
  */
 
 import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { FeatureContext } from './feature-context';
+import { WorkflowId } from './id-utils';
 import { readTierScope, type TierScopeSnapshot } from './tier-scope-writer';
 
 /** Harness tier names (F/P/S/T). */
 export type TierName = 'feature' | 'phase' | 'session' | 'task';
 
-/** Params for resolveWorkflowScope. Phase, session, and task require featureId or featureName. */
+/** Params for resolveWorkflowScope. Phase and session require featureId or featureName; task may omit them when taskId is X.Y.Z.A (feature derived from first segment). */
 export type TierParamsBag = {
   featureId?: string;
   featureName?: string;
@@ -137,7 +139,17 @@ export async function resolveWorkflowScope(args: ResolveWorkflowScopeArgs): Prom
       if (!taskId) {
         throw new Error('resolveWorkflowScope(task): taskId required');
       }
-      featureName = await featureIdOrNameToDirectory(requireFeatureRef(params, tier));
+      let id = (params.featureId ?? params.featureName ?? '').trim();
+      if (!id) {
+        const parsed = WorkflowId.parseTaskId(taskId);
+        if (parsed?.feature) id = parsed.feature;
+      }
+      if (!id) {
+        throw new Error(
+          'resolveWorkflowScope(task): pass featureId or featureName (PROJECT_PLAN # or directory slug), or use task id X.Y.Z.A so the feature # can be taken from the first segment.'
+        );
+      }
+      featureName = await featureIdOrNameToDirectory(id);
       identifier = taskId;
       break;
     }

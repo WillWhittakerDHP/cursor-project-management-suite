@@ -27,6 +27,7 @@ import { CommandExecutionMode, getOptionsFromParams } from '../../../utils/comma
 import { buildTierEndOutcome, type TierEndOutcome, type CascadeInfo } from '../../../utils/tier-outcome';
 import { buildCascadeUp, buildCascadeAcross } from '../../../utils/tier-cascade';
 import { isLastPhaseInFeature, getNextPhaseInFeature } from '../../../utils/phase-session-utils';
+import { refreshAcrossLadderArtifacts } from '../../../utils/across-ladder';
 import { PHASE_CONFIG } from '../../configs/phase';
 import { FEATURE_CONFIG } from '../../configs/feature';
 import { phaseCommentCleanup } from '../../../comments/commentCleanup';
@@ -562,30 +563,48 @@ export async function phaseEndImpl(
 
     async getCascade(c): Promise<CascadeInfo | null> {
       const p = c.params as PhaseEndParams;
-      let isLastPhase = false;
-      let featureNameForCascade = '';
-      try {
-        featureNameForCascade = c.context.feature.name;
-        isLastPhase = await isLastPhaseInFeature(c.context.feature.name, p.phaseId);
-        if (isLastPhase) {
-          c.steps.featureEndPrompt = { success: true, output: `\n✅ **Last phase in feature completed!**\n\nAll phases in this feature are now complete. Use outcome.cascade to run the parent tier end.` };
-        } else {
-          c.steps.featureEndPrompt = { success: true, output: 'Not the last phase in feature - parent tier end not needed yet' };
-        }
-      } catch (_error) {
-        c.steps.featureEndPrompt = { success: false, output: `Parent tier check failed (non-critical): ${_error instanceof Error ? _error.message : String(_error)}` };
-      }
-
-      let nextPhase = p.nextPhase ?? '';
-      if (!nextPhase && !isLastPhase) {
-        const detected = await getNextPhaseInFeature(c.context.feature.name, p.phaseId);
+      const featureName = c.context.feature.name;
+      let nextPhase = (p.nextPhase ?? '').trim();
+      if (!nextPhase) {
+        const detected = await getNextPhaseInFeature(featureName, p.phaseId);
         if (detected) nextPhase = detected;
       }
 
-      const cascadeUp = isLastPhase ? buildCascadeUp('phase', featureNameForCascade) : undefined;
-      const cascadeAcross = nextPhase ? buildCascadeAcross('phase', nextPhase) : undefined;
+      let isLastPhase = false;
+      let featureNameForCascade = featureName;
+      try {
+        isLastPhase = await isLastPhaseInFeature(featureName, p.phaseId);
+        if (nextPhase) {
+          c.steps.featureEndPrompt = {
+            success: true,
+            output: `\n**Next phase across:** \`${nextPhase}\` — cascade to \`/phase-start ${nextPhase}\` (see \`across-ladder.json\`).\n`,
+          };
+        } else if (isLastPhase) {
+          c.steps.featureEndPrompt = {
+            success: true,
+            output: `\n✅ **Last phase in feature completed!**\n\nAll phases in this feature are now complete. Use outcome.cascade to run the parent tier end.`,
+          };
+        } else {
+          c.steps.featureEndPrompt = {
+            success: true,
+            output: 'Not the last phase on disk, but no next phase id resolved — check phase guides and across-ladder.json.',
+          };
+        }
+      } catch (_error) {
+        c.steps.featureEndPrompt = {
+          success: false,
+          output: `Parent tier check failed (non-critical): ${_error instanceof Error ? _error.message : String(_error)}`,
+        };
+      }
+
       c.steps.afterPushShowNextStep = { success: true, output: 'Push complete. Check outcome.cascade for next step.' };
-      return cascadeUp ?? cascadeAcross ?? null;
+      if (nextPhase) {
+        return buildCascadeAcross('phase', nextPhase);
+      }
+      if (isLastPhase) {
+        return buildCascadeUp('phase', featureNameForCascade) ?? null;
+      }
+      return null;
     },
 
     getSuccessOutcome(c): TierEndOutcome {
@@ -601,9 +620,21 @@ export async function phaseEndImpl(
 
   const result = await runTierEndWorkflow(ctx, hooks);
   const withShadow = result as TierEndWorkflowResultWithShadow;
+  let output = result.output;
+  if (result.success) {
+    try {
+      const { summary } = await refreshAcrossLadderArtifacts(context, {
+        tier: 'phase_end',
+        phaseId: params.phaseId,
+      });
+      output = `${output}\n\n${summary}`.trim();
+    } catch (err) {
+      console.warn('[phase-end] across-ladder refresh failed', err);
+    }
+  }
   return {
     success: result.success,
-    output: result.output,
+    output,
     steps: result.steps,
     outcome: result.outcome,
     ...(withShadow.__traceHandle != null && {

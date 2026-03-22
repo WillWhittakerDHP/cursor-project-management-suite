@@ -30,6 +30,7 @@ import { runTierStartWorkflow } from '../../../harness/run-start-steps';
 import { getTierUpPlanningDocSections } from '../../shared/tier-start-steps';
 import type { RunRecorder, RunTraceHandle } from '../../../harness/contracts';
 import { writeTierScope } from '../../../utils/tier-scope-writer';
+import { refreshAcrossLadderArtifacts } from '../../../utils/across-ladder';
 import { getExpectedBranchForTier } from '../../../git/shared/git-manager';
 
 export type ShadowContext = { recorder: RunRecorder; handle: RunTraceHandle };
@@ -475,6 +476,7 @@ export async function sessionStartImpl(
   };
 
   const result = await runTierStartWorkflow(ctx, hooks);
+  let output = result.output;
   if (result.success) {
     const phaseId = sessionId.split('.').slice(0, 2).join('.');
     const PHASE_CONFIG = getConfigForTier('phase');
@@ -499,9 +501,19 @@ export async function sessionStartImpl(
       },
       session: { id: sessionId, name: resolvedDescription || `Session ${sessionId}` },
     });
+    try {
+      const { summary } = await refreshAcrossLadderArtifacts(context, {
+        tier: 'session',
+        sessionId,
+        phaseId,
+      });
+      output = `${output}\n\n${summary}`.trim();
+    } catch (err) {
+      console.warn('[session-start] across-ladder refresh failed', err);
+    }
   }
   if (result.outcome.cascade) {
     result.outcome.nextAction = `Session ${sessionId} planning complete. Cascade: ${result.outcome.cascade.command}`;
   }
-  return result;
+  return { ...result, output };
 }

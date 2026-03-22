@@ -1089,7 +1089,8 @@ export async function ensureTierBranch(
  * 2. Final comprehensive commit — git add -A && git commit (no file exclusions).
  * 3. Assert clean tree; log to .merge-incident-log if still dirty.
  * 4. Merge with skipStash: true (no stash/pop — any remaining dirty state is a bug).
- * 5. Optionally delete tier branch and/or push parent.
+ * 5. Optionally push parent, then delete tier branch (push runs first when enabled so
+ *    the merged parent is on the remote before local/remote cleanup of the child).
  */
 export async function mergeTierBranch(
   config: TierConfig,
@@ -1219,7 +1220,16 @@ export async function mergeTierBranch(
   }
   messages.push(`Merged ${tierBranch} into ${parentBranch}.`);
 
-  // Delete
+  // Push parent before deleting child so remote reflects the merge first; helps safe
+  // delete and avoids skipping remote child cleanup when local delete was gated on sync.
+  if (shouldPush) {
+    const pushResult = await gitPush();
+    messages.push(pushResult.success
+      ? `Pushed ${parentBranch} to remote.`
+      : `Push failed (non-critical): ${pushResult.output}`
+    );
+  }
+
   let deleted = false;
   if (deleteBranch) {
     const safeTierBranch = tierBranch.replace(/'/g, "'\\''");
@@ -1240,15 +1250,6 @@ export async function mergeTierBranch(
           : `Remote branch delete (non-critical): ${remoteDel.error || remoteDel.output}`
       );
     }
-  }
-
-  // Push
-  if (shouldPush) {
-    const pushResult = await gitPush();
-    messages.push(pushResult.success
-      ? `Pushed ${parentBranch} to remote.`
-      : `Push failed (non-critical): ${pushResult.output}`
-    );
   }
 
   return { success: true, messages, mergedInto: parentBranch, deletedBranch: deleted };
