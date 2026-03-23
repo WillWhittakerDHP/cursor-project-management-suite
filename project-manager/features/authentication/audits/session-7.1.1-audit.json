@@ -1,34 +1,30 @@
 {
   "tier": "session",
   "identifier": "7.1.1",
-  "overallStatus": "pass",
+  "overallStatus": "warn",
   "results": [
     {
       "category": "tier-quality",
-      "status": "pass",
-      "score": 94,
+      "status": "warn",
+      "score": 88,
       "findings": [
         {
-          "type": "info",
-          "message": "function-complexity audit produced output (review JSON for details)",
-          "location": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/.audit-reports/function-complexity-audit.json",
-          "suggestion": "Review client/.audit-reports/function-complexity-audit.json for findings"
+          "type": "warning",
+          "message": "1 file(s) with high complexity scores",
+          "location": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/.audit-reports/composables-logic-audit.json",
+          "suggestion": "Review client/.audit-reports/composables-logic-audit.md for top hotspots"
         },
         {
           "type": "info",
           "message": "constants-consolidation audit produced output (review JSON for details)",
           "location": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/.audit-reports/constants-consolidation-audit.json",
           "suggestion": "Review client/.audit-reports/constants-consolidation-audit.json for findings"
-        },
-        {
-          "type": "info",
-          "message": "1 high-fan-in composable finding(s) requiring coordinated repair",
-          "location": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/.audit-reports/composable-health-audit.json",
-          "suggestion": "Review composable-health-audit.md wave 3 for multi-file planning"
         }
       ],
-      "recommendations": [],
-      "summary": "Ran 9 session-tier audits; found 0 error(s), 0 warning(s), 3 info signal(s)."
+      "recommendations": [
+        "Review audit reports for warnings"
+      ],
+      "summary": "Ran 9 session-tier audits; found 0 error(s), 1 warning(s), 1 info signal(s)."
     },
     {
       "category": "docs",
@@ -42,14 +38,54 @@
     },
     {
       "category": "vue-architecture",
-      "status": "pass",
-      "score": 100,
-      "findings": [],
-      "recommendations": [],
-      "summary": "Scanned 181 .vue file(s); found 0 error(s), 0 warning(s)."
+      "status": "warn",
+      "score": 40,
+      "findings": [
+        {
+          "type": "warning",
+          "message": "Component script is large (207 non-empty lines). This often indicates logic creep.",
+          "location": "client/src/components/admin/generic/EntityCard.vue",
+          "suggestion": "Move domain rules/orchestration into composables; keep only UI state and event wiring."
+        },
+        {
+          "type": "warning",
+          "message": "Component script is large (206 non-empty lines). This often indicates logic creep.",
+          "location": "client/src/components/booking/steps/AvailabilityStep.vue",
+          "suggestion": "Move domain rules/orchestration into composables; keep only UI state and event wiring."
+        },
+        {
+          "type": "warning",
+          "message": "Component script is large (187 non-empty lines). This often indicates logic creep.",
+          "location": "client/src/components/booking/steps/AvailabilitySubStepContent.vue",
+          "suggestion": "Move domain rules/orchestration into composables; keep only UI state and event wiring."
+        },
+        {
+          "type": "warning",
+          "message": "Component defines many local functions (9). Consider extracting reusable/domain logic into composables.",
+          "location": "client/src/components/booking/steps/AvailabilitySubStepContent.vue",
+          "suggestion": "If functions implement business rules or shared transforms, move them into composables/utilities."
+        },
+        {
+          "type": "warning",
+          "message": "Composable export name does not match file name: useMountDragAndDropOnPanelsIfReady vs useDragAndDropInstance",
+          "location": "client/src/composables/admin/useDragAndDropInstance.ts",
+          "suggestion": "Rename the file or export so `useX.ts` exports `useX` (reduces drift and improves discoverability)."
+        },
+        {
+          "type": "warning",
+          "message": "Composable export name does not match file name: useComputedAvailabilityMutableState vs useComputedAvailabilityState",
+          "location": "client/src/composables/booking/useComputedAvailabilityState.ts",
+          "suggestion": "Rename the file or export so `useX.ts` exports `useX` (reduces drift and improves discoverability)."
+        }
+      ],
+      "recommendations": [
+        "Review `.project-manager/patterns/vue-architecture-contract.md` and move domain logic out of components.",
+        "Review `.project-manager/patterns/composable-taxonomy.md` and standardize composable naming/return shapes."
+      ],
+      "summary": "Scanned 206 .vue file(s); found 0 error(s), 6 warning(s)."
     }
   ],
-  "timestamp": "2026-03-22T16:45:41.870Z",
+  "timestamp": "2026-03-23T15:55:03.253Z",
   "reportPath": "",
   "featureName": "authentication",
   "auditType": "end",
@@ -68,17 +104,17 @@
     },
     {
       "category": "composable-governance",
-      "startScore": 98,
-      "endScore": 98,
+      "startScore": 100,
+      "endScore": 100,
       "delta": 0,
       "status": "unchanged"
     },
     {
       "category": "function-governance",
       "startScore": 100,
-      "endScore": 99,
-      "delta": -1,
-      "status": "regressed"
+      "endScore": 100,
+      "delta": 0,
+      "status": "unchanged"
     },
     {
       "category": "component-governance",
@@ -89,7 +125,7 @@
     },
     {
       "category": "tier-quality",
-      "endScore": 94,
+      "endScore": 88,
       "status": "new"
     },
     {
@@ -99,7 +135,7 @@
     },
     {
       "category": "vue-architecture",
-      "endScore": 100,
+      "endScore": 40,
       "status": "new"
     }
   ]

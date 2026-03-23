@@ -3,18 +3,18 @@
 **Feature:** authentication
 **Tier:** session
 **Identifier:** 7.1.1
-**Timestamp:** 2026-03-22T16:45:41.870Z
-**Overall Status:** ✅ PASS
+**Timestamp:** 2026-03-23T15:55:03.253Z
+**Overall Status:** ⚠️ WARN
 
 ---
 
 ## Summary
 
-- **Pass:** 3
-- **Warn:** 0
+- **Pass:** 1
+- **Warn:** 2
 - **Fail:** 0
 
-**Average Score:** 98/100
+**Average Score:** 76/100
 
 ## Score Comparison
 
@@ -22,14 +22,14 @@
 |----------|-------|-----|-------|--------|
 | tier-quality-coverage | 100 | N/A | N/A | ⚠️ Missing |
 | type-constant-inventory | 0 | 0 | +0 | ➡️ Unchanged |
-| composable-governance | 98 | 98 | +0 | ➡️ Unchanged |
-| function-governance | 100 | 99 | -1 | ❌ Regressed |
+| composable-governance | 100 | 100 | +0 | ➡️ Unchanged |
+| function-governance | 100 | 100 | +0 | ➡️ Unchanged |
 | component-governance | 100 | 100 | +0 | ➡️ Unchanged |
-| tier-quality | N/A | 94 | N/A | 🆕 New |
+| tier-quality | N/A | 88 | N/A | 🆕 New |
 | docs | N/A | 100 | N/A | 🆕 New |
-| vue-architecture | N/A | 100 | N/A | 🆕 New |
+| vue-architecture | N/A | 40 | N/A | 🆕 New |
 
-**Overall:** 80 → 84 (-1 points regression)
+**Overall:** 80 → 75 (+0 points improvement)
 
 ---
 
@@ -37,22 +37,23 @@
 
 ## Tier-quality Audit
 
-**Status:** ✅ PASS
-**Score:** 94/100
+**Status:** ⚠️ WARN
+**Score:** 88/100
 
-Ran 9 session-tier audits; found 0 error(s), 0 warning(s), 3 info signal(s).
+Ran 9 session-tier audits; found 0 error(s), 1 warning(s), 1 info signal(s).
 
 ### Findings
 
-- ℹ️ **INFO**: function-complexity audit produced output (review JSON for details)
-  - Location: /Users/districthomepro/Bonsai/Differential_Scheduler/client/.audit-reports/function-complexity-audit.json
-  - Suggestion: Review client/.audit-reports/function-complexity-audit.json for findings
+- ⚠️ **WARNING**: 1 file(s) with high complexity scores
+  - Location: /Users/districthomepro/Bonsai/Differential_Scheduler/client/.audit-reports/composables-logic-audit.json
+  - Suggestion: Review client/.audit-reports/composables-logic-audit.md for top hotspots
 - ℹ️ **INFO**: constants-consolidation audit produced output (review JSON for details)
   - Location: /Users/districthomepro/Bonsai/Differential_Scheduler/client/.audit-reports/constants-consolidation-audit.json
   - Suggestion: Review client/.audit-reports/constants-consolidation-audit.json for findings
-- ℹ️ **INFO**: 1 high-fan-in composable finding(s) requiring coordinated repair
-  - Location: /Users/districthomepro/Bonsai/Differential_Scheduler/client/.audit-reports/composable-health-audit.json
-  - Suggestion: Review composable-health-audit.md wave 3 for multi-file planning
+
+### Recommendations
+
+- Review audit reports for warnings
 
 ---
 
@@ -71,13 +72,42 @@ Ran 9 session-tier audits; found 0 error(s), 0 warning(s), 3 info signal(s).
 
 ## Vue-architecture Audit
 
-**Status:** ✅ PASS
-**Score:** 100/100
+**Status:** ⚠️ WARN
+**Score:** 40/100
 
-Scanned 181 .vue file(s); found 0 error(s), 0 warning(s).
+Scanned 206 .vue file(s); found 0 error(s), 6 warning(s).
+
+### Findings
+
+- ⚠️ **WARNING**: Component script is large (207 non-empty lines). This often indicates logic creep.
+  - Location: client/src/components/admin/generic/EntityCard.vue
+  - Suggestion: Move domain rules/orchestration into composables; keep only UI state and event wiring.
+- ⚠️ **WARNING**: Component script is large (206 non-empty lines). This often indicates logic creep.
+  - Location: client/src/components/booking/steps/AvailabilityStep.vue
+  - Suggestion: Move domain rules/orchestration into composables; keep only UI state and event wiring.
+- ⚠️ **WARNING**: Component script is large (187 non-empty lines). This often indicates logic creep.
+  - Location: client/src/components/booking/steps/AvailabilitySubStepContent.vue
+  - Suggestion: Move domain rules/orchestration into composables; keep only UI state and event wiring.
+- ⚠️ **WARNING**: Component defines many local functions (9). Consider extracting reusable/domain logic into composables.
+  - Location: client/src/components/booking/steps/AvailabilitySubStepContent.vue
+  - Suggestion: If functions implement business rules or shared transforms, move them into composables/utilities.
+- ⚠️ **WARNING**: Composable export name does not match file name: useMountDragAndDropOnPanelsIfReady vs useDragAndDropInstance
+  - Location: client/src/composables/admin/useDragAndDropInstance.ts
+  - Suggestion: Rename the file or export so `useX.ts` exports `useX` (reduces drift and improves discoverability).
+- ⚠️ **WARNING**: Composable export name does not match file name: useComputedAvailabilityMutableState vs useComputedAvailabilityState
+  - Location: client/src/composables/booking/useComputedAvailabilityState.ts
+  - Suggestion: Rename the file or export so `useX.ts` exports `useX` (reduces drift and improves discoverability).
+
+### Recommendations
+
+- Review `.project-manager/patterns/vue-architecture-contract.md` and move domain logic out of components.
+- Review `.project-manager/patterns/composable-taxonomy.md` and standardize composable naming/return shapes.
 
 ---
 
 ## Overall Recommendations
 
+- Review audit reports for warnings
 - Documentation is comprehensive and well-structured
+- Review `.project-manager/patterns/vue-architecture-contract.md` and move domain logic out of components.
+- Review `.project-manager/patterns/composable-taxonomy.md` and standardize composable naming/return shapes.

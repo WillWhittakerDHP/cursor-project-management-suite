@@ -1,0 +1,236 @@
+{
+  "generatedAt": "2026-03-23T15:47:08.349Z",
+  "scope": {
+    "included": [
+      "client/src/composables/**/*.{ts,js}"
+    ],
+    "excluded": [
+      "**/__tests__/**",
+      "**/*.test.*",
+      "**/*.spec.*"
+    ]
+  },
+  "totalScanned": 323,
+  "exceptionSummary": {
+    "totalRequiresReview": 1
+  },
+  "files": [
+    {
+      "id": "client__src__composables__booking__useMoveablePartsScheduling.ts",
+      "repoPath": "client/src/composables/booking/useMoveablePartsScheduling.ts",
+      "absPath": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/src/composables/booking/useMoveablePartsScheduling.ts",
+      "counts": {
+        "computed": 17,
+        "ref": 1,
+        "reactive": 0,
+        "watch": 1,
+        "watchEffect": 0,
+        "lifecycle": 0,
+        "async": 0,
+        "await": 0,
+        "vueQuery": 0,
+        "map": 2,
+        "reduce": 0,
+        "filter": 1,
+        "sort": 1,
+        "dom": 5,
+        "timers": 0,
+        "console": 0
+      },
+      "matches": [
+        {
+          "ruleId": "dom",
+          "lineNumber": 95,
+          "line": "/** Predicate: date allowed when it is a canonical UTC day key with ≥1 slot after moveable window filter. */",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "dom",
+          "lineNumber": 97,
+          "line": "/** Sorted UTC day keys from fetched map that have at least one slot after window filter. */",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "dom",
+          "lineNumber": 102,
+          "line": "/** Transient client-only window applied to raw moveable day slots (earliest start + optional deadline end). */",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 119,
+          "line": "const placeId = computed(() => propertyDetailsStepData.value?.candidatePlaceId)",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "ref",
+          "lineNumber": 121,
+          "line": "const showModal = ref(false)",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 125,
+          "line": "const moveableEventFinal = computed(() => {",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "map",
+          "lineNumber": 128,
+          "line": "const eventShapes = shape.slotShape.eventFinals.map(ef => ef.eventShape) as EventShapeEntity[]",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 138,
+          "line": "const hasMoveableParts = computed(() => (moveableEventFinal.value?.roundedDuration ?? 0) > 0)",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 140,
+          "line": "const moveableDuration = computed(",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 144,
+          "line": "const moveablePartShapeName = computed(() =>",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 180,
+          "line": "const hasContingencyClosingDate = computed(",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 186,
+          "line": "const moveableSchedulingWindow = computed(() =>",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 194,
+          "line": "const moveableServerSlotsForDay = computed(() => {",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 203,
+          "line": "const moveableShapeOverride = computed(() =>",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 208,
+          "line": "blockInstances: computed(() => []),",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 211,
+          "line": "perspective: computed(() => 'nonDifferential' as const),",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 212,
+          "line": "isDifferentialService: computed(() => false),",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 216,
+          "line": "const moveableStepperDayLabel = computed(() =>",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "dom",
+          "lineNumber": 226,
+          "line": "const window = moveableSchedulingWindow.value",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "filter",
+          "lineNumber": 228,
+          "line": ".filter((key) => {",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "dom",
+          "lineNumber": 230,
+          "line": "return applyMoveableWindowToComputedSlots(raw, window, 'exclude').length > 0",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "sort",
+          "lineNumber": 232,
+          "line": ".sort()",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 235,
+          "line": "const allowedMoveableDates = computed(() => {",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 240,
+          "line": "const moveableFirstDayKey = computed(() => availableMoveableDayKeys.value[0] ?? null)",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 242,
+          "line": "const moveableLastDayKey = computed(() => {",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "watch",
+          "lineNumber": 247,
+          "line": "watch(",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "map",
+          "lineNumber": 258,
+          "line": "moveableAppointmentSlots.value.map((s) => {",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 291,
+          "line": "moveableOptions: computed(() => moveableOptions.value),",
+          "suppressionStatus": "unsuppressed"
+        }
+      ],
+      "exportUseFunctions": [
+        "useMoveablePartsScheduling"
+      ],
+      "returnKeys": [
+        "dayLabel",
+        "duration",
+        "endTime",
+        "startTime",
+        "timeLabel"
+      ],
+      "complexityScore": 28,
+      "priority": "P1",
+      "suggestions": [
+        {
+          "kind": "split_candidate",
+          "priority": "P1",
+          "message": "Moderate complexity score. Consider separating query/mutations from derived state and formatting."
+        },
+        {
+          "kind": "side_effects",
+          "priority": "P0",
+          "message": "Contains direct DOM access. Prefer isolating DOM work behind a small composable/utility and keeping core logic testable."
+        }
+      ]
+    }
+  ]
+}

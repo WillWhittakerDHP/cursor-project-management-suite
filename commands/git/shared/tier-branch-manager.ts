@@ -12,7 +12,14 @@ import type { TierConfig, TierName } from '../../tiers/shared/types';
 import type { WorkflowCommandContext } from '../../utils/command-context';
 import { tierUp } from '../../utils/tier-navigation';
 import { getConfigForTier } from '../../tiers/configs/index';
-import { getCurrentBranch, branchExists, isBranchBasedOn, runGitCommand, warnGitOp } from './git-logger';
+import {
+  getCurrentBranch,
+  branchExists,
+  isBranchBasedOn,
+  runGitCommand,
+  warnGitOp,
+  compareBranchToRemote,
+} from './git-logger';
 import { createBranch } from '../atomic/create-branch';
 import { gitMerge } from '../atomic/merge';
 import { gitPush } from '../atomic/push';
@@ -837,6 +844,8 @@ export async function ensureTierBranch(
   for (let i = 0; i < chain.length - 1; i++) {
     const link = chain[i];
     const parentBranch = link.parentBranchName;
+    /** After auto-rebase onto parent, local tip often diverges from origin/<branch>; avoid blind pull. */
+    let skipRemoteSyncForThisAncestor = false;
 
     // Root branch (config-defined; no implicit main/master fallback)
     if (link.isRoot && parentBranch) {
@@ -908,6 +917,7 @@ export async function ensureTierBranch(
           return { success: false, messages, finalBranch: await getCurrentBranch(), chain };
         }
         messages.push(`Auto-rebased ${link.branchName} onto ${resolvedParent}.`);
+        skipRemoteSyncForThisAncestor = true;
       }
     }
 
@@ -922,15 +932,35 @@ export async function ensureTierBranch(
       messages.push(`Checked out ${link.tier} branch: ${link.branchName}`);
     }
     if (syncRemote && !link.isRoot) {
-      const pullResult = await runGitCommand(
-        `git pull origin ${link.branchName}`,
-        'ensureTierBranch-pullAncestor'
-      );
-      if (!pullResult.success) {
-        messages.push(`Failed to pull ${link.branchName}: ${pullResult.error || pullResult.output}`);
+      if (skipRemoteSyncForThisAncestor) {
+        messages.push(
+          `Skipped origin sync for ${link.branchName} after auto-rebase onto parent (local may differ from origin until you push).`
+        );
+      } else {
+      const relation = await compareBranchToRemote(link.branchName);
+      if (relation === 'no-remote') {
+        messages.push(`No remote ref origin/${link.branchName} (or local branch missing); skipped sync.`);
+      } else if (relation === 'behind') {
+        const pullResult = await runGitCommand(
+          `git merge --ff-only origin/${link.branchName}`,
+          'ensureTierBranch-pullAncestor-ffonly'
+        );
+        if (!pullResult.success) {
+          messages.push(`Failed to fast-forward ${link.branchName}: ${pullResult.error || pullResult.output}`);
+          return { success: false, messages, finalBranch: await getCurrentBranch(), chain };
+        }
+        messages.push(`Fast-forwarded ${link.branchName} from origin.`);
+      } else if (relation === 'ahead') {
+        messages.push(`${link.branchName} is ahead of origin; skipped pull (push when ready).`);
+      } else if (relation === 'up-to-date') {
+        messages.push(`${link.branchName} is up to date with origin.`);
+      } else {
+        messages.push(
+          `Local ${link.branchName} and origin/${link.branchName} have diverged. ` +
+            `Resolve manually (e.g. rebase onto origin or merge), then retry the tier command.`
+        );
         return { success: false, messages, finalBranch: await getCurrentBranch(), chain };
       }
-      messages.push(`Pulled latest ${link.branchName} from remote.`);
       // Re-check ancestry after pull; pulling can introduce old history that breaks the relationship
       if (resolvedParent && !isRootBranch(resolvedParent) && (await branchExists(resolvedParent))) {
         const stillBasedOn = await isBranchBasedOn(link.branchName, resolvedParent);
@@ -946,6 +976,7 @@ export async function ensureTierBranch(
           }
           messages.push(`Post-pull auto-rebase: ${link.branchName} onto ${resolvedParent}.`);
         }
+      }
       }
     }
   }
@@ -972,21 +1003,30 @@ export async function ensureTierBranch(
       }
       messages.push(`Pulled latest ${parentOfTarget}.`);
     }
-    // Tier-up: always refresh non-root parent from origin when syncing (before create or switching to existing leaf)
+    // Tier-up: refresh non-root parent from origin when safe (ff-only); skip if ahead/diverged vs origin
     if (
       syncRemote &&
       !isRootBranch(parentOfTarget) &&
       (await branchExists(parentOfTarget))
     ) {
-      const pullResult = await runGitCommand(
-        `git pull origin ${parentOfTarget}`,
-        'ensureTierBranch-pullParentBeforeLeaf'
-      );
-      if (!pullResult.success) {
-        messages.push(`Failed to pull tier-up branch ${parentOfTarget}: ${pullResult.error || pullResult.output}`);
-        return { success: false, messages, finalBranch: await getCurrentBranch(), chain };
+      const rel = await compareBranchToRemote(parentOfTarget);
+      if (rel === 'behind') {
+        const pullResult = await runGitCommand(
+          `git merge --ff-only origin/${parentOfTarget}`,
+          'ensureTierBranch-pullParentBeforeLeaf-ffonly'
+        );
+        if (!pullResult.success) {
+          messages.push(`Failed to fast-forward tier-up ${parentOfTarget}: ${pullResult.error || pullResult.output}`);
+          return { success: false, messages, finalBranch: await getCurrentBranch(), chain };
+        }
+        messages.push(`Fast-forwarded tier-up branch ${parentOfTarget} from origin.`);
+      } else if (rel === 'no-remote') {
+        messages.push(`No origin/${parentOfTarget}; skipped tier-up sync.`);
+      } else {
+        messages.push(
+          `Skipped pull for tier-up ${parentOfTarget} (${rel} vs origin — common after auto-rebase; push when ready).`
+        );
       }
-      messages.push(`Pulled latest tier-up branch ${parentOfTarget}.`);
     }
   }
 
@@ -1000,24 +1040,25 @@ export async function ensureTierBranch(
     messages.push(`Switched to existing ${targetLink.tier} branch: ${targetLink.branchName}`);
 
     if (syncRemote) {
-      const pullTarget = await runGitCommand(
-        `git pull origin ${targetLink.branchName}`,
-        'ensureTierBranch-pullTarget'
-      );
-      if (!pullTarget.success) {
-        const combined = `${pullTarget.error ?? ''}${pullTarget.output ?? ''}`;
-        const noRemoteRef = combined.includes("couldn't find remote ref");
-        if (noRemoteRef) {
-          // Allowed only when this leaf has never been pushed; tier-start will push -u after create elsewhere
-          messages.push(
-            `No remote ref for ${targetLink.branchName} yet; continuing with local branch only (push -u after first create).`
-          );
-        } else {
-          messages.push(`Failed to pull ${targetLink.branchName}: ${combined}`);
+      const rel = await compareBranchToRemote(targetLink.branchName);
+      if (rel === 'no-remote') {
+        messages.push(
+          `No remote ref for ${targetLink.branchName} yet; continuing with local branch only (push -u after first create).`
+        );
+      } else if (rel === 'behind') {
+        const pullTarget = await runGitCommand(
+          `git merge --ff-only origin/${targetLink.branchName}`,
+          'ensureTierBranch-pullTarget-ffonly'
+        );
+        if (!pullTarget.success) {
+          messages.push(`Failed to fast-forward ${targetLink.branchName}: ${pullTarget.error || pullTarget.output}`);
           return { success: false, messages, finalBranch: await getCurrentBranch(), chain };
         }
+        messages.push(`Fast-forwarded ${targetLink.branchName} from origin.`);
       } else {
-        messages.push(`Pulled latest ${targetLink.branchName} from remote.`);
+        messages.push(
+          `Skipped origin sync for leaf ${targetLink.branchName} (${rel} vs origin — push or reset if unintended).`
+        );
       }
     }
 

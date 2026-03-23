@@ -39,8 +39,8 @@
  * See `.cursor/commands/utils/` for utility files.
  */
 
-import { readFile, writeFile } from 'fs/promises';
-import { join } from 'path';
+import { mkdir, readFile, writeFile } from 'fs/promises';
+import { dirname, join } from 'path';
 import { execSync } from 'child_process';
 import type { ShouldBlockProjectManagerWriteOptions } from './project-manager-write-guard';
 import {
@@ -86,6 +86,7 @@ export async function writeProjectFile(
     }
     logProjectManagerWrite({ path: filename, blocked: false, caller });
   }
+  await mkdir(dirname(filePath), { recursive: true });
   await writeFile(filePath, content, 'utf-8');
   return true;
 }

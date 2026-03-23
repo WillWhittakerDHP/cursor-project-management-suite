@@ -143,3 +143,36 @@ export async function isBranchBasedOn(childBranch: string, parentBranch: string)
 
   return mergeBaseResult.output.trim() === parentHeadResult.output.trim();
 }
+
+/**
+ * After `git fetch origin <branchName>`, compares local branch tip to `origin/<branchName>`.
+ * Used by tier-branch sync to avoid blind `git pull` after auto-rebase (which would replay divergent history).
+ */
+export async function compareBranchToRemote(
+  branchName: string
+): Promise<'up-to-date' | 'behind' | 'ahead' | 'diverged' | 'no-remote'> {
+  const localRef = await runGitCommand(`git rev-parse --verify ${branchName}`, 'compareBranchToRemote-local');
+  if (!localRef.success) return 'no-remote';
+  const local = localRef.output.trim();
+
+  await runGitCommand(`git fetch origin ${branchName}`, 'compareBranchToRemote-fetch');
+  const remoteRef = await runGitCommand(`git rev-parse --verify origin/${branchName}`, 'compareBranchToRemote-remote');
+  if (!remoteRef.success) return 'no-remote';
+  const remote = remoteRef.output.trim();
+
+  if (local === remote) return 'up-to-date';
+
+  const localBehind = await runGitCommand(
+    `git merge-base --is-ancestor ${local} ${remote}`,
+    'compareBranchToRemote-behind'
+  );
+  if (localBehind.success) return 'behind';
+
+  const localAhead = await runGitCommand(
+    `git merge-base --is-ancestor ${remote} ${local}`,
+    'compareBranchToRemote-ahead'
+  );
+  if (localAhead.success) return 'ahead';
+
+  return 'diverged';
+}

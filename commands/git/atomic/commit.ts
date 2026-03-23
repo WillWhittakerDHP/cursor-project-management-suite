@@ -18,10 +18,26 @@ export async function gitCommit(suggestedMessage: string, finalMessage?: string)
   const safe = commitMessage.replace(/'/g, "'\\''");
   const commitResult = await runGitCommand(`git commit -m '${safe}'`, 'gitCommit');
 
+  if (commitResult.success) {
+    return { success: true, output: `Committed: ${commitMessage}` };
+  }
+
+  const errText = `${commitResult.error ?? ''} ${commitResult.output ?? ''}`.toLowerCase();
+  const nothingToCommit =
+    errText.includes('nothing to commit') || errText.includes('no changes added to commit');
+
+  if (nothingToCommit) {
+    const emptyResult = await runGitCommand(`git commit --allow-empty -m '${safe}'`, 'gitCommit-allowEmpty');
+    return {
+      success: emptyResult.success,
+      output: emptyResult.success
+        ? `Committed (empty): ${commitMessage}`
+        : emptyResult.error || emptyResult.output,
+    };
+  }
+
   return {
-    success: commitResult.success,
-    output: commitResult.success
-      ? `Committed: ${commitMessage}`
-      : commitResult.error || commitResult.output,
+    success: false,
+    output: commitResult.error || commitResult.output,
   };
 }

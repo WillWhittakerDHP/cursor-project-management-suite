@@ -577,6 +577,13 @@ export async function stepFillDirectTierDown(
     throw new Error('stepFillDirectTierDown requires execute mode (no guide mutations in plan mode).');
   }
   if (ctx.config.name === 'task') return;
+  // Gate 2 already produced a filled guide; updateGuide would hit the project-manager write guard.
+  if (ctx.options?.guideFillComplete) return;
+  // First /accepted-proceed (execute, no guideFillComplete): if the agent already removed tierDown
+  // placeholders in the phase/session guide, skip auto-fill — updateGuide would be blocked as overwrite.
+  if (ctx.config.name === 'phase' || ctx.config.name === 'session') {
+    if (await isGuideFilled(ctx.config.name, ctx.identifier, ctx.context)) return;
+  }
   await fillDirectTierDownInGuide(ctx);
 }
 
@@ -1216,12 +1223,15 @@ export async function stepRunTierPlan(
   _hooks: TierStartWorkflowHooks
 ): Promise<void> {
   const featureName = ctx.context.feature.name;
+  // Do not pass readResult.guide as planContent: that is tierUp context from readContext, not user-authored
+  // plan markdown. planPhaseImpl/planSessionImpl treat truthy planContent as "overwrite guide with this body"
+  // and would clobber filled guides or trigger the project-manager write guard.
   const planOutput = await runTierPlan(
     ctx.config,
     ctx.resolvedId,
     ctx.resolvedDescription,
     featureName,
-    ctx.readResult?.guide
+    undefined
   );
   ctx.output.push(planOutput);
 }
