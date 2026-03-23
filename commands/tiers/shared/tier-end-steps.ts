@@ -15,7 +15,6 @@ import { runEndAuditForTier } from '../../audit/run-end-audit-for-tier';
 import type { AuditTier } from '../../audit/types';
 import { commitAutofixChanges } from '../../audit/autofix/commit-autofix';
 import { buildTierEndOutcome } from '../../utils/tier-outcome';
-import { WorkflowId } from '../../utils/id-utils';
 import {
   branchExists,
   commitRemaining,
@@ -226,26 +225,6 @@ export async function stepReadmeCleanup(
   ctx.output.push(report);
 }
 
-/**
- * Identifier to pass into slash-command hints for the **leaf** git tier (session / phase / feature).
- * WHY: Task-end targets the session branch; hints must say `/session-start` with session id, not task id.
- */
-function slashStartIdentifierForHint(ctx: TierEndWorkflowContext, leafTier: TierName): string {
-  const id = ctx.identifier;
-  if (leafTier === 'feature') return ctx.context.feature.name;
-  if (leafTier === 'phase') {
-    if (ctx.config.name === 'phase') return id;
-    const parts = id.split('.');
-    return parts.length >= 2 ? `${parts[0]}.${parts[1]}` : id;
-  }
-  if (leafTier === 'session') {
-    if (ctx.config.name === 'session') return id;
-    const parsed = WorkflowId.parseTaskId(id);
-    return parsed?.sessionId ?? id;
-  }
-  return id;
-}
-
 /** User-facing message when the resolved expected branch does not exist locally (tier-start is the fix). */
 function tierStartHintForMissingBranch(
   ctx: TierEndWorkflowContext,
@@ -254,7 +233,6 @@ function tierStartHintForMissingBranch(
 ): string {
   const feature = ctx.context.feature.name;
   const tier = leafTier ?? ctx.config.name;
-  const startId = slashStartIdentifierForHint(ctx, tier);
   const fetchHint =
     'If the branch already exists on the remote, run **`git fetch`** (then **`git checkout`** the branch) before re-running tier-end.';
   if (tier === 'feature') {
@@ -268,18 +246,18 @@ function tierStartHintForMissingBranch(
   }
   if (tier === 'phase') {
     return [
-      `Expected tier branch **${expectedBranchName}** is not present locally (no matching prefix branch).`,
+      `Expected feature branch **${expectedBranchName}** is not present locally (no matching prefix branch).`,
       '',
-      `Branches are created at **tier-start**. Run **/phase-start** with **phaseId** \`${startId}\` and **featureName** \`${feature}\`, then re-run tier-end.`,
+      `Run **/feature-start** or **/phase-start** for feature \`${feature}\` so the feature branch exists, then re-run tier-end.`,
       '',
       fetchHint,
     ].join('\n');
   }
   if (tier === 'session') {
     return [
-      `Expected tier branch **${expectedBranchName}** is not present locally (no matching prefix branch).`,
+      `Expected feature branch **${expectedBranchName}** is not present locally (no matching prefix branch).`,
       '',
-      `Branches are created at **tier-start**. Run **/session-start** with **sessionId** \`${startId}\` and **featureName** \`${feature}\`, then re-run tier-end.`,
+      `Run **/feature-start** or **/session-start** for feature \`${feature}\` so the feature branch exists, then re-run tier-end.`,
       '',
       fetchHint,
     ].join('\n');
@@ -364,10 +342,10 @@ export async function stepTierGit(
   return hooks.runGit(ctx);
 }
 
-/** Propagate shared files (PROJECT_PLAN.md, .gitignore, .cursor) to other tier branches. Phase and session only; non-blocking. Scoped to the current feature's branches to minimize git checkouts. */
+/** Propagate shared files (PROJECT_PLAN.md, .gitignore, .cursor) to other `feature/*` branches. Non-blocking; scoped by feature. */
 export async function stepPropagateShared(ctx: TierEndWorkflowContext): Promise<void> {
   const tier = ctx.config.name;
-  if (tier !== 'phase' && tier !== 'session') return;
+  if (tier === 'task') return;
 
   try {
     const featureBranch = `feature/${ctx.context.feature.name}`;

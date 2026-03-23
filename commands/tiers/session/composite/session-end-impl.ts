@@ -517,8 +517,8 @@ export async function sessionEndImpl(
             const detail = mergeResult.messages.join(' ');
             const isBranchCleanup = mergeResult.reasonCode?.startsWith('delete_');
             const prefix = isBranchCleanup
-              ? 'Session merged and pushed but branch cleanup failed.'
-              : 'Session merge into phase failed.';
+              ? 'Git cleanup issue after session-end (branch delete).'
+              : 'Session-end git step failed.';
             return {
               success: false,
               output: c.output.join('\n'),
@@ -532,12 +532,12 @@ export async function sessionEndImpl(
           }
           if (mergeResult.deletedBranch) c.steps.deleteSessionBranch = { success: true, output: 'Deleted session branch after merge (only if explicitly requested).' };
         } catch (_error) {
-          const sessionBranchName = SESSION_CONFIG.getBranchName(c.context, p.sessionId);
-          const phaseBranchName = SESSION_CONFIG.getParentBranchName(c.context, p.sessionId);
-          const errorMsg = sessionBranchName && phaseBranchName
-            ? `Manual recovery: git checkout ${phaseBranchName} && git merge ${sessionBranchName}`
-            : 'Resolve branch names from tier config and merge manually.';
-          c.steps.gitMerge = { success: false, output: `Branch merge failed: ${_error instanceof Error ? _error.message : String(_error)}\n${errorMsg}` };
+          const errorMsg =
+            'Work stays on the feature branch. Check `.project-manager/.git-friction-log.jsonl` and `git status`; fix and re-run /session-end.';
+          c.steps.gitMerge = {
+            success: false,
+            output: `Session-end git step failed: ${_error instanceof Error ? _error.message : String(_error)}\n${errorMsg}`,
+          };
           return {
             success: false,
             output: c.output.join('\n'),
@@ -545,7 +545,7 @@ export async function sessionEndImpl(
             outcome: buildTierEndOutcome(
               'blocked_fix_required',
               'git_failed',
-              `Session merge into phase threw an error. ${errorMsg} Fix and re-run /session-end.`
+              `Session-end git error. ${errorMsg}`
             ),
           };
         }
@@ -562,8 +562,16 @@ export async function sessionEndImpl(
             };
           } else {
             const currentBranch = await getCurrentBranch();
-            if (currentBranch === 'main' || currentBranch === 'master') {
-              c.steps.createPR = { success: true, output: 'Skipped PR creation - on main/master branch' };
+            if (
+              currentBranch == null ||
+              currentBranch === 'main' ||
+              currentBranch === 'master' ||
+              currentBranch === 'develop'
+            ) {
+              c.steps.createPR = {
+                success: true,
+                output: 'Skipped PR creation — not on a publishable feature branch (or branch unknown).',
+              };
             } else {
               const prTitle = `Session ${p.sessionId}: ${p.description}`;
               const prBody = p.transitionNotes

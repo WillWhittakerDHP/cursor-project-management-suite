@@ -83,9 +83,7 @@ export const PHASE_CONFIG: TierConfig = {
     await writeProjectFile(phaseLogPath, logContent, { overwriteForTierEnd: true });
   },
   replanCommand: undefined, // Set by tier-change when planPhase is passed
-  getBranchName: (ctx, id) => {
-    const slug = ctx.scope?.phase?.slug;
-    return slug ? `phase-${id}-${slug}` : `phase-${id}`;
-  },
+  /** Phase tier does not own a git branch; work stays on `feature/<name>`. */
+  getBranchName: () => null,
   getParentBranchName: (ctx, _id) => `feature/${ctx.feature.name}`,
 };

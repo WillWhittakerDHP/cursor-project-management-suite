@@ -183,10 +183,14 @@ These rules tell the agent what to do for each `reasonCode` returned by commands
 
 Validation blocked the start. Present `outcome.nextAction` and stop. Common reasons: session already completed, previous session not finished, phase blocked/completed, session not documented in phase guide.
 
-**Branch-exists sub-cases (session-start):** When a session branch already exists, validation checks parentage against the phase branch:
-- **Branch exists, properly based on parent:** Validation allows the start (`canStart: true`). `ensureTierBranch` will switch to the existing branch — no manual `git checkout` needed.
-- **Branch exists, diverged from parent:** Validation blocks (`canStart: false`). Present the rebase/delete guidance from `outcome.nextAction`. The user must resolve the divergence before retrying.
-- **Branch exists, parent not verifiable:** Validation allows the start. `ensureTierBranch` handles edge cases downstream.
+**Feature-only branching:** Phase and session tiers do **not** create separate git branches. All work for a feature uses `feature/<featureName>`. `ensureTierBranch` for phase/session ensures that feature branch is checked out.
+
+### Git debugging: `.project-manager/.git-friction-log.jsonl`
+
+Harness git steps append **structured JSON lines** here when operations fail or recover from risky states (complements `.project-manager/.git-ops-log`). When debugging git issues:
+
+1. Read the last lines of `.project-manager/.git-friction-log.jsonl` for `reasonCode`, `step`, `currentBranch`, `expectedBranch`, and `disposition`.
+2. After a **non-trivial** manual git fix or repeated failure, agents may append a line via `recordGitFriction` / `appendGitFriction` from `git-manager` (or document the incident in the session note).
 
 ### `audit_failed` (start commands: audit reported warnings or failures)
 
@@ -266,6 +270,8 @@ Suggested manual verification for this tier. The checklist is for **verifying wh
 
 ### `uncommitted_changes_blocking` (start/end/reopen commands)
 
+**Before deep-diving raw git output:** check `.project-manager/.git-friction-log.jsonl` for the latest structured incident (see **Git debugging** above).
+
 The command detected uncommitted files that would be overwritten by a branch checkout. Workflow artifacts (`.cursor`, `.project-manager`, `client/.audit-reports`) are non-blocking: they are stashed before checkout and restored (stash pop) on the target branch; they are never auto-committed by the tier-end commit step. Any other uncommitted files are blocking; `controlPlaneDecision.message` contains the list of blocking files. **Tier-end commit behavior:** All git operations for tier workflows go through **gitManager** (`.cursor/commands/git/shared/git-manager.ts`). Before committing, the workflow ensures the repo is on the tier's expected branch: if the current branch is wrong (e.g. two threads), it switches to the expected branch (stashing only workflow artifacts, then checkout, then stash pop) then commits. **Staging:** touched paths under **`client/`**, **`server/`**, and **`.project-manager/`** (non-transient docs only). **Never** staged: **`.cursor/`** (submodule), **`client/.audit-reports/`**, or **transient** `.project-manager/` harness files (e.g. `.tier-scope`, `.write-log`). See `.project-manager/HARNESS_CHARTER.md` (**Current implementation notes**).
 
 **When only workflow artifacts were uncommitted:** The workflow auto-stashes them and proceeds with checkout, then runs stash pop on the target branch. The user may see planning doc (or other .project-manager) tabs show as deleted/red in the editor during that window — the file was **not** deleted by the agent; it was stashed and is restored when the workflow runs stash pop. The command output will include messages to that effect. If the user asks "why was the planning doc deleted?", explain: it was stashed for the branch switch and has been restored; no delete was run.
@@ -277,11 +283,12 @@ The command detected uncommitted files that would be overwritten by a branch che
 
 ### `wrong_branch_before_commit` (end commands)
 
-The tier-end commit step aborted because the current git branch does not match the tier's **expected** branch (e.g. running session-end for 6.5.1 while on a different session branch). Commits are only allowed when on the correct branch so work is not committed to the wrong place.
+The tier-end commit step aborted because the current git branch does not match the **expected feature branch** (e.g. `feature/my-feature`). Phase/session/task ends all resolve to the same feature branch.
 
 1. **Present `controlPlaneDecision.message`** to the user — it states current vs expected branch.
-2. **Checkout the correct branch:** run `git checkout <expected-branch>` (the expected branch is in the message). Resolve any uncommitted changes first (commit or stash per `uncommitted_changes_blocking` if needed).
-3. Re-run the same tier-end command (e.g. `/session-end 6.5.1`) so the workflow runs on the correct branch.
+2. **Consult `.project-manager/.git-friction-log.jsonl`** if the message alone is unclear.
+3. **Checkout the correct branch:** run `git checkout <expected-branch>` (the expected branch is in the message). Resolve any uncommitted changes first (commit or stash per `uncommitted_changes_blocking` if needed).
+4. Re-run the same tier-end command so the workflow runs on the feature branch.
 
 ### `expected_branch_missing_run_tier_start` (end commands)
 

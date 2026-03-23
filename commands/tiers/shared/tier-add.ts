@@ -85,7 +85,8 @@ function parseAndValidate(tier: TierName, identifier: string): TierIdParts | str
 function buildParamsBag(parts: TierIdParts): TierParamsBag {
   switch (parts.tier) {
     case 'phase': return { phaseId: parts.identifier };
-    case 'session': return { sessionId: parts.identifier };
+    case 'session':
+      return { sessionId: parts.identifier, featureId: parts.featureId };
     case 'task': return { taskId: parts.identifier, featureId: parts.featureId };
   }
   return {};

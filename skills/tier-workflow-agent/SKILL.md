@@ -44,7 +44,9 @@ This skill complements [`.cursor/rules/process-workflow.mdc`](../../rules/proces
 
 ## Git working tree reporting
 
-- **Expected dirty (do not alarm):** `.cursor/` submodule, `client/.audit-reports/`, transient `.project-manager/` dotfiles — tier-end does not auto-commit these (`isNeverCommitPath` in `tier-branch-manager.ts`). Mention briefly; do not treat as failure by itself.
+- **Feature-only branches:** Phase and session tiers do not create separate git branches; expect `feature/<featureName>` for harness git steps.
+- **Git friction log:** On git-related failures or non-trivial recovery, check **`.project-manager/.git-friction-log.jsonl`** (structured JSON lines). Prefer it over reconstructing history from raw terminal noise. Agents may append via `recordGitFriction` / `appendGitFriction` from `git-manager` when documenting an incident.
+- **Expected dirty (do not alarm):** `.cursor/` submodule, `client/.audit-reports/`, transient `.project-manager/` dotfiles — tier-end does not auto-commit these (`isNeverCommitPath` in `working-tree-policy.ts` / `tier-branch-manager.ts`). Mention briefly; do not treat as failure by itself.
 - **Still prioritize:** `client/` and `server/` product changes, wrong branch, merge/`git_failed`, and `steps.createPR` when PR freshness matters. See [`.cursor/rules/process-workflow.mdc`](../../rules/process-workflow.mdc) (Git status / dirty tree reporting).
 
 ## Reason codes (quick reference)

@@ -1,0 +1,53 @@
+{
+  "tier": "feature",
+  "identifier": "authentication",
+  "overallStatus": "fail",
+  "results": [
+    {
+      "category": "tier-quality",
+      "status": "fail",
+      "score": 68,
+      "findings": [
+        {
+          "type": "warning",
+          "message": "1512 untested source file(s) (0% coverage)",
+          "location": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/.audit-reports/test-audit.json",
+          "suggestion": "Review client/.audit-reports/test-audit.md for test coverage gaps"
+        },
+        {
+          "type": "error",
+          "message": "64 P0/high-priority untested file(s)",
+          "location": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/.audit-reports/test-audit.json",
+          "suggestion": "Review client/.audit-reports/test-audit.md for critical test gaps"
+        },
+        {
+          "type": "info",
+          "message": "dep-freshness audit produced output (review JSON for details)",
+          "location": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/.audit-reports/dep-freshness-audit.json",
+          "suggestion": "Review client/.audit-reports/dep-freshness-audit.json for findings"
+        }
+      ],
+      "recommendations": [
+        "Review audit reports for errors",
+        "Review audit reports for warnings"
+      ],
+      "summary": "Ran 7 feature-tier audits; found 1 error(s), 1 warning(s), 1 info signal(s)."
+    }
+  ],
+  "timestamp": "2026-03-23T19:32:43.947Z",
+  "reportPath": "",
+  "featureName": "authentication",
+  "auditType": "end",
+  "baselineComparison": [
+    {
+      "category": "tier-quality-coverage",
+      "startScore": 100,
+      "status": "missing"
+    },
+    {
+      "category": "tier-quality",
+      "endScore": 68,
+      "status": "new"
+    }
+  ]
+}

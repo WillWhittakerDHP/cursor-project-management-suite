@@ -7,9 +7,6 @@ import {
   gitCommit,
   gitPush,
   ensureTierBranch,
-  mergeTierBranch,
-  mergeChildBranches,
-  deleteMergedChildBranchesAfterPush,
   getCurrentBranch,
   gitStatusPorcelain,
   gitCheckout,
@@ -463,25 +460,24 @@ export async function phaseEndImpl(
       }
 
       try {
-        const phaseBranchName = PHASE_CONFIG.getBranchName(c.context, p.phaseId);
         const featureBranchName = FEATURE_CONFIG.getBranchName(c.context, c.context.feature.name);
-        if (!phaseBranchName || !featureBranchName) {
-          c.steps.findSessionBranches = { success: false, output: 'Could not resolve branch names from config.' };
-          throw new Error('Cannot proceed: branch names from config are null');
+        if (!featureBranchName) {
+          c.steps.ensurePhaseBranch = { success: false, output: 'Could not resolve feature branch from config.' };
+          throw new Error('Cannot proceed: feature branch name is null');
         }
 
         const ensureResult = await ensureTierBranch(PHASE_CONFIG, p.phaseId, c.context, { createIfMissing: true });
         c.steps.ensurePhaseBranch = { success: ensureResult.success, output: ensureResult.messages.join('\n') };
-        if (!ensureResult.success) throw new Error('Cannot proceed: could not ensure phase branch');
+        if (!ensureResult.success) throw new Error('Cannot proceed: could not ensure feature branch for phase-end');
 
-        const resolvedPhaseBranch = await getCurrentBranch();
-        const sessionBranchPattern = `session-${p.phaseId}*`;
-        const childResult = await mergeChildBranches(sessionBranchPattern, resolvedPhaseBranch, {
-          deleteMerged: false,
-        });
-        const allSessionBranches = [...childResult.merged, ...childResult.failed];
-        c.steps.findSessionBranches = { success: true, output: `Found ${allSessionBranches.length} session branch(es): ${allSessionBranches.join(', ') || 'none'}` };
-        c.steps.mergeSessionBranches = { success: childResult.failed.length === 0, output: `Merged ${childResult.merged.length}/${allSessionBranches.length} session branch(es).` };
+        c.steps.findSessionBranches = {
+          success: true,
+          output: 'Feature-only branching: no separate session branches to merge.',
+        };
+        c.steps.mergeSessionBranches = {
+          success: true,
+          output: 'Skipped session branch merges (work stays on the feature branch).',
+        };
 
         const commitPrefix = `[phase ${p.phaseId}]`;
         const phaseCommitMessage = p.commitMessage || `${commitPrefix} completion`;
@@ -509,51 +505,15 @@ export async function phaseEndImpl(
             outcome: buildTierEndOutcome(
               'blocked_fix_required',
               'git_failed',
-              `Phase branch push failed; session branches were not deleted. ${phasePushResult.output} Fix and re-run /phase-end.`
+              `Feature branch push failed after phase-end. ${phasePushResult.output} Fix and re-run /phase-end.`
             ),
           };
         }
 
-        if (childResult.merged.length > 0) {
-          const delChildren = await deleteMergedChildBranchesAfterPush(childResult.merged);
-          c.steps.deleteSessionBranchesAfterPush = { success: delChildren.success, output: delChildren.messages.join('\n') };
-          if (!delChildren.success) {
-            return {
-              success: false,
-              output: c.output.join('\n'),
-              steps: c.steps,
-              outcome: buildTierEndOutcome(
-                'blocked_fix_required',
-                'git_failed',
-                `Deleting merged session branches failed after push. ${delChildren.messages.join(' ')} Fix and re-run /phase-end.`
-              ),
-            };
-          }
-        }
-
-        const mergeToFeature = await mergeTierBranch(PHASE_CONFIG, p.phaseId, c.context, {
-          push: true,
-          deleteBranch: true,
-          auditPrewarmPromise: c.auditPrewarmPromise,
-        });
-        c.steps.gitMergePhaseToFeature = { success: mergeToFeature.success, output: mergeToFeature.messages.join('\n') };
-        if (!mergeToFeature.success) {
-          const detail = mergeToFeature.messages.join(' ');
-          const isBranchCleanup = mergeToFeature.reasonCode?.startsWith('delete_');
-          const prefix = isBranchCleanup
-            ? 'Phase merged and pushed but branch cleanup failed.'
-            : 'Phase merge into feature failed.';
-          return {
-            success: false,
-            output: c.output.join('\n'),
-            steps: c.steps,
-            outcome: buildTierEndOutcome(
-              'blocked_fix_required',
-              'git_failed',
-              `${prefix} ${detail} Fix and re-run /phase-end.`
-            ),
-          };
-        }
+        c.steps.gitMergePhaseToFeature = {
+          success: true,
+          output: 'No phase→feature merge (phase tier has no branch); checkpoint completed on feature branch.',
+        };
       } catch (_error) {
         c.steps.gitOperations = {
           success: false,
@@ -574,12 +534,17 @@ export async function phaseEndImpl(
       if (!p.skipGit) {
         if (!shouldSkipHarnessPrCreate()) {
           const headBranch = await getCurrentBranch();
-          if (headBranch !== 'main' && headBranch !== 'master') {
+          if (
+            headBranch != null &&
+            headBranch !== 'main' &&
+            headBranch !== 'master' &&
+            headBranch !== 'develop'
+          ) {
             const featLabel = c.context.feature.name;
-            const prTitle = `Phase ${p.phaseId} (${featLabel}): merged to feature branch`;
+            const prTitle = `Phase ${p.phaseId} (${featLabel}): checkpoint on feature branch`;
             const sessions = p.completedSessions?.length ? p.completedSessions.join(', ') : 'see phase guide';
             const prBody =
-              `Automated **phase-end**: merged phase \`${p.phaseId}\` into the feature branch for **${featLabel}**.\n\n` +
+              `Automated **phase-end** checkpoint on the feature branch for **${featLabel}** (phase \`${p.phaseId}\`).\n\n` +
               `**Sessions (from params):** ${sessions}\n\nReview diff and CI on this PR.`;
             const prResult = await createPullRequest(prTitle, prBody, false);
             c.steps.createPR = {
@@ -601,7 +566,7 @@ export async function phaseEndImpl(
 
       c.steps.githubValidation = {
         success: true,
-        output: `\n🔍 **Phase ${p.phaseId} — GitHub**\n\nThe harness runs \`gh pr create\` after merging into the feature branch (unless HARNESS_SKIP_PR is set). Follow-up: review PRs and CI — https://github.com/WillWhittakerDHP/DHP_Differential_Scheduler/pulls\n`,
+        output: `\n🔍 **Phase ${p.phaseId} — GitHub**\n\nThe harness may run \`gh pr create\` from the feature branch after checkpoint (unless HARNESS_SKIP_PR is set). Follow-up: review PRs and CI — https://github.com/WillWhittakerDHP/DHP_Differential_Scheduler/pulls\n`,
       };
       return null;
     },
@@ -621,7 +586,7 @@ export async function phaseEndImpl(
       }
 
       let isLastPhase = false;
-      let featureNameForCascade = featureName;
+      const featureNameForCascade = featureName;
       try {
         isLastPhase = await isLastPhaseInFeature(featureName, p.phaseId);
         if (nextPhase) {

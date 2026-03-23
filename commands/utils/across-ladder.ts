@@ -1,6 +1,9 @@
 /**
  * Across ladder: machine-readable manifest + optional handoff snippet for tier cascades.
  * Derived from phase guides on disk and session guides; refreshed on tier starts/ends.
+ *
+ * Treat `across-ladder.json` as derived output: avoid hand-merging; regenerate via this module
+ * so multiple tiers do not leave conflict markers in the manifest.
  */
 
 import { mkdir, writeFile } from 'fs/promises';

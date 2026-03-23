@@ -92,63 +92,56 @@ export async function validateSessionImpl(
     }
 
     const sessionBranchName = SESSION_CONFIG.getBranchName(context, sessionId);
-    if (!sessionBranchName) {
-      return {
-        canStart: false,
-        reason: 'Could not resolve session branch name from config',
-        details: ['Session tier config getBranchName returned null.'],
-      };
-    }
-    const sessionBranchFound = await branchExists(sessionBranchName);
-    const currentBranch = await getCurrentBranch();
+    if (sessionBranchName) {
+      const sessionBranchFound = await branchExists(sessionBranchName);
+      const currentBranch = await getCurrentBranch();
 
-    if (sessionBranchFound) {
-      if (currentBranch === sessionBranchName) {
-        return {
-          canStart: true,
-          reason: 'Session branch is current',
-          details: [
-            `Session ${sessionId} branch exists and is current: ${sessionBranchName}`,
-            `Proceeding with session-start (branch step will no-op).`,
-          ],
-        };
-      }
-
-      // Branch exists on a different branch — check parentage before deciding.
-      const parentBranch = SESSION_CONFIG.getParentBranchName(context, sessionId);
-      if (parentBranch && (await branchExists(parentBranch))) {
-        const properlyBased = await isBranchBasedOn(sessionBranchName, parentBranch);
-        if (properlyBased) {
+      if (sessionBranchFound) {
+        if (currentBranch === sessionBranchName) {
           return {
             canStart: true,
-            reason: 'Session branch exists with valid parentage',
+            reason: 'Session branch is current',
             details: [
-              `Session ${sessionId} branch exists: ${sessionBranchName}`,
-              `Branch is properly based on ${parentBranch} — will switch to it.`,
+              `Session ${sessionId} branch exists and is current: ${sessionBranchName}`,
+              `Proceeding with session-start (branch step will no-op).`,
             ],
           };
         }
+
+        const parentBranch = SESSION_CONFIG.getParentBranchName(context, sessionId);
+        if (parentBranch && (await branchExists(parentBranch))) {
+          const properlyBased = await isBranchBasedOn(sessionBranchName, parentBranch);
+          if (properlyBased) {
+            return {
+              canStart: true,
+              reason: 'Session branch exists with valid parentage',
+              details: [
+                `Session ${sessionId} branch exists: ${sessionBranchName}`,
+                `Branch is properly based on ${parentBranch} — will switch to it.`,
+              ],
+            };
+          }
+          return {
+            canStart: false,
+            reason: 'Session branch exists but has diverged',
+            details: [
+              `Session branch exists: ${sessionBranchName}`,
+              `But it is NOT based on parent branch ${parentBranch} (diverged or orphaned).`,
+              `Rebase onto parent: git rebase ${parentBranch} ${sessionBranchName}`,
+              `Or delete and recreate: git branch -D ${sessionBranchName}`,
+            ],
+          };
+        }
+
         return {
-          canStart: false,
-          reason: 'Session branch exists but has diverged',
+          canStart: true,
+          reason: 'Session branch exists (parent not verifiable)',
           details: [
-            `Session branch exists: ${sessionBranchName}`,
-            `But it is NOT based on parent branch ${parentBranch} (diverged or orphaned).`,
-            `Rebase onto parent: git rebase ${parentBranch} ${sessionBranchName}`,
-            `Or delete and recreate: git branch -D ${sessionBranchName}`,
+            `Session ${sessionId} branch exists: ${sessionBranchName}`,
+            `Parent branch could not be verified — will switch to existing branch.`,
           ],
         };
       }
-
-      // Parent branch doesn't exist or couldn't be resolved — allow start; ensureTierBranch will handle it.
-      return {
-        canStart: true,
-        reason: 'Session branch exists (parent not verifiable)',
-        details: [
-          `Session ${sessionId} branch exists: ${sessionBranchName}`,
-          `Parent branch could not be verified — will switch to existing branch.`,
-        ],
-      };
     }
 
     if (sessionNum > 1) {
@@ -192,12 +185,15 @@ export async function validateSessionImpl(
       }
     }
 
+    const branchDetail = sessionBranchName
+      ? `Session ${sessionId} branch will be created`
+      : `Work stays on feature branch feature/${context.feature.name}`;
     return {
       canStart: true,
       reason: 'Session can be started',
       details: [
         `Session ${sessionId} is not completed`,
-        `Session ${sessionId} branch will be created`,
+        branchDetail,
         sessionNum > 1 ? `Previous session (${phase}.${sessionNum - 1}) is complete` : 'This is the first session in the phase',
         `Phase ${phase} is not complete`,
         `Ready to start with /session-start ${sessionId}`,

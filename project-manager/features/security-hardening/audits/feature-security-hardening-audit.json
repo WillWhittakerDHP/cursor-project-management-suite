@@ -1,0 +1,27 @@
+{
+  "tier": "feature",
+  "identifier": "security-hardening",
+  "overallStatus": "pass",
+  "results": [
+    {
+      "category": "tier-quality",
+      "status": "pass",
+      "score": 98,
+      "findings": [
+        {
+          "type": "info",
+          "message": "dep-freshness audit produced output (review JSON for details)",
+          "location": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/.audit-reports/dep-freshness-audit.json",
+          "suggestion": "Review client/.audit-reports/dep-freshness-audit.json for findings"
+        }
+      ],
+      "recommendations": [],
+      "summary": "Ran 7 feature-tier audits; found 0 error(s), 0 warning(s), 1 info signal(s)."
+    }
+  ],
+  "timestamp": "2026-03-23T22:15:22.353Z",
+  "reportPath": "",
+  "featureName": "security-hardening",
+  "auditType": "end",
+  "baselineComparison": []
+}

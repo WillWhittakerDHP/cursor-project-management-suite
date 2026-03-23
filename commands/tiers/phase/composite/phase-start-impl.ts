@@ -7,9 +7,10 @@ import { WorkflowCommandContext } from '../../../utils/command-context';
 import { readTierUpContext, getTierContextSourcePolicy } from '../../shared/context-policy';
 import { extractFilesFromPhaseGuide, gatherFileStatuses } from '../../../utils/context-gatherer';
 import { formatFileStatusList } from '../../../utils/context-templates';
-import { ensureTierBranch } from '../../../git/shared/git-manager';
+import { ensureTierBranch, getExpectedBranchForTier } from '../../../git/shared/git-manager';
 import { validatePhase, formatPhaseValidation } from './phase';
 import { PHASE_CONFIG } from '../../configs/phase';
+import { FEATURE_CONFIG } from '../../configs/feature';
 import { derivePhaseDescription } from '../../../planning/utils/resolve-planning-description';
 import type { TierStartResult } from '../../../utils/tier-outcome';
 import type {
@@ -25,7 +26,6 @@ import { getTierUpPlanningDocSections } from '../../shared/tier-start-steps';
 import { buildReuseOpportunitiesSection, type InventoryPayload } from '../helpers/inventory-reuse-check';
 import type { RunRecorder, RunTraceHandle } from '../../../harness/contracts';
 import { writeTierScope } from '../../../utils/tier-scope-writer';
-import { getCurrentBranch } from '../../../git/shared/git-manager';
 import { refreshAcrossLadderArtifacts } from '../../../utils/across-ladder';
 
 export type ShadowContext = { recorder: RunRecorder; handle: RunTraceHandle };
@@ -89,10 +89,10 @@ export async function phaseStartImpl(
     },
 
     getPlanModeSteps() {
-      const phaseBranchName = PHASE_CONFIG.getBranchName(context, phase);
+      const featureBranch = FEATURE_CONFIG.getBranchName(context, context.feature.name) ?? `feature/${context.feature.name}`;
       return [
-        'Git: ensure feature branch exists and is based on main/master',
-        `Git: create/switch phase branch \`${phaseBranchName ?? ''}\``,
+        'Git: ensure `develop` (or main) is up to date if using pullRoot from feature-start',
+        `Git: stay on feature branch \`${featureBranch}\` (no separate phase branch)`,
         `Docs: read feature guide Phases Breakdown, phase guide \`${context.paths.getPhaseGuidePath(phase)}\``,
         'Audit: run phase-start audit (non-blocking)',
       ];
@@ -319,24 +319,16 @@ export async function phaseStartImpl(
   if (result.success) {
     const phaseDesc = await derivePhaseDescription(phase, context);
     const phaseName = phaseDesc || `Phase ${phase}`;
-    let phaseBranch: string | undefined;
-    let phaseSlug: string | undefined;
-    try {
-      const current = await getCurrentBranch();
-      if (current && (current === `phase-${phase}` || current.startsWith(`phase-${phase}-`))) {
-        phaseBranch = current;
-        phaseSlug = current.replace(new RegExp(`^phase-${phase.replace('.', '\\.')}-?`), '') || undefined;
-      }
-    } catch {
-      // non-blocking
-    }
+    const featureBranch =
+      (await getExpectedBranchForTier(FEATURE_CONFIG, context.feature.name, context)) ??
+      `feature/${context.feature.name}`;
     await writeTierScope({
       feature: { id: context.feature.name, name: `Feature: ${context.feature.name}` },
       phase: {
         id: phase,
         name: phaseName,
-        branch: phaseBranch,
-        slug: phaseSlug,
+        branch: featureBranch,
+        slug: context.scope?.phase?.slug,
       },
     });
     try {

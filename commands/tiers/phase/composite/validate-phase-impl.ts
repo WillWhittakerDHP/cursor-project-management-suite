@@ -83,17 +83,25 @@ export async function validatePhaseImpl(
 
         if (status === 'in progress') {
           const phaseBranchName = PHASE_CONFIG.getBranchName(context, phase);
+          const featureBranch = PHASE_CONFIG.getParentBranchName(context, phase);
           const currentBranch = await getCurrentBranch();
-          if (!phaseBranchName) {
-            details.push('Could not resolve phase branch name from config.');
-          } else if (currentBranch === phaseBranchName || currentBranch.includes(`-phase-${phase}`)) {
+          const onDedicatedPhaseBranch =
+            Boolean(phaseBranchName) &&
+            (currentBranch === phaseBranchName || currentBranch.includes(`-phase-${phase}`));
+          const onFeatureOnlyBranch =
+            !phaseBranchName &&
+            Boolean(featureBranch) &&
+            currentBranch === featureBranch;
+          if (onDedicatedPhaseBranch || onFeatureOnlyBranch) {
             return {
               canStart: false,
               reason: 'Phase already started',
               details: [
                 `Phase ${phase} has status: In Progress`,
                 `Current branch: ${currentBranch}`,
-                `Phase branch exists: ${phaseBranchName}`,
+                phaseBranchName
+                  ? `Phase branch: ${phaseBranchName}`
+                  : `Work stays on feature branch: ${featureBranch}`,
                 `Continue working on this phase or complete it with /phase-end ${phase}`,
               ],
             };
@@ -124,24 +132,19 @@ export async function validatePhaseImpl(
     }
 
     const phaseBranchName = PHASE_CONFIG.getBranchName(context, phase);
-    if (!phaseBranchName) {
-      return {
-        canStart: false,
-        reason: 'Could not resolve phase branch name from config',
-        details: ['Phase tier config getBranchName returned null.'],
-      };
-    }
-    const branchCheckResult = await gitListBranches(phaseBranchName);
-    if (branchCheckResult.success && branchCheckResult.output.trim()) {
-      return {
-        canStart: false,
-        reason: 'Phase branch already exists',
-        details: [
-          `Phase branch exists: ${phaseBranchName}`,
-          `Switch to it with: git checkout ${phaseBranchName}`,
-          `Or delete it first if you want to start fresh: git branch -D ${phaseBranchName}`,
-        ],
-      };
+    if (phaseBranchName) {
+      const branchCheckResult = await gitListBranches(phaseBranchName);
+      if (branchCheckResult.success && branchCheckResult.output.trim()) {
+        return {
+          canStart: false,
+          reason: 'Phase branch already exists',
+          details: [
+            `Phase branch exists: ${phaseBranchName}`,
+            `Switch to it with: git checkout ${phaseBranchName}`,
+            `Or delete it first if you want to start fresh: git branch -D ${phaseBranchName}`,
+          ],
+        };
+      }
     }
 
     return {

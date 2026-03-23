@@ -2,8 +2,6 @@
  * Feature-end implementation. Thin adapter: builds hooks and runs shared end workflow.
  */
 
-import { readdir } from 'fs/promises';
-import { join } from 'path';
 import { featureSummarize } from '../atomic/feature-summarize';
 import { featureClose } from '../atomic/feature-close';
 import { runWithLintVerification } from '../../../utils/utils';
@@ -26,8 +24,6 @@ import {
   gitPush,
   ensureTierBranch,
   mergeTierBranch,
-  mergeChildBranches,
-  deleteMergedChildBranchesAfterPush,
   getCurrentBranch,
 } from '../../../git/shared/git-manager';
 import type {
@@ -65,34 +61,6 @@ export interface FeatureEndResult {
 
 const CLEANUP_FILE_THRESHOLD = 100;
 const CLEANUP_COMMENT_THRESHOLD = 500;
-
-/**
- * Prefix for local phase branches belonging to this feature (e.g. phase-6.5-foo → phase-6.).
- * WHY: mergeChildBranches lists by prefix; we must not merge another feature's phase-* branches.
- */
-async function resolvePhaseBranchPrefixForFeature(
-  featureName: string,
-  completedPhases: string[] | undefined
-): Promise<string | null> {
-  const majorFromParams = completedPhases
-    ?.map((p) => p.trim().split('.')[0])
-    .find((m) => m !== undefined && m !== '' && /^\d+$/.test(m));
-  if (majorFromParams) return `phase-${majorFromParams}.`;
-
-  const phasesDir = join(process.cwd(), '.project-manager/features', featureName, 'phases');
-  try {
-    const entries = await readdir(phasesDir);
-    const majors = new Set<string>();
-    for (const name of entries) {
-      const m = name.match(/^phase-(\d+)\./);
-      if (m) majors.add(m[1]);
-    }
-    if (majors.size === 1) return `phase-${[...majors][0]}.`;
-  } catch {
-    // Missing or unreadable phases dir — caller skips phase merges.
-  }
-  return null;
-}
 
 /** When provided (e.g. from harness), use this context instead of re-resolving feature. */
 export async function featureEndImpl(
@@ -146,7 +114,7 @@ export async function featureEndImpl(
         '- run code quality audit',
         '- optional: propose verification checklist (before audit); pause for add follow-up phase or continue with continuePastVerification',
         '- commit/push',
-        '- merge feature branch into develop + delete feature branch',
+        '- merge feature branch into develop + delete feature branch (no separate phase branches)',
         '- update current feature pointer',
       ];
     },
@@ -392,41 +360,10 @@ export async function featureEndImpl(
           throw new Error('Cannot proceed: could not ensure feature branch');
         }
 
-        const resolvedFeatureBranch = await getCurrentBranch();
-        const phasePrefix = await resolvePhaseBranchPrefixForFeature(featureName, p.completedPhases);
-        let mergedPhaseBranches: string[] = [];
-
-        if (phasePrefix) {
-          const childResult = await mergeChildBranches(phasePrefix, resolvedFeatureBranch, { deleteMerged: false });
-          mergedPhaseBranches = childResult.merged;
-          const allPhaseBranches = [...childResult.merged, ...childResult.failed];
-          ctx.steps.findPhaseBranches = {
-            success: true,
-            output: `Phase branch prefix ${phasePrefix}* — found ${allPhaseBranches.length} branch(es): ${allPhaseBranches.join(', ') || 'none'}`,
-          };
-          ctx.steps.mergePhaseBranches = {
-            success: childResult.failed.length === 0,
-            output: `${childResult.messages.join('\n')}\nMerged ${childResult.merged.length}/${allPhaseBranches.length} phase branch(es).`,
-          };
-          if (childResult.failed.length > 0) {
-            return {
-              success: false,
-              output: ctx.output.join('\n'),
-              steps: ctx.steps,
-              outcome: buildTierEndOutcome(
-                'blocked_fix_required',
-                'git_failed',
-                `Merging phase branches into feature failed. ${childResult.messages.join(' ')} Fix and re-run /feature-end.`
-              ),
-            };
-          }
-        } else {
-          ctx.steps.mergePhaseBranches = {
-            success: true,
-            output:
-              'Skipped merging phase-* branches: could not resolve phase prefix (pass completedPhases or ensure .project-manager/features/<feature>/phases/ has phase guides).',
-          };
-        }
+        ctx.steps.mergePhaseBranches = {
+          success: true,
+          output: 'Feature-only branching: no separate phase branches to merge into the feature branch.',
+        };
 
         const commitPrefix = `[feature ${ctx.identifier}]`;
         const featureCommitMessage = p.commitMessage || `${commitPrefix} completion`;
@@ -455,26 +392,9 @@ export async function featureEndImpl(
             outcome: buildTierEndOutcome(
               'blocked_fix_required',
               'git_failed',
-              `Feature branch push failed; phase branches were not deleted. ${featurePushResult.output} Fix and re-run /feature-end.`
+              `Feature branch push failed. ${featurePushResult.output} Fix and re-run /feature-end.`
             ),
           };
-        }
-
-        if (mergedPhaseBranches.length > 0) {
-          const delChildren = await deleteMergedChildBranchesAfterPush(mergedPhaseBranches);
-          ctx.steps.deletePhaseBranchesAfterPush = { success: delChildren.success, output: delChildren.messages.join('\n') };
-          if (!delChildren.success) {
-            return {
-              success: false,
-              output: ctx.output.join('\n'),
-              steps: ctx.steps,
-              outcome: buildTierEndOutcome(
-                'blocked_fix_required',
-                'git_failed',
-                `Deleting merged phase branches failed after push. ${delChildren.messages.join(' ')} Fix and re-run /feature-end.`
-              ),
-            };
-          }
         }
 
         const mergeToDevelop = await mergeTierBranch(FEATURE_CONFIG, ctx.identifier, ctx.context, {
@@ -530,7 +450,12 @@ export async function featureEndImpl(
 
       if (!shouldSkipHarnessPrCreate()) {
         const headBranch = await getCurrentBranch();
-        if (headBranch !== 'main' && headBranch !== 'master') {
+        if (
+          headBranch != null &&
+          headBranch !== 'main' &&
+          headBranch !== 'master' &&
+          headBranch !== 'develop'
+        ) {
           const phases = p.completedPhases?.length ? p.completedPhases.join(', ') : 'see feature guide';
           const prTitle = `Feature ${ctx.identifier}: complete`;
           const prBody =
@@ -541,11 +466,16 @@ export async function featureEndImpl(
             success: prResult.success,
             output:
               prResult.success && prResult.url
-                ? `✅ Pull request created: ${prResult.url}`
+                ? prResult.reusedExisting
+                  ? `✅ Using existing open PR: ${prResult.url}`
+                  : `✅ Pull request created: ${prResult.url}`
                 : `⚠️ Could not open PR: ${prResult.error ?? 'unknown error'}`,
           };
         } else {
-          ctx.steps.createPR = { success: true, output: 'Skipped PR — on main/master.' };
+          ctx.steps.createPR = {
+            success: true,
+            output: 'Skipped PR — on trunk (main/master/develop) or branch unknown after merge.',
+          };
         }
       } else {
         ctx.steps.createPR = { success: true, output: 'Skipped PR (HARNESS_SKIP_PR).' };
@@ -554,7 +484,7 @@ export async function featureEndImpl(
       ctx.steps.githubFinalValidation = {
         success: true,
         output:
-          `\n🎯 **Feature complete — GitHub**\n\nHarness attempted \`gh pr create\` from the current branch after merging the feature into its parent. Confirm PR and CI: https://github.com/WillWhittakerDHP/DHP_Differential_Scheduler/pulls\n`,
+          `\n🎯 **Feature complete — GitHub**\n\nIf still on a feature branch, the harness may open or reuse a PR via \`gh\`. After merge to develop, PR creation is skipped. Confirm CI: https://github.com/WillWhittakerDHP/DHP_Differential_Scheduler/pulls\n`,
       };
       return null;
     },

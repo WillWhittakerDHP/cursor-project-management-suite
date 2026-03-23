@@ -30,6 +30,8 @@ export interface CreatePullRequestResult {
   url?: string;
   branch?: string;
   error?: string;
+  /** True when an existing open PR was reused instead of calling `gh pr create`. */
+  reusedExisting?: boolean;
   [key: string]: unknown;
 }
 
@@ -72,6 +74,27 @@ function getCompareUrlForBranch(headBranch: string): string {
   return `${origin}/compare/${base}...${headBranch}`;
 }
 
+/** Returns first open PR URL for head→base, or null. */
+function findOpenPullRequestUrl(headBranch: string, baseBranch: string): string | null {
+  const r = runGh([
+    'pr',
+    'list',
+    '--head',
+    headBranch,
+    '--base',
+    baseBranch,
+    '--state',
+    'open',
+    '--json',
+    'url',
+    '-q',
+    '.[0].url',
+  ]);
+  if (!r.ok || !r.stdout) return null;
+  const url = r.stdout.trim();
+  return url.length > 0 ? url : null;
+}
+
 /**
  * Check if GitHub CLI is available and authenticated (non-interactive).
  */
@@ -100,11 +123,25 @@ export async function createPullRequest(
       return { success: false, error: message };
     }
 
-    const currentBranch = (await getCurrentBranch()).trim();
+    const rawBranch = await getCurrentBranch();
+    if (rawBranch == null || !rawBranch.trim()) {
+      log('\n❌ Could not determine current git branch.', 'red');
+      return { success: false, error: 'Could not determine current branch' };
+    }
+    const currentBranch = rawBranch.trim();
 
-    if (currentBranch === 'main' || currentBranch === 'master') {
-      log('⚠️  Cannot create PR from main/master branch', 'yellow');
-      return { success: false, error: 'On main branch' };
+    if (currentBranch === 'main' || currentBranch === 'master' || currentBranch === 'develop') {
+      log('⚠️  Cannot create PR from trunk branch (main/master/develop)', 'yellow');
+      return { success: false, error: 'On trunk branch' };
+    }
+
+    const baseBranch = getDefaultBranchNameSync();
+    const existingUrl = findOpenPullRequestUrl(currentBranch, baseBranch);
+    if (existingUrl) {
+      log(`\n✅ Open PR already exists for \`${currentBranch}\` → \`${baseBranch}\``, 'green');
+      log(`🔗 ${existingUrl}`, 'blue');
+      log('   (Skipped gh pr create; push your branch to update the PR.)', 'yellow');
+      return { success: true, url: existingUrl, branch: currentBranch, reusedExisting: true };
     }
 
     log(`\n🔄 Pushing branch: ${currentBranch}...`, 'blue');
@@ -116,6 +153,12 @@ export async function createPullRequest(
       }
     } catch {
       log('   (Push threw — continuing to gh pr create)', 'yellow');
+    }
+
+    const existingAfterPush = findOpenPullRequestUrl(currentBranch, baseBranch);
+    if (existingAfterPush) {
+      log(`\n✅ Open PR found after push: ${existingAfterPush}`, 'green');
+      return { success: true, url: existingAfterPush, branch: currentBranch, reusedExisting: true };
     }
 
     log('\n📝 Creating pull request...', 'blue');
@@ -159,7 +202,7 @@ export async function createPullRequest(
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     log(`\n❌ Failed to create pull request: ${message}`, 'red');
-    const fallbackBranch = (await getCurrentBranch()).trim();
+    const fallbackBranch = (await getCurrentBranch())?.trim() ?? '';
     const compareUrl = getCompareUrlForBranch(fallbackBranch);
     log(`\n⚠️  Create PR manually: ${compareUrl}`, 'yellow');
     return { success: false, error: message };

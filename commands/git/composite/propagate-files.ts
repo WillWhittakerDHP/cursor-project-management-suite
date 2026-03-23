@@ -62,7 +62,8 @@ const PRESETS: Record<string, { files: string[]; includeSubmodule: boolean }> = 
   },
 };
 
-const TIER_BRANCH_PREFIXES = ['feature/', 'phase-', 'session-'];
+/** Propagation targets: feature branches and long-lived roots (roots filtered out later). */
+const TIER_BRANCH_PREFIXES = ['feature/'];
 const ROOT_BRANCHES = ['main', 'master', 'develop'];
 
 /**
@@ -121,6 +122,9 @@ export async function propagateFiles(opts: PropagateOptions): Promise<PropagateR
   const details: BranchResult[] = [];
 
   const originalBranch = await getCurrentBranch();
+  if (originalBranch == null) {
+    return { success: false, summary: 'Cannot determine current branch for propagation.', details };
+  }
   const sourceBranch = opts.sourceBranch ?? originalBranch;
 
   if (!(await branchExists(sourceBranch))) {

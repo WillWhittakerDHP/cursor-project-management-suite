@@ -114,13 +114,21 @@ export async function runGitCommand(
 
 // ─── Query helpers (logged; no dependency on git-manager to avoid cycles) ─
 
-export async function getCurrentBranch(): Promise<string> {
+/** Returns null when not on a named branch (detached HEAD, missing .git, or command failure). */
+export async function getCurrentBranch(): Promise<string | null> {
   const result = await runGitCommand('git branch --show-current', 'getCurrentBranch');
   if (result.success && result.output.trim()) {
     return result.output.trim();
   }
-  console.warn('WARNING: Could not get current git branch, defaulting to \'main\'');
-  return 'main';
+  warnGitOp({
+    timestamp: new Date().toISOString(),
+    operation: 'getCurrentBranch',
+    command: 'git branch --show-current',
+    success: false,
+    output: result.output,
+    error: result.error ?? 'empty_or_failed',
+  });
+  return null;
 }
 
 export async function branchExists(branchName: string): Promise<boolean> {

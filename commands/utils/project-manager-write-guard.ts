@@ -37,6 +37,16 @@ const TASK_PLACEHOLDERS = [
 // Placeholders that indicate guide tierDown blocks not filled (aligned with tier-start-steps.ts).
 const GUIDE_TIERDOWN_PLACEHOLDERS = ['[Fill in]', '[To be planned]', '[To be defined]'];
 
+/** Session guide templates use these bracket placeholders; treat as unfilled until replaced (not in GUIDE_TIERDOWN_PLACEHOLDERS). */
+const SESSION_GUIDE_STOCK_PLACEHOLDERS = [
+  '[Task Name]',
+  '[Task goal]',
+  '[Brief description of session objectives]',
+  '[Approach to take]',
+  '[What needs to be verified]',
+  '[Files to work with]',
+];
+
 function isPlanningDocFilled(content: string): boolean {
   if (content.includes(PLACEHOLDER_REFINED)) return false;
   if (content.includes(PLACEHOLDER_TIERDOWN)) return false;
@@ -63,6 +73,11 @@ function isGuideFilled(content: string, filename: string): boolean {
     if (content.includes(p)) return false;
   }
   const tier = inferGuideTier(filename);
+  if (tier === 'session') {
+    for (const p of SESSION_GUIDE_STOCK_PLACEHOLDERS) {
+      if (content.includes(p)) return false;
+    }
+  }
   if (tier) {
     const required = REQUIRED_GUIDE_SECTIONS[tier];
     for (const section of required) {

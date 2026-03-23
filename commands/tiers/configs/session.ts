@@ -62,14 +62,9 @@ export const SESSION_CONFIG: TierConfig = {
     await appendLog(logEntry, identifier, context.paths.getFeatureName());
   },
   replanCommand: undefined, // Set by tier-change when planSession is passed
-  getParentBranchName: (ctx, id) => {
-    const phaseId = WorkflowId.extractPhaseId(id) ?? '1';
-    if (ctx.scope?.phase?.branch) return ctx.scope.phase.branch;
-    return `phase-${phaseId}`;
-  },
-  getBranchName: (_ctx, id) => {
-    return `session-${id}`;
-  },
+  getParentBranchName: (ctx, _id) => `feature/${ctx.feature.name}`,
+  /** Session tier does not own a git branch; work stays on `feature/<name>`. */
+  getBranchName: () => null,
   preflight: {
     ensureAppRunning: { onStart: true, onEnd: true },
   },

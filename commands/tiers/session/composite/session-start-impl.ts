@@ -15,7 +15,6 @@ import {
 } from '../../shared/context-policy';
 import { deriveSessionDescription } from './session-end-impl';
 import { SESSION_CONFIG } from '../../configs/session';
-import { getConfigForTier } from '../../configs/index';
 import type { TierStartResult } from '../../../utils/tier-outcome';
 import type {
   TierStartWorkflowContext,
@@ -31,6 +30,7 @@ import type { RunRecorder, RunTraceHandle } from '../../../harness/contracts';
 import { writeTierScope } from '../../../utils/tier-scope-writer';
 import { refreshAcrossLadderArtifacts } from '../../../utils/across-ladder';
 import { getExpectedBranchForTier } from '../../../git/shared/git-manager';
+import { FEATURE_CONFIG } from '../../configs/feature';
 
 export type ShadowContext = { recorder: RunRecorder; handle: RunTraceHandle };
 
@@ -189,19 +189,13 @@ export async function sessionStartImpl(
 
     getPlanModeSteps() {
       const phase = sessionId.split('.').slice(0, 2).join('.');
-      const featureBranch = getConfigForTier('feature').getBranchName(context, context.feature.name);
-      const phaseBranchName = SESSION_CONFIG.getParentBranchName(context, sessionId);
-      const sessionBranchName = SESSION_CONFIG.getBranchName(context, sessionId);
-      const featureBranchStr = featureBranch ?? `feature/${context.feature.name}`;
-      const phaseBranchStr = phaseBranchName ?? '';
-      const sessionBranchStr = sessionBranchName ?? '';
+      const featureBranchStr =
+        FEATURE_CONFIG.getBranchName(context, context.feature.name) ?? `feature/${context.feature.name}`;
       const sessionGuidePath = context.paths.getSessionGuidePath(sessionId);
       const sessionHandoffPath = context.paths.getSessionHandoffPath(sessionId);
       const phaseGuidePath = context.paths.getPhaseGuidePath(phase);
       return [
-        `Git: ensure phase branch exists: \`${phaseBranchStr}\``,
-        `Git: create/switch session branch: \`${sessionBranchStr}\``,
-        `Git: verify branch ancestry: \`${sessionBranchStr}\` is based on \`${phaseBranchStr}\` (and \`${phaseBranchStr}\` is based on \`${featureBranchStr}\`)`,
+        `Git: ensure feature branch \`${featureBranchStr}\` is checked out (no separate session/phase branches)`,
         `Docs: read session guide: \`${sessionGuidePath}\``,
         `Docs: read session handoff: \`${sessionHandoffPath}\``,
         `Docs: (reference) phase guide: \`${phaseGuidePath}\``,
@@ -475,25 +469,16 @@ export async function sessionStartImpl(
   let mergedOutput = result.output;
   if (result.success) {
     const phaseId = sessionId.split('.').slice(0, 2).join('.');
-    const PHASE_CONFIG = getConfigForTier('phase');
-    let phaseBranch: string | undefined;
-    let phaseSlug: string | undefined;
-    try {
-      const branch = await getExpectedBranchForTier(PHASE_CONFIG, phaseId, context);
-      if (branch) {
-        phaseBranch = branch;
-        phaseSlug = branch.replace(new RegExp(`^phase-${phaseId.replace('.', '\\.')}-?`), '') || undefined;
-      }
-    } catch {
-      // non-blocking
-    }
+    const featureBranch =
+      (await getExpectedBranchForTier(FEATURE_CONFIG, context.feature.name, context)) ??
+      `feature/${context.feature.name}`;
     await writeTierScope({
       feature: { id: context.feature.name, name: `Feature: ${context.feature.name}` },
       phase: {
         id: phaseId,
         name: `Phase ${phaseId}`,
-        branch: phaseBranch,
-        slug: phaseSlug,
+        branch: featureBranch,
+        slug: context.scope?.phase?.slug,
       },
       session: { id: sessionId, name: resolvedDescription || `Session ${sessionId}` },
     });
