@@ -315,7 +315,7 @@ export async function phaseStartImpl(
   };
 
   const result = await runTierStartWorkflow(ctx, hooks);
-  let output = result.output;
+  let mergedOutput = result.output;
   if (result.success) {
     const phaseDesc = await derivePhaseDescription(phase, context);
     const phaseName = phaseDesc || `Phase ${phase}`;
@@ -344,7 +344,7 @@ export async function phaseStartImpl(
         tier: 'phase',
         phaseId: phase,
       });
-      output = `${output}\n\n${summary}`.trim();
+      mergedOutput = `${mergedOutput}\n\n${summary}`.trim();
     } catch (err) {
       console.warn('[phase-start] across-ladder refresh failed', err);
     }
@@ -352,5 +352,5 @@ export async function phaseStartImpl(
   if (result.outcome.cascade) {
     result.outcome.nextAction = `Phase ${phaseId} planning complete. Cascade: ${result.outcome.cascade.command}`;
   }
-  return { ...result, output };
+  return { ...result, output: mergedOutput };
 }

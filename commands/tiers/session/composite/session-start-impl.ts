@@ -472,7 +472,7 @@ export async function sessionStartImpl(
   };
 
   const result = await runTierStartWorkflow(ctx, hooks);
-  let output = result.output;
+  let mergedOutput = result.output;
   if (result.success) {
     const phaseId = sessionId.split('.').slice(0, 2).join('.');
     const PHASE_CONFIG = getConfigForTier('phase');
@@ -503,7 +503,7 @@ export async function sessionStartImpl(
         sessionId,
         phaseId,
       });
-      output = `${output}\n\n${summary}`.trim();
+      mergedOutput = `${mergedOutput}\n\n${summary}`.trim();
     } catch (err) {
       console.warn('[session-start] across-ladder refresh failed', err);
     }
@@ -511,5 +511,5 @@ export async function sessionStartImpl(
   if (result.outcome.cascade) {
     result.outcome.nextAction = `Session ${sessionId} planning complete. Cascade: ${result.outcome.cascade.command}`;
   }
-  return { ...result, output };
+  return { ...result, output: mergedOutput };
 }
