@@ -1,0 +1,143 @@
+{
+  "generatedAt": "2026-03-22T19:44:42.044Z",
+  "scope": {
+    "client": {
+      "command": "vue-tsc -b --pretty false",
+      "cwd": "client"
+    },
+    "server": {
+      "command": "tsc --noEmit --pretty false",
+      "cwd": "server"
+    }
+  },
+  "exitCode": 1,
+  "command": "vue-tsc -b --pretty false && tsc --noEmit --pretty false",
+  "exceptionSummary": {
+    "totalAllowed": 0,
+    "totalRequiresReview": 3,
+    "bySource": {
+      "inline": 0,
+      "pattern": 0,
+      "specific": 0
+    }
+  },
+  "errors": [
+    {
+      "file": "src/utils/theme/colorMath.ts",
+      "line": 6,
+      "col": 45,
+      "code": "TS2307",
+      "message": "Cannot find module 'culori' or its corresponding type declarations.",
+      "raw": "src/utils/theme/colorMath.ts(6,45): error TS2307: Cannot find module 'culori' or its corresponding type declarations.",
+      "scope": "client",
+      "repoPath": "src/utils/theme/colorMath.ts"
+    },
+    {
+      "file": "src/utils/theme/colorMath.ts",
+      "line": 7,
+      "col": 35,
+      "code": "TS2307",
+      "message": "Cannot find module 'culori' or its corresponding type declarations.",
+      "raw": "src/utils/theme/colorMath.ts(7,35): error TS2307: Cannot find module 'culori' or its corresponding type declarations.",
+      "scope": "client",
+      "repoPath": "src/utils/theme/colorMath.ts"
+    },
+    {
+      "file": "src/utils/theme/wizardPaletteFromAnchors.ts",
+      "line": 15,
+      "col": 28,
+      "code": "TS2307",
+      "message": "Cannot find module 'culori' or its corresponding type declarations.",
+      "raw": "src/utils/theme/wizardPaletteFromAnchors.ts(15,28): error TS2307: Cannot find module 'culori' or its corresponding type declarations.",
+      "scope": "client",
+      "repoPath": "src/utils/theme/wizardPaletteFromAnchors.ts"
+    }
+  ],
+  "allowedErrors": [],
+  "pools": [
+    {
+      "poolId": "TS2307-ts2307-cannot-find-module-culori-or-its-corresponding-type-declarations",
+      "groupKey": "TS2307::Cannot find module 'culori' or its corresponding type declarations.",
+      "errorCount": 3,
+      "fileCount": 2,
+      "severityScore": 18,
+      "blastRadiusScore": 4,
+      "repetitionScore": 3,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 25,
+      "sample": [
+        {
+          "repoPath": "src/utils/theme/colorMath.ts",
+          "line": 6,
+          "col": 45,
+          "code": "TS2307",
+          "message": "Cannot find module 'culori' or its corresponding type declarations."
+        },
+        {
+          "repoPath": "src/utils/theme/colorMath.ts",
+          "line": 7,
+          "col": 35,
+          "code": "TS2307",
+          "message": "Cannot find module 'culori' or its corresponding type declarations."
+        },
+        {
+          "repoPath": "src/utils/theme/wizardPaletteFromAnchors.ts",
+          "line": 15,
+          "col": 28,
+          "code": "TS2307",
+          "message": "Cannot find module 'culori' or its corresponding type declarations."
+        }
+      ],
+      "priority": "P0"
+    }
+  ],
+  "files": [
+    {
+      "repoPath": "src/utils/theme/colorMath.ts",
+      "errorCount": 2,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "errors": [
+        {
+          "file": "src/utils/theme/colorMath.ts",
+          "line": 6,
+          "col": 45,
+          "code": "TS2307",
+          "message": "Cannot find module 'culori' or its corresponding type declarations.",
+          "raw": "src/utils/theme/colorMath.ts(6,45): error TS2307: Cannot find module 'culori' or its corresponding type declarations.",
+          "scope": "client",
+          "repoPath": "src/utils/theme/colorMath.ts"
+        },
+        {
+          "file": "src/utils/theme/colorMath.ts",
+          "line": 7,
+          "col": 35,
+          "code": "TS2307",
+          "message": "Cannot find module 'culori' or its corresponding type declarations.",
+          "raw": "src/utils/theme/colorMath.ts(7,35): error TS2307: Cannot find module 'culori' or its corresponding type declarations.",
+          "scope": "client",
+          "repoPath": "src/utils/theme/colorMath.ts"
+        }
+      ]
+    },
+    {
+      "repoPath": "src/utils/theme/wizardPaletteFromAnchors.ts",
+      "errorCount": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "errors": [
+        {
+          "file": "src/utils/theme/wizardPaletteFromAnchors.ts",
+          "line": 15,
+          "col": 28,
+          "code": "TS2307",
+          "message": "Cannot find module 'culori' or its corresponding type declarations.",
+          "raw": "src/utils/theme/wizardPaletteFromAnchors.ts(15,28): error TS2307: Cannot find module 'culori' or its corresponding type declarations.",
+          "scope": "client",
+          "repoPath": "src/utils/theme/wizardPaletteFromAnchors.ts"
+        }
+      ]
+    }
+  ]
+}

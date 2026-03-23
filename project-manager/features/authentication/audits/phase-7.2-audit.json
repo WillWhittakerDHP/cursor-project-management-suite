@@ -1,0 +1,66 @@
+{
+  "tier": "phase",
+  "identifier": "7.2",
+  "overallStatus": "fail",
+  "results": [
+    {
+      "category": "tier-quality",
+      "status": "fail",
+      "score": 64,
+      "findings": [
+        {
+          "type": "warning",
+          "message": "4 TypeScript error(s) found",
+          "location": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/.audit-reports/typecheck/typecheck-audit.json",
+          "suggestion": "Review client/.audit-reports/typecheck/typecheck-audit.md for details"
+        },
+        {
+          "type": "error",
+          "message": "1 P0 type error pool(s) (high priority)",
+          "location": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/.audit-reports/typecheck/typecheck-audit.json",
+          "suggestion": "Review client/.audit-reports/typecheck/typecheck-audit.md for P0 pools"
+        },
+        {
+          "type": "info",
+          "message": "11 type-similarity group(s) with UNIFY/BRAND action",
+          "location": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/.audit-reports/type-similarity-audit.json",
+          "suggestion": "Review client/.audit-reports/type-similarity-audit.json for type consolidation"
+        },
+        {
+          "type": "info",
+          "message": "64 duplication group(s) with high consolidation leverage",
+          "location": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/.audit-reports/duplication-audit.json",
+          "suggestion": "Review client/.audit-reports/duplication-audit.md for DRY opportunities"
+        },
+        {
+          "type": "info",
+          "message": "24 fan-in violation(s), 8 composable chain depth violation(s)",
+          "location": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/.audit-reports/import-graph-audit.json",
+          "suggestion": "Review client/.audit-reports/import-graph-audit.json for import structure"
+        }
+      ],
+      "recommendations": [
+        "Review audit reports for errors",
+        "Review audit reports for warnings",
+        "Review duplication audit for consolidation opportunities"
+      ],
+      "summary": "Ran 12 phase-tier audits; found 1 error(s), 1 warning(s), 3 info signal(s)."
+    }
+  ],
+  "timestamp": "2026-03-22T19:50:14.425Z",
+  "reportPath": "",
+  "featureName": "authentication",
+  "auditType": "end",
+  "baselineComparison": [
+    {
+      "category": "tier-quality-coverage",
+      "startScore": 100,
+      "status": "missing"
+    },
+    {
+      "category": "tier-quality",
+      "endScore": 64,
+      "status": "new"
+    }
+  ]
+}

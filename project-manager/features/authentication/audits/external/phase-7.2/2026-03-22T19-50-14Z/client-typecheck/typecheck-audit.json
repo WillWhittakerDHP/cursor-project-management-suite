@@ -1,0 +1,193 @@
+{
+  "generatedAt": "2026-03-22T19:50:11.097Z",
+  "scope": {
+    "client": {
+      "command": "vue-tsc -b --pretty false",
+      "cwd": "client"
+    },
+    "server": {
+      "command": "tsc --noEmit --pretty false",
+      "cwd": "server"
+    }
+  },
+  "exitCode": 1,
+  "command": "vue-tsc -b --pretty false && tsc --noEmit --pretty false",
+  "exceptionSummary": {
+    "totalAllowed": 0,
+    "totalRequiresReview": 4,
+    "bySource": {
+      "inline": 0,
+      "pattern": 0,
+      "specific": 0
+    }
+  },
+  "errors": [
+    {
+      "file": "src/App.vue",
+      "line": 95,
+      "col": 29,
+      "code": "TS2345",
+      "message": "Argument of type 'Ref<{ selectedAppointmentId: string | null; appointmentDropdownItems: { text: string; value: string; }[]; loadedAppointmentId: string | null; isLoadingAppointment: boolean; fetchAll: { ...; }; ... 5 more ...; wizard: { ...; } | null; } | null, DevPanelButtonsContext | ... 1 more ... | null>' is not assignable to parameter of type 'Ref<DevPanelButtonsContext | null, DevPanelButtonsContext | null>'.",
+      "raw": "src/App.vue(95,29): error TS2345: Argument of type 'Ref<{ selectedAppointmentId: string | null; appointmentDropdownItems: { text: string; value: string; }[]; loadedAppointmentId: string | null; isLoadingAppointment: boolean; fetchAll: { ...; }; ... 5 more ...; wizard: { ...; } | null; } | null, DevPanelButtonsContext | ... 1 more ... | null>' is not assignable to parameter of type 'Ref<DevPanelButtonsContext | null, DevPanelButtonsContext | null>'.",
+      "scope": "client",
+      "repoPath": "src/App.vue"
+    },
+    {
+      "file": "src/utils/theme/colorMath.ts",
+      "line": 6,
+      "col": 45,
+      "code": "TS2307",
+      "message": "Cannot find module 'culori' or its corresponding type declarations.",
+      "raw": "src/utils/theme/colorMath.ts(6,45): error TS2307: Cannot find module 'culori' or its corresponding type declarations.",
+      "scope": "client",
+      "repoPath": "src/utils/theme/colorMath.ts"
+    },
+    {
+      "file": "src/utils/theme/colorMath.ts",
+      "line": 7,
+      "col": 35,
+      "code": "TS2307",
+      "message": "Cannot find module 'culori' or its corresponding type declarations.",
+      "raw": "src/utils/theme/colorMath.ts(7,35): error TS2307: Cannot find module 'culori' or its corresponding type declarations.",
+      "scope": "client",
+      "repoPath": "src/utils/theme/colorMath.ts"
+    },
+    {
+      "file": "src/utils/theme/wizardPaletteFromAnchors.ts",
+      "line": 15,
+      "col": 28,
+      "code": "TS2307",
+      "message": "Cannot find module 'culori' or its corresponding type declarations.",
+      "raw": "src/utils/theme/wizardPaletteFromAnchors.ts(15,28): error TS2307: Cannot find module 'culori' or its corresponding type declarations.",
+      "scope": "client",
+      "repoPath": "src/utils/theme/wizardPaletteFromAnchors.ts"
+    }
+  ],
+  "allowedErrors": [],
+  "pools": [
+    {
+      "poolId": "TS2307-ts2307-cannot-find-module-culori-or-its-corresponding-type-declarations",
+      "groupKey": "TS2307::Cannot find module 'culori' or its corresponding type declarations.",
+      "errorCount": 3,
+      "fileCount": 2,
+      "severityScore": 18,
+      "blastRadiusScore": 4,
+      "repetitionScore": 3,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 25,
+      "sample": [
+        {
+          "repoPath": "src/utils/theme/colorMath.ts",
+          "line": 6,
+          "col": 45,
+          "code": "TS2307",
+          "message": "Cannot find module 'culori' or its corresponding type declarations."
+        },
+        {
+          "repoPath": "src/utils/theme/colorMath.ts",
+          "line": 7,
+          "col": 35,
+          "code": "TS2307",
+          "message": "Cannot find module 'culori' or its corresponding type declarations."
+        },
+        {
+          "repoPath": "src/utils/theme/wizardPaletteFromAnchors.ts",
+          "line": 15,
+          "col": 28,
+          "code": "TS2307",
+          "message": "Cannot find module 'culori' or its corresponding type declarations."
+        }
+      ],
+      "priority": "P0"
+    },
+    {
+      "poolId": "TS2345-ts2345-arg-ref-ref",
+      "groupKey": "TS2345::arg:Ref<...>=>Ref<...>",
+      "errorCount": 1,
+      "fileCount": 1,
+      "severityScore": 6,
+      "blastRadiusScore": 2,
+      "repetitionScore": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 9,
+      "sample": [
+        {
+          "repoPath": "src/App.vue",
+          "line": 95,
+          "col": 29,
+          "code": "TS2345",
+          "message": "Argument of type 'Ref<{ selectedAppointmentId: string | null; appointmentDropdownItems: { text: string; value: string; }[]; loadedAppointmentId: string | null; isLoadingAppointment: boolean; fetchAll: { ...; }; ... 5 more ...; wizard: { ...; } | null; } | null, DevPanelButtonsContext | ... 1 more ... | null>' is not assignable to parameter of type 'Ref<DevPanelButtonsContext | null, DevPanelButtonsContext | null>'."
+        }
+      ],
+      "priority": "P2"
+    }
+  ],
+  "files": [
+    {
+      "repoPath": "src/utils/theme/colorMath.ts",
+      "errorCount": 2,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "errors": [
+        {
+          "file": "src/utils/theme/colorMath.ts",
+          "line": 6,
+          "col": 45,
+          "code": "TS2307",
+          "message": "Cannot find module 'culori' or its corresponding type declarations.",
+          "raw": "src/utils/theme/colorMath.ts(6,45): error TS2307: Cannot find module 'culori' or its corresponding type declarations.",
+          "scope": "client",
+          "repoPath": "src/utils/theme/colorMath.ts"
+        },
+        {
+          "file": "src/utils/theme/colorMath.ts",
+          "line": 7,
+          "col": 35,
+          "code": "TS2307",
+          "message": "Cannot find module 'culori' or its corresponding type declarations.",
+          "raw": "src/utils/theme/colorMath.ts(7,35): error TS2307: Cannot find module 'culori' or its corresponding type declarations.",
+          "scope": "client",
+          "repoPath": "src/utils/theme/colorMath.ts"
+        }
+      ]
+    },
+    {
+      "repoPath": "src/App.vue",
+      "errorCount": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "errors": [
+        {
+          "file": "src/App.vue",
+          "line": 95,
+          "col": 29,
+          "code": "TS2345",
+          "message": "Argument of type 'Ref<{ selectedAppointmentId: string | null; appointmentDropdownItems: { text: string; value: string; }[]; loadedAppointmentId: string | null; isLoadingAppointment: boolean; fetchAll: { ...; }; ... 5 more ...; wizard: { ...; } | null; } | null, DevPanelButtonsContext | ... 1 more ... | null>' is not assignable to parameter of type 'Ref<DevPanelButtonsContext | null, DevPanelButtonsContext | null>'.",
+          "raw": "src/App.vue(95,29): error TS2345: Argument of type 'Ref<{ selectedAppointmentId: string | null; appointmentDropdownItems: { text: string; value: string; }[]; loadedAppointmentId: string | null; isLoadingAppointment: boolean; fetchAll: { ...; }; ... 5 more ...; wizard: { ...; } | null; } | null, DevPanelButtonsContext | ... 1 more ... | null>' is not assignable to parameter of type 'Ref<DevPanelButtonsContext | null, DevPanelButtonsContext | null>'.",
+          "scope": "client",
+          "repoPath": "src/App.vue"
+        }
+      ]
+    },
+    {
+      "repoPath": "src/utils/theme/wizardPaletteFromAnchors.ts",
+      "errorCount": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "errors": [
+        {
+          "file": "src/utils/theme/wizardPaletteFromAnchors.ts",
+          "line": 15,
+          "col": 28,
+          "code": "TS2307",
+          "message": "Cannot find module 'culori' or its corresponding type declarations.",
+          "raw": "src/utils/theme/wizardPaletteFromAnchors.ts(15,28): error TS2307: Cannot find module 'culori' or its corresponding type declarations.",
+          "scope": "client",
+          "repoPath": "src/utils/theme/wizardPaletteFromAnchors.ts"
+        }
+      ]
+    }
+  ]
+}
