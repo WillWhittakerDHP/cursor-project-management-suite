@@ -595,21 +595,21 @@ Adjacent-tier transitions use **tierUp**, **tierAt**, and **tierDown** (see `.cu
 
 ### Branch lifecycle (ownership and retention)
 
-Each tier manages its **own** branch. Branches are **not deleted** after merge — they survive so that reopen, cascade, and discovery workflows can find them.
+Each tier manages its **own** branch. Tier-end commands **delete** the tier branch (local + remote) after a successful merge and push to the parent.
 
 | Operation | Owner | When |
 |-----------|-------|------|
 | **Create** session branch | session-start (`ensureTierBranch`) | At session start |
 | **Commit on** session branch | task-end (`gitCommit`) | At each task-end |
-| **Merge** session → phase | session-end (`mergeTierBranch`) | When session is complete |
+| **Merge + delete** session → phase | session-end (`mergeTierBranch`) | When session is complete |
 | **Create** phase branch | phase-start (`ensureTierBranch`) | At phase start |
-| **Merge** phase → feature | phase-end (`mergeTierBranch`) | When phase is complete |
+| **Merge + delete** phase → feature | phase-end (`mergeTierBranch`) | When phase is complete |
 
 **Pull requests (GitHub):** **session-end**, **phase-end**, and **feature-end** call `scripts/create-pr.ts`, which runs `gh pr create` using `--body-file` (reliable titles/bodies). This is **not** optional prose for the agent — the harness opens the PR when `gh` is on PATH and authenticated (`gh auth login`). Set **`HARNESS_SKIP_PR=1`** (or `true`/`yes`) to skip in CI or environments without `gh`. Optional **`HARNESS_PR_ASSIGNEE=me`** (or `1`) adds `--assignee @me`; omit the variable to avoid assignee failures. Successful runs surface the PR URL in `steps.createPR` and in `outcome.nextAction` when detectable.
 
-**Retention policy:** `mergeTierBranch` defaults to `deleteBranch: false`. Branches survive after merge. This is intentional — merged branches have zero cost (41-byte pointer) and prevent cascade failures when a parent tier-end needs the branch. Bulk cleanup of merged branches can be done manually when desired (`git branch --merged | xargs git branch -d`).
+**Deletion policy:** `mergeTierBranch` defaults to `deleteBranch: false`, but all tier-end impls (session, phase, feature) pass `deleteBranch: true`. Deletion uses `git branch -D` (force) because the merge and parent push are already confirmed at that point — the safe-delete check (`-d`) is redundant and fails when the tier branch has local-only commits (e.g. the tier-end commit) that were never pushed to its own remote. Remote branch deletion (`git push origin --delete`) follows the local delete.
 
-**Re-entry (branch survives from prior run):** When a session or phase branch already exists (retained after merge per retention policy, or from a previous start), tier-start validates parentage and checks out the existing branch instead of blocking. The branch is not deleted and recreated — work on it is cumulative. This means `/session-start 6.9.2` works even when `session-6.9.2` already exists from a prior completed session, as long as the branch is properly based on its phase branch.
+**Re-entry (branch from prior run):** If a session or phase branch still exists (e.g. tier-end failed before delete, or the branch was recreated), tier-start validates parentage and checks out the existing branch instead of blocking. Work on it is cumulative. This means `/session-start 6.9.2` works even when `session-6.9.2` already exists, as long as the branch is properly based on its phase branch.
 
 **Anti-pattern:** The agent must **never** manually run `git merge` or `git branch -d` on a tier branch between cascade steps. Branch merge and deletion are handled exclusively by the tier-end pipeline (`mergeTierBranch` in session-end-impl and phase-end-impl). Manually merging a session branch into the phase branch before running session-end will delete the branch and cause session-end to fail.
 

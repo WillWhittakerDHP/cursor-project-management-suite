@@ -514,6 +514,11 @@ export async function sessionEndImpl(
           });
           c.steps.gitMerge = { success: mergeResult.success, output: mergeResult.messages.join('\n') };
           if (!mergeResult.success) {
+            const detail = mergeResult.messages.join(' ');
+            const isBranchCleanup = mergeResult.reasonCode?.startsWith('delete_');
+            const prefix = isBranchCleanup
+              ? 'Session merged and pushed but branch cleanup failed.'
+              : 'Session merge into phase failed.';
             return {
               success: false,
               output: c.output.join('\n'),
@@ -521,7 +526,7 @@ export async function sessionEndImpl(
               outcome: buildTierEndOutcome(
                 'blocked_fix_required',
                 'git_failed',
-                `Session merge into phase failed. ${mergeResult.messages.join(' ')} Fix and re-run /session-end.`
+                `${prefix} ${detail} Fix and re-run /session-end.`
               ),
             };
           }

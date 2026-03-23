@@ -1343,7 +1343,10 @@ export async function mergeTierBranch(
   let deleted = false;
   if (deleteBranch) {
     const safeTierBranch = tierBranch.replace(/'/g, "'\\''");
-    const deleteResult = await runGitCommand(`git branch -d '${safeTierBranch}'`, 'mergeTierBranch-delete');
+    // Force-delete: merge into parent and parent push are already confirmed at this point,
+    // so -d's upstream-tracking check is redundant and fails when the tier branch has
+    // local-only commits (tier-end commit) that were never pushed to its own remote.
+    const deleteResult = await runGitCommand(`git branch -D '${safeTierBranch}'`, 'mergeTierBranch-delete');
     if (!deleteResult.success) {
       messages.push(`Local branch delete failed: ${deleteResult.error || deleteResult.output}`);
       return {

@@ -538,6 +538,11 @@ export async function phaseEndImpl(
         });
         c.steps.gitMergePhaseToFeature = { success: mergeToFeature.success, output: mergeToFeature.messages.join('\n') };
         if (!mergeToFeature.success) {
+          const detail = mergeToFeature.messages.join(' ');
+          const isBranchCleanup = mergeToFeature.reasonCode?.startsWith('delete_');
+          const prefix = isBranchCleanup
+            ? 'Phase merged and pushed but branch cleanup failed.'
+            : 'Phase merge into feature failed.';
           return {
             success: false,
             output: c.output.join('\n'),
@@ -545,7 +550,7 @@ export async function phaseEndImpl(
             outcome: buildTierEndOutcome(
               'blocked_fix_required',
               'git_failed',
-              `Phase merge into feature failed. ${mergeToFeature.messages.join(' ')} Fix and re-run /phase-end.`
+              `${prefix} ${detail} Fix and re-run /phase-end.`
             ),
           };
         }

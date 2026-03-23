@@ -495,6 +495,11 @@ export async function featureEndImpl(
         };
 
         if (!mergeToDevelop.success) {
+          const detail = mergeToDevelop.messages.join(' ');
+          const isBranchCleanup = mergeToDevelop.reasonCode?.startsWith('delete_');
+          const prefix = isBranchCleanup
+            ? 'Feature merged and pushed but branch cleanup failed.'
+            : 'Feature merge into develop failed.';
           return {
             success: false,
             output: ctx.output.join('\n'),
@@ -502,7 +507,7 @@ export async function featureEndImpl(
             outcome: buildTierEndOutcome(
               'blocked_fix_required',
               'git_failed',
-              `Feature merge into develop failed. ${mergeToDevelop.messages.join(' ')} Fix and re-run /feature-end.`
+              `${prefix} ${detail} Fix and re-run /feature-end.`
             ),
           };
         }
