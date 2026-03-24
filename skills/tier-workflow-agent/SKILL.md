@@ -4,7 +4,7 @@ description: >-
   Executes and interprets tier slash commands (feature/phase/session/task start and end),
   presents control-plane decisions, routes by reasonCode, structures sessions and handoffs,
   and applies cascade and failure rules. Use when the user runs a tier slash command,
-  discusses workflow, accepted-proceed/code/push, audit-fix, or when handling harness
+  discusses workflow, accepted-plan/build/code/push, audit-fix, or when handling harness
   results from .cursor/commands/tiers/.
 ---
 
@@ -24,7 +24,7 @@ This skill complements [`.cursor/rules/process-workflow.mdc`](../../rules/proces
 - **Tier start/end:** Resolve the command to the composite file and export from the playbook’s command-to-entry-point table; invoke from **repo root** with `npx tsx -e`, e.g.:
   - Session start: `npx tsx -e "import('./.cursor/commands/tiers/session/composite/session.ts').then(m => m.sessionStart('6.4.4')).then(r => console.log(JSON.stringify(r)))"`
   - Session end: `npx tsx -e "import('./.cursor/commands/tiers/session/composite/session.ts').then(m => m.sessionEnd('6.4.4')).then(r => console.log(JSON.stringify(r)))"`
-- **`/accepted-proceed`**, **`/accepted-code`**, **`/accepted-push`**, **`/skip-push`:** The **user** runs these in the Cursor UI. The agent fills planning docs and guides, then prompts the user. The agent does **not** invoke these as the primary workflow from the shell.
+- **`/accepted-plan`**, **`/accepted-build`**, **`/accepted-code`**, **`/accepted-push`**, **`/skip-push`:** The **user** runs these in the Cursor UI. The agent fills planning docs and guides, then prompts the user. The agent does **not** invoke these as the primary workflow from the shell.
 
 ## Wait for tier-end pipelines
 
@@ -37,15 +37,18 @@ This skill complements [`.cursor/rules/process-workflow.mdc`](../../rules/proces
 
 ## Interpreting command results
 
-- **User-facing:** Always present `controlPlaneDecision.message` (verbatim for errors and gates).
+- **User-facing:** Always present `controlPlaneDecision.message` (verbatim for errors and gates). When it includes the **Recommended agent/model** block (from `.project-manager/agent-model-config.json`), switch to that model if practical, or **state explicitly** that you are staying on the current model and why before heavy planning or implementation. The harness does not change Cursor’s active model.
 - **Agent context:** Use `result.output` for your own understanding; **do not** dump it verbatim to the user.
 - When output includes **User choice required** (message + numbered options): present it in chat; direct the user to the listed slash command or to reply with their choice. **Do not** use an external AskQuestion tool for those choices.
 - **Routing:** Use `result.outcome.reasonCode` and `result.outcome.nextAction`; do not infer next steps from internal step prose.
+- **Tier-end resume (`nextInvoke`):** For `wrong_branch_before_commit`, `audit_fix_commit_failed`, and resumable **`git_failed`** (outcome carries `tierEndGitResumable`), `controlPlaneDecision.nextInvoke` re-runs the **same** tier-end with merged `params.options` including `resumeEndAfterStep` (`commit_remaining`, `end_audit`, or `git`). Do **not** ask the user to type `resumeEndAfterStep` manually; use the harness-provided re-invocation when present.
+- **Audit-fix:** `getAuditFixContext` and `auditFixPrompt` (`.cursor/commands/audit/atomic/audit-fix-prompt.ts`) share the same assembly—embedded governance + architecture markdown and the same merged `paths`; CLI paste is not a weaker path than programmatic invocation.
 
 ## Git working tree reporting
 
 - **Feature-only branches:** Phase and session tiers do not create separate git branches; expect `feature/<featureName>` for harness git steps.
 - **Git friction log:** On git-related failures or non-trivial recovery, check **`.project-manager/.git-friction-log.jsonl`** (structured JSON lines). Prefer it over reconstructing history from raw terminal noise. Agents may append via `recordGitFriction` / `appendGitFriction` from `git-manager` when documenting an incident.
+- **Workflow friction log:** Tier start/end **auto-append** on normalized **failure** reason codes (`parseReasonCode` / `isFailureReasonCode`); expected flow gates are suppressed. Env: `HARNESS_WORKFLOW_FRICTION` (`off` | `failures` default | `verbose`). For material friction **without** a failed harness outcome, call **`recordWorkflowFriction`** from `.cursor/commands/utils/workflow-friction-log.ts` with **`forcePolicy: true`** (or paste manually per the log template)—**no ad hoc friction files**. Scan entries: `npx tsx .cursor/commands/utils/read-workflow-friction.ts --last 20` (optional `--reason <normalizedCode>`).
 - **Expected dirty (do not alarm):** `.cursor/` submodule, `client/.audit-reports/`, transient `.project-manager/` dotfiles — tier-end does not auto-commit these (`isNeverCommitPath` in `working-tree-policy.ts` / `tier-branch-manager.ts`). Mention briefly; do not treat as failure by itself.
 - **Still prioritize:** `client/` and `server/` product changes, wrong branch, merge/`git_failed`, and `steps.createPR` when PR freshness matters. See [`.cursor/rules/process-workflow.mdc`](../../rules/process-workflow.mdc) (Git status / dirty tree reporting).
 
@@ -55,24 +58,39 @@ Runtime outcomes may use **legacy** strings; routing normalizes them via `parseR
 
 | reasonCode (playbook / runtime) | What to do (one line) |
 |--------------------------------|------------------------|
-| `context_gathering` | Fill planning doc; user runs `/accepted-proceed`; phase/session may need guide fill then second `/accepted-proceed`. |
-| `planning_doc_incomplete` | Fill planning doc placeholders; user re-runs `/accepted-proceed` or `/accepted-code` (task). |
-| `guide_fill_pending` | Fill guide at `guidePath`; user runs `/accepted-proceed` again. |
-| `guide_incomplete` | Fill guide placeholders in tierDown blocks; user runs `/accepted-proceed` again. |
+| `context_gathering` | **Fill planning doc now** (agent reads Reference paths and writes sections — do not only relay instructions to the user); coverage check (non-task); user runs `/accepted-plan` or `/accepted-code`; decomposition profile may need `/accepted-build` (Gate 2). |
+| `planning_doc_incomplete` | Fill planning doc placeholders; user re-runs `/accepted-plan` or `/accepted-code` (task). |
+| `guide_fill_pending` | Fill guide at `guidePath`; user runs `/accepted-build`. |
+| `guide_incomplete` | Fill guide placeholders in tierDown blocks; user runs `/accepted-build` again. |
 | `audit_failed` | Fix per governance; retry same command; use `/audit-fix` path when offered. |
 | `pending_push` / `pending_push_confirmation` | User runs `/accepted-push` or `/skip-push`; agent does not invoke push from shell as substitute. |
 | `verification_suggested` / `verification_work_suggested` | Present checklist and choice block; re-invoke tier-end with `continuePastVerification: true` or add follow-up tier per options. |
 | `uncommitted_blocking` / `uncommitted_changes_blocking` | Present blocking files; user chooses commit or stash path per playbook. |
-| `wrong_branch_before_commit` | Checkout expected branch; re-run same tier-end. |
+| `wrong_branch_before_commit` | Checkout expected branch; re-run same tier-end (control plane may supply `nextInvoke` → `resumeEndAfterStep: commit_remaining`). |
+| `audit_fix_commit_failed` | Fix git state if needed; re-run same tier-end (`nextInvoke` → `resumeEndAfterStep: end_audit` — not `after_audit`; audit must repopulate `autofixResult`). |
 | `expected_branch_missing_run_tier_start` | Expected branch does not exist locally; run matching **tier-start** (or `git fetch` + checkout); then re-run tier-end — see playbook. |
 | `validation_failed` | Start blocked; present `nextAction`; no proceed until resolved. |
-| `start_ok` | Start succeeded; handle optional cascade per playbook. |
+| `start_ok` | Start succeeded; for **tasks** (including after `/accepted-code`): **implement the task now** (read planning doc, write code, edit files per Implementation Orders) — do not summarize or wait; run `/task-end` only after code is written. Other tiers: handle optional cascade. |
 | `end_ok` | End succeeded; handle optional cascade; may follow push gate. |
 | `push_done` | After `/accepted-push`; handle cascade if present. |
 | `task_complete` | Task-end success; cascade across (next task) or up (session-end) per `outcome.cascade`. |
-| Other failure codes (`test_failed`, `git_failed`, `preflight_failed`, etc.) | **Hard stop** — see [On failure or missing outcome](#on-failure-or-missing-outcome-hard-stop). |
+| `git_failed` (tier-end, resumable) | When `tierEndGitResumable` is set, re-run same tier-end via `nextInvoke` (`resumeEndAfterStep: git`). Otherwise treat as hard stop like other failures. |
+| Other failure codes (`test_failed`, `git_failed` non-resumable, `preflight_failed`, etc.) | **Hard stop** — see [On failure or missing outcome](#on-failure-or-missing-outcome-hard-stop). |
 
 **Full step-by-step behavior:** [reason-codes.md](reason-codes.md).
+
+### Coverage check (feature / phase / session)
+
+After filling the planning doc’s Analysis, Plan, and **## Decomposition**, re-read the goal and each child unit. In chat, answer whether the decomposition fully covers the goal; update the doc if not; then direct the user to **`/accepted-plan`**. Skipped for task tiers.
+
+### Acceptance criteria verification (before tier-end)
+
+Before directing the user to run **`/task-end`**, **`/session-end`**, etc., re-read **## Acceptance Criteria** (and **## Deliverables** when listed) from the planning doc. State in chat whether each was met and how. Not a harness gate — visible reasoning. Skip or shorten when **express** profile skipped planning.
+
+### Deliverables drift vs coverage check (timing)
+
+- **Coverage check:** Prompted during **plan mode** / `context_gathering` messaging in the planning doc instructions — answer in chat **before** the user runs **`/accepted-plan`**.
+- **Deliverables drift:** Emitted during **tier-end** as an advisory markdown block (planned paths vs working tree). Same category as AC verification: **agent-led**, not a harness gate — use it for discussion, not automatic failure.
 
 ## Session structure and handoffs
 

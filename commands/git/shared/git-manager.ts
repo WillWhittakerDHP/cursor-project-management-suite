@@ -21,10 +21,13 @@ import {
   isNeverCommitPath,
   DEFAULT_ALLOWED_COMMIT_PREFIXES,
   commitUncommittedNonCursor,
+  syncCursorSubmodule,
 } from './tier-branch-manager';
 import type {
   BranchChainLink,
   EnsureTierBranchResult,
+  EnsureTierBranchOptions,
+  SubmoduleCursorMode,
   MergeTierBranchResult,
   MergeChildBranchesResult,
   CommitUncommittedOptions,
@@ -42,6 +45,7 @@ import {
   getCurrentBranch,
   branchExists,
   isBranchBasedOn,
+  listWorkingTreeChangedRepoPaths,
   type GitOpEntry,
 } from './git-logger';
 import {
@@ -56,6 +60,8 @@ import {
 export type {
   BranchChainLink,
   EnsureTierBranchResult,
+  EnsureTierBranchOptions,
+  SubmoduleCursorMode,
   MergeTierBranchResult,
   MergeChildBranchesResult,
   CommitUncommittedOptions,
@@ -76,6 +82,7 @@ export {
   getLeafBranchTierFromChain,
   formatBranchHierarchyFromConfig,
   recoverPlanningArtifactsAfterCheckout,
+  syncCursorSubmodule,
 };
 
 /** Feature-only: ensure `feature/<id>` from develop (alias for ensureTierBranch + FEATURE_CONFIG). */
@@ -111,7 +118,7 @@ export async function formatFeatureBranchStatus(
 }
 
 // ─── Query (from git-logger, logged via runGitCommand) ───────────────────
-export { getCurrentBranch, branchExists, isBranchBasedOn };
+export { getCurrentBranch, branchExists, isBranchBasedOn, listWorkingTreeChangedRepoPaths };
 
 // ─── Commit remaining ───────────────────────────────────────────────────
 export async function commitRemaining(

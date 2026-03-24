@@ -458,16 +458,29 @@ export function getTierContextSourcePolicy(tier: TierName): {
 /** Max characters for continuity summary in the short planning prompt. */
 const CONTINUITY_SUMMARY_MAX = 600;
 
+/** When handoff-derived continuity is this short, prefer tier-up guide excerpt if provided. */
+const CONTINUITY_THIN_THRESHOLD = 50;
+
 /**
  * Extract the last "Where we left off" and "What you need to start" blocks from handoff text
  * and return a curated 3–5 sentence summary. Caps at CONTINUITY_SUMMARY_MAX chars.
+ * When the handoff summary is thin (e.g. placeholder "Completed Task"), use
+ * `fallbackTierUpGuideExcerpt` (session/phase guide excerpt) so the planning doc still has scope.
  */
 export function buildContinuitySummary(
   handoffText: string | undefined,
   _logText: string | undefined,
-  tier: TierName
+  tier: TierName,
+  fallbackTierUpGuideExcerpt?: string
 ): string {
   if (!handoffText?.trim()) {
+    const fb = fallbackTierUpGuideExcerpt?.trim();
+    if (fb) {
+      const oneLine = fb.replace(/\s+/g, ' ').trim();
+      return oneLine.length <= CONTINUITY_SUMMARY_MAX
+        ? oneLine
+        : oneLine.slice(0, CONTINUITY_SUMMARY_MAX) + ' (See tier-up guide linked below)';
+    }
     return `No prior handoff for this ${tier}.`;
   }
   const whereRe = /\*\*Where we left off:\*\*\s*([\s\S]*?)(?=\n\*\*|\n##|\n---|\n<!-- end excerpt|$)/gi;
@@ -478,9 +491,24 @@ export function buildContinuitySummary(
   const lastWhat = whatMatches.length > 0 ? whatMatches[whatMatches.length - 1][1].trim() : '';
   const combined = [lastWhere, lastWhat].filter(Boolean).join(' ');
   if (!combined) {
+    const fb = fallbackTierUpGuideExcerpt?.trim();
+    if (fb) {
+      const oneLine = fb.replace(/\s+/g, ' ').trim();
+      return oneLine.length <= CONTINUITY_SUMMARY_MAX
+        ? oneLine
+        : oneLine.slice(0, CONTINUITY_SUMMARY_MAX) + ' (See tier-up guide linked below)';
+    }
     return `No prior handoff for this ${tier}.`;
   }
   const trimmed = combined.replace(/\s+/g, ' ').trim();
+  if (trimmed.length < CONTINUITY_THIN_THRESHOLD && fallbackTierUpGuideExcerpt?.trim()) {
+    const fb = fallbackTierUpGuideExcerpt.trim().replace(/\s+/g, ' ').trim();
+    const merged = `${trimmed} — Context from tier-up guide: ${fb}`;
+    if (merged.length <= CONTINUITY_SUMMARY_MAX) {
+      return merged;
+    }
+    return merged.slice(0, CONTINUITY_SUMMARY_MAX) + ' (See tier-up guide linked below)';
+  }
   if (trimmed.length <= CONTINUITY_SUMMARY_MAX) {
     return trimmed;
   }

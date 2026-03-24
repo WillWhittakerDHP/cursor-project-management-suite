@@ -7,6 +7,7 @@ import { describe, it, expect } from 'vitest';
 import { routeByOutcome } from '../control-plane-route';
 import { reinvokeStartExecute } from '../control-plane-reinvoke';
 import { formatChoiceForChat } from '../control-plane-choice-display';
+import type { ControlPlaneDecision } from '../control-plane-types';
 import { REASON_CODE, QUESTION_KEYS } from '../control-plane-types';
 import type { CommandResultForRouting, ControlPlaneContext } from '../control-plane-types';
 
@@ -29,7 +30,7 @@ describe('control-plane routeByOutcome', () => {
     const decision = routeByOutcome(result, baseCtx);
     expect(decision.stop).toBe(true);
     expect(decision.requiredMode).toBe('plan');
-    // Command-gated: user runs /accepted-proceed or /accepted-code; no choice block
+    // Command-gated: user runs /accepted-plan or /accepted-build (feature/phase/session) or /accepted-code (task); no choice block
     expect(decision.questionKey).toBeUndefined();
     expect(decision.message).toBe('Plan preview complete. Awaiting approval to execute.');
   });
@@ -250,7 +251,7 @@ describe('control-plane routeByOutcome', () => {
     const decision = routeByOutcome(result, baseCtx);
     expect(decision.stop).toBe(true);
     expect(decision.requiredMode).toBe('plan');
-    // Command-gated: user runs /accepted-proceed; no choice block
+    // Command-gated: user runs /accepted-plan or /accepted-build (feature/phase/session) or /accepted-code (task); no choice block
     expect(decision.questionKey).toBeUndefined();
     expect(decision.message).toBe(deliverables);
   });
@@ -325,7 +326,7 @@ describe('Choice display for chat', () => {
       message: 'Unknown.',
       requiredMode: 'plan' as const,
       questionKey: 'nonexistent_key',
-    };
+    } as unknown as ControlPlaneDecision;
     const block = formatChoiceForChat(decision);
     expect(block).toBe('');
   });

@@ -25,6 +25,14 @@ import {
 } from '../../git/shared/git-manager';
 import { PROJECT_ROOT } from '../../utils/utils';
 import type { TierName } from './types';
+import type { PlanningTier } from '../../utils/planning-doc-paths';
+import { parseDeliverablesFromPlanningDoc } from '../../utils/planning-doc-parse';
+import { listWorkingTreeChangedRepoPaths } from '../../git/shared/git-manager';
+import {
+  buildAuditFixContextEnvelope,
+  resolveTaskFilesForAuditFix,
+} from '../../audit/atomic/audit-fix-prompt';
+import { recordWorkflowFrictionWarning } from '../../utils/workflow-friction-log';
 
 /**
  * Maps audit keyword patterns to the governance playbook + cursor rule the agent
@@ -83,7 +91,8 @@ const TIER_BASELINE_REFS: Partial<Record<TierName, string[]>> = {
   task: ['.cursor/rules/coding-standards.mdc'],
 };
 
-function buildGovernanceGuidance(tier: TierName, auditOutput: string): string {
+/** Audit-output regex targeting (playbook + rule pointers). Kept alongside harness-injected markdown. */
+function buildTargetedGovernanceGuidance(tier: TierName, auditOutput: string): string {
   const matched = new Map<string, GovernanceRef>();
 
   for (const { patterns, ref } of GOVERNANCE_REFS) {
@@ -123,6 +132,52 @@ function buildGovernanceGuidance(tier: TierName, auditOutput: string): string {
   lines.push('Read each linked file before making changes. Extract, don\'t inline. Follow thresholds exactly.');
 
   return lines.join('\n');
+}
+
+/**
+ * Targeted refs from audit output plus full governance + architecture markdown (same primitives as /audit-fix).
+ */
+async function buildGovernanceGuidance(
+  tier: TierName,
+  auditOutput: string,
+  options: { featureName?: string; identifier?: string }
+): Promise<string> {
+  const targeted = buildTargetedGovernanceGuidance(tier, auditOutput);
+
+  let shared = '';
+  try {
+    const taskFiles = await resolveTaskFilesForAuditFix({
+      tier,
+      featureName: options.featureName,
+      identifier: options.identifier,
+    });
+    const envelope = await buildAuditFixContextEnvelope({
+      tier,
+      taskFiles: taskFiles ?? [],
+    });
+    const injected: string[] = [];
+    if (envelope.architectureExcerpt?.trim()) {
+      injected.push(
+        `## Architecture context (harness-injected)\n\n${envelope.architectureExcerpt.trim()}`
+      );
+    }
+    if (envelope.governanceBlock?.trim()) {
+      injected.push(`## Governance context (harness-injected)\n\n${envelope.governanceBlock.trim()}`);
+    }
+    if (injected.length > 0) {
+      shared = `\n\n---\n\n${injected.join('\n\n')}`;
+    }
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.warn(`[tier-end] buildGovernanceGuidance harness context failed: ${msg}`);
+    recordWorkflowFrictionWarning('buildGovernanceGuidance', msg, {
+      tier,
+      identifier: options.identifier,
+      featureName: options.featureName,
+    });
+  }
+
+  return targeted + shared;
 }
 
 /** If plan mode, build plan result and return it; else null. Uses same options contract as tier-start (ctx.options, default execute). */
@@ -277,6 +332,73 @@ function tierStartHintForMissingBranch(
  */
 function commitPrefixFromContext(identifier: string): string {
   return `[${identifier}]`;
+}
+
+/**
+ * Advisory: AC verification prompt + deliverables vs working tree (git-manager paths only).
+ * Runs before commit_remaining so uncommitted scope is still visible.
+ */
+export async function stepDeliverablesAndPlanningHints(ctx: TierEndWorkflowContext): Promise<void> {
+  if (ctx.options?.workProfile?.gateProfile === 'express') {
+    return;
+  }
+  const tier = ctx.config.name;
+  const planningTier = tier as PlanningTier;
+  try {
+    if (!(await ctx.context.documents.planningDocExists(planningTier, ctx.identifier))) {
+      return;
+    }
+    const content = await ctx.context.documents.readPlanningDoc(planningTier, ctx.identifier);
+    const planPath = ctx.context.documents.getPlanningDocRelativePath(planningTier, ctx.identifier);
+
+    ctx.output.push(
+      [
+        '',
+        '---',
+        '',
+        '## Acceptance criteria verification (advisory, non-gating)',
+        '',
+        `Before inviting **/task-end**, **/session-end**, **/phase-end**, or **/feature-end**, re-read **## Acceptance Criteria** and **## Deliverables** (when present) in \`${planPath}\`. In chat, state whether each item was met and how — **not a harness gate**. See \`.cursor/skills/tier-workflow-agent/SKILL.md\` → *Acceptance criteria verification*.`,
+        '',
+      ].join('\n')
+    );
+
+    const planned = parseDeliverablesFromPlanningDoc(content);
+    if (planned.length === 0) {
+      return;
+    }
+    const actual = await listWorkingTreeChangedRepoPaths();
+    const actualProduct = actual.filter(
+      f =>
+        f.startsWith('client/') ||
+        f.startsWith('server/') ||
+        f.startsWith('.project-manager/')
+    );
+    const pathMatches = (a: string, p: string): boolean =>
+      a === p || a.includes(p) || p.includes(a);
+    const scopeCreep = actualProduct.filter(a => !planned.some(p => pathMatches(a, p)));
+    const missed = planned.filter(p => !actualProduct.some(a => pathMatches(a, p)));
+
+    const lines: string[] = ['', '---', '', '## Deliverables drift (advisory)', ''];
+    if (scopeCreep.length > 0) {
+      lines.push('**Unplanned paths touched:**', ...scopeCreep.map(f => `- \`${f}\``), '');
+    }
+    if (missed.length > 0) {
+      lines.push('**Planned deliverables not seen in working tree:**', ...missed.map(p => `- \`${p}\``), '');
+    }
+    if (scopeCreep.length === 0 && missed.length === 0) {
+      lines.push('**Deliverables check:** planned paths appear aligned with working tree changes (heuristic).', '');
+    }
+    ctx.output.push(lines.join('\n'));
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.warn('[tier-end deliverables_check] skipped:', msg);
+    recordWorkflowFrictionWarning('deliverables_check', msg, {
+      tier,
+      identifier: ctx.identifier,
+      featureName: ctx.context.feature.name,
+    });
+  }
 }
 
 export async function stepCommitUncommittedNonCursor(
@@ -471,7 +593,10 @@ export async function stepEndAudit(
   }
 
   if (!passed) {
-    const governance = buildGovernanceGuidance(ctx.config.name, auditOutput);
+    const governance = await buildGovernanceGuidance(ctx.config.name, auditOutput, {
+      featureName: ctx.context.feature.name,
+      identifier: ctx.identifier,
+    });
     const enrichedDeliverables = (auditOutput || '') + governance;
 
     return {
@@ -510,7 +635,7 @@ export async function stepAfterAudit(
 
   const tier = ctx.config.name as AuditTier;
   const commitResult = await commitAutofixChanges(tier, ctx.identifier, ctx.autofixResult, {
-    skipGit: params.skipGit,
+    skipGit: params?.skipGit,
   });
   ctx.steps.gitCommitAuditFixes = { success: commitResult.success, output: commitResult.output };
 

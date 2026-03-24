@@ -22,6 +22,7 @@ import type {
   TierStartWorkflowResult,
 } from '../../shared/tier-start-workflow-types';
 import { runTierStartWorkflow } from '../../../harness/run-start-steps';
+import { resolveSubmoduleCursorForTierStart } from '../../../utils/command-execution-mode';
 import { getTierUpPlanningDocSections } from '../../shared/tier-start-steps';
 import type { RunRecorder, RunTraceHandle } from '../../../harness/contracts';
 import { writeTierScope } from '../../../utils/tier-scope-writer';
@@ -159,6 +160,7 @@ export async function featureStartImpl(
       return ensureTierBranch(FEATURE_CONFIG, normalizedFeatureName, context, {
         pullRoot: true,
         createIfMissing: true,
+        submoduleCursor: resolveSubmoduleCursorForTierStart(options),
       });
     },
 

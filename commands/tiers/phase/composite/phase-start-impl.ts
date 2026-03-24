@@ -22,6 +22,7 @@ import type {
   TierStartWorkflowResult,
 } from '../../shared/tier-start-workflow-types';
 import { runTierStartWorkflow } from '../../../harness/run-start-steps';
+import { resolveSubmoduleCursorForTierStart } from '../../../utils/command-execution-mode';
 import { getTierUpPlanningDocSections } from '../../shared/tier-start-steps';
 import { buildReuseOpportunitiesSection, type InventoryPayload } from '../helpers/inventory-reuse-check';
 import type { RunRecorder, RunTraceHandle } from '../../../harness/contracts';
@@ -145,7 +146,9 @@ export async function phaseStartImpl(
 
     async ensureBranch() {
       await derivePhaseDescription(phase, context);
-      const result = await ensureTierBranch(PHASE_CONFIG, phase, context);
+      const result = await ensureTierBranch(PHASE_CONFIG, phase, context, {
+        submoduleCursor: resolveSubmoduleCursorForTierStart(options),
+      });
       return result;
     },
 
@@ -243,14 +246,14 @@ export async function phaseStartImpl(
       if (content) {
         const sessionMatches = content.matchAll(/Session\s+(\d+\.\d+\.\d+):?\s*([^\n]*)/gi);
         const sessionLines: string[] = [];
-        let first: RegExpExecArray | null = null;
+        let first: RegExpMatchArray | null = null;
         for (const m of sessionMatches) {
-          if (!first) first = m as unknown as RegExpExecArray;
+          if (!first) first = m;
           sessionLines.push(`Session ${m[1]}: ${m[2].trim().slice(0, 50)}`);
         }
         if (sessionLines.length > 0) {
           sessionSummary = sessionLines.join('; ');
-          if (first) firstSessionName = first[2].trim().slice(0, 80);
+          if (first?.[2]) firstSessionName = first[2].trim().slice(0, 80);
         }
       }
 

@@ -12,6 +12,7 @@ export { FeatureContext } from './feature-context';
 export {
   resolveWorkflowScope,
   resolveFeatureDirectoryFromPlan,
+  resolveFeatureDirectoryOrActive,
   resolveActiveFeatureDirectory,
   type ResolvedWorkflowScope,
   type TierName,

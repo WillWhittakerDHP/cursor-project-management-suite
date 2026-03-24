@@ -6,15 +6,13 @@
 import { describe, it, expect } from 'vitest';
 import { routeByOutcome } from './control-plane-route';
 import type { CommandResultForRouting, ControlPlaneContext, ControlPlaneOutcome } from './control-plane-types';
-import type { ReasonCode } from '../../harness/contracts';
-
 const baseCtx: ControlPlaneContext = {
   tier: 'session',
   action: 'start',
   originalParams: { sessionId: '6.3.1' },
 };
 
-function resultFor(reasonCode: ReasonCode, success: boolean, nextAction: string, cascade?: ControlPlaneOutcome['cascade']): CommandResultForRouting {
+function resultFor(reasonCode: string, success: boolean, nextAction: string, cascade?: ControlPlaneOutcome['cascade']): CommandResultForRouting {
   return {
     success,
     output: '',
@@ -28,8 +26,7 @@ function resultFor(reasonCode: ReasonCode, success: boolean, nextAction: string,
 
 describe('routeByOutcome', () => {
   it('returns decision with requiredMode, stop, message for every flow reason code', () => {
-    const flowCodes: ReasonCode[] = [
-      'plan_mode',
+    const flowCodes: string[] = [
       'context_gathering',
       'pending_push',
       'verification_suggested',
@@ -52,7 +49,7 @@ describe('routeByOutcome', () => {
   });
 
   it('returns decision with requiredMode plan and questionKey for failure reason codes', () => {
-    const failureCodes: ReasonCode[] = [
+    const failureCodes: string[] = [
       'validation_failed',
       'audit_failed',
       'test_failed',

@@ -19,15 +19,22 @@ import { routeByOutcome } from './control-plane-route';
 import type { ControlPlaneDecision, CommandResultForRouting } from './control-plane-types';
 import { formatChoiceForChat } from './control-plane-choice-display';
 import { getDefaultShadowRecorder } from '../../harness/run-recorder-shadow';
-import { createContextInjector } from '../../harness/context-injector';
+import { createContextInjector, createNodeFileSystemAdapter } from '../../harness/context-injector';
+import type { WorkflowSpec } from '../../harness/contracts';
+import { PROJECT_ROOT } from '../../utils/utils';
 import { defaultKernel } from '../../harness/kernel';
-import { createTierAdapter } from '../../harness/tier-adapter';
+import { createDefaultPlugins } from '../../harness/default-plugins';
+import { createStepAdapter } from '../../harness/step-adapter';
 import { defaultProfileDefaultsResolver } from '../../harness/spec-builder';
 import { buildSpecFromTierRun } from '../../harness/build-spec-from-tier';
 import { classifyWorkProfile } from '../../harness/work-profile-classifier';
-import { isHarnessDefaultForTier } from '../../harness/cutover-config';
 import { WorkflowCommandContext, type TierParamsBag } from '../../utils/command-context';
 import { writeEndPending } from './pending-state';
+import {
+  buildWorkflowFrictionEntryFromOrchestrator,
+  recordWorkflowFriction,
+  shouldAppendWorkflowFriction,
+} from '../../utils/workflow-friction-log';
 
 export type TierEndParams =
   | FeatureEndParams
@@ -48,14 +55,31 @@ export type TierEndResultWithControlPlane = TierEndResult & {
   controlPlaneDecision: ControlPlaneDecision;
 };
 
+function paramsSnippetForWorkflowFrictionEnd(params: TierEndParams): string {
+  try {
+    const s = JSON.stringify(params);
+    return s.length > 2000 ? `${s.slice(0, 2000)}\n\n…(truncated)` : s;
+  } catch {
+    return '(params not serializable)';
+  }
+}
+
 function getIdentifierFromEndParams(config: TierConfig, params: TierEndParams): string {
-  const p = params as Record<string, unknown>;
   switch (config.name) {
-    case 'feature': return (p.featureName as string) ?? (p.featureId as string) ?? '';
-    case 'phase': return (p.phaseId as string) ?? (p.phaseNumber as string) ?? '';
-    case 'session': return (p.sessionId as string) ?? '';
-    case 'task': return (p.taskId as string) ?? '';
-    default: return '';
+    case 'feature':
+      if ('featureName' in params && typeof params.featureName === 'string') return params.featureName;
+      if ('featureId' in params && typeof params.featureId === 'string') return params.featureId;
+      return '';
+    case 'phase':
+      if ('phaseId' in params && typeof params.phaseId === 'string') return params.phaseId;
+      if ('phaseNumber' in params && typeof params.phaseNumber === 'string') return params.phaseNumber;
+      return '';
+    case 'session':
+      return 'sessionId' in params && typeof params.sessionId === 'string' ? params.sessionId : '';
+    case 'task':
+      return 'taskId' in params && typeof params.taskId === 'string' ? params.taskId : '';
+    default:
+      return '';
   }
 }
 
@@ -83,6 +107,19 @@ export async function runTierEnd(
         nextAction: `Context resolution failed. Check tier identifier and feature.`,
       },
     };
+    const rc = String(failedResult.outcome.reasonCode ?? 'unhandled_error');
+    if (shouldAppendWorkflowFriction({ success: false, reasonCodeRaw: rc })) {
+      recordWorkflowFriction(
+        buildWorkflowFrictionEntryFromOrchestrator({
+          action: 'end',
+          tier: config.name,
+          identifier: identifier || '—',
+          reasonCodeRaw: rc,
+          symptom: message,
+          context: `WorkflowCommandContext.contextFromParams failed.\n\n${paramsSnippetForWorkflowFrictionEnd(params)}`,
+        })
+      );
+    }
     const decision = routeByOutcome(
       failedResult as CommandResultForRouting,
       { tier: config.name, action: 'end', originalParams: params }
@@ -106,7 +143,6 @@ export async function runTierEnd(
     tier: config.name,
     action: 'end',
     identifier,
-    harnessCutoverTier: isHarnessDefaultForTier(config.name),
   });
 
   const minimalSpec: Pick<WorkflowSpec, 'tier' | 'action' | 'identifier' | 'featureContext' | 'contextBudget'> = {
@@ -133,7 +169,11 @@ export async function runTierEnd(
         success: false,
         output: appCheck.output,
         steps: {},
-        outcome: { reasonCode: 'app_not_running', nextAction: appCheck.output },
+        outcome: {
+          status: 'blocked_fix_required',
+          reasonCode: 'app_not_running',
+          nextAction: appCheck.output,
+        },
       };
       const decision = routeByOutcome(
         failedResult as CommandResultForRouting,
@@ -150,22 +190,36 @@ export async function runTierEnd(
   try {
     const featureContext = { featureId: context.feature.name, featureName: context.feature.name };
     const workProfile = classifyWorkProfile({ tier: config.name, action: 'end' });
+    const userChoicesFromEnd: WorkflowSpec['userChoices'] = {};
+    if ('continuePastVerification' in params && typeof params.continuePastVerification === 'boolean') {
+      userChoicesFromEnd.continuePastVerification = params.continuePastVerification;
+    }
+    if ('pushConfirmed' in params && typeof params.pushConfirmed === 'boolean') {
+      userChoicesFromEnd.pushConfirmed = params.pushConfirmed;
+    }
+    if ('cascadeConfirmed' in params && typeof params.cascadeConfirmed === 'boolean') {
+      userChoicesFromEnd.cascadeConfirmed = params.cascadeConfirmed;
+    }
+    const userChoices =
+      Object.keys(userChoicesFromEnd).length > 0 ? userChoicesFromEnd : undefined;
+
     const spec = buildSpecFromTierRun({
       tier: config.name,
       action: 'end',
       identifier,
       featureContext,
       mode: resolveCommandExecutionMode(getOptionsFromParams(params), 'execute'),
-      userChoices: getOptionsFromParams(params) != null ? { continuePastVerification: (params as Record<string, unknown>).continuePastVerification as boolean | undefined } : undefined,
+      userChoices,
       workProfile,
     });
-    const adapter = createTierAdapter({ config, params, context });
+    const adapter = createStepAdapter({ config, params, context });
     const kernelResult = await defaultKernel.run(spec, {
       contextInjector: createContextInjector(),
       recorder: shadowRecorder,
       adapter,
       profileDefaults: defaultProfileDefaultsResolver,
       routingContext: { tier: config.name, action: 'end', originalParams: params, workProfile },
+      plugins: createDefaultPlugins(),
     });
     // Kernel returns charter reasonCode 'pending_push' (adapters map pending_push_confirmation → pending_push)
     if (kernelResult.outcome.reasonCode === 'pending_push') {

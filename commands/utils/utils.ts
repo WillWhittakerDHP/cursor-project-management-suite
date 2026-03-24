@@ -102,6 +102,18 @@ export function getCurrentDate(): string {
 /**
  * Run a command and return output
  */
+function execSyncErrorPayload(error: unknown): { stdout: string; stderr: string; message: string } {
+  if (error !== null && typeof error === 'object') {
+    const e = error as { stdout?: unknown; stderr?: unknown; message?: unknown };
+    return {
+      stdout: e.stdout != null ? String(e.stdout) : '',
+      stderr: e.stderr != null ? String(e.stderr) : '',
+      message: e.message != null ? String(e.message) : String(error),
+    };
+  }
+  return { stdout: '', stderr: '', message: String(error) };
+}
+
 export async function runCommand(command: string, cwd?: string): Promise<{ success: boolean; output: string; error?: string }> {
   try {
     const output = execSync(command, {
@@ -112,12 +124,12 @@ export async function runCommand(command: string, cwd?: string): Promise<{ succe
     // trimEnd only: full trim() strips a leading space from git porcelain line 1
     // (e.g. ` M path` → `M path`), corrupting XY path parsing in tier-branch-manager.
     return { success: true, output: output.trimEnd() };
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const { stdout, stderr, message } = execSyncErrorPayload(error);
     return {
       success: false,
-      output: error.stdout?.toString() || '',
-      error: error.stderr?.toString() || error.message
+      output: stdout || '',
+      error: stderr || message
     };
   }
 }
@@ -147,10 +159,8 @@ export function runLintGate(projectRoot: string = PROJECT_ROOT): LintGateResult 
     const lines = full.split('\n');
     const truncatedOutput = lines.slice(0, LINT_GATE_DISPLAY_LINES).join('\n');
     return { success: true, output: full, truncatedOutput };
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    const stdout = error.stdout?.toString() ?? '';
-    const stderr = error.stderr?.toString() ?? '';
+  } catch (error: unknown) {
+    const { stdout, stderr } = execSyncErrorPayload(error);
     const full = [stdout, stderr].filter(Boolean).join('\n').trim();
     const lines = full.split('\n');
     const truncatedOutput = lines.slice(0, LINT_GATE_DISPLAY_LINES).join('\n');
@@ -202,4 +212,7 @@ export async function runWithLintVerification<TCleanupResult extends { success: 
     skippedCleanup: false
   };
 }
+
+/** Current git branch; delegates to git-manager (centralized git reads). */
+export { getCurrentBranch } from '../git/shared/git-manager';
 

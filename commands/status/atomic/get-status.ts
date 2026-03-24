@@ -9,7 +9,7 @@
 import { WorkflowCommandContext } from '../../utils/command-context';
 import { WorkflowId } from '../../utils/id-utils';
 import { DocumentTier } from '../../utils/document-manager';
-import { resolveFeatureDirectoryFromPlan } from '../../utils';
+import { resolveFeatureDirectoryFromPlan, resolveFeatureDirectoryOrActive } from '../../utils';
 import { FEATURE_CONFIG } from '../../tiers/configs/feature';
 import { PHASE_CONFIG } from '../../tiers/configs/phase';
 import { SESSION_CONFIG } from '../../tiers/configs/session';
@@ -23,12 +23,21 @@ export interface GetStatusParams {
   featureName?: string;
 }
 
+/** Optional child tier summaries when a composite status exposes a breakdown (e.g. session tasks). */
+export interface StatusChildSummary {
+  status: string;
+}
+
 export interface StatusInfo {
   tier: StatusTier;
   identifier?: string;
   status: string;
   title: string;
   description?: string;
+  /** Optional progress when control doc exposes completed/total counts. */
+  progress?: { completed: number; total: number };
+  /** Optional list of child items (e.g. tasks) for cross-tier display. */
+  children?: StatusChildSummary[];
 }
 
 function getConfig(tier: StatusTier) {
@@ -54,7 +63,7 @@ function resolveId(tier: StatusTier, params: GetStatusParams, featureName: strin
  * @returns Status information or null if not found
  */
 export async function getStatus(params: GetStatusParams): Promise<StatusInfo | null> {
-  const featureName = await resolveFeatureDirectoryFromPlan(params.featureName);
+  const featureName = await resolveFeatureDirectoryOrActive(params.featureName);
   const context = new WorkflowCommandContext(featureName);
 
   if ((params.tier === 'phase' || params.tier === 'session' || params.tier === 'task') && !params.identifier) {

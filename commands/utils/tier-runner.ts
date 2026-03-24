@@ -30,6 +30,10 @@ import {
 } from '../tiers/task/composite/task';
 import type { TierStartResult } from './tier-outcome';
 import type { TierEndResult } from '../tiers/shared/tier-end';
+import { resolveFeatureDirectoryOrActive } from './workflow-scope';
+
+/** Task-end shares the same result shape as other tier ends (barrel export alias). */
+export type TaskEndResult = TierEndResult;
 
 /** Params for feature-start. */
 export interface FeatureStartParams {
@@ -37,15 +41,19 @@ export interface FeatureStartParams {
   options?: CommandExecutionOptions;
 }
 
-/** Params for phase-start. */
+/** Params for phase-start. Composites require feature scope; omit featureId/featureName to use `.tier-scope`. */
 export interface PhaseStartParams {
   phaseId: string;
+  featureId?: string;
+  featureName?: string;
   options?: CommandExecutionOptions;
 }
 
-/** Params for session-start. */
+/** Params for session-start. Composites require feature scope; omit featureId/featureName to use `.tier-scope`. */
 export interface SessionStartParams {
   sessionId: string;
+  featureId?: string;
+  featureName?: string;
   description?: string;
   options?: CommandExecutionOptions;
 }
@@ -100,6 +108,15 @@ function assertTaskStartParams(params: TierRunParams): asserts params is TaskSta
   }
 }
 
+/** Resolve feature directory for phase/session start when featureId/featureName omitted (uses `.tier-scope`). */
+async function resolveFeatureRefForTierStart(params: {
+  featureId?: string;
+  featureName?: string;
+}): Promise<string> {
+  const explicit = params.featureId?.trim() || params.featureName?.trim();
+  return resolveFeatureDirectoryOrActive(explicit || undefined);
+}
+
 /**
  * Dispatches to the correct tier composite. Valid (tier, verb) pairs only.
  */
@@ -119,7 +136,9 @@ export async function runTier(
   if (tier === 'phase') {
     if (verb === 'start') {
       assertPhaseStartParams(params);
-      return phaseStart(params.phaseId, params.options);
+      const p = params as PhaseStartParams;
+      const featureRef = await resolveFeatureRefForTierStart(p);
+      return phaseStart(p.phaseId, featureRef, p.options);
     }
     return phaseEnd(params as PhaseEndParams);
   }
@@ -127,7 +146,9 @@ export async function runTier(
   if (tier === 'session') {
     if (verb === 'start') {
       assertSessionStartParams(params);
-      return sessionStart(params.sessionId, params.description, params.options);
+      const p = params as SessionStartParams;
+      const featureRef = await resolveFeatureRefForTierStart(p);
+      return sessionStart(p.sessionId, featureRef, p.description, p.options);
     }
     return sessionEnd(params as SessionEndParams);
   }

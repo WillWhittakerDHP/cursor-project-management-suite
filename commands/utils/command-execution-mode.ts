@@ -25,13 +25,19 @@ export interface CommandExecutionOptions {
   guideFillComplete?: boolean;
   /** When set, the start workflow skips all steps before this one (proceed past a gate without re-running from the top). */
   resumeAfterStep?: string;
+  /** When set, the end workflow skips steps before this id (control-plane only; narrow allowlist in run-end-steps). */
+  resumeEndAfterStep?: string;
+  /**
+   * Tier-start `.cursor` submodule policy override. When omitted, derived from mode + `TIER_START_SUBMODULE_CURSOR` env.
+   */
+  submoduleCursor?: 'off' | 'parent' | 'remote';
   /** Optional work classifier; when present (e.g. from pending state), used instead of tier+action default. */
   workProfile?: import('../harness/work-profile').WorkProfile;
 }
 
 /**
  * Resolve the execution mode from options.
- * defaultMode: used when options.mode is not set. Start commands default to 'plan'; execute via /accepted-proceed (feature/phase/session) or /accepted-code (task). End commands default to 'execute'.
+ * defaultMode: used when options.mode is not set. Start commands default to 'plan'; execute via /accepted-plan (feature/phase/session) or /accepted-code (task). End commands default to 'execute'.
  */
 export function resolveCommandExecutionMode(
   options?: CommandExecutionOptions,
@@ -55,6 +61,25 @@ export function getOptionsFromParams(params: unknown): CommandExecutionOptions |
 
 export function isPlanMode(mode: CommandExecutionMode): boolean {
   return mode === 'plan';
+}
+
+/**
+ * Resolve `.cursor` submodule sync for tier-start ensureTierBranch.
+ * Plan mode → `off`; execute → `parent` unless options.submoduleCursor or TIER_START_SUBMODULE_CURSOR=remote.
+ */
+export function resolveSubmoduleCursorForTierStart(options?: CommandExecutionOptions): 'off' | 'parent' | 'remote' {
+  if (options?.submoduleCursor != null) {
+    return options.submoduleCursor;
+  }
+  const mode = resolveCommandExecutionMode(options, 'plan');
+  if (isPlanMode(mode)) {
+    return 'off';
+  }
+  const env = typeof process !== 'undefined' ? process.env.TIER_START_SUBMODULE_CURSOR : undefined;
+  if (env != null && String(env).toLowerCase() === 'remote') {
+    return 'remote';
+  }
+  return 'parent';
 }
 
 /** Map code-level execution mode to the Cursor IDE mode the agent should be in. */

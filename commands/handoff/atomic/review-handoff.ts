@@ -7,7 +7,7 @@
  */
 
 import { WorkflowCommandContext } from '../../utils/command-context';
-import { resolveFeatureDirectoryFromPlan } from '../../utils';
+import { resolveFeatureDirectoryFromPlan, resolveFeatureDirectoryOrActive } from '../../utils';
 import { WorkflowId } from '../../utils/id-utils';
 import { MarkdownUtils } from '../../utils/markdown-utils';
 import { DocumentTier } from '../../utils/document-manager';
@@ -33,7 +33,7 @@ export interface HandoffReviewResult {
  * @returns Formatted review output
  */
 export async function reviewHandoff(params: ReviewHandoffParams): Promise<string> {
-  const featureName = await resolveFeatureDirectoryFromPlan(params.featureName);
+  const featureName = await resolveFeatureDirectoryOrActive(params.featureName);
   const context = new WorkflowCommandContext(featureName);
   const output: string[] = [];
   
@@ -177,7 +177,7 @@ export async function reviewHandoff(params: ReviewHandoffParams): Promise<string
 export async function reviewHandoffProgrammatic(
   params: ReviewHandoffParams
 ): Promise<{ success: boolean; result?: HandoffReviewResult; error?: string }> {
-  const featureName = await resolveFeatureDirectoryFromPlan(params.featureName);
+  const featureName = await resolveFeatureDirectoryOrActive(params.featureName);
   const context = new WorkflowCommandContext(featureName);
   
   try {

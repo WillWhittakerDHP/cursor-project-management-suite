@@ -1,6 +1,6 @@
 /**
- * Pending state for /accepted-proceed, /accepted-code (start), and /accepted-push (end).
- * Start: written when tier start returns context_gathering; read and cleared by accepted-proceed/accepted-code.
+ * Pending state for /accepted-plan, /accepted-build, /accepted-code (start), and /accepted-push (end).
+ * Start: written when tier start returns context_gathering; read and cleared by accepted-plan/accepted-build/accepted-code.
  * End: written when tier end returns pending_push_confirmation; read and cleared by accepted-push/skip-push.
  */
 
@@ -19,17 +19,21 @@ export type TierStartPendingParams =
   | ({ phaseId: string } & ({ featureId: string } | { featureName: string }))
   | ({ sessionId: string; description?: string } & ({ featureId: string } | { featureName: string }));
 
-/** State for session/phase/feature start: pass 1 = after context_gathering; /accepted-proceed runs execute. */
+/** State for session/phase/feature start: pass 1 = after context_gathering; /accepted-plan runs execute from gate. */
 export interface TierStartPendingState {
   tier: 'feature' | 'phase' | 'session';
   params: TierStartPendingParams;
   pass: 1;
-  /** Option A: when true, Gate 2 — agent must fill the guide; next /accepted-proceed checks isGuideFilled and runs Part B. */
+  /** Option A: when true, Gate 2 — agent must fill the guide; next /accepted-build checks isGuideFilled and runs Part B. */
   guideFillPending?: boolean;
   /** Path to the guide file (relative to project) when guideFillPending is true. */
   guidePath?: string;
-  /** Optional work classifier; preserved across /accepted-proceed for consistent spec. */
+  /** Optional work classifier; preserved across gates for consistent spec. */
   workProfile?: WorkProfile;
+  /** Redundant copy for stale pending readers; prefer workProfile.gateProfile. */
+  gateProfile?: import('../../harness/work-profile').GateProfile;
+  /** Auto-scaffolded leaf decomposition — Gate 2 may auto-complete. */
+  leafTier?: boolean;
 }
 
 /** State for task start: user will run /accepted-code to run task start with execute. */
@@ -60,6 +64,8 @@ export async function readTierStartPending(): Promise<TierStartPendingState | nu
       guideFillPending?: boolean;
       guidePath?: string;
       workProfile?: WorkProfile;
+      gateProfile?: import('../../harness/work-profile').GateProfile;
+      leafTier?: boolean;
     }>(TIER_PENDING_PATH, raw);
     if (!parsed?.tier || !parsed?.params || (parsed.pass !== 1 && parsed.pass !== 2)) return null;
     if (parsed.tier !== 'feature' && parsed.tier !== 'phase' && parsed.tier !== 'session') return null;
@@ -72,6 +78,8 @@ export async function readTierStartPending(): Promise<TierStartPendingState | nu
         guidePath: String(parsed.guidePath),
       }),
       ...(parsed.workProfile != null && { workProfile: parsed.workProfile }),
+      ...(parsed.gateProfile != null && { gateProfile: parsed.gateProfile }),
+      ...(parsed.leafTier === true && { leafTier: true }),
     };
   } catch {
     return null;

@@ -21,6 +21,7 @@ import { runTierPlan } from './tier-plan';
 import { buildCascadeDown } from '../../utils/tier-cascade';
 import { spawn } from 'child_process';
 import { join } from 'path';
+import type { AuditTier } from '../../audit/types';
 import { buildTierStampFromId } from '../../audit/baseline-log';
 import { buildGovernanceContext } from '../../audit/governance-context';
 import { buildContinuitySummary, buildReferencePaths, type ReferencePaths, TIER_CONTEXT_SOURCES } from './context-policy';
@@ -36,10 +37,13 @@ import {
   deriveTierDownPlanItemsFromGuide,
 } from './ensure-tier-down-docs';
 import { ensureGuideHasRequiredSections } from './guide-required-sections';
-import { readProjectFile } from '../../utils/utils';
+import { readProjectFile, PROJECT_ROOT } from '../../utils/utils';
+import { buildTierAdvisoryContext } from '../../harness/tier-advisory-context';
+import { classifyWorkProfile } from '../../harness/work-profile-classifier';
 import { resolvePlanningDocRelativePath } from '../../utils/planning-doc-paths';
 import type { PlanningTier } from '../../utils/planning-doc-paths';
 import type { WorkflowCommandContext } from '../../utils/command-context';
+import type { TierName } from './types';
 import { tierDown } from '../../utils/tier-navigation';
 import { WorkflowId } from '../../utils/id-utils';
 import {
@@ -159,22 +163,65 @@ export async function stepEnsureStartBranch(
   return null;
 }
 
-/** Extract content of "## How we build the tierDown to achieve them" section (up to next ## or end). */
+/** Leaf decomposition: no child headings; harness auto-scaffolds `.1` tierDown rows. */
+export const LEAF_TIER_MARKER = /\*\*Leaf tier\*\*/i;
+
+/**
+ * Extract ## Decomposition body, or legacy "## How we build the tierDown…" (migration fallback).
+ */
+export function extractDecompositionSection(content: string): string {
+  const newMatch = content.match(/\n##\s+Decomposition\s*[\r\n]+([\s\S]*?)(?=\n##\s+|$)/i);
+  if (newMatch) return newMatch[1].trim();
+  const oldMatch = content.match(/\n##\s+How we build the tierDown[^\n]*[\r\n]+([\s\S]*?)(?=\n##\s+|$)/i);
+  return oldMatch ? oldMatch[1].trim() : '';
+}
+
+/** @deprecated Use extractDecompositionSection */
 function extractTierDownBuildPlanSection(content: string): string {
-  const match = content.match(/\n##\s+How we build the tierDown to achieve them\s*[\r\n]+([\s\S]*?)(?=\n##\s+|$)/i);
-  return match ? match[1].trim() : '';
+  return extractDecompositionSection(content);
+}
+
+function buildLeafAutoChildren(
+  tier: 'feature' | 'phase' | 'session',
+  id: string,
+  title: string
+): TierDownPlanItem[] {
+  if (tier === 'feature') {
+    return [{ id: `${id}.1`, description: title, autoScaffolded: true }];
+  }
+  if (tier === 'phase') {
+    return [{ id: `${id}.1`, description: title, autoScaffolded: true }];
+  }
+  return [{ id: `${id}.1`, description: title, autoScaffolded: true }];
 }
 
 /**
- * Parse per-tierDown items from the build plan section. Matches lines like
- * "- **Session 6.5.2:** Availability Bypass..." or "- **Task 6.5.1.2:** Wizard mode...".
+ * Parse per-tierDown items from the decomposition section. Supports ### headings, bullets, or **Leaf tier**.
  */
 function parseTierDownBuildPlanPerItem(
   buildPlanContent: string,
   tierDownKind: 'phase' | 'session' | 'task'
 ): TierDownPlanItem[] {
   if (!buildPlanContent.trim()) return [];
+  if (LEAF_TIER_MARKER.test(buildPlanContent)) return [];
+
   const items: TierDownPlanItem[] = [];
+
+  const headingRe =
+    tierDownKind === 'phase'
+      ? /###\s+Phase\s+(\d+\.\d+)\s*:\s*(.+)/gi
+      : tierDownKind === 'session'
+        ? /###\s+Session\s+(\d+\.\d+\.\d+)\s*:\s*(.+)/gi
+        : /###\s+Task\s+(\d+\.\d+\.\d+\.\d+)\s*:\s*(.+)/gi;
+
+  for (const m of buildPlanContent.matchAll(headingRe)) {
+    const id = m[1].trim();
+    const description = (m[2] ?? '').trim().slice(0, 500) || id;
+    if (id && !items.some(i => i.id === id)) items.push({ id, description });
+  }
+
+  if (items.length > 0) return items;
+
   const lines = buildPlanContent.split('\n').map(l => l.trim()).filter(Boolean);
   const phaseRe = /(?:^|\s)(?:\*\*)?Phase\s+(\d+\.\d+)(?:\*\*)?\s*:?\s*(.*)$/i;
   const sessionRe = /(?:^|\s)(?:\*\*)?Session\s+(\d+\.\d+\.\d+)(?:\*\*)?\s*:?\s*(.*)$/i;
@@ -321,11 +368,20 @@ async function syncPlannedTierDownToGuide(ctx: TierStartWorkflowContext): Promis
   const dm = ctx.context.documents;
 
   let parsedItems: TierDownPlanItem[] = [];
+  ctx.leafTier = false;
   if (await dm.planningDocExists(planningTier, ctx.identifier)) {
     const planningContent = await dm.readPlanningDoc(planningTier, ctx.identifier);
-    const sectionContent = extractTierDownBuildPlanSection(planningContent);
-    const tierDownKind = tierDown(tier)!;
-    parsedItems = parseTierDownBuildPlanPerItem(sectionContent, tierDownKind);
+    const sectionContent = extractDecompositionSection(planningContent);
+    const childTier = tierDown(tier);
+    if (childTier !== 'phase' && childTier !== 'session' && childTier !== 'task') {
+      throw new Error(`syncPlannedTierDownToGuide: cannot resolve child tier for ${tier}`);
+    }
+    if (LEAF_TIER_MARKER.test(sectionContent)) {
+      parsedItems = buildLeafAutoChildren(docTier, ctx.identifier, ctx.resolvedDescription ?? ctx.identifier);
+      ctx.leafTier = true;
+    } else {
+      parsedItems = parseTierDownBuildPlanPerItem(sectionContent, childTier);
+    }
   } else if (tier !== 'session') {
     const rel = dm.getPlanningDocRelativePath(planningTier, ctx.identifier);
     throw new Error(
@@ -373,7 +429,7 @@ async function syncPlannedTierDownToGuide(ctx: TierStartWorkflowContext): Promis
       }
       if (parsedItems.length === 0) {
         throw new Error(
-          `Guide missing at ${guidePath} and planning doc has no parseable tierDown items. Fill "How we build the tierDown" in the planning doc.`
+          `Guide missing at ${guidePath} and planning doc has no parseable tierDown items. Fill "## Decomposition" (or legacy How we build the tierDown) in the planning doc, or use **Leaf tier**.`
         );
       }
       const description = ctx.resolvedDescription ?? ctx.identifier;
@@ -464,7 +520,7 @@ function buildGuideMaterializationPlanModeFailure(ctx: TierStartWorkflowContext)
     `- **Guide:** \`${guidePath}\``,
     `- **Planning:** \`${planningPath}\``,
     '',
-    'Run **/accepted-proceed** or re-invoke this tier-start in **execute** mode.',
+    'Run **/accepted-plan** (then **/accepted-build** if prompted) or re-invoke this tier-start in **execute** mode.',
   ].join('\n');
   return {
     success: false,
@@ -473,7 +529,7 @@ function buildGuideMaterializationPlanModeFailure(ctx: TierStartWorkflowContext)
       status: 'failed',
       reasonCode: 'guide_materialization_requires_execute',
       nextAction:
-        'Run /accepted-proceed or tier-start in execute mode so guides and planning artifacts can be materialized.',
+        'Run /accepted-plan or tier-start in execute mode so guides and planning artifacts can be materialized.',
       guidePath,
     },
   };
@@ -517,7 +573,7 @@ export async function stepEnsureGuideFromPlan(
             '',
             `Expected: \`${gp}\``,
             '',
-            'Run **/session-start** in **execute** mode (or /accepted-proceed), then retry task-start.',
+            'Run **/session-start** in **execute** mode (or /accepted-plan), then retry task-start.',
           ].join('\n'),
           outcome: {
             status: 'failed',
@@ -579,7 +635,7 @@ export async function stepFillDirectTierDown(
   if (ctx.config.name === 'task') return;
   // Gate 2 already produced a filled guide; updateGuide would hit the project-manager write guard.
   if (ctx.options?.guideFillComplete) return;
-  // First /accepted-proceed (execute, no guideFillComplete): if the agent already removed tierDown
+  // First /accepted-plan execute pass (no guideFillComplete): if the agent already removed tierDown
   // placeholders in the phase/session guide, skip auto-fill — updateGuide would be blocked as overwrite.
   if (ctx.config.name === 'phase' || ctx.config.name === 'session') {
     if (await isGuideFilled(ctx.config.name, ctx.identifier, ctx.context)) return;
@@ -622,8 +678,9 @@ export const PLACEHOLDER_REFINED = '[To be refined during discussion]';
 /** Placeholder for the "How we build the tierDown" section; agent must list tierDown units (phases/sessions/tasks). */
 export const PLACEHOLDER_TIERDOWN = '[List tierDown units here]';
 
-/** Fix 2: Regex for one parser-friendly bullet line (parseTierDownBuildPlanPerItem expects - **Session X.Y.Z:** or - **Phase X.Y:** or - **Task X.Y.Z.N:**). */
-const PARSER_FRIENDLY_TIERDOWN_LINE = /-\s+\*\*(?:Session|Phase|Task)\s+\d[\d.]*\*\*:/;
+/** Parser-friendly decomposition: bullet or ### heading with Phase/Session/Task id. */
+const PARSER_FRIENDLY_TIERDOWN_LINE =
+  /(?:-\s+\*\*(?:Session|Phase|Task)\s+\d[\d.]*\*\*:|###\s+(?:Session|Phase|Task)\s+\d[\d.]*\s*:)/;
 
 /**
  * Returns true if tierDownBuildPlan contains at least one parser-friendly bullet line.
@@ -673,17 +730,19 @@ function contentIsGuideFilled(content: string): boolean {
 
 /**
  * Returns true if the guide has been filled (no placeholder text in tierDown blocks).
- * Used by /accepted-proceed for Gate 2 when state is guide_fill_pending.
+ * Used by /accepted-build for Gate 2 when state is guide_fill_pending.
  */
 export async function isGuideFilled(
   tier: 'feature' | 'phase' | 'session',
   identifier: string,
   context: WorkflowCommandContext
 ): Promise<boolean> {
-  if (tier === 'feature') return true; // feature has no "fill guide" gate in Option A
   let content: string;
   try {
-    content = await context.documents.readGuide(tier, identifier);
+    content =
+      tier === 'feature'
+        ? await context.documents.readGuide('feature')
+        : await context.documents.readGuide(tier, identifier);
   } catch {
     return false;
   }
@@ -702,9 +761,17 @@ const TASK_PLACEHOLDERS = [
   '[What to verify when done]',
 ] as const;
 
+const PLANNING_STORY_PLACEHOLDERS = [
+  '[Analyze the problem space before planning]',
+  '[Describe what changes and why]',
+  '[Define acceptance criteria]',
+  '[As a ... I want ... so that ...]',
+  '[List concrete deliverables]',
+] as const;
+
 /**
  * Returns false if the planning doc content still contains placeholders (doc not filled).
- * Used by acceptedProceed and acceptedCode to block proceeding until the agent fills the doc.
+ * Used by accepted-plan and accepted-code to block proceeding until the agent fills the doc.
  * All tiers (feature, phase, session, task) use the same check.
  */
 /** Fix 2: Bullet-format placeholders that indicate tierDown section not yet filled by agent. */
@@ -727,7 +794,26 @@ export function isPlanningDocFilled(content: string): boolean {
   for (const p of TASK_PLACEHOLDERS) {
     if (content.includes(p)) return false;
   }
+  for (const p of PLANNING_STORY_PLACEHOLDERS) {
+    if (content.includes(p)) return false;
+  }
   return true;
+}
+
+/**
+ * Advisory: Analysis section should be multi-line reasoning (feature/phase/session).
+ * Not a hard gate — surfaced in context_gathering for agent judgment.
+ */
+export function isPlanningDocSubstantive(content: string, tier: TierName): boolean {
+  if (tier === 'task') return true;
+  const analysisMatch = content.match(/## Analysis\s*\n([\s\S]*?)(?=\n## |$)/);
+  if (!analysisMatch) return false;
+  const analysisContent = analysisMatch[1].trim();
+  const lines = analysisContent
+    .split('\n')
+    .map(l => l.trim())
+    .filter(l => l.length > 0 && !/^-\s*What\b/i.test(l));
+  return lines.length >= 3;
 }
 
 /**
@@ -823,7 +909,7 @@ export async function getTierUpPlanningDocSections(
       const content = await readProjectFile('.project-manager/PROJECT_PLAN.md');
       return parsePlanningDocSections(content);
     }
-    const parentId = resolveParentIdentifier(ctx, tierUpSource);
+    const parentId = resolveParentIdentifier(ctx, tierUpSource as 'feature' | 'phase' | 'session');
     const content = await ctx.context.documents.readPlanningDoc(
       tierUpSource as PlanningTier,
       parentId
@@ -854,18 +940,30 @@ function formatContextItemBlock(q: ContextQuestion, index: number): string {
   return parts.join('\n\n');
 }
 
-/** Extract a one-liner from governance context for the short planning doc Contract section. */
-function buildGovernanceOneLiner(governanceContext: string): string {
-  const lines = (governanceContext || '').split('\n');
-  const findings = lines
-    .map(line => line.trim())
-    .filter(line =>
-      line.length > 0 &&
-      (line.includes('P0') || line.includes('P1') || line.includes('violations') || line.includes('hotspot'))
-    )
-    .slice(0, 6);
-  if (findings.length === 0) return 'Clean — no violations detected';
-  return `${findings.length} governance highlights — read reports before filling slots`;
+const PARENT_ANALYSIS_EXCERPT_MAX = 400;
+
+/** Extract ## Analysis body from a planning doc (parent session → task seeding). */
+export function extractAnalysisSectionFromPlanningContent(content: string): string {
+  const m = content.match(/## Analysis\s*\n([\s\S]*?)(?=\n##\s+|$)/i);
+  if (!m) return '';
+  return m[1].trim();
+}
+
+async function getParentPlanningDocAnalysisExcerpt(ctx: TierStartWorkflowContext): Promise<string | null> {
+  if (ctx.config.name !== 'task') return null;
+  const parentId = resolveParentIdentifier(ctx, 'session');
+  try {
+    const content = await ctx.context.documents.readPlanningDoc('session', parentId);
+    const analysis = extractAnalysisSectionFromPlanningContent(content);
+    if (!analysis) return null;
+    const promptEcho = /^Address:\s*\n(?:-\s*[^\n]+\n?)+/i;
+    const stripped = analysis.replace(promptEcho, '').trim();
+    const body = stripped.length >= 20 ? stripped : analysis;
+    if (body.length <= PARENT_ANALYSIS_EXCERPT_MAX) return body;
+    return `${body.slice(0, PARENT_ANALYSIS_EXCERPT_MAX - 18)}… _(truncated)_`;
+  } catch {
+    return null;
+  }
 }
 
 /** Context work brief shape passed into buildPlanningDocContent for pre-filling slots. */
@@ -881,22 +979,22 @@ interface PlanningDocContextWorkBrief {
   };
 }
 
-/** Build short planning doc markdown: contract + continuity + 4 slots + tierDown section (when applicable) + reference links. */
-function buildPlanningDocContent(
-  ctx: TierStartWorkflowContext,
-  continuity: string,
-  governanceOneLiner: string,
-  referencePaths: ReferencePaths,
-  tierDownBuildPlan?: string,
-  slotDraft?: ParsedPlanningSections | null,
-  tierGoals?: string,
-  contextWorkBrief?: PlanningDocContextWorkBrief,
-  inheritedOpenQuestionsSection?: string
-): string {
-  const tier = ctx.config.name;
-  const title = ctx.resolvedDescription ?? ctx.resolvedId;
-  const scopeLine = `- **Tier:** ${tier} | **ID:** ${ctx.resolvedId}`;
-  const scopeDesc = (ctx.resolvedDescription ?? ctx.resolvedId).toString();
+function buildDefinitionOfDone(tier: TierName): string {
+  const universal = [
+    '- [ ] App starts (`npm run start:dev`)',
+    '- [ ] Lint passes (`cd client && npm run lint`, `cd server && npm run lint`)',
+    '- [ ] Governance score maintained or improved',
+  ];
+  const tierSpecific: Record<TierName, string[]> = {
+    feature: ['- [ ] All child phases complete', '- [ ] Feature guide and handoff updated'],
+    phase: ['- [ ] All child sessions complete', '- [ ] Phase guide and handoff updated'],
+    session: ['- [ ] All child tasks complete', '- [ ] Session log and handoff updated'],
+    task: ['- [ ] Session guide task status updated'],
+  };
+  return ['## Definition of Done', '', ...universal, ...tierSpecific[tier], ''].join('\n');
+}
+
+function buildPlanningReferenceLines(referencePaths: ReferencePaths): string[] {
   const refLines: string[] = [
     `- TierUp guide (scope and intent): \`${referencePaths.tierUpGuide}\``,
   ];
@@ -904,11 +1002,52 @@ function buildPlanningDocContent(
     refLines.push(`- Handoff (full transition context): \`${referencePaths.handoff}\``);
   }
   refLines.push(
-    `- Governance reports: \`${referencePaths.auditReportsDir}\` — check function-complexity, component-health, composable-health, type-escape, type-constant-inventory`
+    `- Architecture: \`.project-manager/ARCHITECTURE.md\` — domain map, data flow, type boundaries, naming`
+  );
+  refLines.push(
+    `- Workflow friction log (non-git harness issues): \`.project-manager/WORKFLOW_FRICTION_LOG.md\``
+  );
+  refLines.push(
+    `- Agent model preferences (harness advisory only; Cursor does not auto-switch models): \`.project-manager/agent-model-config.json\``
+  );
+  refLines.push(
+    `- Governance reports: \`${referencePaths.auditReportsDir}\` — function-complexity, component-health, composable-health, type-escape, type-constant-inventory`
   );
   refLines.push(`- Playbooks: ${referencePaths.playbooks.map(p => `\`${p}\``).join(', ')}`);
+  return refLines;
+}
 
-  // Pre-fill Goal: slotDraft > contextWorkBrief.planningSummary (+ executionProposal) > tierGoals > placeholder
+const ANALYSIS_PROMPT = `Address:
+- What problem does this solve and why now?
+- What domain boundaries does this cross? (see ARCHITECTURE.md)
+- What existing patterns or code should child tiers follow?
+- Risks, dependencies, or open questions?
+- Alternatives considered (for decomposition tiers)`;
+
+/** Tier-aware planning template: story/epic + analysis + slots + deliverables + decomposition + DoD + reference. */
+function buildPlanningDocContent(
+  ctx: TierStartWorkflowContext,
+  continuity: string,
+  governanceContractBlock: string,
+  workProfileSection: string,
+  referencePaths: ReferencePaths,
+  tierDownBuildPlan?: string,
+  slotDraft?: ParsedPlanningSections | null,
+  tierGoals?: string,
+  contextWorkBrief?: PlanningDocContextWorkBrief,
+  inheritedOpenQuestionsSection?: string,
+  architectureExcerpt?: string | null,
+  parentAnalysisExcerpt?: string | null
+): string {
+  const tier = ctx.config.name;
+  const title = ctx.resolvedDescription ?? ctx.resolvedId;
+  const scopeLine = `- **Tier:** ${tier} | **ID:** ${ctx.resolvedId}`;
+  const scopeDesc = (ctx.resolvedDescription ?? ctx.resolvedId).toString();
+  const refLines = buildPlanningReferenceLines(referencePaths);
+  refLines.push(
+    '- **Workflow friction:** `.project-manager/WORKFLOW_FRICTION_LOG.md` — classified harness failures are auto-appended (see `HARNESS_WORKFLOW_FRICTION` in the tier playbook). Scan recent entries before changing tier routing: `npx tsx .cursor/commands/utils/read-workflow-friction.ts --last 20`'
+  );
+
   let goalSection = PLACEHOLDER_REFINED;
   if (slotDraft?.goal?.trim()) {
     goalSection = slotDraft.goal.trim();
@@ -923,7 +1062,6 @@ function buildPlanningDocContent(
     goalSection = contextWorkBrief.taskDesign.codingGoal.trim();
   }
 
-  // Pre-fill Files: slotDraft > taskDesign.files (task only) > placeholder
   let filesSection = PLACEHOLDER_REFINED;
   if (slotDraft?.files?.trim()) {
     filesSection = slotDraft.files.trim();
@@ -931,7 +1069,6 @@ function buildPlanningDocContent(
     filesSection = contextWorkBrief.taskDesign.files.map(f => `- ${f}`).join('\n');
   }
 
-  // Pre-fill Approach: slotDraft > contextWorkBrief.executionProposal > taskDesign.pseudocodeSteps (task) > placeholder
   let approachSection = PLACEHOLDER_REFINED;
   if (slotDraft?.approach?.trim()) {
     approachSection = slotDraft.approach.trim();
@@ -943,7 +1080,6 @@ function buildPlanningDocContent(
       .join('\n');
   }
 
-  // Pre-fill Checkpoint: slotDraft > taskDesign.acceptanceChecks (task) > placeholder
   let checkpointSection = PLACEHOLDER_REFINED;
   if (slotDraft?.checkpoint?.trim()) {
     checkpointSection = slotDraft.checkpoint.trim();
@@ -951,49 +1087,52 @@ function buildPlanningDocContent(
     checkpointSection = contextWorkBrief.taskDesign.acceptanceChecks.map(c => `- ${c}`).join('\n');
   }
 
-  // Fix 2: Never seed prose; use hook output only when it has at least one parser-friendly bullet, else tier-aware placeholder.
   const tierDownBody =
     tier === 'task'
       ? ''
       : hasParserFriendlyTierDownBullets(tierDownBuildPlan)
         ? (tierDownBuildPlan?.trim() ?? '')
         : getTierDownBulletPlaceholder(tier, ctx.identifier);
-  const tierDownSection =
-    tier === 'task' ? '' : `\n## How we build the tierDown to achieve them\n${tierDownBody}\n`;
+  const decompositionSection =
+    tier === 'task' ? '' : `\n## Decomposition\n${tierDownBody}\n`;
 
-  // Work Profile section (advisory metadata; outside parsed Goal/Files/Approach/Checkpoint slots)
-  const workProfile = ctx.options?.workProfile;
   const inheritedBlock =
     inheritedOpenQuestionsSection != null && inheritedOpenQuestionsSection.trim().length > 0
       ? `${inheritedOpenQuestionsSection.trim()}\n\n`
       : '';
 
-  const workProfileSection =
-    workProfile != null
-      ? `
-## Work Profile
-- **Execution intent:** ${workProfile.executionIntent}
-- **Action type:** ${workProfile.actionType}
-- **Scope shape:** ${workProfile.scopeShape}
-- **Governance domains:** ${workProfile.governanceDomains.join(', ')}
-- **Recommended context pack:** ${workProfile.contextPack ?? '(derived from intent)'}
-- **Planning artifact action:** ${workProfile.planningArtifactAction ?? 'none'}
-- **Decomposition mode:** ${workProfile.decompositionMode ?? 'moderate'}
-- **Downstream advice:** Planning doc is advisory; guide owns current-tier decomposition. Inherit intent, constraints, and governance emphasis; avoid pre-specifying child execution detail unless decomposition mode is explicit.
-`
+  const dod = buildDefinitionOfDone(tier);
+  const refBlock = `---\n## Reference (read before filling — governance and inventory compliance is required)\n${refLines.join('\n')}`;
+  const architectureExcerptBlock =
+    architectureExcerpt != null && architectureExcerpt.trim() !== ''
+      ? `---\n## Architecture context (harness-injected)\n\n${architectureExcerpt.trim()}\n\n`
+      : '';
+  const parentContextBlock =
+    tier === 'task' && parentAnalysisExcerpt != null && parentAnalysisExcerpt.trim() !== ''
+      ? `## Parent context (session planning — Analysis excerpt)\n\n${parentAnalysisExcerpt.trim()}\n\n`
       : '';
 
-  return `# Plan: ${tier} ${ctx.resolvedId} — ${title}
+  if (tier === 'task') {
+    return `# Plan: ${tier} ${ctx.resolvedId} — ${title}
 
 ## Contract
 ${scopeLine}
 - **Scope:** ${scopeDesc}
-- **Governance:** ${governanceOneLiner}
+${governanceContractBlock}
 ${workProfileSection}
 ## Where we left off
 ${continuity}
 
-${inheritedBlock}## Goal
+${parentContextBlock}${inheritedBlock}## Story
+**This task changes** [what] **because** [why].
+
+${architectureExcerptBlock}## Analysis
+${ANALYSIS_PROMPT}
+
+## Design
+[Describe what changes and why]
+
+## Goal
 ${goalSection}
 
 ## Files
@@ -1004,16 +1143,142 @@ ${approachSection}
 
 ## Checkpoint
 ${checkpointSection}
-${tierDownSection}---
-## Reference (read before filling slots — governance and inventory compliance is required)
-${refLines.join('\n')}
+
+## Deliverables
+[List concrete deliverables]
+
+## Acceptance Criteria
+[Define acceptance criteria]
+
+${dod}
+${refBlock}
+`;
+  }
+
+  if (tier === 'session') {
+    return `# Plan: ${tier} ${ctx.resolvedId} — ${title}
+
+## Contract
+${scopeLine}
+- **Scope:** ${scopeDesc}
+${governanceContractBlock}
+${workProfileSection}
+## Where we left off
+${continuity}
+
+${inheritedBlock}## Story
+**This session delivers** [what] **so that** [why / what it unblocks].
+**Estimated size:** S / M
+
+${architectureExcerptBlock}## Analysis
+${ANALYSIS_PROMPT}
+
+## Goal
+${goalSection}
+
+## Files
+${filesSection}
+
+## Approach
+${approachSection}
+
+## Checkpoint
+${checkpointSection}
+
+## Deliverables
+[List concrete deliverables]
+${decompositionSection}
+${dod}
+${refBlock}
+`;
+  }
+
+  if (tier === 'phase') {
+    return `# Plan: ${tier} ${ctx.resolvedId} — ${title}
+
+## Contract
+${scopeLine}
+- **Scope:** ${scopeDesc}
+${governanceContractBlock}
+${workProfileSection}
+## Where we left off
+${continuity}
+
+${inheritedBlock}## Story
+**As a** [persona or system], **I want** [what this phase delivers], **so that** [what it enables].
+**Estimated size:** S / M / L
+
+${architectureExcerptBlock}## Analysis
+${ANALYSIS_PROMPT}
+
+## Goal
+${goalSection}
+
+## Files
+${filesSection}
+
+## Approach
+${approachSection}
+
+## Checkpoint
+${checkpointSection}
+
+## Deliverables
+[List concrete deliverables]
+
+## Acceptance Criteria
+- [ ] [Per-phase criterion]
+${decompositionSection}
+${dod}
+${refBlock}
+`;
+  }
+
+  // feature
+  return `# Plan: ${tier} ${ctx.resolvedId} — ${title}
+
+## Contract
+${scopeLine}
+- **Scope:** ${scopeDesc}
+${governanceContractBlock}
+${workProfileSection}
+## Where we left off
+${continuity}
+
+${inheritedBlock}## Epic
+**As a** [persona], **I want** [capability], **so that** [benefit].
+**Estimated size:** S / M / L / XL
+
+${architectureExcerptBlock}## Analysis
+${ANALYSIS_PROMPT}
+
+## Goal
+${goalSection}
+
+## Files
+${filesSection}
+
+## Approach
+${approachSection}
+
+## Checkpoint
+${checkpointSection}
+
+## Deliverables
+[List concrete deliverables]
+
+## Acceptance Criteria
+- [ ] [High-level criterion]
+${decompositionSection}
+${dod}
+${refBlock}
 `;
 }
 
 /**
  * Context gathering: plan-mode only. Writes short planning doc (contract + continuity + 4 slots + reference links),
  * sets ctx.planningDocPath, and returns early exit with reasonCode context_gathering.
- * When mode is execute (e.g. from /accepted-proceed for feature/phase/session or /accepted-code for task), this step is skipped.
+ * When mode is execute (e.g. from /accepted-plan for feature/phase/session or /accepted-code for task), this step is skipped.
  */
 export async function stepContextGathering(
   ctx: TierStartWorkflowContext,
@@ -1023,23 +1288,60 @@ export async function stepContextGathering(
   if (!isPlanMode(executionMode)) return null;
   if (!hooks.getContextQuestions) return null;
 
-  const questions = await hooks.getContextQuestions(ctx);
-  if (!questions.length) return null;
-
   const tier = ctx.config.name;
+  const gateProfile = ctx.options?.workProfile?.gateProfile;
+  const questions = await hooks.getContextQuestions(ctx);
+
+  if (tier === 'task' && gateProfile === 'express') {
+    const planningDocPathEarly = getPlanningDocPath(ctx);
+    ctx.planningDocPath = planningDocPathEarly;
+    const qblocks =
+      questions.length > 0
+        ? questions.map((q, i) => formatContextItemBlock(q, i))
+        : ['*(No context questions — use session guide and handoff for scope.)*'];
+    const deliverables = [
+      `**Express profile:** Planning doc gate skipped for task \`${ctx.identifier}\`.`,
+      '',
+      'When ready, **the user** runs **/accepted-code** to continue in execute mode (no planning doc required).',
+      '',
+      ...qblocks,
+    ].join('\n\n');
+    return {
+      success: true,
+      output: ctx.output.join('\n\n'),
+      outcome: {
+        status: 'plan',
+        reasonCode: 'context_gathering',
+        nextAction:
+          'Express profile: discuss scope in chat if needed; **the user** runs **/accepted-code** without filling a planning doc.',
+        deliverables,
+      },
+    };
+  }
+
+  if (!questions.length) return null;
   const readResult = ctx.readResult;
   const handoffRaw = readResult?.handoff ?? '';
-  const continuity = buildContinuitySummary(handoffRaw, undefined, tier);
+  const guideFallbackExcerpt =
+    readResult?.guide?.trim() && readResult.guide.length > 0
+      ? readResult.guide.trim().slice(0, 3000)
+      : undefined;
+  const continuity = buildContinuitySummary(handoffRaw, undefined, tier, guideFallbackExcerpt);
 
   const taskFiles = hooks.getTierDownFilePaths
     ? await hooks.getTierDownFilePaths(ctx)
     : undefined;
-  const governanceContext = await buildGovernanceContext({
+  const workProfileForAdvisory =
+    ctx.options?.workProfile ?? classifyWorkProfile({ tier: ctx.config.name, action: 'start' });
+  const advisory = await buildTierAdvisoryContext({
     tier: ctx.config.name,
+    workProfile: workProfileForAdvisory,
     taskFiles,
+    projectRoot: PROJECT_ROOT,
   });
-  const governanceOneLiner = buildGovernanceOneLiner(governanceContext);
+  const governanceContractBlock = advisory.governanceContractBlock;
   const referencePaths = buildReferencePaths(tier, ctx.identifier, ctx.context);
+  const parentAnalysisExcerpt = await getParentPlanningDocAnalysisExcerpt(ctx);
 
   const tierDownBuildPlan = hooks.getTierDownBuildPlan ? await hooks.getTierDownBuildPlan(ctx) : undefined;
   const contextWorkBrief = hooks.getContextWorkBrief
@@ -1071,6 +1373,7 @@ export async function stepContextGathering(
       existingContent = null;
     }
   }
+  let contentForSubstantiveCheck = existingContent;
   if (existingContent !== null && isPlanningDocFilled(existingContent)) {
     ctx.planningDocPath = planningDocPath;
     /* Skip write so re-running tier-start in plan mode does not overwrite the agent's filled doc. */
@@ -1078,39 +1381,51 @@ export async function stepContextGathering(
     const content = buildPlanningDocContent(
       ctx,
       continuity,
-      governanceOneLiner,
+      governanceContractBlock,
+      advisory.workProfileSection,
       referencePaths,
       tierDownBuildPlan,
       slotDraft ?? null,
       tierGoals,
       contextWorkBrief,
-      inheritedPlanningSection
+      inheritedPlanningSection,
+      advisory.architectureExcerpt,
+      parentAnalysisExcerpt
     );
     await ctx.context.documents.writePlanningDoc(planningTier, ctx.identifier, content);
     ctx.planningDocPath = planningDocPath;
+    contentForSubstantiveCheck = content;
   }
 
+  const substantiveOk =
+    contentForSubstantiveCheck != null && isPlanningDocSubstantive(contentForSubstantiveCheck, tier);
+  const substantiveWarning =
+    !substantiveOk && tier !== 'task'
+      ? '\n\n**Warning (advisory):** Analysis section appears thin — expand risks, domain boundaries (ARCHITECTURE.md), and existing patterns before proceeding.\n'
+      : '';
+
   const isTask = tier === 'task';
-  const messageLines: string[] = isTask
+  const agentDirective = isTask
     ? [
-        `Planning document created: \`${planningDocPath}\``,
+        '## AGENT DIRECTIVE (execute now — do not delegate to the user as “homework”)',
         '',
-        '**REQUIRED before /accepted-code (Step 1 — Light collection):**',
-        '1. Read the Reference section links in the planning doc — governance reports, inventory audits, and playbooks define the patterns and standards you must follow.',
-        '2. Fill ## Goal, ## Files, ## Approach, and ## Checkpoint with concrete content.',
-        '3. Save the file.',
-        '',
-      ]
+        '1. **Open** the planning file and read every path under **Reference** (ARCHITECTURE.md, playbooks, governance reports, tier-up guide).',
+        '2. **Write** into that same file: **Story**, **Analysis**, **Design**, **Deliverables**, **Acceptance Criteria**; refine **Goal** / **Files** / **Approach** / **Checkpoint** if needed.',
+        '3. **Save** the planning doc.',
+        '4. **Summarize** the locked plan in chat for the user.',
+        '5. **Do not** paste only these instructions — you perform steps 1–4, then tell the user when to run **/accepted-code**.',
+      ].join('\n')
     : [
-        `Planning document created: \`${planningDocPath}\``,
+        '## AGENT DIRECTIVE (execute now — do not delegate to the user as “homework”)',
         '',
-        '**REQUIRED before /accepted-proceed (Step 1 — Light collection):**',
-        '1. Read the Reference section links in the planning doc — governance reports, inventory audits, and playbooks define the patterns and standards you must follow.',
-        '2. Fill ## Goal, ## Files, ## Approach, ## Checkpoint, and ## How we build the tierDown with concrete content.',
-        '3. The ## How we build the tierDown section must be one line per phase/session/task in the format `- **Session X.Y.Z:** short name` (no paragraphs).',
-        '4. Save the file.',
-        '',
-      ];
+        '1. **Open** the planning file and read every path under **Reference**.',
+        '2. **Write** Analysis, story/epic, Goal, Files, Approach, Checkpoint, Deliverables, Acceptance Criteria, and **## Decomposition** (or `**Leaf tier**`).',
+        '3. **Save** the planning doc.',
+        '4. **Perform** the coverage check in chat, then tell the user when to run **/accepted-plan**.',
+        '5. **Do not** paste only these instructions — you perform the work, then present the result.',
+      ].join('\n');
+
+  const messageLines: string[] = [];
 
   if (inheritedOpenQuestions.length > 0) {
     messageLines.push(
@@ -1136,13 +1451,36 @@ export async function stepContextGathering(
   messageLines.push(
     ...questions.map((q, i) => formatContextItemBlock(q, i)),
     '',
-    isTask ? 'When ready, run **/accepted-code**.' : 'When ready, run /accepted-proceed.',
   );
-  const deliverables = messageLines.join('\n\n');
+
+  if (!isTask) {
+    messageLines.push(
+      '**Coverage check (required before telling the user to proceed):**',
+      'After filling all sections, re-read **Goal** / **Approach** and **## Decomposition**. Answer in chat: *If this is the goal, have we outlined enough steps to enact it?* If gaps exist, update Decomposition first; if covered, state that explicitly.',
+      '',
+      'When ready, **the user** runs **/accepted-plan**.',
+      ''
+    );
+  } else {
+    messageLines.push('When ready, **the user** runs **/accepted-code**.', '');
+  }
+
+  const contextSection = [
+    `Planning document: \`${planningDocPath}\``,
+    '',
+    ...messageLines,
+  ].join('\n');
+
+  const deliverables =
+    substantiveWarning + agentDirective + '\n\n---\n\n## CONTEXT (reference for filling)\n\n' + contextSection;
 
   const nextAction = isTask
-    ? 'Context gathering: the agent must fill the planning doc (Goal, Files, Approach, Checkpoint) using provided context; then **the user** runs **/accepted-code**. /accepted-code is blocked until the doc is filled. Do not run or invoke the command yourself.'
-    : 'Context gathering: the agent must fill the planning doc (Goal, Files, Approach, Checkpoint, and How we build the tierDown) using provided context; then **the user** runs /accepted-proceed. /accepted-proceed is blocked until the doc is filled. Do not run or invoke the command yourself.';
+    ? 'Context gathering: **you** read references and **fill the planning doc now**; save it; summarize in chat; then **the user** runs **/accepted-code**. Do not invoke that slash command yourself.'
+    : 'Context gathering: **you** read references and **fill the planning doc now**; coverage check in chat; then **the user** runs **/accepted-plan**. Do not invoke that slash command yourself.';
+
+  const decompositionBody =
+    contentForSubstantiveCheck != null ? extractDecompositionSection(contentForSubstantiveCheck) : '';
+  const leafTier = LEAF_TIER_MARKER.test(decompositionBody);
 
   return {
     success: true,
@@ -1152,6 +1490,7 @@ export async function stepContextGathering(
       reasonCode: 'context_gathering',
       nextAction,
       deliverables,
+      ...(leafTier ? { leafTier: true } : {}),
     },
   };
 }
@@ -1180,7 +1519,7 @@ export async function stepStartAudit(
   if (hooks.runStartAudit === false) return null;
 
   try {
-    const tier = ctx.context.tier;
+    const tier = (ctx.context.tier ?? ctx.config.name) as AuditTier;
     const id = ctx.context.identifier ?? '';
     const tierStamp = buildTierStampFromId(ctx.context.feature.name, tier, id);
 

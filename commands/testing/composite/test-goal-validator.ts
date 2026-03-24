@@ -6,6 +6,7 @@
  */
 
 import { WorkflowCommandContext } from '../../utils/command-context';
+import { resolveActiveFeatureDirectory } from '../../utils';
 import { PROJECT_ROOT } from '../../utils/utils';
 import { glob } from 'glob';
 
@@ -96,7 +97,8 @@ export async function validateTestGoals(
   tier: 'session' | 'phase' | 'feature',
   id: string
 ): Promise<TestGoalValidationResult> {
-  const context = await WorkflowCommandContext.getCurrent();
+  const featureDir = await resolveActiveFeatureDirectory();
+  const context = new WorkflowCommandContext(featureDir);
   let guideContent = '';
   
   try {

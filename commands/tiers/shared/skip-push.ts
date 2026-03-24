@@ -1,73 +1,94 @@
 /**
- * /skip-push: skip git push, clear end-pending state, and return cascade info.
- * Reads .tier-end-pending.json; clears it without pushing; returns result with controlPlaneDecision.
+ * /skip-push: clear end-pending without pushing; surfaces cascade from `.tier-end-pending.json` for playbook handling.
  */
 
-import { readEndPending, deleteEndPending } from './pending-state';
+import {
+  readEndPending,
+  deleteEndPending,
+  type EndPendingState,
+} from './pending-state';
 import type { ControlPlaneDecision } from './control-plane-types';
-import { QUESTION_KEYS } from './control-plane-types';
+import { routeByOutcome } from './control-plane-route';
+import type { CommandResultForRouting } from './control-plane-types';
 
-const NO_PENDING_MESSAGE =
-  'No pending push. Run a tier end first. When it returns pending push, run **/accepted-push** or **/skip-push**.';
-
-export type SkipPushResult = {
+export interface SkipPushResult {
   success: boolean;
   output: string;
   outcome: {
-    reasonCode: 'push_skipped' | 'no_pending_push';
+    status: 'completed' | 'failed';
+    reasonCode: string;
     nextAction: string;
-    cascade?: import('../../utils/tier-outcome').CascadeInfo;
+    cascade?: EndPendingState['cascade'];
   };
   controlPlaneDecision: ControlPlaneDecision;
-};
+}
+
+const NO_PENDING_MESSAGE =
+  'No pending push to skip. If you already pushed or cleared state, nothing to do.';
+
+function wrap(
+  result: CommandResultForRouting,
+  pending: EndPendingState | null
+): SkipPushResult {
+  const o = result.outcome ?? {
+    reasonCode: 'unhandled_error',
+    nextAction: result.output,
+  };
+  const decision = routeByOutcome(result, {
+    tier: pending?.tier ?? 'task',
+    action: 'end',
+    originalParams: pending != null ? { identifier: pending.identifier } : {},
+  });
+  return {
+    success: result.success,
+    output: result.output,
+    outcome: {
+      status: result.success ? 'completed' : 'failed',
+      reasonCode: String(o.reasonCode),
+      nextAction: o.nextAction,
+      ...(o.cascade !== undefined && { cascade: o.cascade }),
+    },
+    controlPlaneDecision: decision,
+  };
+}
 
 /**
- * Skip push and clear end-pending state. Returns cascade info if any.
+ * Skip push and clear end-pending. User runs in Cursor.
  */
 export async function skipPush(): Promise<SkipPushResult> {
-  const state = await readEndPending();
-  if (!state) {
-    const decision: ControlPlaneDecision = {
-      stop: true,
-      requiredMode: 'plan',
-      message: NO_PENDING_MESSAGE,
-    };
-    return {
-      success: false,
-      output: NO_PENDING_MESSAGE,
-      outcome: {
-        reasonCode: 'no_pending_push',
-        nextAction: NO_PENDING_MESSAGE,
+  const pending = await readEndPending();
+  if (!pending) {
+    return wrap(
+      {
+        success: false,
+        output: NO_PENDING_MESSAGE,
+        outcome: {
+          reasonCode: 'no_pending_push',
+          nextAction: NO_PENDING_MESSAGE,
+        },
       },
-      controlPlaneDecision: decision,
-    };
+      null
+    );
   }
 
   await deleteEndPending();
 
-  const cascadeHint =
-    state.cascade?.command != null
-      ? ` Then run **${state.cascade.command}** to continue.`
-      : '';
-  const message = `Push skipped.${cascadeHint}`.trim();
-  const decision: ControlPlaneDecision = {
-    stop: state.cascade != null,
-    requiredMode: 'plan',
-    message,
-    ...(state.cascade != null && {
-      questionKey: QUESTION_KEYS.CASCADE,
-      cascadeCommand: state.cascade.command,
-    }),
-  };
+  const cascade = pending.cascade;
+  const nextAction =
+    cascade != null
+      ? `Push skipped. **Cascade (optional):** ${cascade.command} (${cascade.tier} ${cascade.identifier}).`
+      : 'Push skipped. End-pending cleared.';
 
-  return {
-    success: true,
-    output: message,
-    outcome: {
-      reasonCode: 'push_skipped',
-      nextAction: message,
-      ...(state.cascade != null && { cascade: state.cascade }),
+  return wrap(
+    {
+      success: true,
+      output: nextAction,
+      outcome: {
+        reasonCode: 'end_ok',
+        nextAction,
+        ...(cascade !== undefined && { cascade }),
+      },
     },
-    controlPlaneDecision: decision,
-  };
+    pending
+  );
 }

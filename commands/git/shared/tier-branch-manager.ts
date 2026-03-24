@@ -24,9 +24,11 @@ import {
 } from './branch-planner';
 import type {
   EnsureTierBranchResult,
+  EnsureTierBranchOptions,
   MergeTierBranchResult,
   MergeChildBranchesResult,
   ScopeCoherenceResult,
+  SubmoduleCursorMode,
 } from './git-contract';
 import {
   parsePortcelainEntries,
@@ -42,10 +44,12 @@ import { recordGitFriction } from './git-friction-log';
 export type {
   BranchChainLink,
   EnsureTierBranchResult,
+  EnsureTierBranchOptions,
   MergeTierBranchResult,
   MergeChildBranchesResult,
   CommitUncommittedOptions,
   ScopeCoherenceResult,
+  SubmoduleCursorMode,
 } from './git-contract';
 
 export {
@@ -68,6 +72,61 @@ async function listBranchesByPrefix(prefix: string): Promise<string[]> {
     .split('\n')
     .map((line) => line.replace(/^\*\s*/, '').trim())
     .filter(Boolean);
+}
+
+/**
+ * Sync the `.cursor` git submodule from the git layer only (tier-start).
+ * `parent`: match parent-recorded gitlink; `remote`: may advance submodule HEAD and dirty the parent.
+ */
+export async function syncCursorSubmodule(
+  mode: SubmoduleCursorMode,
+  frictionContext: { tier: string; tierId: string; featureName: string }
+): Promise<{ success: boolean; messages: string[] }> {
+  if (mode === 'off') {
+    return { success: true, messages: [] };
+  }
+
+  const syncResult = await runGitCommand('git submodule sync .cursor', 'syncCursorSubmodule-sync');
+  if (!syncResult.success) {
+    const msg = `git submodule sync .cursor failed: ${syncResult.error || syncResult.output}`;
+    recordGitFriction({
+      step: 'syncCursorSubmodule-sync',
+      tier: frictionContext.tier,
+      tierId: frictionContext.tierId,
+      featureName: frictionContext.featureName,
+      reasonCode: 'submodule_sync_failed',
+      stderrExcerpt: (syncResult.error || syncResult.output).slice(0, 500),
+      disposition: 'blocked',
+      notes: msg,
+    });
+    return { success: false, messages: [msg] };
+  }
+
+  const updateCmd =
+    mode === 'parent' ? 'git submodule update --init .cursor' : 'git submodule update --init --remote .cursor';
+  const opLabel =
+    mode === 'parent' ? 'syncCursorSubmodule-update-parent' : 'syncCursorSubmodule-update-remote';
+  const updateResult = await runGitCommand(updateCmd, opLabel);
+  if (!updateResult.success) {
+    const msg = `${updateCmd} failed: ${updateResult.error || updateResult.output}`;
+    recordGitFriction({
+      step: opLabel,
+      tier: frictionContext.tier,
+      tierId: frictionContext.tierId,
+      featureName: frictionContext.featureName,
+      reasonCode: 'submodule_update_failed',
+      stderrExcerpt: (updateResult.error || updateResult.output).slice(0, 500),
+      disposition: 'blocked',
+      notes: msg,
+    });
+    return { success: false, messages: [msg] };
+  }
+
+  const ok =
+    mode === 'parent'
+      ? 'Synced .cursor submodule to parent gitlink (submodule sync + update --init).'
+      : 'Updated .cursor submodule with --init --remote (submodule HEAD may have advanced; parent repo may show a gitlink change — review `git status`).';
+  return { success: true, messages: [ok] };
 }
 
 export async function checkScopeCoherence(context: WorkflowCommandContext): Promise<ScopeCoherenceResult> {
@@ -108,11 +167,7 @@ export async function ensureTierBranch(
   config: TierConfig,
   tierId: string,
   context: WorkflowCommandContext,
-  options?: {
-    pullRoot?: boolean;
-    createIfMissing?: boolean;
-    syncRemote?: boolean;
-  }
+  options?: EnsureTierBranchOptions
 ): Promise<EnsureTierBranchResult> {
   const messages: string[] = [];
   const createIfMissing = options?.createIfMissing ?? true;
@@ -450,6 +505,25 @@ export async function ensureTierBranch(
         stderrExcerpt: popResult.error || popResult.output,
         notes: recovery.detail,
       });
+    }
+  }
+
+  const submoduleMode = options?.submoduleCursor ?? 'off';
+  if (submoduleMode !== 'off') {
+    const sub = await syncCursorSubmodule(submoduleMode, {
+      tier: config.name,
+      tierId,
+      featureName: context.feature.name,
+    });
+    messages.push(...sub.messages);
+    if (!sub.success) {
+      return {
+        success: false,
+        messages,
+        finalBranch: targetLink.branchName,
+        chain,
+        autoCommittedPaths,
+      };
     }
   }
 

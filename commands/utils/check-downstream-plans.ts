@@ -10,7 +10,7 @@
  */
 
 import { WorkflowCommandContext } from './command-context';
-import { resolveFeatureDirectoryFromPlan } from './workflow-scope';
+import { resolveFeatureDirectoryFromPlan, resolveFeatureDirectoryOrActive } from './workflow-scope';
 import { MarkdownUtils } from './markdown-utils';
 import { WorkflowId } from './id-utils';
 export interface DownstreamMatch {
@@ -252,7 +252,7 @@ export async function checkDownstreamPlans(
   params: CheckDownstreamPlansParams,
   featureName?: string
 ): Promise<CheckDownstreamPlansResult> {
-  const resolved = await resolveFeatureDirectoryFromPlan(featureName);
+  const resolved = await resolveFeatureDirectoryOrActive(featureName);
   const keywords = extractKeywords(params.description);
   if (keywords.length === 0) {
     return {

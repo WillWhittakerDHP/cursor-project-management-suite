@@ -8,4 +8,4 @@ Function governance (inventory → governance → audit):
 
 **Audit:** Session-tier runs function-complexity; function-governance baseline (100 − P0×3 − P1×1 from function-complexity-audit.json) is stored and compared at session start/end.
 
-See: .project-manager/FUNCTION_AUTHORING_PLAYBOOK.md for thresholds, extract vs allowlist, and audit mapping.
+See: .project-manager/FUNCTION_AUTHORING_PLAYBOOK.md for thresholds, extract vs allowlist, and audit mapping. Domain boundaries and naming: `.project-manager/ARCHITECTURE.md`.

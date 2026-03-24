@@ -15,6 +15,7 @@ const TYPE_PLAYBOOK = '.project-manager/TYPE_AUTHORING_PLAYBOOK.md';
 const REQUIRED_DOC_SECTIONS = '.project-manager/REQUIRED_DOC_SECTIONS.md';
 const HARNESS_CHARTER = '.project-manager/HARNESS_CHARTER.md';
 const LAUNCH_CHECKLIST = '.project-manager/LAUNCH_CHECKLIST.md';
+const ARCHITECTURE_DOC = '.project-manager/ARCHITECTURE.md';
 export const AUDIT_GLOBAL_CONFIG = 'client/.audit-reports/audit-global-config.json';
 
 const DOMAIN_TO_PLAYBOOKS: Record<GovernanceDomain, string[]> = {
@@ -27,6 +28,7 @@ const DOMAIN_TO_PLAYBOOKS: Record<GovernanceDomain, string[]> = {
   security: [FUNCTION_PLAYBOOK],
   data_flow: [TYPE_PLAYBOOK],
   workflow: [HARNESS_CHARTER],
+  architecture: [ARCHITECTURE_DOC],
 };
 
 // ─── Domain → audit report names (baseline categories) ───────────────────────
@@ -41,6 +43,7 @@ const DOMAIN_TO_AUDITS: Record<GovernanceDomain, string[]> = {
   security: ['security'],
   data_flow: ['data-flow', 'data-flow-health'],
   workflow: [],
+  architecture: ['architecture-alignment'],
 };
 
 // ─── Domain → soft review prompts for planning docs ──────────────────────────
@@ -55,6 +58,8 @@ const DOMAIN_TO_REVIEW_PROMPTS: Record<GovernanceDomain, string> = {
   security: 'Review security-related patterns per function playbook.',
   data_flow: 'Check data-flow and type playbook for shared constant alignment.',
   workflow: 'Review harness charter for workflow ownership and control-doc behavior.',
+  architecture:
+    'Check ARCHITECTURE.md domain map and data flow for alignment; review architecture-alignment audit if present.',
 };
 
 export interface GovernanceDomainMapping {

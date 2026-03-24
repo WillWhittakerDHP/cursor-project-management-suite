@@ -100,7 +100,14 @@ export interface StepDefinition {
 }
 
 // --- Outcome (charter §8.1) ---
-export type TierStatus = 'completed' | 'needs_input' | 'blocked' | 'failed' | 'plan_preview';
+export type TierStatus =
+  | 'completed'
+  | 'needs_input'
+  | 'blocked'
+  | 'failed'
+  | 'plan_preview'
+  /** Plan-mode stop (e.g. context_gathering); preferred over plan_preview for tier-start. */
+  | 'plan';
 
 export interface CascadeInfo {
   direction: 'down' | 'up' | 'across';
@@ -109,12 +116,30 @@ export interface CascadeInfo {
   command: string;
 }
 
+/**
+ * Unified outcome for kernel steps and tier-start. reasonCode is a string at the edge;
+ * control-plane routing normalizes via parseReasonCode.
+ */
 export interface TierOutcome {
   status: TierStatus;
-  reasonCode: ReasonCode;
+  /** Emitted by steps/adapters; control-plane normalizes via parseReasonCode. */
+  reasonCode: ReasonCode | string;
   nextAction: string;
   deliverables?: string;
   cascade?: CascadeInfo;
+  /** Set when reasonCode is guide_fill_pending — path to the guide the agent must fill. */
+  guidePath?: string;
+  /** When true, decomposition was leaf/auto-scaffolded — Gate 2 may be skipped. */
+  leafTier?: boolean;
+  /** Advisory text from plugins; kernel appends to controlPlaneDecision.message after routeByOutcome. */
+  pluginAdvisory?: string;
+}
+
+/** Structured re-invoke for control-plane (same tier command with params.options). */
+export interface ControlPlaneNextInvoke {
+  tier: Tier;
+  action: Action;
+  params: unknown;
 }
 
 // --- Reason-code taxonomy (charter §9) ---
@@ -128,7 +153,8 @@ export type FlowReasonCode =
   | 'verification_suggested'
   | 'reopen_ok'
   | 'uncommitted_blocking'
-  | 'guide_fill_pending';
+  | 'guide_fill_pending'
+  | 'guide_incomplete';
 
 export type FailureReasonCode =
   | 'validation_failed'
@@ -137,18 +163,34 @@ export type FailureReasonCode =
   | 'preflight_failed'
   | 'git_failed'
   | 'wrong_branch_before_commit'
-  | 'unhandled_error';
+  | 'app_not_running'
+  | 'expected_branch_missing_run_tier_start'
+  | 'branch_failed'
+  | 'guide_materialization_failed'
+  | 'guide_materialization_requires_execute'
+  | 'no_pending_plan'
+  | 'no_pending_build'
+  | 'no_pending_code'
+  | 'no_pending_push'
+  | 'wrong_accepted_command'
+  | 'invalid_context'
+  | 'invalid_task_id'
+  | 'audit_fix_commit_failed'
+  | 'unhandled_error'
+  | 'conflict_markers_in_tree';
 
 export type ReasonCode = FlowReasonCode | FailureReasonCode;
 
 // --- Control-plane decision (charter §8.2) ---
 export type QuestionKey =
   | 'approve_execute'
+  | 'approve_execute_task'
   | 'context_gathering'
   | 'push_confirmation'
   | 'cascade_confirmation'
   | 'verification_options'
   | 'failure_options'
+  | 'audit_failed_options'
   | 'uncommitted_changes'
   | 'reopen_options';
 
@@ -157,8 +199,8 @@ export interface ControlPlaneDecision {
   stop: boolean;
   message: string;
   questionKey?: QuestionKey;
-  /** Full spec for re-invoke; charter uses this instead of loose params. */
-  nextInvoke?: WorkflowSpec;
+  /** Re-invoke same tier command (e.g. start with mode/resumeAfterStep in params.options). */
+  nextInvoke?: ControlPlaneNextInvoke;
   cascadeCommand?: string;
 }
 

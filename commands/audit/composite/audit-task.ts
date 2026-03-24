@@ -10,7 +10,7 @@ import { TierAuditResult, AuditParams, AutofixResult } from '../types';
 import { auditTierQuality } from '../atomic/audit-tier-quality';
 import { hasFailedScriptAutofix, runTierAutofix } from '../autofix/run-tier-autofix';
 import { WorkflowCommandContext } from '../../utils/command-context';
-import { resolveFeatureDirectoryFromPlan } from '../../utils';
+import { resolveFeatureDirectoryFromPlan, resolveFeatureDirectoryOrActive } from '../../utils';
 import { writeAuditReport, calculateOverallStatus, getRelativePath } from '../utils';
 import { importExternalAudits } from '../external/import-external-audits';
 
@@ -34,7 +34,7 @@ export async function auditTask(params: AuditTaskParams): Promise<{
   output: string;
   autofixResult?: AutofixResult;
 }> {
-  const featureName = await resolveFeatureDirectoryFromPlan(params.featureName);
+  const featureName = await resolveFeatureDirectoryOrActive(params.featureName);
   const context = new WorkflowCommandContext(featureName);
   
   const auditParams: AuditParams = {

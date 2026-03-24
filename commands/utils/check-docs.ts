@@ -17,6 +17,7 @@ import { readdir } from 'fs/promises';
 import { join } from 'path';
 import { MarkdownUtils } from './markdown-utils';
 import { WorkflowCommandContext } from './command-context';
+import { resolveActiveFeatureDirectory } from './workflow-scope';
 
 type DocCheckType = 'component' | 'transformer' | 'pattern' | 'migration';
 
@@ -179,7 +180,8 @@ async function checkPatternDocs(): Promise<string> {
 
 async function checkMigrationDocs(): Promise<string> {
   const sections: string[] = [];
-  const context = await WorkflowCommandContext.getCurrent();
+  const featureDir = await resolveActiveFeatureDirectory();
+  const context = new WorkflowCommandContext(featureDir);
 
   sections.push('## Migration Documentation\n');
   sections.push('**Key documents for Vue migration:**\n');

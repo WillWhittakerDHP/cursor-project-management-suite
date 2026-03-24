@@ -84,7 +84,7 @@ export async function validatePhaseImpl(
         if (status === 'in progress') {
           const phaseBranchName = PHASE_CONFIG.getBranchName(context, phase);
           const featureBranch = PHASE_CONFIG.getParentBranchName(context, phase);
-          const currentBranch = await getCurrentBranch();
+          const currentBranch = (await getCurrentBranch()) ?? '';
           const onDedicatedPhaseBranch =
             Boolean(phaseBranchName) &&
             (currentBranch === phaseBranchName || currentBranch.includes(`-phase-${phase}`));

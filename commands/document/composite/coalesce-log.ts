@@ -7,7 +7,7 @@
  * Does not create files; no-op if the log is missing or already normalized.
  */
 
-import { resolveFeatureDirectoryFromPlan } from '../../utils';
+import { resolveFeatureDirectoryFromPlan, resolveFeatureDirectoryOrActive } from '../../utils';
 import { WorkflowCommandContext } from '../../utils/command-context';
 import { WorkflowId } from '../../utils/id-utils';
 
@@ -18,7 +18,7 @@ export async function workflowCoalesceLog(
   identifier: string | undefined,
   featureName?: string
 ): Promise<string> {
-  const resolved = await resolveFeatureDirectoryFromPlan(featureName);
+  const resolved = await resolveFeatureDirectoryOrActive(featureName);
   const context = new WorkflowCommandContext(resolved);
   let id: string | undefined = identifier;
   if (tier === 'feature') {

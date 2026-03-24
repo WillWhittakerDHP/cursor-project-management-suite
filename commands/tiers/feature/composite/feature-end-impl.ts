@@ -377,7 +377,10 @@ export async function featureEndImpl(
             outcome: buildTierEndOutcome(
               'blocked_fix_required',
               'git_failed',
-              `Feature completion commit failed. ${featureCommitResult.output} Fix and re-run /feature-end.`
+              `Feature completion commit failed. ${featureCommitResult.output} Fix and re-run /feature-end.`,
+              undefined,
+              undefined,
+              { tierEndGitResumable: true }
             ),
           };
         }
@@ -392,7 +395,10 @@ export async function featureEndImpl(
             outcome: buildTierEndOutcome(
               'blocked_fix_required',
               'git_failed',
-              `Feature branch push failed. ${featurePushResult.output} Fix and re-run /feature-end.`
+              `Feature branch push failed. ${featurePushResult.output} Fix and re-run /feature-end.`,
+              undefined,
+              undefined,
+              { tierEndGitResumable: true }
             ),
           };
         }
@@ -427,7 +433,10 @@ export async function featureEndImpl(
             outcome: buildTierEndOutcome(
               'blocked_fix_required',
               'git_failed',
-              `${prefix} ${detail} Fix and re-run /feature-end.`
+              `${prefix} ${detail} Fix and re-run /feature-end.`,
+              undefined,
+              undefined,
+              { tierEndGitResumable: true }
             ),
           };
         }
@@ -443,7 +452,10 @@ export async function featureEndImpl(
           outcome: buildTierEndOutcome(
             'blocked_fix_required',
             'git_failed',
-            `Feature git operations threw an error: ${_error instanceof Error ? _error.message : String(_error)}. Fix and re-run /feature-end.`
+            `Feature git operations threw an error: ${_error instanceof Error ? _error.message : String(_error)}. Fix and re-run /feature-end.`,
+            undefined,
+            undefined,
+            { tierEndGitResumable: true }
           ),
         };
       }

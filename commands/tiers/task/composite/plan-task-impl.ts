@@ -3,7 +3,7 @@
  */
 
 import { resolvePlanningDescription } from '../../../planning/utils/resolve-planning-description';
-import { resolveFeatureDirectoryFromPlan, resolveActiveFeatureDirectory } from '../../../utils';
+import { resolveFeatureDirectoryOrActive } from '../../../utils';
 import { runPlanningWithChecks } from '../../../planning/utils/run-planning-pipeline';
 import { WorkflowCommandContext } from '../../../utils/command-context';
 import { WorkflowId } from '../../../utils/id-utils';
@@ -16,9 +16,7 @@ export async function planTaskImpl(
     featureId != null && featureId.trim() !== ''
       ? featureId.trim()
       : WorkflowId.parseTaskId(taskId)?.feature ?? '';
-  const feature = ref
-    ? await resolveFeatureDirectoryFromPlan(ref)
-    : await resolveActiveFeatureDirectory();
+  const feature = await resolveFeatureDirectoryOrActive(ref || undefined);
   const context = new WorkflowCommandContext(feature);
   const output: string[] = [];
 

@@ -20,15 +20,28 @@ import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import type { AuditParams, AuditResult, AuditFinding, AuditTier } from '../types';
 import { PROJECT_ROOT, FRONTEND_ROOT } from '../../utils/utils';
+import { runArchitectureAlignmentAuditFromGitManager } from '../architecture-alignment-audit';
+import { listWorkingTreeChangedRepoPaths } from '../../git/shared/git-manager';
 
 const CLIENT_ROOT = join(PROJECT_ROOT, FRONTEND_ROOT);
 const AUDIT_DIR = join(CLIENT_ROOT, '.audit-reports');
 const TYPECHECK_DIR = join(CLIENT_ROOT, '.audit-reports', 'typecheck');
 
+type AuditJsonFileEntry = Record<string, unknown> & {
+  repoPath: string;
+  score?: number;
+  priority?: string;
+  complexityScore?: number;
+  forEachMutationHits?: unknown[];
+  issues?: unknown[];
+};
+
+type AuditJsonFindingEntry = Record<string, unknown> & { ruleId?: string };
+
+/** Parsed audit JSON: known fields typed; audit scripts may add more keys over time. */
 interface AuditJsonOutput {
   generatedAt?: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  files?: Array<{ repoPath: string; score?: number; priority?: string; [key: string]: any }>;
+  files?: AuditJsonFileEntry[];
   errors?: Array<{ repoPath: string; code: string; message: string }>;
   pools?: Array<{ priority: string; totalScore: number; errorCount: number }>;
   groups?: Array<{ uniqueFiles: number; occurrences: number; lineCount?: number; action?: string }>;
@@ -36,14 +49,17 @@ interface AuditJsonOutput {
   issues?: Array<{ severity: string }>;
   categories?: Array<{ id?: string; priority?: string; errors?: unknown[] }>;
   untestedSource?: Array<{ priority?: { bucket?: string; overall?: number } }>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  [key: string]: any;
+  findings?: AuditJsonFindingEntry[];
+  repairWaves?: Record<string, unknown>;
+  fanInViolations?: unknown[];
+  composableChainDepthViolations?: unknown[];
 }
 
 interface TierAuditEntry {
   auditName: string;
   jsonRelativePath: string;
-  npmRun: string;
+  /** When omitted, no npm script is spawned (harness-only audit writes the JSON). */
+  npmRun?: string;
 }
 
 const TIER_AUDIT_CONFIG: Record<
@@ -75,6 +91,7 @@ const TIER_AUDIT_CONFIG: Record<
       { auditName: 'composable-health', jsonRelativePath: 'composable-health-audit.json', npmRun: 'audit:composable-health' },
       { auditName: 'type-escape', jsonRelativePath: 'type-escape-audit.json', npmRun: 'audit:type-escape' },
       { auditName: 'type-constant-inventory', jsonRelativePath: 'type-constant-inventory-audit.json', npmRun: 'audit:type-constant-inventory' },
+      { auditName: 'architecture-alignment', jsonRelativePath: 'architecture-alignment-audit.json' },
     ],
   },
   phase: {
@@ -481,6 +498,19 @@ function generateFindingsFromAudit(
     }
   }
 
+  if (auditName === 'architecture-alignment') {
+    const files = jsonData.files || [];
+    const warns = files.filter((f: { priority?: string }) => f.priority === 'P1' || f.priority === 'P2');
+    if (warns.length > 0) {
+      findings.push({
+        type: 'warning',
+        message: `${warns.length} architecture-alignment finding(s) (domain boundaries / imports)`,
+        location: jsonPath,
+        suggestion: `Review ${toRepoPath(jsonPath)} and .project-manager/ARCHITECTURE.md`,
+      });
+    }
+  }
+
   if (auditName === 'import-graph') {
     const fanIn = (jsonData.fanInViolations as unknown[] | undefined)?.length ?? 0;
     const depth = (jsonData.composableChainDepthViolations as unknown[] | undefined)?.length ?? 0;
@@ -528,7 +558,7 @@ function generateFindingsFromAudit(
     'typecheck', 'component-logic', 'composables-logic', 'loop-mutations', 'hardcoding',
     'error-handling', 'naming-convention', 'duplication', 'test', 'unused-code', 'security',
     'type-health', 'component-health', 'composable-health', 'data-flow-health',
-    'type-similarity', 'import-graph', 'file-cohesion', 'deprecation',
+    'type-similarity', 'import-graph', 'file-cohesion', 'deprecation', 'architecture-alignment',
   ].includes(auditName);
   if (!hasSpecificHandler && jsonData) {
     const hasFiles = (jsonData.files?.length ?? 0) > 0;
@@ -552,7 +582,10 @@ function generateFindingsFromAudit(
  * Non-fatal: resolves (not rejects) on non-zero exit so one failing audit
  * doesn't prevent reading the JSONs from the others.
  */
-function spawnAuditScript(npmRun: string, changedOnly: boolean): Promise<void> {
+function spawnAuditScript(npmRun: string | undefined, changedOnly: boolean): Promise<void> {
+  if (npmRun == null || npmRun === '') {
+    return Promise.resolve();
+  }
   const args = ['run', npmRun];
   if (changedOnly) args.push('--', '--changed-only');
   return new Promise((resolve) => {
@@ -575,6 +608,11 @@ export function runTierAuditsParallel(tier: AuditTier): Promise<void> {
   const config = TIER_AUDIT_CONFIG[tier];
   if (!config) return Promise.resolve();
   const promises = config.audits.map(a => spawnAuditScript(a.npmRun, config.changedOnly));
+  if (tier === 'session') {
+    promises.push(
+      runArchitectureAlignmentAuditFromGitManager(listWorkingTreeChangedRepoPaths).catch(() => {})
+    );
+  }
   return Promise.all(promises).then(() => {});
 }
 

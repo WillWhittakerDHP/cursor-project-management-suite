@@ -1,22 +1,27 @@
 /**
  * Atomic Command: /audit-fix [report-path]
- * Output a prompt with @ refs to governance docs, optional tier-appropriate context (guide + planning doc), and optional audit report.
- * Instructs the agent to read the attached context first to avoid duplication and maintain governance patterns.
+ * Output a prompt with governance context (harness-injected markdown + @ refs), optional tier guide/planning, and optional audit report.
+ * Uses the same primitives as tier-start: classifyWorkProfile(audit_fix), buildGovernanceContext, readArchitectureExcerptForPlanning.
  *
  * Tier: N/A (utility for audit-fix workflow)
- * Reads: .project-manager/AUDIT_FIX_CONTEXT.md for the copy-paste block of @ paths.
+ * Reads: .project-manager/AUDIT_FIX_CONTEXT.md for fallback copy-paste block when tier/report cannot narrow paths.
  * Tier context requires explicit scope (featureName + tier + identifier) in the command.
  */
 
 import { readFile } from 'fs/promises';
 import { join } from 'path';
-import { PROJECT_ROOT } from '../../utils/utils';
-import {
-  getPlaybooksForAudit,
-  getPlaybooksForTier,
-  reportPathToAuditName,
-} from '../../utils/tier-context-config';
+import { fileURLToPath } from 'node:url';
+import { PROJECT_ROOT, readProjectFile } from '../../utils/utils';
+import { getPlaybooksForAudit, reportPathToAuditName } from '../../utils/tier-context-config';
 import type { TierName } from '../../tiers/shared/types';
+import type { Tier } from '../../harness/contracts';
+import type { GovernanceDomain } from '../../harness/work-profile';
+import { classifyWorkProfile } from '../../harness/work-profile-classifier';
+import { readArchitectureExcerptForPlanning } from '../../harness/architecture-excerpt';
+import { getPlaybooksForGovernanceDomains, AUDIT_GLOBAL_CONFIG } from '../../harness/governance-domain-map';
+import { buildGovernanceContext } from '../governance-context';
+import { parseDeliverablesFromPlanningDoc } from '../../utils/planning-doc-parse';
+import { resolvePlanningDocRelativePath } from '../../utils/planning-doc-paths';
 
 const AUDIT_FIX_CONTEXT_PATH = join(PROJECT_ROOT, '.project-manager', 'AUDIT_FIX_CONTEXT.md');
 
@@ -43,7 +48,6 @@ function buildTierContextPaths(
     paths.push(`${base}/sessions/session-${identifier}-guide.md`, `${base}/sessions/session-${identifier}-planning.md`);
     return paths;
   }
-  // task: task planning doc + session guide (session id = task id without last segment)
   const sessionId = identifier.split('.').slice(0, 3).join('.');
   paths.push(`${base}/sessions/task-${identifier}-planning.md`, `${base}/sessions/session-${sessionId}-guide.md`);
   return paths;
@@ -51,7 +55,6 @@ function buildTierContextPaths(
 
 /**
  * Extract the first line from the doc that contains @.project-manager (the copy-paste block).
- * Looks for a fenced code block (```) and returns the first line inside it that starts with @.
  */
 function parseCopyPasteBlock(content: string): string | null {
   const codeBlockMatch = content.match(/```\s*\n?([\s\S]*?)```/);
@@ -61,64 +64,10 @@ function parseCopyPasteBlock(content: string): string | null {
   return line?.trim() ?? null;
 }
 
-/**
- * Build the full prompt: instruction line, blank line, then @ refs (governance + optional tier context + optional report path).
- */
-export function buildAuditFixPrompt(
-  governanceRefs: string,
-  options?: { reportPath?: string; tierContextRefs?: string }
-): string {
-  let refsLine = governanceRefs;
-  if (options?.tierContextRefs?.trim()) {
-    refsLine = `${refsLine} ${options.tierContextRefs.trim()}`;
-  }
-  if (options?.reportPath?.trim()) {
-    refsLine = `${refsLine} @${options.reportPath.replace(/^@/, '').trim()}`;
-  }
-  return `${DEFAULT_INSTRUCTION}\n\n${refsLine}\n`;
-}
-
-/**
- * Load governance @ refs from AUDIT_FIX_CONTEXT.md (copy-paste block).
- * Falls back to a hardcoded list if the doc is missing or unparseable.
- */
 const FALLBACK_REFS =
   '@.project-manager/COMPONENT_AUTHORING_PLAYBOOK.md @.project-manager/COMPOSABLE_AUTHORING_PLAYBOOK.md @.project-manager/FUNCTION_AUTHORING_PLAYBOOK.md @.project-manager/TYPE_AUTHORING_PLAYBOOK.md @client/.audit-reports/audit-global-config.json';
 
-/** Governance @ refs from tier-context-config (sync). Returns empty string when tier/reportPath resolve to no paths. */
-function getGovernanceRefsFromConfig(tier?: TierName, reportPath?: string): string {
-  if (reportPath) {
-    const auditName = reportPathToAuditName(reportPath);
-    if (auditName) {
-      const paths = getPlaybooksForAudit(auditName);
-      if (paths.length > 0) return paths.map((p) => `@${p}`).join(' ');
-    }
-  }
-  if (tier) {
-    const paths = getPlaybooksForTier(tier);
-    if (paths.length > 0) return paths.map((p) => `@${p}`).join(' ');
-  }
-  return '';
-}
-
-/**
- * Governance refs for the prompt: tier/report-pertinent from config when tier or reportPath present;
- * otherwise full list from AUDIT_FIX_CONTEXT. When tier is feature, use full list (feature fixes are rare).
- */
-async function getGovernanceRefsForPrompt(params: {
-  tier?: TierName;
-  reportPath?: string;
-}): Promise<string> {
-  const { tier, reportPath } = params;
-  if (tier === 'feature') return loadGovernanceRefs();
-  if (tier != null || (reportPath != null && reportPath.trim() !== '')) {
-    const refs = getGovernanceRefsFromConfig(tier, reportPath);
-    if (refs) return refs;
-  }
-  return loadGovernanceRefs();
-}
-
-export async function loadGovernanceRefs(): Promise<string> {
+async function loadGovernanceRefsFallbackLine(): Promise<string> {
   try {
     const content = await readFile(AUDIT_FIX_CONTEXT_PATH, 'utf-8');
     const refs = parseCopyPasteBlock(content);
@@ -128,90 +77,195 @@ export async function loadGovernanceRefs(): Promise<string> {
   }
 }
 
-/** Load tier-appropriate @ refs (guide + planning doc). Requires explicit scope (featureName + tier + identifier). */
-export async function loadTierContextRefs(params: {
+/** Classifier + shared builders; single source for audit-fix rich context (audit-fix + tier-end). */
+export async function buildAuditFixContextEnvelope(params: {
+  tier: TierName;
+  taskFiles?: string[];
+}): Promise<{
+  governanceBlock: string;
+  architectureExcerpt: string | null;
+  playbookPaths: string[];
+}> {
+  const { tier, taskFiles } = params;
+  const workProfile = classifyWorkProfile({
+    tier: tier as Tier,
+    action: 'end',
+    reasonCode: 'audit_fix',
+  });
+
+  const governanceBlock = await buildGovernanceContext({
+    tier,
+    taskFiles: taskFiles ?? [],
+  });
+
+  const domainsForAuditFix: GovernanceDomain[] = [
+    ...new Set([...workProfile.governanceDomains, 'architecture']),
+  ];
+  const architectureExcerpt = await readArchitectureExcerptForPlanning(
+    PROJECT_ROOT,
+    domainsForAuditFix
+  );
+
+  const playbookPaths = getPlaybooksForGovernanceDomains(domainsForAuditFix);
+
+  return { governanceBlock, architectureExcerpt, playbookPaths };
+}
+
+/**
+ * Resolve task-scoped files: explicit param, else parse Deliverables from task planning doc.
+ */
+export async function resolveTaskFilesForAuditFix(params: {
+  tier?: TierName;
   featureName?: string;
-  tier?: 'feature' | 'phase' | 'session' | 'task';
   identifier?: string;
-}): Promise<string> {
-  const { featureName, tier, identifier } = params;
-  if (!featureName || !tier || !identifier) return '';
-  const paths = buildTierContextPaths(featureName, tier, identifier);
-  return paths.map((p) => `@${p}`).join(' ');
+  explicit?: string[];
+}): Promise<string[] | undefined> {
+  if (params.explicit !== undefined) {
+    return params.explicit;
+  }
+  if (params.tier !== 'task' || !params.featureName?.trim() || !params.identifier?.trim()) {
+    return undefined;
+  }
+  const basePath = `.project-manager/features/${params.featureName.trim()}`;
+  const rel = resolvePlanningDocRelativePath(basePath, 'task', params.identifier.trim());
+  try {
+    const content = await readProjectFile(rel);
+    const files = parseDeliverablesFromPlanningDoc(content);
+    return files.length > 0 ? files : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function mergeAuditFixPaths(params: {
+  envelopePlaybooks: string[];
+  reportPath?: string;
+  tierContextPaths: string[];
+}): string[] {
+  const set = new Set<string>();
+  for (const p of params.envelopePlaybooks) {
+    if (p) set.add(p.replace(/^@/, '').trim());
+  }
+  if (params.reportPath?.trim()) {
+    const auditName = reportPathToAuditName(params.reportPath);
+    if (auditName) {
+      for (const p of getPlaybooksForAudit(auditName)) {
+        set.add(p);
+      }
+    }
+  }
+  for (const p of params.tierContextPaths) {
+    if (p) set.add(p.replace(/^@/, '').trim());
+  }
+  const report = params.reportPath?.replace(/^@/, '').trim();
+  if (report) set.add(report);
+  set.add(AUDIT_GLOBAL_CONFIG);
+  return [...set];
+}
+
+function buildRichInstruction(envelope: {
+  governanceBlock: string;
+  architectureExcerpt: string | null;
+}): string {
+  const parts: string[] = [DEFAULT_INSTRUCTION];
+  if (envelope.architectureExcerpt?.trim()) {
+    parts.push(
+      `## Architecture context (harness-injected)\n\n${envelope.architectureExcerpt.trim()}`
+    );
+  }
+  if (envelope.governanceBlock?.trim()) {
+    parts.push(`## Governance context (harness-injected)\n\n${envelope.governanceBlock.trim()}`);
+  }
+  return parts.join('\n\n');
+}
+
+/**
+ * Single assembly for programmatic + CLI audit-fix: rich instruction, merged paths.
+ */
+async function assembleAuditFixContext(params: AuditFixPromptParams): Promise<AuditFixContext> {
+  const tier = params.tier ?? 'session';
+  const taskFiles = await resolveTaskFilesForAuditFix({
+    tier: params.tier,
+    featureName: params.featureName,
+    identifier: params.identifier,
+    explicit: params.taskFiles,
+  });
+
+  const envelope = await buildAuditFixContextEnvelope({
+    tier,
+    taskFiles: taskFiles ?? [],
+  });
+
+  const tierContextPaths =
+    params.featureName && params.tier && params.identifier
+      ? buildTierContextPaths(params.featureName, params.tier, params.identifier)
+      : [];
+
+  let paths = mergeAuditFixPaths({
+    envelopePlaybooks: envelope.playbookPaths,
+    reportPath: params.reportPath,
+    tierContextPaths,
+  });
+
+  if (paths.length === 0 || (tier === 'feature' && !params.reportPath)) {
+    const fallbackLine = await loadGovernanceRefsFallbackLine();
+    const fromFallback = fallbackLine
+      .split(/\s+/)
+      .map((s) => s.replace(/^@/, '').trim())
+      .filter(Boolean);
+    paths = [...new Set([...paths, ...fromFallback])];
+  }
+
+  const instruction = buildRichInstruction(envelope);
+  return { instruction, paths };
+}
+
+function formatAuditFixPromptForPaste(context: AuditFixContext): string {
+  const refs = context.paths.map((p) => `@${p.replace(/^@/, '').trim()}`).join(' ');
+  return `${context.instruction}\n\n${refs}\n`;
 }
 
 export interface AuditFixPromptParams {
   /** Optional path to the audit report (e.g. client/.audit-reports/component-health-audit.md) */
   reportPath?: string;
-  /** Feature name for tier context (required for tier refs). */
   featureName?: string;
-  /** Tier for tier-appropriate context (required for tier refs). */
   tier?: 'feature' | 'phase' | 'session' | 'task';
-  /** Tier identifier, e.g. session 6.10.1, task 6.9.1.1 (required for tier refs). */
   identifier?: string;
+  /** When set, used for task-tier buildGovernanceContext file scope; else derived from task planning Deliverables when possible. */
+  taskFiles?: string[];
 }
 
 /**
- * Generate and return the audit-fix prompt string (instruction + governance + tier context + report @ refs).
- * Use this from composite commands or when invoking programmatically.
+ * Generate paste string: same rich context as getAuditFixContext, formatted with @ refs.
  */
 export async function auditFixPrompt(params: AuditFixPromptParams = {}): Promise<string> {
-  const [governanceRefs, tierContextRefs] = await Promise.all([
-    getGovernanceRefsForPrompt({ tier: params.tier, reportPath: params.reportPath }),
-    loadTierContextRefs({
-      featureName: params.featureName,
-      tier: params.tier,
-      identifier: params.identifier,
-    }),
-  ]);
-  return buildAuditFixPrompt(governanceRefs, {
-    reportPath: params.reportPath,
-    tierContextRefs,
-  });
+  const ctx = await assembleAuditFixContext(params);
+  return formatAuditFixPromptForPaste(ctx);
 }
 
-/** Result for direct execution: agent reads these paths then fixes per the instruction. */
+/** Result for direct execution: agent reads instruction (includes injected markdown) and paths. */
 export interface AuditFixContext {
   instruction: string;
-  /** Repo-relative paths to read (governance playbooks, tier guide/planning, audit report). */
   paths: string[];
 }
 
-/**
- * Return instruction + paths for direct execution. Agent should read each path, then fix findings
- * per the instruction. Use this instead of pasting the prompt—read the context and fix directly.
- */
 export async function getAuditFixContext(params: AuditFixPromptParams = {}): Promise<AuditFixContext> {
-  const [governanceRefs, tierContextRefs] = await Promise.all([
-    getGovernanceRefsForPrompt({ tier: params.tier, reportPath: params.reportPath }),
-    loadTierContextRefs({
-      featureName: params.featureName,
-      tier: params.tier,
-      identifier: params.identifier,
-    }),
-  ]);
-  const refsLine = [governanceRefs, tierContextRefs, params.reportPath ? `@${params.reportPath.replace(/^@/, '').trim()}` : '']
-    .filter(Boolean)
-    .join(' ');
-  const paths = refsLine
-    .split(/\s+/)
-    .map((s) => s.replace(/^@/, '').trim())
-    .filter(Boolean);
-  const dedup = [...new Set(paths)];
-  return { instruction: DEFAULT_INSTRUCTION, paths: dedup };
+  return assembleAuditFixContext(params);
 }
 
-/**
- * CLI entry: run with optional report path as first arg.
- * Outputs the prompt to stdout for copy-paste into chat.
- */
 async function main(): Promise<void> {
   const reportPath = process.argv[2];
   const prompt = await auditFixPrompt({ reportPath });
   process.stdout.write(prompt);
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+const isMainModule =
+  typeof process.argv[1] === 'string' &&
+  fileURLToPath(import.meta.url) === process.argv[1];
+
+if (isMainModule) {
+  main().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}

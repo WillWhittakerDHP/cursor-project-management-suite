@@ -18,7 +18,8 @@ import { formatChoiceForChat } from './control-plane-choice-display';
 import { getDefaultShadowRecorder } from '../../harness/run-recorder-shadow';
 import { createContextInjector } from '../../harness/context-injector';
 import { defaultKernel } from '../../harness/kernel';
-import { createTierAdapter } from '../../harness/tier-adapter';
+import { createDefaultPlugins } from '../../harness/default-plugins';
+import { createStepAdapter } from '../../harness/step-adapter';
 import { defaultProfileDefaultsResolver } from '../../harness/spec-builder';
 import { buildSpecFromTierRun } from '../../harness/build-spec-from-tier';
 import { classifyWorkProfile } from '../../harness/work-profile-classifier';
@@ -30,12 +31,26 @@ import {
   type TierStartPendingParams,
   type TaskStartPendingState,
 } from './pending-state';
+import {
+  buildWorkflowFrictionEntryFromOrchestrator,
+  recordWorkflowFriction,
+  shouldAppendWorkflowFriction,
+} from '../../utils/workflow-friction-log';
 
 export type TierStartParams =
   | { featureId: string }
   | ({ phaseId: string } & ({ featureId: string } | { featureName: string }))
   | ({ sessionId: string; description?: string } & ({ featureId: string } | { featureName: string }))
   | { taskId: string; featureId?: string; featureName?: string };
+
+function paramsSnippetForWorkflowFriction(params: TierStartParams): string {
+  try {
+    const s = JSON.stringify(params);
+    return s.length > 2000 ? `${s.slice(0, 2000)}\n\n…(truncated)` : s;
+  } catch {
+    return '(params not serializable)';
+  }
+}
 
 function getIdentifierFromParams(config: TierConfig, params: TierStartParams): string {
   switch (config.name) {
@@ -52,7 +67,7 @@ export async function runTierStart(
   params: TierStartParams,
   options?: CommandExecutionOptions
 ): Promise<TierStartResultWithControlPlane> {
-  // Default plan so start always creates planning doc and exits; execute via /accepted-proceed (feature/phase/session) or /accepted-code (task).
+  // Default plan so start always creates planning doc and exits; execute via /accepted-plan + /accepted-build (feature/phase/session) or /accepted-code (task).
   const executionMode = resolveCommandExecutionMode(options, 'plan');
 
   const shadowRecorder = getDefaultShadowRecorder();
@@ -73,6 +88,19 @@ export async function runTierStart(
         nextAction: `Context resolution failed. Check tier identifier and feature.`,
       },
     };
+    const rc = String(failedResult.outcome.reasonCode ?? 'unhandled_error');
+    if (shouldAppendWorkflowFriction({ success: false, reasonCodeRaw: rc })) {
+      recordWorkflowFriction(
+        buildWorkflowFrictionEntryFromOrchestrator({
+          action: 'start',
+          tier: config.name,
+          identifier: identifier || '—',
+          reasonCodeRaw: rc,
+          symptom: message,
+          context: `WorkflowCommandContext.contextFromParams failed.\n\n${paramsSnippetForWorkflowFriction(params)}`,
+        })
+      );
+    }
     const decision = routeByOutcome(
       failedResult,
       { tier: config.name, action: 'start', originalParams: params }
@@ -124,10 +152,9 @@ export async function runTierStart(
       identifier,
       featureContext: { featureId: featureName, featureName },
       mode: executionMode,
-      userChoices: options,
       workProfile,
     });
-    const adapter = createTierAdapter({
+    const adapter = createStepAdapter({
       config,
       params,
       options: { ...options, workProfile },
@@ -139,6 +166,7 @@ export async function runTierStart(
       adapter,
       profileDefaults: defaultProfileDefaultsResolver,
       routingContext: { tier: config.name, action: 'start', originalParams: params, workProfile },
+      plugins: createDefaultPlugins(),
     });
     const reasonCode = kernelResult.outcome.reasonCode;
     if (reasonCode === 'context_gathering') {
@@ -148,6 +176,8 @@ export async function runTierStart(
           params: params as TierStartPendingParams,
           pass: 1,
           workProfile,
+          gateProfile: workProfile.gateProfile,
+          ...(kernelResult.outcome.leafTier === true && { leafTier: true }),
         });
       } else if (config.name === 'task') {
         const p = params as { taskId: string; featureId?: string; featureName?: string };
@@ -175,6 +205,8 @@ export async function runTierStart(
         guideFillPending: true,
         guidePath: kernelResult.outcome.guidePath,
         workProfile,
+        gateProfile: workProfile.gateProfile,
+        ...(kernelResult.outcome.leafTier === true && { leafTier: true }),
       });
     }
 

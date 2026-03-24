@@ -9,13 +9,13 @@
  */
 
 import { WorkflowCommandContext } from './command-context';
-import { resolveFeatureDirectoryFromPlan } from './workflow-scope';
+import { resolveFeatureDirectoryOrActive } from './workflow-scope';
 export async function appendLog(
   content: string,
   sessionId?: string,
   featureName?: string
 ): Promise<void> {
-  const resolved = await resolveFeatureDirectoryFromPlan(featureName);
+  const resolved = await resolveFeatureDirectoryOrActive(featureName);
   const context = new WorkflowCommandContext(resolved);
 
   if (sessionId) {

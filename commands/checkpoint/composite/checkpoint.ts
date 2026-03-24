@@ -6,7 +6,7 @@
  * Operates on: Checkpoint operations across feature/phase/session/task
  */
 
-import { resolveFeatureDirectoryFromPlan } from '../../utils';
+import { resolveFeatureDirectoryFromPlan, resolveFeatureDirectoryOrActive } from '../../utils';
 import { createCheckpoint, CheckpointTier, CreateCheckpointParams } from '../atomic/create-checkpoint';
 import { featureCheckpoint } from '../../tiers/feature/atomic/feature-checkpoint';
 import { phaseCheckpoint } from '../../tiers/phase/composite/phase';
@@ -33,7 +33,7 @@ export async function checkpoint(
   runQualityChecks: boolean = false,
   notes?: string
 ): Promise<string> {
-  const resolved = await resolveFeatureDirectoryFromPlan(featureName);
+  const resolved = await resolveFeatureDirectoryOrActive(featureName);
   // For task tier, delegate to task checkpoint (includes quality checks)
   if (tier === 'task') {
     if (!identifier) {
@@ -103,7 +103,7 @@ export async function checkpointReview(
   identifier?: string,
   featureName?: string
 ): Promise<string> {
-  const resolved = await resolveFeatureDirectoryFromPlan(featureName);
+  const resolved = await resolveFeatureDirectoryOrActive(featureName);
   const output: string[] = [];
   
   output.push(`# Checkpoint Review: ${tier}${identifier ? ` ${identifier}` : ''}\n`);

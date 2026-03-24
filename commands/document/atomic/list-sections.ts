@@ -7,7 +7,7 @@
  */
 
 import { WorkflowCommandContext } from '../../utils/command-context';
-import { resolveFeatureDirectoryFromPlan } from '../../utils';
+import { resolveFeatureDirectoryFromPlan, resolveFeatureDirectoryOrActive } from '../../utils';
 import { WorkflowId } from '../../utils/id-utils';
 import { DocumentTier } from '../../utils/document-manager';
 import { MarkdownUtils } from '../../utils/markdown-utils';
@@ -32,7 +32,7 @@ export interface SectionInfo {
  * @returns List of sections as formatted string
  */
 export async function listSections(params: ListSectionsParams): Promise<string> {
-  const featureName = await resolveFeatureDirectoryFromPlan(params.featureName);
+  const featureName = await resolveFeatureDirectoryOrActive(params.featureName);
   const context = new WorkflowCommandContext(featureName);
   const output: string[] = [];
   
@@ -151,7 +151,7 @@ export async function listSections(params: ListSectionsParams): Promise<string> 
 export async function listSectionsProgrammatic(
   params: ListSectionsParams
 ): Promise<{ success: boolean; sections?: SectionInfo[]; documentPath?: string; error?: string }> {
-  const featureName = await resolveFeatureDirectoryFromPlan(params.featureName);
+  const featureName = await resolveFeatureDirectoryOrActive(params.featureName);
   const context = new WorkflowCommandContext(featureName);
   
   // Validate identifier for phase/session

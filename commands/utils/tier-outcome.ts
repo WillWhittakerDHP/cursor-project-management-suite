@@ -1,9 +1,10 @@
 /**
- * Shared outcome type for tier end commands (one per tier).
- * Agents use status + reasonCode + nextAction to decide next step without inferring from step text.
+ * Shared outcome types for tier commands.
+ * Tier-start outcomes match harness TierOutcome (contracts); tier-end keeps its own status set.
  */
 
 import type { TierName } from '../tiers/shared/types';
+import type { TierOutcome } from '../harness/contracts';
 
 export type TierEndStatus =
   | 'completed'
@@ -22,18 +23,8 @@ export interface CascadeInfo {
   command: string;
 }
 
-export type TierStartStatus = 'completed' | 'plan' | 'failed' | 'blocked';
-
-export interface TierStartOutcome {
-  status: TierStartStatus;
-  reasonCode: string;
-  nextAction: string;
-  /** User-facing deliverables summary for plan-mode display in chat. */
-  deliverables?: string;
-  cascade?: CascadeInfo;
-  /** When reasonCode is guide_fill_pending, path to the guide file the agent must fill (relative to project). */
-  guidePath?: string;
-}
+/** Same as harness/kernel TierOutcome — single contract for start flows. */
+export type TierStartOutcome = TierOutcome;
 
 export interface TierStartResult {
   success: boolean;
@@ -50,6 +41,11 @@ export interface TierEndOutcome {
   /** User-facing verification checklist or deliverables summary (for display in chat). */
   deliverables?: string;
   cascade?: CascadeInfo;
+  /**
+   * When true, tier-end failed in the shared git step; control plane may offer resume at `git`
+   * after the user fixes merge/push state.
+   */
+  tierEndGitResumable?: boolean;
 }
 
 export function buildTierEndOutcome(
@@ -57,7 +53,8 @@ export function buildTierEndOutcome(
   reasonCode: string,
   nextAction: string,
   cascade?: CascadeInfo,
-  deliverables?: string
+  deliverables?: string,
+  extras?: { tierEndGitResumable?: boolean }
 ): TierEndOutcome {
   return {
     status,
@@ -65,5 +62,6 @@ export function buildTierEndOutcome(
     nextAction,
     ...(deliverables !== undefined && deliverables !== '' && { deliverables }),
     ...(cascade !== undefined && { cascade }),
+    ...(extras?.tierEndGitResumable === true && { tierEndGitResumable: true }),
   };
 }

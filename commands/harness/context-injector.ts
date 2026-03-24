@@ -71,6 +71,14 @@ function buildPlanFromSpec(spec: WorkflowSpec): ContextInjectionPlan {
     });
   }
 
+  scoredCandidates.push({
+    artifactId: 'agent-model-config',
+    path: '.project-manager/agent-model-config.json',
+    kind: 'governance_rule',
+    priority: 'low',
+    estimatedTokens: 50,
+  });
+
   // Layer 2: WorkProfile overlay — extra context from classifier (when present)
   if (spec.workProfile) {
     const seenPaths = new Set(scoredCandidates.map((r) => r.path));

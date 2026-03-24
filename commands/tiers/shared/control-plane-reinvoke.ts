@@ -22,6 +22,19 @@ export function buildStartReinvokeParams(
 }
 
 /**
+ * Build tier-end re-invoke params: merge execution toggles into `params.options` without dropping existing keys.
+ */
+export function buildEndReinvokeParams(
+  baseParams: Record<string, unknown>,
+  options: CommandExecutionOptions
+): Record<string, unknown> {
+  const existing = baseParams.options as CommandExecutionOptions | undefined;
+  const mergedOptions: CommandExecutionOptions =
+    existing != null && typeof existing === 'object' ? { ...existing, ...options } : { ...options };
+  return { ...baseParams, options: mergedOptions };
+}
+
+/**
  * Build reinvoke params for "start with execute" for a given tier.
  * Returns a Promise that resolves to StartReinvokeParams for known tiers and rejects for unknown tier.
  */

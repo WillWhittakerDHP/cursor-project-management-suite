@@ -107,8 +107,22 @@ async function tryAutoResolveSubmodule(
 }
 
 export async function gitMerge(params: GitMergeParams): Promise<{ success: boolean; output: string }> {
-  const targetBranch = params.targetBranch || await getCurrentBranch();
-  const currentBranch = await getCurrentBranch();
+  const targetBranchRaw = params.targetBranch ?? (await getCurrentBranch());
+  const targetBranch = targetBranchRaw?.trim() ?? '';
+  if (!targetBranch) {
+    return {
+      success: false,
+      output: 'Cannot merge: no target branch (pass targetBranch or checkout a branch).',
+    };
+  }
+  const currentBranchRaw = await getCurrentBranch();
+  const currentBranch = currentBranchRaw?.trim() ?? '';
+  if (!currentBranch) {
+    return {
+      success: false,
+      output: 'Cannot merge: could not read current branch.',
+    };
+  }
   const skipStash = params.skipStash ?? false;
   const preferSource = params.preferSource ?? false;
   const autoResolveSubmodule = params.autoResolveSubmodule ?? false;

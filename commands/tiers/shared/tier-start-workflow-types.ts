@@ -16,6 +16,8 @@ import type { TierContextSources } from './context-policy';
 export interface TierDownPlanItem {
   id: string;
   description: string;
+  /** True when harness synthesized this row for a **Leaf tier** decomposition. */
+  autoScaffolded?: boolean;
 }
 
 /** Parsed Goal, Files, Approach, Checkpoint sections from a planning doc. Used to seed child planning docs from tier-up. */
@@ -50,6 +52,8 @@ export interface TierStartWorkflowContext {
   stepPath?: string[];
   /** Last result from ensureBranch hook (success path); used for targeted artifact recovery after checkout. */
   branchEnsureResult?: EnsureTierBranchResult;
+  /** Planning doc declared **Leaf tier**; skip guide_fill_pending gate in run-start-steps. */
+  leafTier?: boolean;
 }
 
 /**

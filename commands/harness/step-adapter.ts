@@ -1,16 +1,23 @@
 /**
- * Tier adapter: maps kernel step intents to existing tier start/end implementations.
- * Runs full legacy workflow on first step for parity; step-by-step refinement can follow.
- * Uses ctx.traceHandle from the kernel so a single trace is recorded.
+ * Step adapter: Pattern A — TierAdapter.runStep runs full tier start/end orchestration on validate_identifier.
+ * Outcome normalization lives here (formerly harness/adapters.ts).
  */
 
-import type { TierAdapter as ITierAdapter, HarnessContext, StepId, StepRunResult } from './contracts';
-import { adaptTierStartOutcomeToHarness, adaptTierEndOutcomeToHarness } from './adapters';
+import type {
+  TierAdapter as ITierAdapter,
+  HarnessContext,
+  StepId,
+  StepRunResult,
+  TierOutcome,
+  TierStatus,
+} from './contracts';
+import { parseReasonCode } from './reason-code';
 import type { TierConfig } from '../tiers/shared/types';
 import type { TierStartParams } from '../tiers/shared/tier-start';
 import type { TierEndParams } from '../tiers/shared/tier-end';
 import type { CommandExecutionOptions } from '../utils/command-execution-mode';
 import type { WorkflowCommandContext } from '../utils/command-context';
+import type { TierStartOutcome, TierEndOutcome, TierEndStatus } from '../utils/tier-outcome';
 import { featureStartImpl } from '../tiers/feature/composite/feature-start-impl';
 import { phaseStartImpl } from '../tiers/phase/composite/phase-start-impl';
 import { sessionStartImpl } from '../tiers/session/composite/session-start-impl';
@@ -23,16 +30,44 @@ import { getDefaultShadowRecorder } from './run-recorder-shadow';
 
 const FIRST_STEP: StepId = 'validate_identifier';
 
-export interface TierAdapterOptions {
+function mapEndStatusToTierStatus(s: TierEndStatus): TierStatus {
+  switch (s) {
+    case 'completed':
+      return 'completed';
+    case 'blocked_needs_input':
+      return 'needs_input';
+    case 'blocked_fix_required':
+      return 'blocked';
+    case 'failed':
+      return 'failed';
+  }
+}
+
+function adaptTierStartOutcomeToHarness(outcome: TierStartOutcome): TierOutcome {
+  return {
+    ...outcome,
+    reasonCode: parseReasonCode(outcome.reasonCode),
+  };
+}
+
+function adaptTierEndOutcomeToHarness(outcome: TierEndOutcome): TierOutcome {
+  return {
+    status: mapEndStatusToTierStatus(outcome.status),
+    reasonCode: parseReasonCode(outcome.reasonCode),
+    nextAction: outcome.nextAction,
+    ...(outcome.deliverables !== undefined && outcome.deliverables !== '' && { deliverables: outcome.deliverables }),
+    ...(outcome.cascade !== undefined && { cascade: { ...outcome.cascade, tier: outcome.cascade.tier } }),
+  };
+}
+
+export interface StepAdapterOptions {
   config: TierConfig;
   params: TierStartParams | TierEndParams;
   options?: CommandExecutionOptions;
-  /** When present (tier-start/tier-end), impls that accept context use it instead of re-resolving from params. */
   context?: WorkflowCommandContext;
 }
 
-/** Create a tier adapter that delegates to the legacy start/end impls. Runs full workflow on first step. */
-export function createTierAdapter(opts: TierAdapterOptions): ITierAdapter {
+export function createStepAdapter(opts: StepAdapterOptions): ITierAdapter {
   const { config, params, options, context } = opts;
   const recorder = getDefaultShadowRecorder();
   let ran = false;
@@ -44,12 +79,21 @@ export function createTierAdapter(opts: TierAdapterOptions): ITierAdapter {
       ran = true;
 
       const shadowContext = { recorder, handle: ctx.traceHandle };
-
       const spec = ctx.spec;
+
       if (spec.action === 'start') {
         const startParams = params as TierStartParams;
         const resolvedCtx = context ?? undefined;
-        let result: { success: boolean; output: string; outcome: { reasonCode: string; nextAction: string; deliverables?: string; cascade?: import('./contracts').CascadeInfo } };
+        let result: {
+          success: boolean;
+          output: string;
+          outcome: {
+            reasonCode: string;
+            nextAction: string;
+            deliverables?: string;
+            cascade?: import('./contracts').CascadeInfo;
+          };
+        };
         switch (config.name) {
           case 'feature':
             result = await featureStartImpl(
@@ -95,17 +139,29 @@ export function createTierAdapter(opts: TierAdapterOptions): ITierAdapter {
             result = await taskStartImpl(context!, options, shadowContext);
             break;
           default:
-            result = { success: false, output: '', outcome: { reasonCode: 'unknown_tier', nextAction: 'Unknown tier.' } };
+            result = {
+              success: false,
+              output: '',
+              outcome: { reasonCode: 'unknown_tier', nextAction: 'Unknown tier.' },
+            };
         }
-        const outcome = adaptTierStartOutcomeToHarness(result.outcome as import('../utils/tier-outcome').TierStartOutcome);
-        ctx.output.push(result.output);
+        const outcome = adaptTierStartOutcomeToHarness(result.outcome as TierStartOutcome);
         return { success: result.success, output: result.output, outcome, exitEarly: true };
       }
 
       if (spec.action === 'end') {
         const endParams = params as TierEndParams;
         const resolvedCtx = context ?? undefined;
-        let result: { success: boolean; output: string; outcome: { reasonCode: string; nextAction: string; deliverables?: string; cascade?: import('./contracts').CascadeInfo } };
+        let result: {
+          success: boolean;
+          output: string;
+          outcome: {
+            reasonCode: string;
+            nextAction: string;
+            deliverables?: string;
+            cascade?: import('./contracts').CascadeInfo;
+          };
+        };
         switch (config.name) {
           case 'feature':
             result = await featureEndImpl(
@@ -136,10 +192,13 @@ export function createTierAdapter(opts: TierAdapterOptions): ITierAdapter {
             );
             break;
           default:
-            result = { success: false, output: '', outcome: { reasonCode: 'unknown_tier', nextAction: 'Unknown tier.' } };
+            result = {
+              success: false,
+              output: '',
+              outcome: { reasonCode: 'unknown_tier', nextAction: 'Unknown tier.' },
+            };
         }
-        const outcome = adaptTierEndOutcomeToHarness(result.outcome as import('../utils/tier-outcome').TierEndOutcome);
-        ctx.output.push(result.output);
+        const outcome = adaptTierEndOutcomeToHarness(result.outcome as TierEndOutcome);
         return { success: result.success, output: result.output, outcome, exitEarly: true };
       }
 

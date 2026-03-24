@@ -17,7 +17,7 @@
  * @param replacements Optional template replacements (key-value pairs)
  */
 
-import { resolveFeatureDirectoryFromPlan } from '../../utils';
+import { resolveFeatureDirectoryFromPlan, resolveFeatureDirectoryOrActive } from '../../utils';
 import { WorkflowCommandContext } from '../../utils/command-context';
 import { WorkflowId } from '../../utils/id-utils';
 import { TemplateReplacements } from '../../utils/template-manager';
@@ -32,7 +32,7 @@ export async function workflowCreateFromTemplate(
   featureName?: string,
   replacements: TemplateReplacements = {}
 ): Promise<string> {
-  const resolved = await resolveFeatureDirectoryFromPlan(featureName);
+  const resolved = await resolveFeatureDirectoryOrActive(featureName);
   const context = new WorkflowCommandContext(resolved);
   const output: string[] = [];
   

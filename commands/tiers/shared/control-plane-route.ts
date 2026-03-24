@@ -14,6 +14,8 @@ import { parseReasonCode } from '../../harness/reason-code';
 import type { ReasonCode } from '../../harness/contracts';
 import {
   handleContextGathering,
+  handleGuideFillPending,
+  handleGuideIncomplete,
   handlePlanningDocIncomplete,
   handlePendingPushConfirmation,
   handleVerificationWorkSuggested,
@@ -25,6 +27,9 @@ import {
   handleReopenOk,
   handleUncommittedChanges,
   handleWrongBranchBeforeCommit,
+  handleExpectedBranchMissingRunTierStart,
+  handleAuditFixCommitFailedEnd,
+  handleGitFailedTierEnd,
 } from './control-plane-handlers';
 
 /**
@@ -48,6 +53,8 @@ export function routeByOutcome(
     switch (reasonCode) {
       case 'planning_doc_incomplete':
         return handlePlanningDocIncomplete(outcome, ctx);
+      case 'guide_incomplete':
+        return handleGuideIncomplete(outcome, ctx);
       case 'validation_failed':
         return handleFailure(outcome, result.output);
       case 'audit_failed': {
@@ -65,10 +72,19 @@ export function routeByOutcome(
       }
       case 'test_failed':
       case 'preflight_failed':
-      case 'git_failed':
         return handleFailure(outcome, result.output);
+      case 'git_failed':
+        return handleGitFailedTierEnd(outcome, ctx, result.output);
+      case 'conflict_markers_in_tree':
+        return handleFailure(outcome, result.output);
+      case 'audit_fix_commit_failed':
+        return handleAuditFixCommitFailedEnd(outcome, ctx);
       case 'wrong_branch_before_commit':
-        return handleWrongBranchBeforeCommit(outcome);
+        return handleWrongBranchBeforeCommit(outcome, ctx);
+      case 'expected_branch_missing_run_tier_start':
+        return handleExpectedBranchMissingRunTierStart(outcome);
+      case 'app_not_running':
+        return handleFailure(outcome, result.output);
       case 'unhandled_error':
         return handleFailure(outcome, result.output);
       default:
@@ -90,7 +106,7 @@ export function routeByOutcome(
     case 'uncommitted_blocking':
       return handleUncommittedChanges(outcome, ctx);
     case 'guide_fill_pending':
-      return handlePlanningDocIncomplete(outcome, ctx);
+      return handleGuideFillPending(outcome, ctx);
     case 'start_ok':
     case 'end_ok':
       return handleSuccessWithOptionalCascade(outcome);

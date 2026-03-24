@@ -1,14 +1,16 @@
 /**
- * Shared control-plane contract for tier workflows.
- * Single routing contract consumed by start, end, and reopen flows.
- * Behavioral rules (mode switch, present choices in chat, re-invoke) are keyed by reasonCode.
+ * Shared control-plane routing context and command result shapes.
+ * ControlPlaneDecision and QuestionKey are defined in harness/contracts.ts (single source of truth).
  */
 
 import type { TierName } from './types';
 import type { CascadeInfo } from '../../utils/tier-outcome';
 import type { CommandExecutionOptions } from '../../utils/command-execution-mode';
+import type { ControlPlaneDecision, QuestionKey } from '../../harness/contracts';
 
-/** Action verb for tier commands. */
+export type { ControlPlaneDecision, QuestionKey };
+
+/** Action verb for tier commands in routing context. */
 export type TierAction = 'start' | 'end' | 'reopen';
 
 /**
@@ -27,6 +29,8 @@ export interface ControlPlaneOutcome {
   /** User-facing deliverables summary for plan-mode display in chat. */
   deliverables?: string;
   cascade?: CascadeInfo;
+  /** Tier-end git step failure: allows control-plane resume at `git`. */
+  tierEndGitResumable?: boolean;
 }
 
 /** Result shape that control-plane can route on (start or end). */
@@ -47,31 +51,6 @@ export interface ControlPlaneContext {
   workProfile?: import('../../harness/work-profile').WorkProfile;
 }
 
-/**
- * Decision produced by a reasonCode handler.
- * stop: true = do not proceed to execute/cascade; show message and wait for user.
- * nextInvoke: when user approves, run this command (e.g. same tier start with mode: 'execute').
- */
-export interface ControlPlaneDecision {
-  stop: boolean;
-  message: string;
-  /** Required mode for the agent before showing message / choices in chat. */
-  requiredMode: 'plan' | 'agent';
-  /**
-   * When present, command output includes message + options; agent presents in chat.
-   * Key identifies the choice set (cascade, verification_options, failure_options, etc.).
-   */
-  questionKey?: string;
-  /** For cascade: exact command string to run on "Yes". */
-  cascadeCommand?: string;
-  /** For approve_execute: re-invoke same command with these params (includes mode: 'execute'). */
-  nextInvoke?: {
-    tier: TierName;
-    action: TierAction;
-    params: unknown; // StartReinvokeParams when action === 'start'
-  };
-}
-
 /** Known reasonCodes that have explicit behavioral rules in the playbook. */
 export const REASON_CODE = {
   PLAN_MODE: 'plan_mode',
@@ -85,19 +64,16 @@ export const REASON_CODE = {
   WRONG_BRANCH_BEFORE_COMMIT: 'wrong_branch_before_commit',
 } as const;
 
-/** Choice-set keys for message + options (presented in chat). */
+/** Choice-set keys for message + options (presented in chat). Values must match harness QuestionKey. */
 export const QUESTION_KEYS = {
-  APPROVE_EXECUTE: 'approve_execute',
-  /** Task tier: explicit "Begin Coding" confirmation after design artifact. */
-  APPROVE_EXECUTE_TASK: 'approve_execute_task',
-  CONTEXT_GATHERING: 'context_gathering',
-  CASCADE: 'cascade',
-  PUSH_CONFIRMATION: 'push_confirmation',
-  VERIFICATION_OPTIONS: 'verification_options',
-  FAILURE_OPTIONS: 'failure_options',
-  /** audit_failed: Retry / Fix audit with governance context (/audit-fix) / Skip. */
-  AUDIT_FAILED_OPTIONS: 'audit_failed_options',
-  REOPEN_OPTIONS: 'reopen_options',
-  UNCOMMITTED_CHANGES: 'uncommitted_changes',
+  APPROVE_EXECUTE: 'approve_execute' as const satisfies QuestionKey,
+  APPROVE_EXECUTE_TASK: 'approve_execute_task' as const satisfies QuestionKey,
+  CONTEXT_GATHERING: 'context_gathering' as const satisfies QuestionKey,
+  CASCADE: 'cascade_confirmation' as const satisfies QuestionKey,
+  PUSH_CONFIRMATION: 'push_confirmation' as const satisfies QuestionKey,
+  VERIFICATION_OPTIONS: 'verification_options' as const satisfies QuestionKey,
+  FAILURE_OPTIONS: 'failure_options' as const satisfies QuestionKey,
+  AUDIT_FAILED_OPTIONS: 'audit_failed_options' as const satisfies QuestionKey,
+  REOPEN_OPTIONS: 'reopen_options' as const satisfies QuestionKey,
+  UNCOMMITTED_CHANGES: 'uncommitted_changes' as const satisfies QuestionKey,
 } as const;
-

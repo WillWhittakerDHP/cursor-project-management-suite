@@ -6,7 +6,14 @@
 import type { TierStartWorkflowContext, TierStartWorkflowHooks, TierStartWorkflowResult } from '../tiers/shared/tier-start-workflow-types';
 import type { TierStartResult } from '../utils/tier-outcome';
 import type { PlanningTier } from '../utils/planning-doc-paths';
+import type { GateProfile } from './work-profile';
+import type { TierName } from '../tiers/shared/types';
 import { recoverPlanningArtifactsAfterCheckout } from '../git/shared/git-manager';
+import {
+  buildWorkflowFrictionEntryFromOrchestrator,
+  recordWorkflowFriction,
+  shouldAppendWorkflowFriction,
+} from '../utils/workflow-friction-log';
 import {
   stepAppendHeaderAndBranchHierarchy,
   stepAppendBranchHierarchy,
@@ -41,6 +48,23 @@ async function recordStep(
 }
 
 function attachShadowPayload(ctx: TierStartWorkflowContext, result: TierStartResult): TierStartWorkflowResult {
+  if (!result.success && result.outcome) {
+    const reasonCodeRaw = String(result.outcome.reasonCode ?? '');
+    if (shouldAppendWorkflowFriction({ success: false, reasonCodeRaw })) {
+      recordWorkflowFriction(
+        buildWorkflowFrictionEntryFromOrchestrator({
+          action: 'start',
+          tier: ctx.config.name,
+          identifier: ctx.identifier,
+          featureName: ctx.context.feature.name,
+          reasonCodeRaw,
+          stepPath: ctx.stepPath,
+          nextAction: result.outcome.nextAction,
+          deliverablesExcerpt: result.outcome.deliverables,
+        })
+      );
+    }
+  }
   if (ctx.runTraceHandle != null) {
     return { ...result, __traceHandle: ctx.runTraceHandle, __stepPath: [...(ctx.stepPath ?? [])] };
   }
@@ -74,6 +98,25 @@ const START_WORKFLOW_STEP_IDS = [
 ] as const;
 
 /**
+ * Steps that run for a gate profile.
+ * Express omits `ensure_guide_from_plan` and `context_gathering` (planning path uses `/accepted-code` for tasks; feature scope still comes from `.tier-scope`).
+ */
+export function getActiveSteps(gateProfile: GateProfile, _tier: TierName): readonly string[] {
+  const all = [...START_WORKFLOW_STEP_IDS];
+  switch (gateProfile) {
+    case 'decomposition':
+      return all;
+    case 'standard':
+    case 'fast':
+      return all.filter(s => s !== 'ensure_guide_from_plan');
+    case 'express':
+      return all.filter(s => s !== 'ensure_guide_from_plan' && s !== 'context_gathering');
+    default:
+      return all;
+  }
+}
+
+/**
  * Run the shared start workflow. Tier impls supply context and hooks; steps run in order.
  * When ctx.runRecorder and ctx.runTraceHandle are set, step events and stepPath are recorded (shadow mode).
  * When options.resumeAfterStep is set, steps before that step are skipped so the command can proceed past a gate without re-running from the top.
@@ -87,10 +130,11 @@ export async function runTierStartWorkflow(
 
   const guideFillComplete = ctx.options?.guideFillComplete === true;
   const resumeAfterStep = ctx.options?.resumeAfterStep;
-  const firstStepIndex =
-    resumeAfterStep != null
-      ? Math.max(0, START_WORKFLOW_STEP_IDS.indexOf(resumeAfterStep as (typeof START_WORKFLOW_STEP_IDS)[number]))
-      : 0;
+  const gateProfile: GateProfile = ctx.options?.workProfile?.gateProfile ?? 'decomposition';
+  const activeSteps = [...getActiveSteps(gateProfile, ctx.config.name as TierName)];
+  const resumeIdx =
+    resumeAfterStep != null ? activeSteps.indexOf(resumeAfterStep as (typeof START_WORKFLOW_STEP_IDS)[number]) : -1;
+  const firstStepIndex = resumeAfterStep != null ? Math.max(0, resumeIdx >= 0 ? resumeIdx : 0) : 0;
 
   const partAStepIds = new Set([
     'header_branch',
@@ -101,19 +145,21 @@ export async function runTierStartWorkflow(
     'ensure_guide_from_plan',
   ]);
   const shouldRunStep = (stepId: string): boolean => {
+    if (!activeSteps.includes(stepId)) return false;
     if (guideFillComplete && partAStepIds.has(stepId)) return false;
-    const idx = START_WORKFLOW_STEP_IDS.indexOf(stepId as (typeof START_WORKFLOW_STEP_IDS)[number]);
+    const idx = activeSteps.indexOf(stepId);
     return idx >= 0 && idx >= firstStepIndex;
   };
 
-  // When resuming past context_gathering, set planning doc path so later steps have it.
-  if (resumeAfterStep && firstStepIndex > START_WORKFLOW_STEP_IDS.indexOf('context_gathering')) {
-    if (!ctx.planningDocPath) {
-      ctx.planningDocPath = ctx.context.documents.getPlanningDocRelativePath(
-        ctx.config.name as PlanningTier,
-        ctx.identifier
-      );
-    }
+  // When context_gathering is skipped (express, or resume past it), seed planning doc path for downstream steps and `/accepted-code` / plan gates.
+  const cgIdx = activeSteps.indexOf('context_gathering');
+  const skipsContextGathering =
+    cgIdx < 0 || (resumeAfterStep != null && cgIdx >= 0 && firstStepIndex > cgIdx);
+  if (skipsContextGathering && !ctx.planningDocPath) {
+    ctx.planningDocPath = ctx.context.documents.getPlanningDocRelativePath(
+      ctx.config.name as PlanningTier,
+      ctx.identifier
+    );
   }
 
   if (!guideFillComplete) {
@@ -191,13 +237,16 @@ export async function runTierStartWorkflow(
       logStepTiming('ensure_guide_from_plan', 'exit');
     }
 
-    // Option A: for phase/session return guide_fill_pending only when the guide is not yet filled; otherwise continue to Part B.
+    // Gate 2 (decomposition profile only): feature/phase/session stop until guide is filled — unless leaf tier auto-scaffold.
     const tier = ctx.config.name;
-    if (tier === 'phase' || tier === 'session') {
+    const skipGuideGate = gateProfile !== 'decomposition' || ctx.leafTier === true;
+    if (!skipGuideGate && (tier === 'feature' || tier === 'phase' || tier === 'session')) {
       const guidePath =
-        tier === 'phase'
-          ? ctx.context.paths.getPhaseGuidePath(ctx.identifier)
-          : ctx.context.paths.getSessionGuidePath(ctx.identifier);
+        tier === 'feature'
+          ? ctx.context.paths.getFeatureGuidePath()
+          : tier === 'phase'
+            ? ctx.context.paths.getPhaseGuidePath(ctx.identifier)
+            : ctx.context.paths.getSessionGuidePath(ctx.identifier);
       const guideAlreadyFilled = await isGuideFilled(tier, ctx.identifier, ctx.context);
       if (!guideAlreadyFilled) {
         return attachShadowPayload(ctx, {
@@ -207,9 +256,9 @@ export async function runTierStartWorkflow(
             status: 'plan',
             reasonCode: 'guide_fill_pending',
             guidePath,
-            nextAction: `The agent must fill the guide (${guidePath}) with concrete Goal, Files, Approach, and Checkpoint for each tierDown block using the planning doc as context; then **the user** runs /accepted-proceed again. Do not run the command yourself.`,
+            nextAction: `The agent must fill the guide (\`${guidePath}\`) with concrete Goal, Files, Approach, and Checkpoint for each tierDown block using the planning doc as context; then **the user** runs **/accepted-build**. Do not run the command yourself.`,
             deliverables:
-              'Step 2 — Actual planning: the agent fills the guide with concrete Goal, Files, Approach, and Checkpoint for each session/task using the planning doc as context; then **the user** runs /accepted-proceed again.',
+              'Step 2 — Build: the agent fills the guide with concrete Goal, Files, Approach, and Checkpoint for each session/task; then **the user** runs **/accepted-build**.',
           },
         });
       }

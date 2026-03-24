@@ -25,28 +25,29 @@ Quick one-liners: [SKILL.md](SKILL.md) § Reason codes.
 
 ### context_gathering
 
-- **Step 1:** Command created a short planning doc. Agent **must** fill Goal, Files, Approach, Checkpoint, **How we build the tierDown** (one bullet line per child unit). User runs **`/accepted-proceed`** when ready (agent does not run it).
-- Present `controlPlaneDecision.message` (insight / proposal / decision blocks). Open planning doc; refine in place as user answers.
-- **Phase/session:** After first `/accepted-proceed`, may return **`guide_fill_pending`** — agent fills guide; user runs `/accepted-proceed` again (**Gate 2**).
-- **Enumerate tierDowns** before inviting `/accepted-proceed`: session guide needs `Task X.Y.Z.N:` headings; phase guide lists sessions; sync list into planning doc bullets.
+- **Step 1:** Command created a planning doc. The agent **must fill the planning file immediately** — read Reference paths, write Analysis / Story / Design / Deliverables / AC (and Decomposition or **`**Leaf tier**`** for non-task). **Do not** treat `controlPlaneDecision.message` as instructions *for the user to follow alone*; you execute the fill, save the doc, then summarize in chat. User runs **`/accepted-plan`** when ready (feature/phase/session); tasks use **`/accepted-code`** (agent does not run those slash commands).
+- Present `controlPlaneDecision.message` (includes **AGENT DIRECTIVE** + CONTEXT). Open planning doc; refine in place; discuss with the user only after you have drafted substantive sections.
+- **Coverage check (non-task):** Before `/accepted-plan`, re-read Goal/Plan and Decomposition; confirm steps cover the goal in chat.
+- **Phase/session (decomposition profile):** After **`/accepted-plan`**, may return **`guide_fill_pending`** — agent fills guide; user runs **`/accepted-build`** (**Gate 2**).
+- **Enumerate tierDowns** before inviting **`/accepted-plan`**: session guide needs `Task X.Y.Z.N:` headings; phase guide lists sessions; sync list into planning doc decomposition.
 - Do not skip planning doc fill; command blocks with `planning_doc_incomplete` until filled.
 
 ### planning_doc_incomplete
 
-- User ran `/accepted-proceed` or `/accepted-code` but placeholders remain in the planning doc.
-- Present message verbatim. Agent **must** edit the planning doc (including **How we build the tierDown** bullets). User re-runs proceed command.
+- User ran **`/accepted-plan`** or **`/accepted-code`** but placeholders remain in the planning doc.
+- Present message verbatim. Agent **must** edit the planning doc. User re-runs the same accepted command.
 
 ### guide_fill_pending
 
-- After first `/accepted-proceed` for phase/session; Part A ran (branch, guide scaffold).
+- After **`/accepted-plan`** for phase/session (decomposition profile); Part A ran (branch, guide scaffold).
 - Open `outcome.guidePath` / message path. Fill each Session/Task block; **do not** remove or merge blocks; targeted edits only.
 - Preserve required guide sections; add from tier template if missing.
-- User runs **`/accepted-proceed`** again for Gate 2.
+- User runs **`/accepted-build`** for Gate 2.
 
 ### guide_incomplete
 
 - Gate 2 failed: placeholders remain in guide tierDown blocks.
-- Agent fills placeholders; user runs **`/accepted-proceed`** again.
+- Agent fills placeholders; user runs **`/accepted-build`** again.
 
 ### pending_push_confirmation
 
@@ -92,14 +93,13 @@ Quick one-liners: [SKILL.md](SKILL.md) § Reason codes.
 - Task-end success with optional cascade.
 - If cascade: run cascade confirmation; on across, next is **`/task-start <nextTaskId>`**, not session-end unless direction is up.
 
-### task_start_success
+### start_ok
 
-- After task-start execute (including after **`/accepted-code`**): output includes implementation orders and **`/task-end`** hint.
-- Agent **implements** (code changes) **before** running **`/task-end`**. “Ready for task-end” means after implementation is done.
-
-### session_start_success
-
-- Review session context and first task. If cascade present, confirm cascade to first **`/task-start`**.
+- Start succeeded. Control plane returns `stop: false, requiredMode: 'agent'`.
+- Handle optional cascade per playbook (cascade confirmation if `outcome.cascade` present).
+- **Task tier (including after `/accepted-code`):** Output contains **Implementation Orders** (Goal, Files, Approach, Checkpoint) and a **`/task-end`** hint. The agent **must implement the task now** — read the task planning doc, write code, edit files per the orders. Do not summarize the plan back to the user; do not ask permission to begin; **write code immediately**. Run **`/task-end`** only after implementation is complete.
+- **Session tier:** Review session context and first task. If cascade present, confirm cascade to first **`/task-start`**.
+- **Feature / phase tier:** Present success; handle cascade to first child tier if present.
 
 ### reopen_ok
 

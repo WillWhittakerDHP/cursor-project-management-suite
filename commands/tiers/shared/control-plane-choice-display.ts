@@ -52,7 +52,14 @@ export function formatChoiceForChat(decision: ControlPlaneDecision): string {
   if (!decision.questionKey) return '';
   const options = QUESTION_KEY_OPTIONS[decision.questionKey];
   if (!options) return '';
-  const prompt = decision.message?.trim() ? decision.message : 'How would you like to proceed?';
+  // WHY: For audit_failed the command output already includes the full report (deliverables);
+  // repeating decision.message here duplicates a large block in chat. See tier-end finalOutput + routeByOutcome.
+  const prompt =
+    decision.questionKey === QUESTION_KEYS.AUDIT_FAILED_OPTIONS
+      ? '**Audit did not pass.** Use the report in the command output above, then choose how to proceed.'
+      : decision.message?.trim()
+        ? decision.message
+        : 'How would you like to proceed?';
   const optionLines = options.map((o, i) => `${i + 1}. **${o.label}**`).join('\n');
   const cascadeNote =
     decision.questionKey === QUESTION_KEYS.CASCADE && decision.cascadeCommand

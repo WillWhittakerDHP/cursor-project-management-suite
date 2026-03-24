@@ -46,6 +46,14 @@ export function getWorkProfileContextArtifacts(input: WorkProfileContextInput): 
   const packArtifacts = getArtifactsForContextPack(pack, { tier, identifier, featureName });
   candidates.push(...packArtifacts);
 
+  candidates.push({
+    artifactId: 'agent-model-config',
+    path: '.project-manager/agent-model-config.json',
+    kind: 'governance_rule',
+    priority: 'low',
+    estimatedTokens: 50,
+  });
+
   return candidates;
 }
 

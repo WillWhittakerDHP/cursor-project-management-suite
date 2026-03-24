@@ -181,6 +181,18 @@ export async function resolveFeatureDirectoryFromPlan(featureRef: string): Promi
 }
 
 /**
+ * Explicit PROJECT_PLAN ref when `featureRef` is non-empty; otherwise active feature from `.tier-scope`.
+ * WHY: Many command params expose `featureName?`; callers must not pass `undefined` into `resolveFeatureDirectoryFromPlan`.
+ */
+export async function resolveFeatureDirectoryOrActive(featureRef?: string): Promise<string> {
+  const trimmed = featureRef?.trim();
+  if (trimmed) {
+    return resolveFeatureDirectoryFromPlan(trimmed);
+  }
+  return resolveActiveFeatureDirectory();
+}
+
+/**
  * Active feature directory from `.project-manager/.tier-scope` (written on successful tier-starts).
  * WHY: Explicit scope file — no git-branch inference (see HARNESS_CHARTER / resolveWorkflowScope).
  */

@@ -8,7 +8,7 @@
  */
 
 import { WorkflowCommandContext } from './command-context';
-import { resolveFeatureDirectoryFromPlan } from './workflow-scope';
+import { resolveFeatureDirectoryFromPlan, resolveFeatureDirectoryOrActive } from './workflow-scope';
 import { MarkdownUtils } from './markdown-utils';
 import { WorkflowId } from './id-utils';
 
@@ -79,7 +79,7 @@ export async function readGuide(
   sessionId?: string,
   featureName?: string
 ): Promise<string> {
-  const resolved = await resolveFeatureDirectoryFromPlan(featureName);
+  const resolved = await resolveFeatureDirectoryOrActive(featureName);
   const context = new WorkflowCommandContext(resolved);
   
   let guideContent: string;

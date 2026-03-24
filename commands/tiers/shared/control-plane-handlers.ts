@@ -9,7 +9,7 @@ import type {
   ControlPlaneOutcome,
 } from './control-plane-types';
 import { QUESTION_KEYS } from './control-plane-types';
-import { buildStartReinvokeParams } from './control-plane-reinvoke';
+import { buildStartReinvokeParams, buildEndReinvokeParams } from './control-plane-reinvoke';
 import { getWorkProfileMessageSuffix } from './control-plane-work-profile-prompt';
 
 function baseCascadeDecision(outcome: ControlPlaneOutcome, _requiredMode: 'plan' | 'agent'): ControlPlaneDecision {
@@ -33,8 +33,8 @@ function baseCascadeDecision(outcome: ControlPlaneOutcome, _requiredMode: 'plan'
 export function handlePlanningDocIncomplete(outcome: ControlPlaneOutcome, ctx?: ControlPlaneContext): ControlPlaneDecision {
   const defaultNext =
     ctx?.tier === 'task'
-      ? 'Planning doc must be filled before proceeding. The agent must fill the planning doc (replace Goal/Files/Approach/Checkpoint with a concrete draft from context). Then **the user** runs **/accepted-code** again.'
-      : 'Planning doc must be filled before proceeding. The agent must fill the planning doc (replace Goal/Files/Approach/Checkpoint with a concrete draft from context). Then **the user** runs /accepted-proceed again.';
+      ? 'Planning doc must be filled before proceeding. The agent must fill the planning doc (replace placeholders with a concrete draft from context). Then **the user** runs **/accepted-code** again.'
+      : 'Planning doc must be filled before proceeding. The agent must fill the planning doc (Analysis, Decomposition, Goal, etc.). Then **the user** runs **/accepted-plan** again.';
   const base = outcome.nextAction ?? defaultNext;
   const suffix = ctx ? getWorkProfileMessageSuffix(ctx.workProfile) : '';
   return {
@@ -44,9 +44,33 @@ export function handlePlanningDocIncomplete(outcome: ControlPlaneOutcome, ctx?: 
   };
 }
 
-/** context_gathering: show planning doc path and deliverables. Agent fills doc; user runs /accepted-proceed (feature/phase/session) or /accepted-code (task only — task output must not suggest /accepted-proceed). */
+/** context_gathering: show planning doc path and deliverables. Agent fills doc; user runs /accepted-plan (feature/phase/session) or /accepted-code (task). */
 export function handleContextGathering(outcome: ControlPlaneOutcome, ctx: ControlPlaneContext): ControlPlaneDecision {
   const base = outcome.deliverables ?? outcome.nextAction;
+  const suffix = getWorkProfileMessageSuffix(ctx.workProfile);
+  return {
+    stop: true,
+    requiredMode: 'plan',
+    message: base + suffix,
+  };
+}
+
+/** guide_fill_pending: agent fills guide; user runs /accepted-build (Gate 2). */
+export function handleGuideFillPending(outcome: ControlPlaneOutcome, ctx: ControlPlaneContext): ControlPlaneDecision {
+  const base = outcome.deliverables ?? outcome.nextAction;
+  const suffix = getWorkProfileMessageSuffix(ctx.workProfile);
+  return {
+    stop: true,
+    requiredMode: 'plan',
+    message: base + suffix,
+  };
+}
+
+/** guide_incomplete: Gate 2 blocked — guide still has placeholders. */
+export function handleGuideIncomplete(outcome: ControlPlaneOutcome, ctx: ControlPlaneContext): ControlPlaneDecision {
+  const base =
+    outcome.nextAction ??
+    'Guide still has placeholders in tierDown blocks. Fill them, save, then **the user** runs **/accepted-build** again.';
   const suffix = getWorkProfileMessageSuffix(ctx.workProfile);
   return {
     stop: true,
@@ -162,11 +186,71 @@ export function handleUncommittedChanges(
 }
 
 /** wrong_branch_before_commit: tier-end aborted because current git branch does not match the tier. User must checkout correct branch and re-run. */
-export function handleWrongBranchBeforeCommit(outcome: ControlPlaneOutcome): ControlPlaneDecision {
+export function handleWrongBranchBeforeCommit(
+  outcome: ControlPlaneOutcome,
+  ctx: ControlPlaneContext
+): ControlPlaneDecision {
+  const message =
+    outcome.deliverables ??
+    outcome.nextAction ??
+    'Wrong branch. Checkout the correct tier branch and re-run tier-end.';
+  if (ctx.action === 'end') {
+    const params = buildEndReinvokeParams(ctx.originalParams as Record<string, unknown>, {
+      resumeEndAfterStep: 'commit_remaining',
+    });
+    return {
+      stop: true,
+      requiredMode: 'plan',
+      message,
+      questionKey: QUESTION_KEYS.FAILURE_OPTIONS,
+      nextInvoke: { tier: ctx.tier, action: 'end', params },
+    };
+  }
   return {
     stop: true,
     requiredMode: 'plan',
-    message: outcome.deliverables ?? outcome.nextAction ?? 'Wrong branch. Checkout the correct tier branch and re-run tier-end.',
+    message,
+  };
+}
+
+/** audit_fix_commit_failed: autofix commit failed; after fixing git, re-run tier-end — harness resumes at end_audit. */
+export function handleAuditFixCommitFailedEnd(
+  outcome: ControlPlaneOutcome,
+  ctx: ControlPlaneContext
+): ControlPlaneDecision {
+  const params = buildEndReinvokeParams(ctx.originalParams as Record<string, unknown>, {
+    resumeEndAfterStep: 'end_audit',
+  });
+  return {
+    stop: true,
+    requiredMode: 'plan',
+    message:
+      outcome.deliverables ??
+      outcome.nextAction ??
+      'Autofix produced changes but committing them failed. Fix git state and re-run this tier-end (harness resumes at end_audit).',
+    questionKey: QUESTION_KEYS.FAILURE_OPTIONS,
+    nextInvoke: { tier: ctx.tier, action: 'end', params },
+  };
+}
+
+/** git_failed with tierEndGitResumable: offer resume at shared `git` step after user fixes merge/push. */
+export function handleGitFailedTierEnd(
+  outcome: ControlPlaneOutcome,
+  ctx: ControlPlaneContext,
+  outputFallback: string
+): ControlPlaneDecision {
+  if (ctx.action !== 'end' || outcome.tierEndGitResumable !== true) {
+    return handleFailure(outcome, outputFallback);
+  }
+  const params = buildEndReinvokeParams(ctx.originalParams as Record<string, unknown>, {
+    resumeEndAfterStep: 'git',
+  });
+  return {
+    stop: true,
+    requiredMode: 'plan',
+    message: outcome.nextAction || outputFallback,
+    questionKey: QUESTION_KEYS.FAILURE_OPTIONS,
+    nextInvoke: { tier: ctx.tier, action: 'end', params },
   };
 }
 

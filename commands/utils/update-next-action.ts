@@ -4,9 +4,9 @@
  */
 
 import { WorkflowCommandContext } from './command-context';
-import { resolveFeatureDirectoryFromPlan } from './workflow-scope';
+import { resolveFeatureDirectoryFromPlan, resolveFeatureDirectoryOrActive } from './workflow-scope';
 export async function updateNextAction(action: string, sessionId: string, featureName?: string): Promise<void> {
-  const resolved = await resolveFeatureDirectoryFromPlan(featureName);
+  const resolved = await resolveFeatureDirectoryOrActive(featureName);
   const context = new WorkflowCommandContext(resolved);
   await context.documents.updateHandoff('session', sessionId, (content) => {
     const lines = content.split('\n');

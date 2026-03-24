@@ -4,10 +4,10 @@
  */
 
 import { getCurrentDate } from './utils';
-import { resolveFeatureDirectoryFromPlan } from './workflow-scope';
+import { resolveFeatureDirectoryFromPlan, resolveFeatureDirectoryOrActive } from './workflow-scope';
 import { WorkflowCommandContext } from './command-context';
 export async function updateTimestamp(sessionId: string, featureName?: string): Promise<void> {
-  const resolved = await resolveFeatureDirectoryFromPlan(featureName);
+  const resolved = await resolveFeatureDirectoryOrActive(featureName);
   const context = new WorkflowCommandContext(resolved);
   const date = getCurrentDate();
   await context.documents.updateHandoff('session', sessionId, (content) =>

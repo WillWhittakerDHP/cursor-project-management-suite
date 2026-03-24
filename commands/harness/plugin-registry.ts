@@ -1,41 +1,42 @@
 /**
- * Plugin registry: register plugins, get sorted by spec, validate (charter §7.5).
- * Max 8 plugins; getForSpec returns plugins that apply to the spec, sorted by priority.
+ * Default PluginRegistry: register plugins, filter by appliesTo, sort by priority (ascending).
+ * Lower priority values run first in kernel plugin loops (predictable pluginAdvisory order).
  */
 
-import type { WorkflowSpec, PolicyPlugin, PluginRegistry } from './contracts';
+import type { PolicyPlugin, PluginRegistry, WorkflowSpec } from './contracts';
 
-const MAX_PLUGINS = 8;
+export class DefaultPluginRegistry implements PluginRegistry {
+  private readonly plugins: PolicyPlugin[] = [];
 
-export function createPluginRegistry(): PluginRegistry {
-  const plugins: PolicyPlugin[] = [];
+  register(plugin: PolicyPlugin): void {
+    const name = plugin.name?.trim();
+    if (!name) {
+      throw new Error('PluginRegistry.register: plugin.name must be non-empty');
+    }
+    if (this.plugins.some((p) => p.name === name)) {
+      throw new Error(`PluginRegistry.register: duplicate plugin name "${name}"`);
+    }
+    this.plugins.push(plugin);
+  }
 
-  return {
-    register(plugin: PolicyPlugin): void {
-      if (!plugin.capabilities?.length) {
-        throw new Error(`Plugin ${plugin.name} must declare capabilities.`);
+  getForSpec(spec: WorkflowSpec): PolicyPlugin[] {
+    return this.plugins
+      .filter((p) => p.appliesTo(spec))
+      .slice()
+      .sort((a, b) => a.priority - b.priority);
+  }
+
+  validate(): void {
+    const seen = new Set<string>();
+    for (const p of this.plugins) {
+      const name = p.name?.trim();
+      if (!name) {
+        throw new Error('PluginRegistry.validate: empty plugin name');
       }
-      plugins.push(plugin);
-    },
-
-    getForSpec(spec: WorkflowSpec): PolicyPlugin[] {
-      return plugins
-        .filter((p) => p.appliesTo(spec))
-        .slice()
-        .sort((a, b) => a.priority - b.priority);
-    },
-
-    validate(): void {
-      if (plugins.length > MAX_PLUGINS) {
-        throw new Error(
-          `Plugin registry: maximum ${MAX_PLUGINS} plugins allowed; got ${plugins.length}.`
-        );
+      if (seen.has(name)) {
+        throw new Error(`PluginRegistry.validate: duplicate plugin name "${name}"`);
       }
-      for (const p of plugins) {
-        if (!Array.isArray(p.capabilities) || p.capabilities.length === 0) {
-          throw new Error(`Plugin ${p.name} must declare at least one capability.`);
-        }
-      }
-    },
-  };
+      seen.add(name);
+    }
+  }
 }

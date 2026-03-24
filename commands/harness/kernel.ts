@@ -24,6 +24,22 @@ import type { CommandResultForRouting, ControlPlaneContext } from '../tiers/shar
 
 const clock = (): number => (typeof Date.now === 'function' ? Date.now() : 0);
 
+/** Cap plugin diagnostic lines so harness output stays bounded. */
+const MAX_PLUGIN_DIAGNOSTIC_CHARS = 500;
+
+function pushPluginDiagnostic(
+  ctx: HarnessContext,
+  plugin: string,
+  step: StepId | '',
+  message: string
+): void {
+  const capped =
+    message.length > MAX_PLUGIN_DIAGNOSTIC_CHARS
+      ? `${message.slice(0, MAX_PLUGIN_DIAGNOSTIC_CHARS)}…`
+      : message;
+  ctx.diagnostics.push({ plugin, step, message: capped });
+}
+
 type StepLoopResult = { success: boolean; output: string; outcome: TierOutcome } | null;
 
 function defaultOutcome(success: boolean): TierOutcome {
@@ -59,6 +75,9 @@ async function runPluginBeforeStep(
     try {
       const res: PluginStepResult = await plugin.beforeStep(ctx, stepId);
       if (res.action === 'abort_run') {
+        if (res.diagnostic) {
+          pushPluginDiagnostic(ctx, plugin.name, stepId, res.diagnostic);
+        }
         lastResult = {
           success: false,
           output: ctx.output.join('\n\n'),
@@ -67,9 +86,13 @@ async function runPluginBeforeStep(
         breakStepLoop = true;
         break;
       }
+      if (res.diagnostic) {
+        pushPluginDiagnostic(ctx, plugin.name, stepId, res.diagnostic);
+      }
       if (res.action === 'skip_step') continue;
-    } catch (_e) {
-      ctx.diagnostics.push({ plugin: plugin.name, step: stepId, message: 'beforeStep threw (ignored)' });
+    } catch (e) {
+      const detail = e instanceof Error ? e.message : String(e);
+      pushPluginDiagnostic(ctx, plugin.name, stepId, `beforeStep threw: ${detail}`);
     }
   }
   return { lastResult, breakStepLoop };
@@ -89,8 +112,9 @@ async function recordStepFailure(
     if (!plugin.onFailure) continue;
     try {
       await plugin.onFailure(ctx, stepId, err);
-    } catch (_e) {
-      ctx.diagnostics.push({ plugin: plugin.name, step: stepId, message: 'onFailure threw (ignored)' });
+    } catch (e) {
+      const detail = e instanceof Error ? e.message : String(e);
+      pushPluginDiagnostic(ctx, plugin.name, stepId, `onFailure threw: ${detail}`);
     }
   }
   const message = err instanceof Error ? err.message : String(err);
@@ -162,7 +186,7 @@ async function recordStepCompletion(
       output: ctx.output.join('\n\n'),
       outcome: stepResult.outcome,
     };
-    return { lastResult, exitEarly: stepResult.exitEarly };
+    return { lastResult, exitEarly: stepResult.exitEarly === true };
   }
   await deps.recorder.step(handle, {
     step: stepId,
@@ -185,6 +209,9 @@ async function runPluginAfterStep(
     if (!plugin.afterStep) continue;
     try {
       const res: PluginStepResult = await plugin.afterStep(ctx, stepId);
+      if (res.diagnostic) {
+        pushPluginDiagnostic(ctx, plugin.name, stepId, res.diagnostic);
+      }
       if (res.action === 'abort_run' && lastResult == null) {
         lastResult = {
           success: false,
@@ -194,8 +221,9 @@ async function runPluginAfterStep(
         breakStepLoop = true;
         break;
       }
-    } catch (_e) {
-      ctx.diagnostics.push({ plugin: plugin.name, step: stepId, message: 'afterStep threw (ignored)' });
+    } catch (e) {
+      const detail = e instanceof Error ? e.message : String(e);
+      pushPluginDiagnostic(ctx, plugin.name, stepId, `afterStep threw: ${detail}`);
     }
   }
   return { lastResult, breakStepLoop };
@@ -212,13 +240,20 @@ function applyPluginOutcomeContributions(
     try {
       const partial = plugin.contributeOutcome(ctx);
       if (partial && typeof partial === 'object') {
+        const { pluginAdvisory: partialAdvisory, ...restPartial } = partial;
+        const mergedAdvisory = [result.outcome.pluginAdvisory, partialAdvisory].filter(Boolean).join('\n\n');
         result = {
           ...result,
-          outcome: { ...result.outcome, ...partial },
+          outcome: {
+            ...result.outcome,
+            ...restPartial,
+            ...(mergedAdvisory ? { pluginAdvisory: mergedAdvisory } : {}),
+          },
         };
       }
-    } catch (_e) {
-      ctx.diagnostics.push({ plugin: plugin.name, step: '', message: 'contributeOutcome threw (ignored)' });
+    } catch (e) {
+      const detail = e instanceof Error ? e.message : String(e);
+      pushPluginDiagnostic(ctx, plugin.name, '', `contributeOutcome threw: ${detail}`);
     }
   }
   return result;
@@ -240,13 +275,20 @@ async function buildAndRecordDecision(
       ...(finalResult.outcome.cascade !== undefined && { cascade: finalResult.outcome.cascade }),
     },
   };
-  const controlPlaneDecision: ControlPlaneDecision = deps.routingContext
-    ? (routeByOutcome(forRouting, deps.routingContext as ControlPlaneContext) as unknown as ControlPlaneDecision)
+  let controlPlaneDecision: ControlPlaneDecision = deps.routingContext
+    ? routeByOutcome(forRouting, deps.routingContext as ControlPlaneContext)
     : {
         requiredMode: 'plan' as const,
         stop: !finalResult.success,
         message: finalResult.outcome.nextAction,
       } as ControlPlaneDecision;
+
+  if (finalResult.outcome.pluginAdvisory?.trim()) {
+    controlPlaneDecision = {
+      ...controlPlaneDecision,
+      message: `${controlPlaneDecision.message}\n\n${finalResult.outcome.pluginAdvisory.trim()}`,
+    };
+  }
 
   await deps.recorder.decision(handle, {
     requiredMode: controlPlaneDecision.requiredMode,
@@ -328,6 +370,13 @@ export const defaultKernel: HarnessKernel = {
       outcome: defaultOutcome(false),
     };
     finalResult = applyPluginOutcomeContributions(ctx, activePlugins, finalResult);
+    if (ctx.diagnostics.length > 0) {
+      const diagBlock = ctx.diagnostics.map((d) => `- [${d.plugin}] ${d.message}`).join('\n');
+      finalResult = {
+        ...finalResult,
+        output: `${finalResult.output}\n\n---\nPlugin diagnostics:\n${diagBlock}`,
+      };
+    }
     return buildAndRecordDecision(handle, finalResult, deps, stepPath);
   },
 };

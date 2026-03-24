@@ -5,7 +5,6 @@
 
 // Tier configs and shared operations (config-driven pipeline)
 export * from './tiers/shared/types';
-export * from './tiers/shared/tier-change';
 export * from './tiers/shared/tier-validate';
 export * from './tiers/shared/tier-complete';
 export * from './tiers/shared/tier-checkpoint';
@@ -68,8 +67,6 @@ export * from './utils/check-before-implement';
 export * from './utils/utils';
 export * from './utils/tier-discriminator';
 export * from './utils/tier-navigation';
-export * from './utils/scope-and-summarize';
-export * from './utils/scope-and-change';
 export {
   runTier,
   type TierRunParams,
@@ -130,8 +127,6 @@ export * from './checkpoint/composite/checkpoint';
 
 // Status/Query operations (Cross-tier utilities)
 export * from './status/atomic/get-status';
-export * from './status/atomic/query-changes';
-export * from './status/atomic/query-citations';
 export * from './status/composite/status-detailed';
 export * from './status/composite/status-cross-tier';
 
@@ -161,9 +156,6 @@ export * from './comments/composite/add-comments-batch';
 export * from './comments/composite/review-and-add';
 
 // Validation operations (Cross-tier utilities)
-export { validateWorkflow, type ValidationResult as WorkflowValidationResult } from './validation/atomic/validate-workflow';
-export * from './validation/atomic/security-check';
-export * from './validation/atomic/verify-completeness';
 export * from './validation/composite/audit-commands';
 export * from './validation/composite/validate-complete';
 
@@ -182,7 +174,6 @@ export * from './testing/composite/test-workflow';
 export * from './testing/composite/test-before-commit';
 export * from './testing/composite/test-on-change';
 export { testEndWorkflow, type WorkflowTier as TestWorkflowTier } from './testing/composite/test-end-workflow';
-export { testCatchup } from './testing/composite/test-catchup';
 export * from './testing/composite/test-dev-workflow';
 // Test utilities
 export * from './testing/utils/test-immutability';
@@ -193,7 +184,6 @@ export * from './audit/types';
 export * from './audit/utils';
 // Atomic audit commands
 export * from './audit/atomic/audit-docs';
-export * from './audit/atomic/audit-security';
 export * from './audit/atomic/audit-vue-architecture';
 export * from './audit/atomic/audit-code-quality';
 // Composite audit commands
@@ -204,12 +194,3 @@ export * from './audit/composite/audit-phase';
 export * from './audit/composite/audit-session-start';
 export * from './audit/composite/audit-session';
 export * from './audit/composite/audit-task';
-
-// Security commands (Cross-tier utilities)
-export * from './security/atomic/check-auth';
-export * from './security/atomic/check-config';
-export * from './security/atomic/check-csrf';
-export * from './security/atomic/check-dependencies';
-export * from './security/atomic/check-idor';
-export * from './security/atomic/check-secrets';
-export * from './security/composite/security-audit';

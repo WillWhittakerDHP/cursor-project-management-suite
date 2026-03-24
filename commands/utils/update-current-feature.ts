@@ -24,7 +24,16 @@ export interface UpdateCurrentFeatureResult {
  * @returns Result with current branch and derived feature name (for display/callers)
  */
 export async function updateCurrentFeature(): Promise<UpdateCurrentFeatureResult> {
-  const currentBranch = await getCurrentBranch();
+  const currentBranch = (await getCurrentBranch())?.trim() ?? '';
+
+  if (!currentBranch) {
+    return {
+      success: false,
+      currentFeature: undefined,
+      currentBranch: '(unknown)',
+      message: 'Could not read current git branch (detached HEAD or git error).',
+    };
+  }
 
   if (currentBranch === 'develop' || currentBranch === 'main' || currentBranch === 'master') {
     return {

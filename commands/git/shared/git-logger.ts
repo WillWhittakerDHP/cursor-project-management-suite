@@ -184,3 +184,25 @@ export async function compareBranchToRemote(
 
   return 'diverged';
 }
+
+/**
+ * Repo-relative paths changed in the working tree vs HEAD (tracked modifications + staged + untracked).
+ * Used for advisory deliverables drift and architecture alignment input — all git reads go through git-logger.
+ */
+export async function listWorkingTreeChangedRepoPaths(): Promise<string[]> {
+  const tracked = await runGitCommand('git diff --name-only HEAD', 'listWorkingTreeChangedRepoPaths-tracked');
+  const untracked = await runGitCommand(
+    'git ls-files --others --exclude-standard',
+    'listWorkingTreeChangedRepoPaths-untracked'
+  );
+  const set = new Set<string>();
+  for (const line of (tracked.output ?? '').split('\n')) {
+    const t = line.trim();
+    if (t) set.add(t);
+  }
+  for (const line of (untracked.output ?? '').split('\n')) {
+    const t = line.trim();
+    if (t) set.add(t);
+  }
+  return [...set].sort();
+}

@@ -21,7 +21,7 @@ All tier start/end commands (feature-start, feature-end, phase-start, phase-end,
 
 **Invocation:** From repo root, run the export via the project's TS runner. Example: `npx tsx -e "import('<path>').then(m => m.<export>(...)).then(r => console.log(JSON.stringify(r)))"`. Use the path and export name from the table above. **feature-change:** Invoke `featureChange(featureName, newFeatureName, reason)` with three string args (current feature name, new feature name for rename, reason for the change).
 
-**/audit-fix [report-path]:** Not a tier command. Use when the user chooses "Fix audit with governance context (/audit-fix)" after `audit_failed`. Invoke `auditFix({ reportPath })` from `.cursor/commands/audit/composite/audit-fix.ts`, or run `npx tsx .cursor/commands/audit/atomic/audit-fix-prompt.ts [report-path]` and paste the output into chat so governance docs and the report are attached.
+**/audit-fix [report-path]:** Not a tier command. Use when the user chooses "Fix audit with governance context (/audit-fix)" after `audit_failed`. Invoke **`getAuditFixContext`** or **`auditFixPrompt`** from `.cursor/commands/audit/atomic/audit-fix-prompt.ts` (same rich assembly for both), or run `npx tsx .cursor/commands/audit/atomic/audit-fix-prompt.ts [report-path]` for a paste-ready string. See `.cursor/commands/audit-fix.md`.
 
 **No one-off runner scripts:** Do not create ad hoc tier wrappers like `run-task-start-*.ts`, `run-task-end-*.ts`, or `run-session-end-*.ts` (and similar `run-*-start/end-*.ts` files). Invoke composite exports directly with inline `tsx -e` imports so all tiers follow the same entrypoint pattern.
 
@@ -34,7 +34,7 @@ The composite is the **invocation** entry point; the **workflow and context ques
 | **What to invoke for /session-start** | Playbook table → `session.ts` → `sessionStart` | Table → `<tier>.ts` → `<tier>Start` |
 | **How to run from repo root** | `npx tsx -e "import('.../session/composite/session.ts').then(m => m.sessionStart('6.4.4'))..."` | Same pattern with path/export from table |
 | **Where workflow and context questions live** | `tiers/session/composite/session-start-impl.ts` (`sessionStartImpl`, `getContextQuestions`, hooks) | `tiers/<tier>/composite/<tier>-start-impl.ts` |
-| **Where dispatch happens** | `tiers/shared/tier-start.ts` → `runTierStart(config, params, options)` (classifies WorkProfile, builds spec) → `harness/tier-adapter.ts` → `sessionStartImpl(...)` | Same; adapter switches on `config.name` |
+| **Where dispatch happens** | `tiers/shared/tier-start.ts` → `runTierStart(config, params, options)` (classifies WorkProfile, builds spec) → `harness/step-adapter.ts` → `sessionStartImpl(...)` | Same; adapter switches on `config.name` |
 | **Tier config** | `tiers/configs/session.ts` (`SESSION_CONFIG`) | `tiers/configs/<tier>.ts` |
 
 **Agent path:** User says `/session-start 6.4.4` → agent calls `sessionStart('6.4.4')` from `session.ts` → `runTierStart(SESSION_CONFIG, ...)` → adapter → `sessionStartImpl`. **Harness path:** Spec runs `session-start` → adapter (with `SESSION_CONFIG`) calls `sessionStartImpl` directly; no composite in the loop.
@@ -45,17 +45,19 @@ When the user prefers to **discuss the plan in chat** and then signal "ready" wi
 
 | Slash command       | Composite file (from repo root)                           | Export to invoke   |
 |---------------------|-----------------------------------------------------------|--------------------|
-| /accepted-proceed   | .cursor/commands/tiers/shared/accepted-proceed.ts         | acceptedProceed    |
+| /accepted-plan      | .cursor/commands/tiers/shared/accepted-plan.ts            | acceptedPlan       |
+| /accepted-build     | .cursor/commands/tiers/shared/accepted-build.ts           | acceptedBuild      |
 | /accepted-code      | .cursor/commands/tiers/shared/accepted-code.ts            | acceptedCode       |
 | /accepted-push      | .cursor/commands/tiers/shared/accepted-push.ts            | acceptedPush       |
 | /skip-push          | .cursor/commands/tiers/shared/skip-push.ts                | skipPush           |
 
-- **/accepted-proceed:** Allows the pending session/phase/feature start to proceed past the gate (no re-run from the top). When the **user** runs /accepted-proceed, the workflow continues from the gate (e.g. from ensure_branch); present `controlPlaneDecision.message` and handle outcome per reasonCode. The agent does not invoke or run the command — the user does.
+- **/accepted-plan (Gate 1):** After the agent fills the planning doc, the **user** runs this so feature/phase/session start continues from the gate (`resumeAfterStep: ensure_branch`). Blocks with `planning_doc_incomplete` until placeholders are cleared. The agent does not invoke it — the user does.
+- **/accepted-build (Gate 2):** After `guide_fill_pending`, the agent fills the guide; the **user** runs this for **decomposition** gate profile (typical feature/phase/session with guide two-pass). Blocks with `guide_incomplete` until guide placeholders are cleared. Standard/fast profiles skip this human stop (harness auto-completes guide pass). The agent does not invoke it — the user does.
 - **/accepted-code:** Runs task start with execute for the pending task (Begin Coding). When the **user** runs /accepted-code, the command executes; present the result. The agent does not invoke or run the command — the user does.
 - **/accepted-push:** Runs git push for the pending tier end and returns cascade info. **The user** runs /accepted-push when tier-end returns `pending_push_confirmation`. The agent does not invoke it — the user does.
 - **/skip-push:** Skips push, clears end-pending state, returns cascade info. **The user** runs /skip-push when tier-end returns `pending_push_confirmation` and does not want to push. The agent does not invoke it — the user does.
 
-See `.cursor/commands/accepted-proceed.md` and `.cursor/commands/accepted-code.md` for invocation and behavior.
+See `.cursor/commands/accepted-plan.md`, `.cursor/commands/accepted-build.md`, and `.cursor/commands/accepted-code.md` for invocation and behavior.
 
 ---
 
@@ -95,12 +97,14 @@ Every start/end/reopen command returns a `controlPlaneDecision` object that tell
 | `message` | **User-facing content** — deliverables, checklists, file lists, or error context. Show this to the user. |
 | `questionKey` | Identifies the choice set for message + options (see per-reasonCode rules below). |
 | `stop` | If `true`, stop and wait for user response before proceeding. |
-| `nextInvoke` | On approval, run this command again (tier, action, params). For start flows, /accepted-proceed and /accepted-code allow the command to proceed from the gate instead of re-running from the top. |
+| `nextInvoke` | On approval, run this command again (tier, action, params). For start flows, /accepted-plan, /accepted-build (when Gate 2 applies), and /accepted-code allow the workflow to proceed from the gate instead of re-running from the top. |
 | `cascadeCommand` | Exact command string to run on cascade confirmation. |
 
 When the result output includes a **User choice required** block (message + options), present that block in chat and direct the user to run the corresponding command or reply with their choice.
 
-**Options-passing (start proceed / re-invoke):** When the user runs /accepted-proceed or /accepted-code, the harness proceeds from the gate (resumeAfterStep: ensure_branch) so the start workflow does not re-run from the top. For other re-invokes (e.g. after uncommitted changes), options MUST be passed as `params.options`; flat option keys (e.g. `mode` at params root) are invalid and ignored by composite invocation.
+**Options-passing (start proceed / re-invoke):** When the user runs /accepted-plan, /accepted-build, or /accepted-code, the harness proceeds from the gate (resumeAfterStep: ensure_branch) so the start workflow does not re-run from the top. For other re-invokes (e.g. after uncommitted changes), options MUST be passed as `params.options`; flat option keys (e.g. `mode` at params root) are invalid and ignored by composite invocation.
+
+**Tier-end resume (`resumeEndAfterStep`):** For certain failures, `controlPlaneDecision.nextInvoke` includes `params.options.resumeEndAfterStep` so re-running the **same** tier-end skips earlier steps (after always re-running the conflict-marker guard). Do **not** hand-author this option; use `nextInvoke` from the decision. Distinct from `continuePastVerification` (verification gate only).
 
 **Harness docs + git (implementation):** Planning docs and existence checks go through `WorkflowCommandContext.documents` (`DocumentManager.planningDocExists`, `readPlanningDoc`, `getPlanningDocRelativePath`). Tier logs use idempotent `appendLog`; to repair a log file that predates that behavior, use `workflowCoalesceLog` in `document/composite/coalesce-log.ts` (see `.project-manager/HARNESS_CHARTER.md` §4 — tier-start auto-commit vs tier-end allowed prefixes, pull-after-checkout, `recoverPlanningArtifactsAfterCheckout`).
 
@@ -112,13 +116,15 @@ Routing (use `outcome.reasonCode`):
 
 - If `outcome.reasonCode === 'context_gathering'`: see **Per-reasonCode behavioral rules → `context_gathering`** below.
 - If `outcome.reasonCode === 'planning_doc_incomplete'`: see **Per-reasonCode behavioral rules → `planning_doc_incomplete`** below. Proceeding is BLOCKED until the planning doc is filled.
-- If `outcome.reasonCode === 'guide_fill_pending'`: see **Per-reasonCode behavioral rules → `guide_fill_pending`** below. Step 2 — agent fills the guide using context; then **the user** runs /accepted-proceed again.
+- If `outcome.reasonCode === 'guide_fill_pending'`: see **Per-reasonCode behavioral rules → `guide_fill_pending`** below. Step 2 — agent fills the guide using context; then **the user** runs **/accepted-build** (Gate 2).
 - If `outcome.reasonCode === 'guide_incomplete'`: see **Per-reasonCode behavioral rules → `guide_incomplete`** below. Proceeding is BLOCKED until the guide is filled.
 - If `outcome.reasonCode === 'audit_failed'`: see **Per-reasonCode behavioral rules → `audit_failed`** below. **STOP and fix** all warnings/errors per governance before re-running.
 - If `outcome.reasonCode === 'pending_push_confirmation'`: see **Per-reasonCode behavioral rules → `pending_push_confirmation`** below. Run **/accepted-push** or **/skip-push**; present push instructions in chat (no tool).
 - If `outcome.reasonCode === 'verification_work_suggested'`: see **Per-reasonCode behavioral rules → `verification_work_suggested`** below.
 - If `outcome.reasonCode === 'uncommitted_changes_blocking'`: see **Per-reasonCode behavioral rules → `uncommitted_changes_blocking`** below.
 - If `outcome.reasonCode === 'wrong_branch_before_commit'`: see **Per-reasonCode behavioral rules → `wrong_branch_before_commit`** below.
+- If `outcome.reasonCode === 'audit_fix_commit_failed'`: see **Per-reasonCode behavioral rules → `audit_fix_commit_failed`** below.
+- If `outcome.reasonCode === 'git_failed'` and `controlPlaneDecision.nextInvoke` is set: fix merge/push per message, then re-invoke using **nextInvoke** (resume at shared `git` step).
 - If `outcome.reasonCode === 'expected_branch_missing_run_tier_start'`: see **Per-reasonCode behavioral rules → `expected_branch_missing_run_tier_start`** below.
 - **If `outcome.cascade` is present (start or end):** You MUST run **Cascade confirmation** first. Do not skip to `nextAction` or infer the next step (e.g. do not assume "session roll-up" when the cascade is to the next task). Cascade direction: `outcome.cascade.direction === 'across'` → next step is the **next tier at same level** (e.g. next task via `outcome.cascade.command`, typically `/task-start <nextTaskId>`); `'up'` → next step is **parent tier end** (e.g. `/session-end <sessionId>`). See **Per-reasonCode behavioral rules → Cascade confirmation** below.
 - If success and no push/cascade pending: show `controlPlaneDecision.message`; then use `outcome.nextAction`.
@@ -192,6 +198,20 @@ Harness git steps append **structured JSON lines** here when operations fail or 
 1. Read the last lines of `.project-manager/.git-friction-log.jsonl` for `reasonCode`, `step`, `currentBranch`, `expectedBranch`, and `disposition`.
 2. After a **non-trivial** manual git fix or repeated failure, agents may append a line via `recordGitFriction` / `appendGitFriction` from `git-manager` (or document the incident in the session note).
 
+### Workflow / planning friction: `.project-manager/WORKFLOW_FRICTION_LOG.md`
+
+For **non-git** harness friction (unclear `reasonCode`, wrong gate command, planning parser surprises, audit noise, `ARCHITECTURE.md` vs code drift, playbook/skill contradictions), use **`.project-manager/WORKFLOW_FRICTION_LOG.md`** (markdown, append-only). Compare with **`.project-manager/.git-friction-log.jsonl`** for git-specific incidents.
+
+1. **Auto-capture:** Tier start/end failures that exit through the shared runners append here when the normalized outcome is a **failure** reason (`isFailureReasonCode` / `FailureReasonCode` in `.cursor/commands/harness/reason-code.ts` and `.cursor/commands/harness/contracts.ts`). Expected **flow** stops (`context_gathering`, `guide_fill_pending`, `planning_doc_incomplete`, etc.) are **not** auto-logged so the file stays signal-heavy.
+2. **Env:** `HARNESS_WORKFLOW_FRICTION=off | failures` (default) | `verbose`. `off` disables all writes; `verbose` also records allowlisted step warnings (deliverables heuristic, governance envelope assembly).
+3. **Before changing tier-start/end or control-plane routing:** run the reader to spot repeats:
+   - `npx tsx .cursor/commands/utils/read-workflow-friction.ts --last 20`
+   - `npx tsx .cursor/commands/utils/read-workflow-friction.ts --reason audit_failed`
+   Filter by **normalized** reason codes (post-`parseReasonCode`); legacy raw strings in entries remain in each block as `reasonCodeRaw`.
+4. **Adding or renaming codes:** keep [`.cursor/skills/tier-workflow-agent/reason-codes.md`](../../skills/tier-workflow-agent/reason-codes.md) and `LEGACY_TO_CHARTER` in `reason-code.ts` aligned.
+5. **Programmatic / agent capture (success path but material confusion):** call `recordWorkflowFriction` from `.cursor/commands/utils/workflow-friction-log.ts` with **`forcePolicy: true`** so policy bypasses flow suppression (still respects `HARNESS_WORKFLOW_FRICTION=off`). Do not create ad hoc parallel friction files.
+6. **Model recommendation (harness advisory):** Tier start/end may append a **Recommended agent/model** block to `controlPlaneDecision.message` (config: `.project-manager/agent-model-config.json`). The harness does **not** switch Cursor’s active model. When that block appears: switch if practical, or **state explicitly** that you are staying on the current model and why. For repeated confusion (wrong model, ignored advisory, playbook mismatch), use the reader above and append **`WORKFLOW_FRICTION_LOG.md`** per the template, or call `recordWorkflowFriction` with **`forcePolicy: true`**. Config parse/schema issues are logged via `recordWorkflowFrictionWarning` when `HARNESS_WORKFLOW_FRICTION=verbose`.
+
 ### `audit_failed` (start commands: audit reported warnings or failures)
 
 The tier start audit (baseline quality) returned **warn** or **fail** (or runtime errors). **Do not proceed.** Governance requires a clean audit before continuing.
@@ -205,50 +225,52 @@ The tier start audit (baseline quality) returned **warn** or **fail** (or runtim
 
 ### `context_gathering` (start commands, all tiers)
 
-**Two-step flow (Option A):** **Step 1 — Light collection:** In plan mode, context_gathering runs first. The command creates a **short planning doc** (contract + continuity summary + Goal/Files/Approach/Checkpoint slots + How we build the tierDown + Reference links). The **agent** fills the doc using context; then **the user** runs **/accepted-proceed**. **Gate 1:** The planning doc must be meaningfully filled; /accepted-proceed blocks with `planning_doc_incomplete` until it is. For **phase and session**, after the first /accepted-proceed the harness runs Part A (branch, ensure guide from plan) and may return **`guide_fill_pending`**. **Step 2 — Actual planning:** The **agent** then fills the **guide** (path in the outcome) with concrete Goal, Files, Approach, and Checkpoint for each session or task. **The user** runs **/accepted-proceed** again. **Gate 2:** The guide must be filled; /accepted-proceed blocks with `guide_incomplete` until it is. Then execute continues (read context, audit, cascade). Feature and task use a single gate (planning doc only).
+**Two-step flow (decomposition gate profile):** **Step 1 — Plan:** In plan mode, context_gathering runs first. The command creates a **planning doc** (contract, work profile, continuity, tier-appropriate sections including Analysis, **## Decomposition** or **`**Leaf tier**`**, Deliverables, Acceptance Criteria where applicable, Definition of Done, Reference). Legacy docs may still use **## How we build the tierDown** — treat as decomposition intent until migrated. The **agent** fills the doc using context; then **the user** runs **/accepted-plan**. **Gate 1:** `/accepted-plan` blocks with `planning_doc_incomplete` until placeholders are cleared. For **phase and session** (decomposition profile), after `/accepted-plan` the harness runs Part A (branch, ensure guide from plan) and may return **`guide_fill_pending`**. **Step 2 — Build:** The **agent** fills the **guide** (path in the outcome). **The user** runs **/accepted-build**. **Gate 2:** `/accepted-build` blocks with `guide_incomplete` until guide tierDown placeholders are cleared. Then execute continues (read context, audit, cascade). **Standard/fast** profiles skip the second human stop (no `/accepted-build`). Tasks use **/accepted-code** (and may use **express** profile with no planning-doc gate).
 
-**Planning doc role (advisory):** The planning doc is an **advisory intake and inheritance artifact**. It must contain concrete advisory intent, constraints, governance emphasis, verification expectations, and downstream guidance. It should **not**, by default, be required to fully enumerate or fully specify child execution details. The **## How we build the tierDown** section is treated as **lightweight decomposition intent** unless the resolved WorkProfile `decompositionMode` is `explicit`. Once current-tier decomposition is established, the **guide** is the **authoritative** source for the canonical child-unit list; the planning doc may suggest decomposition boundaries, but the guide owns the actual list and structure.
+**Planning doc role (advisory):** The planning doc is an **advisory intake and inheritance artifact**. It must contain concrete advisory intent, constraints, governance emphasis, verification expectations, and downstream guidance. The **## Decomposition** section (or legacy **## How we build the tierDown**) is **lightweight decomposition intent** unless the resolved WorkProfile `decompositionMode` is `explicit`. Once current-tier decomposition is established, the **guide** is the **authoritative** source for the canonical child-unit list; the planning doc may suggest decomposition boundaries, but the guide owns the actual list and structure.
 
 **Guide authority:** Guide creation and guide fill remain required when the workflow depends on current-tier decomposition. The guide, not the planning doc, owns the canonical child-unit list. When planning-doc and guide child structure diverge, the guide wins once decomposition is established.
 
 **Pipeline order:** The command loaded context and created a planning document with **doc-grounded insight prompts** in the chat message. Context questions are based on what the tier docs say we're building: each item has an **Insight** (what the docs indicate), a **Proposal** (recommended path), and a **Decision** with explicit **Options** where possible.
 
-**REQUIRED — Filling the planning doc is NOT optional.** The **agent** MUST fill the planning doc: open it, read the Reference section links (governance reports, playbooks, tierUp guide, handoff) as needed, and replace the placeholder sections (## Goal, ## Files, ## Approach, ## Checkpoint, and ## How we build the tierDown) with a concrete draft. **The user** runs **/accepted-proceed** only after the doc is filled. The **## How we build the tierDown** section must be **one line per phase/session/task** in bullet format (e.g. `- **Session X.Y.Z:** short name`) so the harness can parse it; no paragraphs. If the agent does not fill the doc, **/accepted-proceed will be BLOCKED** — the command will return `planning_doc_incomplete` and will not continue until the doc is filled.
+**REQUIRED — Filling the planning doc is NOT optional.** The **agent** MUST fill the planning doc: open it, read the Reference section links (governance, **`.project-manager/ARCHITECTURE.md`**, playbooks, tierUp guide, handoff) as needed, and replace placeholder sections (Analysis, Epic/Story, Plan, **## Decomposition** with `### Phase|Session|Task` headings or bullets, or **`**Leaf tier**`** when no children, Deliverables, Acceptance Criteria, etc.). **The user** runs **/accepted-plan** only after the doc is filled (feature/phase/session). If the agent does not fill the doc, **`/accepted-plan` will be BLOCKED** — `planning_doc_incomplete` until resolved.
+
+**Coverage check (feature / phase / session, before /accepted-plan):** After filling the doc, re-read the Goal/Plan and **## Decomposition**. In chat, answer: "If this is the goal, have we outlined enough steps to enact it?" Update decomposition if gaps exist; then invite **`/accepted-plan`**. Skip for **task** tiers (no decomposition). This is agent judgment, not a separate harness gate.
 
 **Requirement:** Context prompts must be **doc-grounded** (derived from feature/phase/session/task guides and tier responsibility). Do **not** use vague, process-only prompts (e.g. "What do you want?" or "What's your goal?") unless there is no extractable doc context. When docs exist, present insight + proposal + concrete options so the user can choose.
 
 1. **Present `controlPlaneDecision.message`** — this contains the planning doc path and the **Insight / Proposal / Decision** blocks (what the docs say, proposed path, decision needed, and explicit options).
 2. **Open the planning doc in the editor** so the user can watch it being built.
-3. **MUST fill the planning doc:** Read the Reference section in the doc (and linked governance/playbook files as needed), then replace ## Goal, ## Files, ## Approach, ## Checkpoint, and ## How we build the tierDown with a concrete draft. This step is **REQUIRED**. **The user** should not run **/accepted-proceed** until the agent has filled the doc.
-4. Discuss the plan **in chat** with the user. Use the insight/proposal/decision blocks as conversation starters. After each answer, **update the planning doc IN-PLACE** (refine Goal/Files/Approach/Checkpoint). When the doc is filled, tell the user: "When you're ready, run **/accepted-proceed** to continue." Do not invoke `acceptedProceed()` or run the command yourself; **the user** runs the command. When the user has run it, you will receive the result; present `controlPlaneDecision.message` and handle the outcome per playbook. If the result is `start_ok`, handle cascade per playbook. If the result is `planning_doc_incomplete`, present the message — the doc was not filled; the agent MUST fill it; then **the user** runs **/accepted-proceed** again. If the result is **`guide_fill_pending`** (phase/session), present the message and **fill the guide** (path in the outcome) with concrete Goal, Files, Approach, and Checkpoint for each session/task; then **the user** runs **/accepted-proceed** again (Gate 2). Do not run or invoke the command yourself.
-5. **Enumerate tierDowns (session/phase) before inviting /accepted-proceed:** After the planning conversation and before telling the user to run **/accepted-proceed**, make a pass over the **session guide** (for session) or **phase guide** (for phase) so that all intended tierDown units are listed with the headings the harness uses for cascade. For **sessions:** the session guide must contain a line matching `Task X.Y.Z.N:` (e.g. `#### Task 6.4.4.1:`, `#### Task 6.4.4.2:`) for each task in that session; task-end reads this to decide whether to cascade across to the next task or up to session-end. For **phases:** the phase guide must list each session in the phase (same pattern as used by session-end for cascade across). If the guide lists only one task, task-end will not offer cascade to a second task. Add or update task/session blocks (Goal, Files, Approach, Checkpoint) so the list matches the agreed plan. **Sync the same enumerated list into the planning doc** so the planning doc’s "How we build the tierDown" lists **all** phase/session/task units from the guide (or agreed plan); the doc must not be a single-task or single-session subset. Use **bullet format** in the planning doc (one line per tierDown unit). Minimal child seeding is preserved only where cascade bootstrap or stable sequencing requires it; the guide is authoritative for the canonical list.
+3. **MUST fill the planning doc:** Read the Reference section in the doc (and linked governance/playbook files as needed), then replace placeholder sections with a concrete draft (including **## Decomposition** or legacy **## How we build the tierDown**). This step is **REQUIRED**. **The user** should not run **`/accepted-plan`** until the agent has filled the doc (feature/phase/session).
+4. Discuss the plan **in chat** with the user. Use the insight/proposal/decision blocks as conversation starters. After each answer, **update the planning doc IN-PLACE**. When the doc is filled, perform the **coverage check** (non-task), then tell the user: "When you're ready, run **`/accepted-plan`** to continue." Do not invoke `acceptedPlan()` or run the command yourself; **the user** runs the command. When the user has run it, present `controlPlaneDecision.message` and handle the outcome per playbook. If the result is `start_ok`, handle cascade per playbook. If the result is `planning_doc_incomplete`, fill the doc; then **the user** runs **`/accepted-plan`** again. If the result is **`guide_fill_pending`** (feature / phase / session under **decomposition** profile), **fill the guide** at `guidePath`; then **the user** runs **`/accepted-build`** (Gate 2). Do not run or invoke those commands yourself.
+5. **Enumerate tierDowns (session/phase) before inviting `/accepted-plan`:** After the planning conversation and before telling the user to run **`/accepted-plan`**, make a pass over the **session guide** (for session) or **phase guide** (for phase) so that all intended tierDown units are listed with the headings the harness uses for cascade. For **sessions:** the session guide must contain a line matching `Task X.Y.Z.N:` (e.g. `#### Task 6.4.4.1:`, `#### Task 6.4.4.2:`) for each task in that session; task-end reads this to decide whether to cascade across to the next task or up to session-end. For **phases:** the phase guide must list each session in the phase (same pattern as used by session-end for cascade across). If the guide lists only one task, task-end will not offer cascade to a second task. Add or update task/session blocks (Goal, Files, Approach, Checkpoint) so the list matches the agreed plan. **Sync the same enumerated list into the planning doc** so **## Decomposition** (or legacy tierDown section) lists **all** phase/session/task units from the guide (or agreed plan); the doc must not be a single-task or single-session subset. Minimal child seeding is preserved only where cascade bootstrap or stable sequencing requires it; the guide is authoritative for the canonical list.
 
-**Anti-pattern:** Do not skip filling the planning doc. **The user** should not run **/accepted-proceed** until the agent has filled ## Goal, ## Files, ## Approach, ## Checkpoint, and ## How we build the tierDown with concrete content. The agent does not run the command. The command will block until the doc is filled. Do not ask generic questions when the message already provides doc-grounded insight and options. The doc IS the artifact the agent maintains from context. Do not treat the planning doc as a mirrored decomposition contract — it is advisory; the guide owns current-tier decomposition.
+**Anti-pattern:** Do not skip filling the planning doc. **The user** should not run **`/accepted-plan`** until placeholders are replaced with concrete content. The agent does not run the command. Do not ask generic questions when the message already provides doc-grounded insight and options. The doc IS the artifact the agent maintains from context. Do not treat the planning doc as a mirrored decomposition contract — it is advisory; the guide owns current-tier decomposition.
 
-### `planning_doc_incomplete` (returned by /accepted-proceed or /accepted-code when planning doc still has placeholders)
+### `planning_doc_incomplete` (returned by /accepted-plan or /accepted-code when planning doc still has placeholders)
 
-Proceeding is **BLOCKED**. The user ran **/accepted-proceed** (feature/phase/session) or **/accepted-code** (task) but the planning doc has not been filled (it still contains placeholders, including the tierDown section if applicable). Same enforcement for all tiers.
+Proceeding is **BLOCKED**. The user ran **`/accepted-plan`** (feature/phase/session) or **`/accepted-code`** (task) but the planning doc has not been filled (it still contains placeholders, including **## Decomposition** / legacy tierDown section if applicable). Same enforcement for all tiers (except **express** profile tasks, which skip the planning-doc gate).
 
-1. **Present `controlPlaneDecision.message` verbatim** — it explains that the agent MUST open the planning doc, replace the placeholder sections (Goal, Files, Approach, Checkpoint, and How we build the tierDown) with a concrete draft, save, and then **the user** runs **/accepted-proceed** (or **/accepted-code** for task) again.
-2. **You (the agent) MUST fill the planning doc** using the file edit tool: open the doc path from the message, examine the Reference section and linked files as needed, and replace the placeholder sections (including ## How we build the tierDown for feature/phase/session) with a concrete draft. The tierDown section must be one line per phase/session/task in bullet format. Then **the user** runs **/accepted-proceed** or **/accepted-code** again. Do not invoke the command yourself.
+1. **Present `controlPlaneDecision.message` verbatim** — it explains that the agent MUST open the planning doc, replace placeholder sections with a concrete draft, save, and then **the user** runs **`/accepted-plan`** (or **`/accepted-code`** for task) again.
+2. **You (the agent) MUST fill the planning doc** using the file edit tool: open the doc path from the message, examine the Reference section and linked files as needed, and replace the placeholder sections. Then **the user** runs **`/accepted-plan`** or **`/accepted-code`** again. Do not invoke the command yourself.
 3. Do not suggest workarounds or skipping this step. The command will not proceed until the doc is filled.
 
-### `guide_fill_pending` (phase/session start — after first /accepted-proceed, Option A Step 2)
+### `guide_fill_pending` (feature / phase / session start — after /accepted-plan, Gate 2 prep)
 
-The first /accepted-proceed completed Part A (branch, ensure guide from plan). For **phase** or **session**, the agent must now fill the **guide** (actual planning) before execute continues. The outcome includes `guidePath` (path to the guide file).
+The first **`/accepted-plan`** completed Part A (branch, ensure guide from plan). Under **decomposition** profile, **feature**, **phase**, and **session** starts can emit this outcome: the agent must fill the **guide** (actual planning) before execute continues. The outcome includes `guidePath` (path to the guide file).
 
-1. **Present `controlPlaneDecision.message`** (or the outcome’s nextAction/deliverables) — the agent fills the guide with concrete Goal, Files, Approach, and Checkpoint for each session/task; then **the user** runs **/accepted-proceed** again. Do not run the command yourself.
+1. **Present `controlPlaneDecision.message`** (or the outcome’s nextAction/deliverables) — the agent fills the guide with concrete Goal, Files, Approach, and Checkpoint for each session/task; then **the user** runs **`/accepted-build`**. Do not run the command yourself.
 2. **Open the guide** at the path in the outcome (`outcome.guidePath`). Fill each tierDown block (Session or Task) with concrete content; remove placeholder text such as `[Fill in]`, `[To be planned]`. **Do not remove or merge tierDown blocks.** Preserve every existing Session or Task block. If the planning doc lists fewer items than the guide, keep all guide blocks and fill the extra ones from phase/session context or with `[To be planned]`. The guide may have more tasks than the planning doc — that is allowed.
 3. **Do not replace the entire guide file.** Use targeted edits only. Preserve the required guide sections for this tier (see `.project-manager/REQUIRED_DOC_SECTIONS.md`). If the guide is in excerpt format or missing any of those sections, add the missing sections from the tier template (e.g. `.cursor/commands/tiers/session/templates/session-guide.md` for session) before filling; do not overwrite real content.
-4. Save the file. Tell the user: "When you're ready, run **/accepted-proceed** again to continue." Do not run it yourself.
-5. When **the user** runs **/accepted-proceed**, the command runs Gate 2 (guide filled); if the guide is filled, execute Part B runs (read context, audit, cascade). If the guide still has placeholders, the command returns **`guide_incomplete`**.
+4. Save the file. Tell the user: "When you're ready, run **`/accepted-build`** to continue." Do not run it yourself.
+5. When **the user** runs **`/accepted-build`**, Gate 2 runs (`isGuideFilled`); if the guide is filled, execute Part B runs (read context, audit, cascade). If the guide still has placeholders, the command returns **`guide_incomplete`**.
 
-### `guide_incomplete` (returned by /accepted-proceed when guide still has placeholders, Gate 2)
+### `guide_incomplete` (returned by /accepted-build when guide still has placeholders, Gate 2)
 
-Proceeding is **BLOCKED**. The user ran **/accepted-proceed** after `guide_fill_pending` but the guide has not been filled (it still contains placeholder text in tierDown blocks).
+Proceeding is **BLOCKED**. The user ran **`/accepted-build`** after `guide_fill_pending` but the guide has not been filled (it still contains placeholder text in tierDown blocks).
 
-1. **Present `controlPlaneDecision.message` verbatim** — it explains that the agent MUST open the guide, replace placeholder text in each tierDown block (Session or Task) with concrete Goal, Files, Approach, and Checkpoint, save, and then **the user** runs **/accepted-proceed** again.
-2. **You (the agent) MUST fill the guide** using the file edit tool: open the guide path from the message, and replace placeholder text (e.g. `[Fill in]`, `[To be planned]`) in each Session or Task block with concrete content. **Do not remove or merge tierDown blocks;** preserve every existing block; fill extras with `[To be planned]` or phase/session context if the planning doc lists fewer. Then **the user** runs **/accepted-proceed** again. Do not invoke the command yourself.
+1. **Present `controlPlaneDecision.message` verbatim** — it explains that the agent MUST open the guide, replace placeholder text in each tierDown block (Session or Task) with concrete Goal, Files, Approach, and Checkpoint, save, and then **the user** runs **`/accepted-build`** again.
+2. **You (the agent) MUST fill the guide** using the file edit tool: open the guide path from the message, and replace placeholder text (e.g. `[Fill in]`, `[To be planned]`) in each Session or Task block with concrete content. **Do not remove or merge tierDown blocks;** preserve every existing block; fill extras with `[To be planned]` or phase/session context if the planning doc lists fewer. Then **the user** runs **`/accepted-build`** again. Do not invoke the command yourself.
 3. **Do not replace the entire guide file.** Use targeted edits only. Preserve the required guide sections for this tier (see `.project-manager/REQUIRED_DOC_SECTIONS.md`). If the guide is in excerpt format or missing those sections, add them from the tier template before filling; do not overwrite real content.
 4. Do not suggest workarounds. The command will not proceed until the guide is filled.
 
@@ -288,7 +310,21 @@ The tier-end commit step aborted because the current git branch does not match t
 1. **Present `controlPlaneDecision.message`** to the user — it states current vs expected branch.
 2. **Consult `.project-manager/.git-friction-log.jsonl`** if the message alone is unclear.
 3. **Checkout the correct branch:** run `git checkout <expected-branch>` (the expected branch is in the message). Resolve any uncommitted changes first (commit or stash per `uncommitted_changes_blocking` if needed).
-4. Re-run the same tier-end command so the workflow runs on the feature branch.
+4. Re-invoke tier-end using **`controlPlaneDecision.nextInvoke`** when present (same command with `params.options.resumeEndAfterStep: 'commit_remaining'`). If `nextInvoke` is absent, re-run the same tier-end manually with the same identifiers.
+
+### `audit_fix_commit_failed` (end commands)
+
+Autofix produced changes but committing them failed (strict git step).
+
+1. Present **`controlPlaneDecision.message`** and fix git state (status, conflicts, hooks) per the message.
+2. Re-invoke using **`controlPlaneDecision.nextInvoke`** so the harness resumes at **`end_audit`** (re-runs audit to repopulate autofix context, then retries the post-audit commit). Do not add `resumeEndAfterStep` manually.
+
+### `git_failed` with resume (end commands — session / feature / phase)
+
+When merge, push, or related git operations fail in the shared tier-end git step and the outcome is marked resumable, the control plane supplies **`nextInvoke`** with **`resumeEndAfterStep: 'git'`**.
+
+1. Fix the underlying git issue (merge conflict, push auth, remote, etc.) per **`controlPlaneDecision.message`** and `.project-manager/.git-friction-log.jsonl`.
+2. Re-invoke using **`controlPlaneDecision.nextInvoke`** — do not restart the full tier-end from scratch unless `nextInvoke` is missing.
 
 ### `expected_branch_missing_run_tier_start` (end commands)
 
@@ -364,7 +400,7 @@ When invoking a **tier-end** command (e.g. `/phase-end 6.5`), the pipeline runs 
 - Task start: `npx tsx -e "import('./.cursor/commands/tiers/task/composite/task.ts').then(m => m.taskStart('6.2.1.4')).then(r => console.log(JSON.stringify(r)))"`
 - Task start (plan-only): `npx tsx -e "import('./.cursor/commands/tiers/task/composite/task.ts').then(m => m.taskStart('6.2.1.4', { mode: 'plan' })).then(r => console.log(JSON.stringify(r)))"`
 
-**Start commands always run in plan mode.** Invoking a start command (e.g. `sessionStart('6.2.1')`) creates the planning doc and exits with `context_gathering`. The **agent** fills the planning doc; then **the user** runs **/accepted-proceed** (or **/accepted-code** for task) to execute. Execute (branch, docs, audit, cascade) runs only when the user runs accepted commands.
+**Start commands always run in plan mode.** Invoking a start command (e.g. `sessionStart('6.2.1')`) creates the planning doc and exits with `context_gathering`. The **agent** fills the planning doc; then **the user** runs **`/accepted-plan`** (feature/phase/session), **`/accepted-build`** when Gate 2 applies, or **`/accepted-code`** (task) to execute. Execute (branch, docs, audit, cascade) runs only when the user runs accepted commands.
 
 ---
 
@@ -376,7 +412,7 @@ Mode logic lives in `.cursor/commands/utils/command-execution-mode.ts`. Tier-spe
 |------|--------|---------|
 | `CommandExecutionMode` | `'plan'` / `'execute'` | Code-level branch: does the impl preview or run side effects? |
 
-**Execute/build** (branch creation, scope update, file writes, merges, etc.) happen after the user has approved. **/accepted-proceed** and **/accepted-code** allow the start workflow to proceed from the gate (resumeAfterStep) so the command does not re-run from the top. Impls return **data only** in `nextAction` strings (e.g. "Push pending. Then cascade if present.") — no behavioral scripts; behavioral rules live in this playbook.
+**Execute/build** (branch creation, scope update, file writes, merges, etc.) happen after the user has approved. **`/accepted-plan`**, **`/accepted-build`** (when applicable), and **`/accepted-code`** allow the start workflow to proceed from the gate (resumeAfterStep) so the command does not re-run from the top. Impls return **data only** in `nextAction` strings (e.g. "Push pending. Then cascade if present.") — no behavioral scripts; behavioral rules live in this playbook.
 
 ---
 
@@ -384,7 +420,7 @@ Mode logic lives in `.cursor/commands/utils/command-execution-mode.ts`. Tier-spe
 
 **Shared workflow only.** All tier **start** commands use a single orchestrator and reusable step modules. The workflow is defined in:
 
-- **Orchestrator:** `.cursor/commands/harness/run-start-steps.ts` — `runTierStartWorkflow(ctx, hooks)` runs the pipeline. **Start always runs in plan mode first**: context_gathering (validate → read context light → context gathering: write short planning doc) runs and exits. When the user runs **/accepted-proceed** or **/accepted-code**, the workflow **proceeds from the gate** (resumeAfterStep: ensure_branch) so it does not re-run validate, read_context_light, or context_gathering; it continues from ensure_branch → **ensure guide from plan** → read context → gather → governance → extras → start audit → tier plan → fill direct tierDown → cascade. **Same sequence for feature, phase, session, and task** — no tier is skipped.
+- **Orchestrator:** `.cursor/commands/harness/run-start-steps.ts` — `runTierStartWorkflow(ctx, hooks)` runs the pipeline. **Start always runs in plan mode first**: context_gathering (validate → read context light → context gathering: write short planning doc) runs and exits. When the user runs **`/accepted-plan`**, **`/accepted-build`** (Gate 2 when required), or **`/accepted-code`**, the workflow **proceeds from the gate** (resumeAfterStep: ensure_branch) so it does not re-run validate, read_context_light, or context_gathering; it continues from ensure_branch → **ensure guide from plan** (when in active steps) → read context → gather → governance → extras → start audit → tier plan → fill direct tierDown → cascade. **Gate profile** may skip planning or guide steps for lighter work.
 - **Step modules:** `.cursor/commands/tiers/shared/tier-start-steps.ts` — Reusable steps (e.g. `stepValidateStart`, `stepEnsureStartBranch`, `stepReadStartContext`, `stepStartAudit`, `stepRunTierPlan`, `stepBuildStartCascade`) use shared primitives (`formatBranchHierarchy`, `ensureTierBranch`, `runTierPlan`, `buildCascadeDown`). **Do not** add a synchronous blocking start-audit API; start audits stay async only.
 - **Start audit (async only):** `stepStartAudit` spawns `.cursor/commands/audit/background-audit-runner.ts` (fire-and-forget) so tier-start never blocks on audit results; tier-end reads baseline deltas. There is no `runStartAuditForTier` entry point.
 - **WorkProfile classification:** `tiers/shared/tier-start.ts` calls `classifyWorkProfile({ tier, action: 'start' })` before building the spec. The resolved profile is threaded through `options.workProfile`, `routingContext.workProfile`, and `pendingState` so downstream steps (planning doc, context injector, control-plane handlers) can use it without re-classifying.
@@ -413,10 +449,10 @@ Mode logic lives in `.cursor/commands/utils/command-execution-mode.ts`. Tier-spe
 
 | Reason code | Re-invoke params contract | Expected next |
 |-------------|---------------------------|----------------|
-| `context_gathering` | User runs /accepted-proceed or /accepted-code (workflow proceeds from gate, no re-run from top) | proceed → `start_ok` or `planning_doc_incomplete` |
+| `context_gathering` | User runs /accepted-plan, /accepted-build (if prompted), or /accepted-code (workflow proceeds from gate, no re-run from top) | proceed → `start_ok` or `planning_doc_incomplete` |
 | `uncommitted_changes_blocking` (start) | preserve existing `params.options` unchanged | same pass retried |
 
-**Options-passing verification matrix (all tiers):** For each of `featureStart`, `phaseStart`, `sessionStart`, `taskStart` verify: (1) Start returns `context_gathering`; user runs /accepted-proceed (or /accepted-code for task). (2) `start_ok`: no further start required. (3) Proceed path: accepted-proceed and accepted-code pass `resumeAfterStep: 'ensure_branch'` so the workflow continues from ensure_branch without re-running validate, read_context_light, or context_gathering.
+**Options-passing verification matrix (all tiers):** For each of `featureStart`, `phaseStart`, `sessionStart`, `taskStart` verify: (1) Start returns `context_gathering` (or proceeds per gate profile); user runs **`/accepted-plan`** / **`/accepted-build`** / **`/accepted-code`** as prompted. (2) `start_ok`: no further start required. (3) Proceed path: accepted commands pass `resumeAfterStep: 'ensure_branch'` so the workflow continues from ensure_branch without re-running validate, read_context_light, or context_gathering.
 
 ---
 
@@ -430,6 +466,8 @@ Mode logic lives in `.cursor/commands/utils/command-execution-mode.ts`. Tier-spe
 - **WorkProfile classification:** `tiers/shared/tier-end.ts` calls `classifyWorkProfile({ tier, action: 'end' })` and threads the profile through `routingContext.workProfile` so control-plane handlers can append work-profile-specific guidance to the decision message.
 
 **Agents must wait for the full pipeline (including end audit) to complete;** do not treat a long run as a failure.
+
+**Acceptance criteria & deliverables (agent-led, before tier-end):** Before telling the user to run the tier **end** command, re-read **## Acceptance Criteria** and **## Deliverables** from the planning doc (when present). In chat, state briefly whether each criterion was met and how. This is **not** a harness gate — visible reasoning for the user. **`express`** start profile may have skipped a planning doc; shorten or skip accordingly. Tier-end output may include an advisory **deliverables drift** report (planned paths vs working tree changes via git-manager); treat as discussion input, not an automatic failure.
 
 **Impls are tier adapters only.** Each `*-end-impl.ts` (feature, phase, session, task) must:
 
@@ -594,7 +632,7 @@ Adjacent-tier transitions use **tierUp**, **tierAt**, and **tierDown** (see `.cu
 
 **Tier reopen:** Use `/phase-reopen`, `/feature-reopen`, or `/session-reopen` when a completed tier needs additional child work (e.g. add session 4.1.4 to completed phase 4.1). The implementation flips status from Complete to Reopened, ensures the branch, and logs the reopen. For agent behavior after the command returns, see **Per-reasonCode behavioral rules > Reopen success**.
 
-**Adding children (`/{tier}-add`):** Use `/phase-add`, `/session-add`, or `/task-add` to register a new child tier in its parent guide. The command validates the identifier, resolves context, classifies a WorkProfile, appends the child to the parent doc (`appendChildToParentDoc`), and runs planning checks. It does **not** create branches, start workflows, or write pending state — that's `/{tier}-start`'s job. Example: `/session-add 6.10.2 "availability polish"` registers session 6.10.2 in the phase 6.10 guide. Then run `/session-start 6.10.2` when ready. The add command is idempotent: if the child already exists, it reports that and skips the append.
+**Adding children (`/{tier}-add`):** Use `/phase-add`, `/session-add`, or `/task-add` to register a new child tier in its parent guide. The command validates the identifier, resolves context, classifies a WorkProfile, appends the child to the parent doc (`appendChildToParentDoc`), and runs planning checks. It uses the same shared harness advisory-context builder as tier-start planning (`buildTierAdvisoryContext` in `.cursor/commands/harness/tier-advisory-context.ts`): governance contract preview (or an explicit **Task governance (deferred)** section for `task-add` when task files are not yet known), full **Work Profile** block, and **Architecture context** when available. Command output includes a **Reference** section with `.project-manager/WORKFLOW_FRICTION_LOG.md` and `npx tsx .cursor/commands/utils/read-workflow-friction.ts --last 20`. Material failures (context resolution, append to parent guide) may append to the workflow friction log via `recordWorkflowFriction` (same family as tier-start). It does **not** create branches, start workflows, or write pending state — that's `/{tier}-start`'s job. After `/{tier}-start`, complete the planning doc and coverage check before `/accepted-plan` where applicable. Example: `/session-add 6.10.2 "availability polish"` registers session 6.10.2 in the phase 6.10 guide. Then run `/session-start 6.10.2` when ready. The add command is idempotent: if the child already exists, it reports that and skips the append.
 
 **Auto-registration of children:** When planning a new child tier (e.g. `/plan-session 4.1.4`), the plan-* impl calls `appendChildToParentDoc` so the child is registered in the parent doc (e.g. session 4.1.4 added to phase-4.1-guide.md) if not already present. This is idempotent and allows cascade and discovery to work after a reopen. The `/{tier}-add` commands use the same `appendChildToParentDoc` mechanism.
 
@@ -720,3 +758,14 @@ To see **when and why** guides or planning docs are written (and to track overwr
 - **stderr** — The same lines are written to stderr when the write (or block) happens. To reduce noise when running commands, redirect stderr or run in a context where stderr is captured.
 
 All protected writes go through `writeProjectFile` (in `.cursor/commands/utils/utils.ts`) or, when using DocumentManager, through the same guard. The guard blocks overwriting files that are already "filled" (no placeholders). Implementation: `.cursor/commands/utils/project-manager-write-guard.ts`.
+
+---
+
+## Atomic cutover checklist (harness git + tier-end resume)
+
+Use when shipping changes to `.cursor/commands/git/**`, `run-end-steps.ts`, or control-plane routing for tier-end:
+
+1. **`ensureTierBranch(`** — Grep all call sites; **tier-start** composites (feature, phase, session via git-policy) must pass `submoduleCursor` intentionally (`resolveSubmoduleCursorForTierStart` / execute vs plan). Tier-end `ensureTierBranch` for recovery may omit submodule sync.
+2. **`wrong_branch_before_commit`**, **`audit_fix_commit_failed`**, **`git_failed`** — Grep: `control-plane-route.ts`, `control-plane-handlers.ts`, `buildEndReinvokeParams`, `tier-outcome` / `tierEndGitResumable`, this playbook, and `.cursor/skills/tier-workflow-agent/SKILL.md` stay aligned.
+3. **Git boundary** — Grep for new `git` subprocess strings or `child_process` usage **outside** `.cursor/commands/git/**` (pre-existing npm/config-fix runners are OK).
+4. **Hidden start composites** — Before merge, confirm any branch-local tier-start files still call `ensureTierBranch` with the intended submodule policy.

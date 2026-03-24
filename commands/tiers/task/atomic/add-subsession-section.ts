@@ -11,7 +11,7 @@
 
 import { readProjectFile, writeProjectFile } from '../../../utils/utils';
 import { WorkflowCommandContext } from '../../../utils/command-context';
-import { resolveFeatureDirectoryFromPlan } from '../../../utils';
+import { resolveFeatureDirectoryFromPlan, resolveFeatureDirectoryOrActive } from '../../../utils';
 
 export interface TaskSection {
   id: string;
@@ -27,7 +27,7 @@ export interface TaskSection {
 }
 
 export async function addTaskSection(section: TaskSection, featureName?: string): Promise<void> {
-  const resolved = await resolveFeatureDirectoryFromPlan(featureName);
+  const resolved = await resolveFeatureDirectoryOrActive(featureName);
   const context = new WorkflowCommandContext(resolved);
   // Extract session ID from task ID (X.Y.Z -> X.Y)
   const sessionId = section.id.split('.').slice(0, 2).join('.');

@@ -43,7 +43,8 @@ export type GovernanceDomain =
   | 'testing'
   | 'security'
   | 'data_flow'
-  | 'workflow';
+  | 'workflow'
+  | 'architecture';
 
 export type ContextPackKind =
   | 'architecture_decision_pack'
@@ -61,6 +62,12 @@ export type PlanningArtifactAction = 'none' | 'create' | 'update';
 /** Derived from executionIntent + actionType + scopeShape; controls decomposition intensity. */
 export type DecompositionMode = 'light' | 'moderate' | 'explicit';
 
+/** Which human gates and start steps apply; derived from tier + scope (+ overrides). */
+export type GateProfile = 'decomposition' | 'standard' | 'fast' | 'express';
+
+/** Advisory decomposition depth from scope shape; agent decides in Analysis / Decomposition. */
+export type SuggestedDecompositionDepth = 'full' | 'collapsed' | 'leaf';
+
 export interface WorkProfile {
   executionIntent: ExecutionIntent;
   actionType: ActionType;
@@ -69,4 +76,6 @@ export interface WorkProfile {
   contextPack?: ContextPackKind;
   planningArtifactAction?: PlanningArtifactAction;
   decompositionMode?: DecompositionMode;
+  gateProfile?: GateProfile;
+  suggestedDepth?: SuggestedDecompositionDepth;
 }

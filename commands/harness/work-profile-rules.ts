@@ -4,7 +4,14 @@
  * See: work-profile-classifier-rollout plan Phase 6.
  */
 
-import type { WorkProfile, DecompositionMode } from './work-profile';
+import type {
+  WorkProfile,
+  DecompositionMode,
+  GateProfile,
+  SuggestedDecompositionDepth,
+  ScopeShape,
+} from './work-profile';
+import type { Tier } from './contracts';
 
 /**
  * Derive decompositionMode from WorkProfile fields.
@@ -33,4 +40,47 @@ export function deriveDecompositionMode(profile: WorkProfile): DecompositionMode
   }
 
   return 'moderate';
+}
+
+/**
+ * Advisory decomposition depth from scope shape; agent chooses in planning Analysis / Decomposition.
+ */
+export function deriveSuggestedDepth(scopeShape: ScopeShape): SuggestedDecompositionDepth {
+  switch (scopeShape) {
+    case 'architectural':
+    case 'cross_cutting':
+      return 'full';
+    case 'contract_level':
+      return 'collapsed';
+    case 'file_local':
+    case 'snippet_level':
+    case 'tier_document':
+      return 'leaf';
+    default:
+      return 'full';
+  }
+}
+
+/**
+ * Which start gates apply: decomposition (full guide pass), standard/fast (plan only), express (minimal task path).
+ */
+export function deriveGateProfile(
+  tier: Tier,
+  profile: Pick<WorkProfile, 'scopeShape' | 'executionIntent'>
+): GateProfile {
+  const { scopeShape, executionIntent } = profile;
+  if (tier === 'feature') return 'decomposition';
+  if (tier === 'phase' && scopeShape === 'architectural') return 'decomposition';
+  if (tier === 'phase') return 'standard';
+  if (tier === 'session') {
+    if (scopeShape === 'snippet_level' || scopeShape === 'tier_document') return 'express';
+    return 'standard';
+  }
+  if (tier === 'task') {
+    if (scopeShape === 'snippet_level' || scopeShape === 'tier_document') return 'express';
+    if (executionIntent === 'audit_fix') return 'express';
+    if (scopeShape === 'file_local') return 'fast';
+    return 'fast';
+  }
+  return 'decomposition';
 }

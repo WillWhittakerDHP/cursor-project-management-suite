@@ -5,7 +5,7 @@
  */
 
 import type { WorkflowCommandContext } from '../../../utils/command-context';
-import type { EnsureTierBranchResult } from '../../../git/shared/git-manager';
+import type { EnsureTierBranchResult, EnsureTierBranchOptions } from '../../../git/shared/git-manager';
 import { ensureTierBranch } from '../../../git/shared/git-manager';
 import { SESSION_CONFIG } from '../../configs/session';
 
@@ -13,13 +13,15 @@ export interface SessionGitPolicyEnsureParams {
   context: WorkflowCommandContext;
   sessionId: string;
   resolvedDescription?: string;
+  /** Passed through to ensureTierBranch (e.g. submoduleCursor from tier-start options). */
+  ensureOptions?: Pick<EnsureTierBranchOptions, 'submoduleCursor'>;
 }
 
 /** Session git policy: ensure branch. */
 export const sessionGitPolicy = {
   async ensureBranch(params: SessionGitPolicyEnsureParams): Promise<EnsureTierBranchResult> {
-    const { context, sessionId } = params;
-    return ensureTierBranch(SESSION_CONFIG, sessionId, context);
+    const { context, sessionId, ensureOptions } = params;
+    return ensureTierBranch(SESSION_CONFIG, sessionId, context, ensureOptions);
   },
 
   async afterBranch(_params: { sessionId: string; resolvedDescription: string }): Promise<void> {

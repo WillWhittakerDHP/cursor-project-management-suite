@@ -1,7 +1,8 @@
 /**
  * /{tier}-add: register a new child tier in its parent guide.
  * Validates the identifier, resolves context, classifies WorkProfile,
- * appends the child to the parent doc, and runs planning checks.
+ * appends the child to the parent doc, runs planning checks, and prints
+ * the same advisory-context surface as tier-start planning (governance, Work Profile, architecture).
  * Does NOT create branches, start workflows, or write pending state.
  */
 
@@ -14,6 +15,16 @@ import { appendChildToParentDoc, type AppendChildResult } from '../../utils/appe
 import { resolvePlanningDescription } from '../../planning/utils/resolve-planning-description';
 import { runPlanningWithChecks } from '../../planning/utils/run-planning-pipeline';
 import { tierUp } from '../../utils/tier-navigation';
+import {
+  buildTierAdvisoryContext,
+  buildTierAddReferenceMarkdown,
+} from '../../harness/tier-advisory-context';
+import { PROJECT_ROOT } from '../../utils/utils';
+import {
+  buildWorkflowFrictionEntryFromOrchestrator,
+  recordWorkflowFriction,
+  shouldAppendWorkflowFriction,
+} from '../../utils/workflow-friction-log';
 
 export interface TierAddResult {
   success: boolean;
@@ -92,6 +103,49 @@ function buildParamsBag(parts: TierIdParts): TierParamsBag {
   return {};
 }
 
+function recordTierAddContextFailure(params: {
+  tier: TierName;
+  parts: TierIdParts;
+  message: string;
+}): void {
+  const rc = 'unhandled_error';
+  if (!shouldAppendWorkflowFriction({ success: false, reasonCodeRaw: rc })) return;
+  recordWorkflowFriction(
+    buildWorkflowFrictionEntryFromOrchestrator({
+      action: 'add',
+      tier: params.tier,
+      identifier: params.parts.identifier,
+      featureName: params.parts.featureId,
+      reasonCodeRaw: rc,
+      symptom: params.message,
+      context:
+        `tier-add: WorkflowCommandContext.contextFromParams failed.\n\n` +
+        `tier=${params.tier}; identifier=${params.parts.identifier}; featureId=${params.parts.featureId}`,
+    })
+  );
+}
+
+function recordTierAddAppendFailure(params: {
+  tier: TierName;
+  parts: TierIdParts;
+  appendOutput: string[];
+}): void {
+  recordWorkflowFriction({
+    ...buildWorkflowFrictionEntryFromOrchestrator({
+      action: 'add',
+      tier: params.tier,
+      identifier: params.parts.identifier,
+      featureName: params.parts.featureId,
+      reasonCodeRaw: 'guide_materialization_failed',
+      symptom: 'tier-add: appendChildToParentDoc failed.',
+      context:
+        `tier=${params.tier}; identifier=${params.parts.identifier}; parent=${params.parts.parentTier} ${params.parts.parentIdentifier}\n\n` +
+        params.appendOutput.join('\n'),
+    }),
+    forcePolicy: true,
+  });
+}
+
 export async function tierAdd(
   tier: TierName,
   identifier: string,
@@ -107,7 +161,27 @@ export async function tierAdd(
     };
   }
 
-  const context = await WorkflowCommandContext.contextFromParams(tier, buildParamsBag(parts));
+  let context: WorkflowCommandContext;
+  try {
+    context = await WorkflowCommandContext.contextFromParams(tier, buildParamsBag(parts));
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    recordTierAddContextFailure({ tier, parts, message });
+    return {
+      success: false,
+      output: `**${tier}-add failed:**\n\n\`\`\`\n${message}\n\`\`\``,
+      added: {
+        tier,
+        identifier,
+        parentTier: parts.parentTier,
+        parentIdentifier: parts.parentIdentifier,
+        parentDocPath: '',
+        alreadyExists: false,
+      },
+      workProfile: classifyWorkProfile({ tier, action: 'start' }),
+    };
+  }
+
   const workProfile = classifyWorkProfile({ tier, action: 'start' });
 
   const resolvedDescription = await resolvePlanningDescription({
@@ -129,10 +203,10 @@ export async function tierAdd(
   const output: string[] = [];
   output.push(`# ${tier.charAt(0).toUpperCase() + tier.slice(1)} Add: ${identifier}`);
   output.push(`**Description:** ${resolvedDescription}`);
-  output.push(`**Work Profile:** ${workProfile.executionIntent} / ${workProfile.actionType} / ${workProfile.scopeShape}`);
   output.push('');
 
   if (!appendResult.success) {
+    recordTierAddAppendFailure({ tier, parts, appendOutput: appendResult.output });
     output.push(`**Failed to register:** ${appendResult.output.join('; ')}`);
     return {
       success: false,
@@ -149,6 +223,39 @@ export async function tierAdd(
   }
   output.push('');
 
+  const advisory = await buildTierAdvisoryContext({
+    tier,
+    workProfile,
+    taskFiles: undefined,
+    projectRoot: PROJECT_ROOT,
+  });
+
+  if (advisory.taskGovernanceDeferred && advisory.taskGovernanceDeferredMessage) {
+    output.push('## Task governance (deferred)');
+    output.push('');
+    output.push(advisory.taskGovernanceDeferredMessage);
+    output.push('');
+    output.push(
+      '_File-scoped task governance and violations apply after `/task-start` when task files are known._'
+    );
+    output.push('');
+  } else {
+    output.push('## Contract (advisory preview)');
+    output.push('');
+    output.push(advisory.governanceContractBlock);
+    output.push('');
+  }
+
+  output.push(advisory.workProfileSection.trimEnd());
+  output.push('');
+
+  if (advisory.architectureExcerpt != null && advisory.architectureExcerpt.trim() !== '') {
+    output.push('## Architecture context (harness-injected)');
+    output.push('');
+    output.push(advisory.architectureExcerpt.trim());
+    output.push('');
+  }
+
   output.push('## Planning Checks');
   try {
     const planningOutput = await runPlanningWithChecks({
@@ -158,7 +265,6 @@ export async function tierAdd(
       phase: parts.phaseNum,
       sessionId: parts.sessionId,
       taskId: parts.tier === 'task' ? identifier : undefined,
-      docCheckType: 'component',
     });
     output.push(planningOutput);
   } catch (err) {
@@ -166,8 +272,13 @@ export async function tierAdd(
   }
   output.push('');
 
+  output.push(buildTierAddReferenceMarkdown());
+  output.push('');
   output.push('---');
-  output.push(`**Next:** Run \`/${tier}-start ${identifier}\` when ready to create branch and planning doc.`);
+  output.push(
+    `**Next:** Run \`/${tier}-start ${identifier}\` when ready to create branch and planning doc. ` +
+      'After tier-start, complete the planning doc and coverage check before `/accepted-plan` where applicable.'
+  );
 
   return {
     success: true,

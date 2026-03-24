@@ -16,7 +16,10 @@ const LEGACY_TO_CHARTER: Record<string, ReasonCode> = {
   reopen_ok: 'reopen_ok',
   uncommitted_changes_blocking: 'uncommitted_blocking',
   wrong_branch_before_commit: 'wrong_branch_before_commit',
+  app_not_running: 'app_not_running',
+  expected_branch_missing_run_tier_start: 'expected_branch_missing_run_tier_start',
   guide_fill_pending: 'guide_fill_pending',
+  guide_incomplete: 'guide_incomplete',
   unhandled_error: 'unhandled_error',
   // Charter-only codes (impls may emit these in future)
   start_ok: 'start_ok',
@@ -29,6 +32,20 @@ const LEGACY_TO_CHARTER: Record<string, ReasonCode> = {
   test_failed: 'test_failed',
   preflight_failed: 'preflight_failed',
   git_failed: 'git_failed',
+  branch_failed: 'branch_failed',
+  guide_materialization_failed: 'guide_materialization_failed',
+  guide_materialization_requires_execute: 'guide_materialization_requires_execute',
+  no_pending_plan: 'no_pending_plan',
+  no_pending_build: 'no_pending_build',
+  no_pending_code: 'no_pending_code',
+  no_pending_push: 'no_pending_push',
+  wrong_accepted_command: 'wrong_accepted_command',
+  invalid_context: 'invalid_context',
+  invalid_task_id: 'invalid_task_id',
+  audit_fix_commit_failed: 'audit_fix_commit_failed',
+  CONFLICT_MARKERS_IN_TREE: 'conflict_markers_in_tree',
+  conflict_markers_in_tree: 'conflict_markers_in_tree',
+  harness_step_warning: 'unhandled_error',
 };
 
 const FAILURE_CODES: FailureReasonCode[] = [
@@ -38,7 +55,21 @@ const FAILURE_CODES: FailureReasonCode[] = [
   'preflight_failed',
   'git_failed',
   'wrong_branch_before_commit',
+  'app_not_running',
+  'expected_branch_missing_run_tier_start',
+  'branch_failed',
+  'guide_materialization_failed',
+  'guide_materialization_requires_execute',
+  'no_pending_plan',
+  'no_pending_build',
+  'no_pending_code',
+  'no_pending_push',
+  'wrong_accepted_command',
+  'invalid_context',
+  'invalid_task_id',
+  'audit_fix_commit_failed',
   'unhandled_error',
+  'conflict_markers_in_tree',
 ];
 
 /**

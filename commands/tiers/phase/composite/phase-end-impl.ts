@@ -491,7 +491,10 @@ export async function phaseEndImpl(
             outcome: buildTierEndOutcome(
               'blocked_fix_required',
               'git_failed',
-              `Phase completion commit failed. ${phaseCommitResult.output} Fix and re-run /phase-end.`
+              `Phase completion commit failed. ${phaseCommitResult.output} Fix and re-run /phase-end.`,
+              undefined,
+              undefined,
+              { tierEndGitResumable: true }
             ),
           };
         }
@@ -505,7 +508,10 @@ export async function phaseEndImpl(
             outcome: buildTierEndOutcome(
               'blocked_fix_required',
               'git_failed',
-              `Feature branch push failed after phase-end. ${phasePushResult.output} Fix and re-run /phase-end.`
+              `Feature branch push failed after phase-end. ${phasePushResult.output} Fix and re-run /phase-end.`,
+              undefined,
+              undefined,
+              { tierEndGitResumable: true }
             ),
           };
         }
@@ -526,7 +532,10 @@ export async function phaseEndImpl(
           outcome: buildTierEndOutcome(
             'blocked_fix_required',
             'git_failed',
-            `Phase git operations threw an error: ${_error instanceof Error ? _error.message : String(_error)}. Fix and re-run /phase-end.`
+            `Phase git operations threw an error: ${_error instanceof Error ? _error.message : String(_error)}. Fix and re-run /phase-end.`,
+            undefined,
+            undefined,
+            { tierEndGitResumable: true }
           ),
         };
       }

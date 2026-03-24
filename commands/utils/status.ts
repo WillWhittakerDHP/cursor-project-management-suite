@@ -8,12 +8,13 @@ import { getCurrentBranch } from './utils';
 import { gitLog } from '../git/shared/git-manager';
 import { MarkdownUtils } from './markdown-utils';
 import { WorkflowCommandContext } from './command-context';
+import { resolveActiveFeatureDirectory } from './workflow-scope';
 
 export async function status(): Promise<string> {
   const output: string[] = [];
   
-  // Read handoff for current status using WorkflowCommandContext
-  const context = await WorkflowCommandContext.getCurrent();
+  const featureDir = await resolveActiveFeatureDirectory();
+  const context = new WorkflowCommandContext(featureDir);
   const handoffContent = await context.readFeatureHandoff();
   
   // Extract current status
@@ -22,7 +23,7 @@ export async function status(): Promise<string> {
   const transitionContext = MarkdownUtils.extractSection(handoffContent, 'Transition Context');
   
   // Get git info
-  const branch = await getCurrentBranch();
+  const branch = (await getCurrentBranch()) ?? '(unknown)';
   const lastCommitResult = await gitLog('%h - %s (%ar)', 1);
   const lastCommit = lastCommitResult.success ? lastCommitResult.output : 'Unable to get commit info';
   

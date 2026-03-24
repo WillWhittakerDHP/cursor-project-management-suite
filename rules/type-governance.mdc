@@ -14,4 +14,4 @@ Type governance (inventory → governance → audit):
 
 **Placement:** Shared type → `client/src/types/<domain>/`; composable contract → co-locate by domain; single-file-only → inline in `<script setup>`. Prefer descriptive generic names and type guards over assertion workarounds.
 
-See: .project-manager/TYPE_AUTHORING_PLAYBOOK.md for decision tree, full table, and audit mapping.
+See: .project-manager/TYPE_AUTHORING_PLAYBOOK.md for decision tree, full table, and audit mapping. Domain list and type layers: `.project-manager/ARCHITECTURE.md`.

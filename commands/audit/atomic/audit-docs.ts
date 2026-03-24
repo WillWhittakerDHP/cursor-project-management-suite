@@ -9,11 +9,17 @@
 import { AuditResult, AuditFinding, AuditParams } from '../types';
 import { WorkflowCommandContext } from '../../utils/command-context';
 import { MarkdownUtils } from '../../utils/markdown-utils';
-import { resolveFeatureDirectoryFromPlan } from '../../utils';
+import { resolveFeatureDirectoryFromPlan, resolveFeatureDirectoryOrActive } from '../../utils';
 import {
   REQUIRED_GUIDE_SECTIONS,
   REQUIRED_HANDOFF_SECTIONS,
 } from '../../tiers/shared/guide-required-sections';
+
+function isMissingDocFileError(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+  const m = err.message;
+  return m.includes('ENOENT') || m.includes('no such file') || m.includes('not found');
+}
 
 /**
  * Audit docs for a tier
@@ -36,7 +42,7 @@ export async function auditDocs(params: AuditParams): Promise<AuditResult> {
     };
   }
   
-  const featureName = await resolveFeatureDirectoryFromPlan(params.featureName);
+  const featureName = await resolveFeatureDirectoryOrActive(params.featureName);
   const context = new WorkflowCommandContext(featureName);
   
   try {
@@ -60,7 +66,11 @@ export async function auditDocs(params: AuditParams): Promise<AuditResult> {
         guideExists = true;
       }
     } catch (err) {
-      console.warn('Audit docs: guide not found', params.tier, params.identifier, err);
+      if (!isMissingDocFileError(err)) {
+        console.warn('Audit docs: guide read error', params.tier, params.identifier, err);
+      } else if (typeof process !== 'undefined' && process.env.TIER_LOG_AUDIT_DOCS === '1') {
+        console.debug('Audit docs: guide missing', params.tier, params.identifier);
+      }
       findings.push({
         type: 'error',
         message: `Guide document not found for ${params.tier} ${params.identifier}`,
@@ -72,7 +82,7 @@ export async function auditDocs(params: AuditParams): Promise<AuditResult> {
     
     // Check guide required sections (task tier skips guide check via early return above)
     if (guideExists && guideContent) {
-      const sections = params.tier === 'task' ? [] : [...REQUIRED_GUIDE_SECTIONS[params.tier]];
+      const sections = [...REQUIRED_GUIDE_SECTIONS[params.tier]];
       const missingGuideSections: string[] = [];
       
       for (const section of sections) {
@@ -110,7 +120,11 @@ export async function auditDocs(params: AuditParams): Promise<AuditResult> {
         logExists = true;
       }
     } catch (err) {
-      console.warn('Audit docs: log not found', params.tier, params.identifier, err);
+      if (!isMissingDocFileError(err)) {
+        console.warn('Audit docs: log read error', params.tier, params.identifier, err);
+      } else if (typeof process !== 'undefined' && process.env.TIER_LOG_AUDIT_DOCS === '1') {
+        console.debug('Audit docs: log missing', params.tier, params.identifier);
+      }
       findings.push({
         type: 'warning',
         message: `Log document not found for ${params.tier} ${params.identifier}`,
@@ -169,7 +183,11 @@ export async function auditDocs(params: AuditParams): Promise<AuditResult> {
         handoffExists = true;
       }
     } catch (err) {
-      console.warn('Audit docs: handoff not found', params.tier, params.identifier, err);
+      if (!isMissingDocFileError(err)) {
+        console.warn('Audit docs: handoff read error', params.tier, params.identifier, err);
+      } else if (typeof process !== 'undefined' && process.env.TIER_LOG_AUDIT_DOCS === '1') {
+        console.debug('Audit docs: handoff missing', params.tier, params.identifier);
+      }
       findings.push({
         type: 'warning',
         message: `Handover document not found for ${params.tier} ${params.identifier}`,

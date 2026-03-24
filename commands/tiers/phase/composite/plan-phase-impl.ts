@@ -3,7 +3,7 @@
  */
 
 import { resolvePlanningDescription } from '../../../planning/utils/resolve-planning-description';
-import { resolveFeatureDirectoryFromPlan, resolveActiveFeatureDirectory } from '../../../utils';
+import { resolveFeatureDirectoryOrActive } from '../../../utils';
 import { runPlanningWithChecks } from '../../../planning/utils/run-planning-pipeline';
 import { WorkflowCommandContext } from '../../../utils/command-context';
 import { MarkdownUtils } from '../../../utils/markdown-utils';
@@ -16,9 +16,7 @@ export async function planPhaseImpl(
   featureId?: string,
   planContent?: string
 ): Promise<string> {
-  const feature = featureId != null && featureId.trim() !== ''
-    ? await resolveFeatureDirectoryFromPlan(featureId)
-    : await resolveActiveFeatureDirectory();
+  const feature = await resolveFeatureDirectoryOrActive(featureId);
   const context = new WorkflowCommandContext(feature);
   const output: string[] = [];
   const phase = phaseId;

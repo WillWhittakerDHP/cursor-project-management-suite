@@ -18,7 +18,7 @@
  * @param append If true, append to section; if false, replace section (default: false)
  */
 
-import { resolveFeatureDirectoryFromPlan } from '../../utils';
+import { resolveFeatureDirectoryFromPlan, resolveFeatureDirectoryOrActive } from '../../utils';
 import { WorkflowCommandContext } from '../../utils/command-context';
 import { WorkflowId } from '../../utils/id-utils';
 
@@ -30,7 +30,7 @@ export async function workflowUpdateSection(
   featureName?: string,
   append: boolean = false
 ): Promise<string> {
-  const resolved = await resolveFeatureDirectoryFromPlan(featureName);
+  const resolved = await resolveFeatureDirectoryOrActive(featureName);
   const context = new WorkflowCommandContext(resolved);
   const output: string[] = [];
   

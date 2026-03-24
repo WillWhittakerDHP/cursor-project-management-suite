@@ -1,7 +1,7 @@
 /**
  * /accepted-code: allow the pending task start to proceed past the gate (Begin Coding) without re-running from the top.
  * Reads .task-start-pending.json written by task-start on plan_mode; continues the workflow from ensure_branch
- * (resumeAfterStep). BLOCKS until the task planning doc is filled (same enforcement as acceptedProceed).
+ * (resumeAfterStep). BLOCKS until the task planning doc is filled (same enforcement as /accepted-plan for non-task tiers).
  */
 
 import { runTierStart, type TierStartResultWithControlPlane } from './tier-start';
@@ -78,63 +78,67 @@ export async function acceptedCode(): Promise<TierStartResultWithControlPlane> {
     ...(state.featureId != null && state.featureId.trim() !== '' && { featureId: state.featureId.trim() }),
     ...(state.featureName != null && state.featureName.trim() !== '' && { featureName: state.featureName.trim() }),
   });
+  const expressProfile = state.workProfile?.gateProfile === 'express';
   const planningDocPath = context.documents.getPlanningDocRelativePath('task', state.taskId);
-  if (!(await context.documents.planningDocExists('task', state.taskId))) {
-    const msg = PLANNING_DOC_INCOMPLETE_MESSAGE(planningDocPath);
-    const decision: ControlPlaneDecision = {
-      stop: true,
-      requiredMode: 'plan',
-      message: msg,
-    };
-    return {
-      success: false,
-      output: msg,
-      outcome: {
-        status: 'blocked',
-        reasonCode: 'planning_doc_incomplete',
-        nextAction: msg,
-      },
-      controlPlaneDecision: decision,
-    };
-  }
-  let content: string;
-  try {
-    content = await context.documents.readPlanningDoc('task', state.taskId);
-  } catch {
-    const msg = PLANNING_DOC_INCOMPLETE_MESSAGE(planningDocPath);
-    const decision: ControlPlaneDecision = {
-      stop: true,
-      requiredMode: 'plan',
-      message: msg,
-    };
-    return {
-      success: false,
-      output: msg,
-      outcome: {
-        status: 'blocked',
-        reasonCode: 'planning_doc_incomplete',
-        nextAction: msg,
-      },
-      controlPlaneDecision: decision,
-    };
-  }
-  if (!isPlanningDocFilled(content)) {
-    const msg = PLANNING_DOC_INCOMPLETE_MESSAGE(planningDocPath);
-    const decision: ControlPlaneDecision = {
-      stop: true,
-      requiredMode: 'plan',
-      message: msg,
-    };
-    return {
-      success: false,
-      output: msg,
-      outcome: {
-        status: 'blocked',
-        reasonCode: 'planning_doc_incomplete',
-        nextAction: msg,
-      },
-      controlPlaneDecision: decision,
-    };
+
+  if (!expressProfile) {
+    if (!(await context.documents.planningDocExists('task', state.taskId))) {
+      const msg = PLANNING_DOC_INCOMPLETE_MESSAGE(planningDocPath);
+      const decision: ControlPlaneDecision = {
+        stop: true,
+        requiredMode: 'plan',
+        message: msg,
+      };
+      return {
+        success: false,
+        output: msg,
+        outcome: {
+          status: 'blocked',
+          reasonCode: 'planning_doc_incomplete',
+          nextAction: msg,
+        },
+        controlPlaneDecision: decision,
+      };
+    }
+    let content: string;
+    try {
+      content = await context.documents.readPlanningDoc('task', state.taskId);
+    } catch {
+      const msg = PLANNING_DOC_INCOMPLETE_MESSAGE(planningDocPath);
+      const decision: ControlPlaneDecision = {
+        stop: true,
+        requiredMode: 'plan',
+        message: msg,
+      };
+      return {
+        success: false,
+        output: msg,
+        outcome: {
+          status: 'blocked',
+          reasonCode: 'planning_doc_incomplete',
+          nextAction: msg,
+        },
+        controlPlaneDecision: decision,
+      };
+    }
+    if (!isPlanningDocFilled(content)) {
+      const msg = PLANNING_DOC_INCOMPLETE_MESSAGE(planningDocPath);
+      const decision: ControlPlaneDecision = {
+        stop: true,
+        requiredMode: 'plan',
+        message: msg,
+      };
+      return {
+        success: false,
+        output: msg,
+        outcome: {
+          status: 'blocked',
+          reasonCode: 'planning_doc_incomplete',
+          nextAction: msg,
+        },
+        controlPlaneDecision: decision,
+      };
+    }
   }
 
   const result = await runTierStart(

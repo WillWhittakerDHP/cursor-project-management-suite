@@ -1,0 +1,15 @@
+---
+alwaysApply: true
+---
+
+Architecture governance:
+
+Before planning features or decomposing work, check `.project-manager/ARCHITECTURE.md` for:
+
+- Which **domains** the work touches (Section 2: Domain Map)
+- The canonical **data flow** path (Section 3)
+- Where **types** belong (Section 4: Type Boundaries — `@shared` vs `client/src/types` vs `server/src/types`)
+- **Domain-specific naming** and key orchestrators (Section 5)
+- Established **patterns** to follow or extend (Section 6)
+
+When creating new composables, components, types, or routes, follow the domain conventions. When work crosses domain boundaries, document the cross-domain dependency in the planning doc **Analysis** section. Heuristic alignment checks may use `.project-manager/ARCHITECTURE_DOMAINS.json`.

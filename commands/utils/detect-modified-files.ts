@@ -231,7 +231,11 @@ export async function detectFeatureModifiedFiles(
 ): Promise<string[]> {
   try {
     // Get current branch name
-    const branchOutput = (await getCurrentBranch()).trim();
+    const branchRaw = await getCurrentBranch();
+    if (branchRaw == null || branchRaw.trim() === '') {
+      return [];
+    }
+    const branchOutput = branchRaw.trim();
 
     // Try to find base branch (usually 'develop' or 'main')
     const baseBranches = ['develop', 'main', 'master'];

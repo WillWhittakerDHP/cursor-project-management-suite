@@ -34,6 +34,15 @@ const TASK_PLACEHOLDERS = [
   '[What to verify when done]',
 ];
 
+/** Must stay aligned with `PLANNING_STORY_PLACEHOLDERS` in `tier-start-steps.ts`. */
+const PLANNING_STORY_PLACEHOLDERS = [
+  '[Analyze the problem space before planning]',
+  '[Describe what changes and why]',
+  '[Define acceptance criteria]',
+  '[As a ... I want ... so that ...]',
+  '[List concrete deliverables]',
+];
+
 // Placeholders that indicate guide tierDown blocks not filled (aligned with tier-start-steps.ts).
 const GUIDE_TIERDOWN_PLACEHOLDERS = ['[Fill in]', '[To be planned]', '[To be defined]'];
 
@@ -54,6 +63,9 @@ function isPlanningDocFilled(content: string): boolean {
     if (content.includes(p)) return false;
   }
   for (const p of TASK_PLACEHOLDERS) {
+    if (content.includes(p)) return false;
+  }
+  for (const p of PLANNING_STORY_PLACEHOLDERS) {
     if (content.includes(p)) return false;
   }
   return true;

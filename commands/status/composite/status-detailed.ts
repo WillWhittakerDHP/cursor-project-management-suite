@@ -7,7 +7,7 @@
  */
 
 import { getStatus, StatusTier, GetStatusParams } from '../atomic/get-status';
-import { resolveFeatureDirectoryFromPlan } from '../../utils';
+import { resolveFeatureDirectoryFromPlan, resolveFeatureDirectoryOrActive } from '../../utils';
 import { status } from '../../utils/status';
 
 export interface StatusDetailedParams {
@@ -23,7 +23,7 @@ export interface StatusDetailedParams {
  * @returns Formatted status output
  */
 export async function statusDetailed(params: StatusDetailedParams): Promise<string> {
-  const featureName = await resolveFeatureDirectoryFromPlan(params.featureName);
+  const featureName = await resolveFeatureDirectoryOrActive(params.featureName);
   const output: string[] = [];
 
   output.push(`# Detailed Status: ${params.tier}${params.identifier ? ` ${params.identifier}` : ''}\n`);

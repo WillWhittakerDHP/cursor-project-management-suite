@@ -7,7 +7,7 @@
 
 import { planComplete } from './plan-complete';
 import { PlanningTier, AlternativeType, CriticalCheckType } from '../../utils/planning-types';
-import { resolveFeatureDirectoryFromPlan } from '../../utils';
+import { resolveFeatureDirectoryFromPlan, resolveFeatureDirectoryOrActive } from '../../utils';
 
 /**
  * Plan for a specific tier
@@ -53,7 +53,7 @@ export async function planTier(
       featureName = identifier;
       break;
     case 'phase': {
-      featureName = await resolveFeatureDirectoryFromPlan(feature);
+      featureName = await resolveFeatureDirectoryOrActive(feature);
       phase = parseInt(identifier, 10);
       if (isNaN(phase)) {
         return `Error: Invalid phase number: ${identifier}`;
@@ -61,7 +61,7 @@ export async function planTier(
       break;
     }
     case 'session': {
-      featureName = await resolveFeatureDirectoryFromPlan(feature);
+      featureName = await resolveFeatureDirectoryOrActive(feature);
       sessionId = identifier;
       // Validate session ID format (X.Y.Z)
       if (!/^\d+\.\d+\.\d+$/.test(identifier)) {
@@ -70,7 +70,7 @@ export async function planTier(
       break;
     }
     case 'task': {
-      featureName = await resolveFeatureDirectoryFromPlan(feature);
+      featureName = await resolveFeatureDirectoryOrActive(feature);
       taskId = identifier;
       // Validate task ID format (X.Y.Z.A)
       if (!/^\d+\.\d+\.\d+\.\d+$/.test(identifier)) {

@@ -7,10 +7,10 @@
  */
 
 import { WorkflowCommandContext } from '../../../utils/command-context';
-import { resolveFeatureDirectoryFromPlan } from '../../../utils';
+import { resolveFeatureDirectoryFromPlan, resolveFeatureDirectoryOrActive } from '../../../utils';
 
 export async function markComplete(taskId: string, featureName?: string): Promise<void> {
-  const resolved = await resolveFeatureDirectoryFromPlan(featureName);
+  const resolved = await resolveFeatureDirectoryOrActive(featureName);
   const context = new WorkflowCommandContext(resolved);
   const sessionId = taskId.split('.').slice(0, 2).join('.');
   await context.documents.updateHandoff('session', sessionId, (content) => {

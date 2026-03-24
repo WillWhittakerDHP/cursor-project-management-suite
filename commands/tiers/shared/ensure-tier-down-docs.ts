@@ -8,10 +8,12 @@
  */
 
 import type { TierStartWorkflowContext, TierDownPlanItem } from './tier-start-workflow-types';
+import type { TierConfig } from './types';
 import type { WorkflowCommandContext } from '../../utils/command-context';
 import { writeProjectFile } from '../../utils/utils';
 import { derivePhaseDescription } from '../../planning/utils/resolve-planning-description';
 import { ensureGuideHasRequiredSections } from './guide-required-sections';
+import { getConfigForTier } from '../configs';
 
 // --- Enumerate tierDown IDs from current-tier guide content ---
 
@@ -225,6 +227,24 @@ async function runForFeature(ctx: TierStartWorkflowContext): Promise<void> {
   if (updated !== content) {
     updated = ensureGuideHasRequiredSections(updated, 'feature', identifier, scopeName);
     await context.documents.updateGuide('feature', identifier, () => updated);
+  }
+
+  /** Leaf / collapsed decomposition: single auto phase — scaffold session + task chain under that phase. */
+  if (ctx.leafTier === true) {
+    const finalGuide = await context.documents.readGuide('feature');
+    const leafPhaseIds = enumeratePhaseIdsFromFeatureGuide(finalGuide);
+    if (leafPhaseIds.length === 1) {
+      const phaseId = leafPhaseIds[0]!;
+      const phaseCfg = getConfigForTier('phase') as TierConfig;
+      await runForPhase({ ...ctx, config: phaseCfg, identifier: phaseId });
+      const phaseContentAfter = await context.documents.readGuide('phase', phaseId);
+      const sessionIds = enumerateSessionIdsFromPhaseGuide(phaseContentAfter);
+      const sessionId = sessionIds[0];
+      if (sessionId) {
+        const sessionCfg = getConfigForTier('session') as TierConfig;
+        await runForSession({ ...ctx, config: sessionCfg, identifier: sessionId });
+      }
+    }
   }
 }
 

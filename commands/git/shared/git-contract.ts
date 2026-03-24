@@ -16,6 +16,20 @@ export interface BranchChainLink {
   isRoot: boolean;
 }
 
+/** Options for ensureTierBranch (tier-start branch alignment + optional `.cursor` submodule sync). */
+export type SubmoduleCursorMode = 'off' | 'parent' | 'remote';
+
+export interface EnsureTierBranchOptions {
+  pullRoot?: boolean;
+  createIfMissing?: boolean;
+  syncRemote?: boolean;
+  /**
+   * `.cursor` submodule: `off` = no submodule commands; `parent` = match parent gitlink;
+   * `remote` = `submodule update --init --remote` (may advance submodule and dirty parent).
+   */
+  submoduleCursor?: SubmoduleCursorMode;
+}
+
 /** Result of ensureTierBranch / ensureFeatureBranch (tier-start). */
 export interface EnsureTierBranchResult {
   success: boolean;

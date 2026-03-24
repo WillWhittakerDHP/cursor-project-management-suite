@@ -6,7 +6,7 @@
  * Operates on: Complete handoff workflow
  */
 
-import { resolveFeatureDirectoryFromPlan } from '../../utils';
+import { resolveFeatureDirectoryFromPlan, resolveFeatureDirectoryOrActive } from '../../utils';
 import { generateHandoff, HandoffTier, GenerateHandoffParams } from '../atomic/generate-handoff';
 import { reviewHandoff, ReviewHandoffParams } from '../atomic/review-handoff';
 
@@ -29,7 +29,7 @@ export async function handoffComplete(
   nextIdentifier?: string,
   transitionNotes?: string
 ): Promise<string> {
-  const resolved = await resolveFeatureDirectoryFromPlan(featureName);
+  const resolved = await resolveFeatureDirectoryOrActive(featureName);
   const output: string[] = [];
   
   output.push(`# Complete Handoff Workflow: ${tier}${identifier ? ` ${identifier}` : ''}\n`);

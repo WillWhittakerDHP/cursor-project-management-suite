@@ -12,7 +12,7 @@ import { hasFailedScriptAutofix, runTierAutofix } from '../autofix/run-tier-auto
 import { auditDocs } from '../atomic/audit-docs';
 import { auditVueArchitecture } from '../atomic/audit-vue-architecture';
 import { WorkflowCommandContext } from '../../utils/command-context';
-import { resolveFeatureDirectoryFromPlan } from '../../utils';
+import { resolveFeatureDirectoryFromPlan, resolveFeatureDirectoryOrActive } from '../../utils';
 import { writeAuditReport, calculateOverallStatus, getRelativePath, compareBaselineToEnd, getTypeConstantInventoryScore, getComposableGovernanceScore, getFunctionGovernanceScore, getComponentGovernanceScore } from '../utils';
 import { queryBaseline, buildTierStampFromId } from '../baseline-log';
 import { importExternalAudits } from '../external/import-external-audits';
@@ -37,7 +37,7 @@ export async function auditSession(params: AuditSessionParams): Promise<{
   output: string;
   autofixResult?: AutofixResult;
 }> {
-  const featureName = await resolveFeatureDirectoryFromPlan(params.featureName);
+  const featureName = await resolveFeatureDirectoryOrActive(params.featureName);
   const context = new WorkflowCommandContext(featureName);
   
   const auditParams: AuditParams = {

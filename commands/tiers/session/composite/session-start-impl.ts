@@ -25,6 +25,7 @@ import type {
   TierStartWorkflowResult,
 } from '../../shared/tier-start-workflow-types';
 import { runTierStartWorkflow } from '../../../harness/run-start-steps';
+import { resolveSubmoduleCursorForTierStart } from '../../../utils/command-execution-mode';
 import { getTierUpPlanningDocSections } from '../../shared/tier-start-steps';
 import type { RunRecorder, RunTraceHandle } from '../../../harness/contracts';
 import { writeTierScope } from '../../../utils/tier-scope-writer';
@@ -256,7 +257,12 @@ export async function sessionStartImpl(
     },
 
     async ensureBranch() {
-      return sessionGitPolicy.ensureBranch({ context, sessionId, resolvedDescription });
+      return sessionGitPolicy.ensureBranch({
+        context,
+        sessionId,
+        resolvedDescription,
+        ensureOptions: { submoduleCursor: resolveSubmoduleCursorForTierStart(options) },
+      });
     },
 
     async afterBranch() {

@@ -9,7 +9,7 @@
  */
 
 import { getCurrentDate } from './utils';
-import { resolveFeatureDirectoryFromPlan } from './workflow-scope';
+import { resolveFeatureDirectoryFromPlan, resolveFeatureDirectoryOrActive } from './workflow-scope';
 import { getCurrentBranch } from '../git/shared/git-manager';
 import { WorkflowCommandContext } from './command-context';
 import { getExcerptEndMarker } from '../tiers/shared/context-policy';
@@ -88,7 +88,7 @@ function findInsertIndexForSessionHandoffExcerpt(stripped: string): number {
 }
 
 export async function updateHandoffMinimal(update: MinimalHandoffUpdate): Promise<void> {
-  const featureName = await resolveFeatureDirectoryFromPlan(update.featureName);
+  const featureName = await resolveFeatureDirectoryOrActive(update.featureName);
   const context = new WorkflowCommandContext(featureName);
   const sessionId = update.sessionId || update.lastCompletedTask.split('.').slice(0, 2).join('.');
   await context.documents.ensureHandoff('session', sessionId, `Session ${sessionId}`);

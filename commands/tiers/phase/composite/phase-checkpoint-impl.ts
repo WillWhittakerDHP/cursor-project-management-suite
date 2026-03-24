@@ -5,13 +5,13 @@
 
 import { getCurrentDate } from '../../../utils/utils';
 import { WorkflowCommandContext } from '../../../utils/command-context';
-import { resolveFeatureDirectoryFromPlan } from '../../../utils';
+import { resolveFeatureDirectoryFromPlan, resolveFeatureDirectoryOrActive } from '../../../utils';
 
 export async function phaseCheckpointImpl(
   phase: string,
   featureName?: string
 ): Promise<string> {
-  const resolved = await resolveFeatureDirectoryFromPlan(featureName);
+  const resolved = await resolveFeatureDirectoryOrActive(featureName);
   const context = new WorkflowCommandContext(resolved);
   const output: string[] = [];
 

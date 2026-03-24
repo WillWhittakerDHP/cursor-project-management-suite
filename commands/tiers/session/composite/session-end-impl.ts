@@ -91,8 +91,14 @@ export interface SessionEndParams {
  * to decide next step without guessing. No re-prompt loops inside the command.
  *
  * Derivation order: session guide → phase guide → session log. At session-start the log
- * usually does not exist yet; guide/phase do, so we avoid "missing session log" warnings.
+ * usually does not exist yet; session guide may not exist yet either — fall through without alarming logs.
  */
+function isMissingArtifactError(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+  const m = err.message;
+  return m.includes('ENOENT') || m.includes('no such file') || m.includes('not found');
+}
+
 export async function deriveSessionDescription(
   sessionId: string,
   context: WorkflowCommandContext
@@ -104,7 +110,19 @@ export async function deriveSessionDescription(
     const descMatch = sessionGuide.match(/Description:\s*(.+?)(?:\n|$)/i);
     if (descMatch) return descMatch[1].trim();
   } catch (err) {
-    console.warn('Session end: session guide not found or unreadable', sessionId, err);
+    if (isMissingArtifactError(err)) {
+      if (typeof process !== 'undefined' && process.env.TIER_LOG_DERIVE_SESSION === '1') {
+        console.debug(
+          `[deriveSessionDescription] No session guide yet for ${sessionId}; using phase guide or default title.`
+        );
+      }
+    } else {
+      console.warn(
+        '[deriveSessionDescription] Unexpected error reading session guide:',
+        sessionId,
+        err instanceof Error ? err.message : err
+      );
+    }
   }
   try {
     const parsed = WorkflowId.parseSessionId(sessionId);
@@ -115,7 +133,19 @@ export async function deriveSessionDescription(
       if (match) return match[1].trim();
     }
   } catch (err) {
-    console.warn('Session end: phase guide not found or unreadable (session name fallback)', sessionId, err);
+    if (isMissingArtifactError(err)) {
+      if (typeof process !== 'undefined' && process.env.TIER_LOG_DERIVE_SESSION === '1') {
+        console.debug(
+          `[deriveSessionDescription] Phase guide missing or session line not found for ${sessionId}; using default title.`
+        );
+      }
+    } else {
+      console.warn(
+        '[deriveSessionDescription] Unexpected error reading phase guide:',
+        sessionId,
+        err instanceof Error ? err.message : err
+      );
+    }
   }
   try {
     const sessionLog = await context.readSessionLog(sessionId);
@@ -526,7 +556,10 @@ export async function sessionEndImpl(
               outcome: buildTierEndOutcome(
                 'blocked_fix_required',
                 'git_failed',
-                `${prefix} ${detail} Fix and re-run /session-end.`
+                `${prefix} ${detail} Fix and re-run /session-end.`,
+                undefined,
+                undefined,
+                { tierEndGitResumable: true }
               ),
             };
           }
@@ -545,7 +578,10 @@ export async function sessionEndImpl(
             outcome: buildTierEndOutcome(
               'blocked_fix_required',
               'git_failed',
-              `Session-end git error. ${errorMsg}`
+              `Session-end git error. ${errorMsg}`,
+              undefined,
+              undefined,
+              { tierEndGitResumable: true }
             ),
           };
         }

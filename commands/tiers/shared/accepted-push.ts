@@ -1,102 +1,111 @@
 /**
- * /accepted-push: run git push for the pending tier end and return cascade info.
- * Reads .tier-end-pending.json written by tier-end on pending_push_confirmation;
- * runs git push, clears end-pending state, returns result with controlPlaneDecision.
+ * /accepted-push: user confirms push after tier-end returned `pending_push` / pending_push_confirmation.
+ * Reads `.tier-end-pending.json`, runs push via git-manager, clears pending on success.
  */
 
-import { readEndPending, deleteEndPending } from './pending-state';
-import type { ControlPlaneDecision } from './control-plane-types';
-import { QUESTION_KEYS } from './control-plane-types';
 import { gitPush } from '../../git/shared/git-manager';
+import {
+  readEndPending,
+  deleteEndPending,
+  type EndPendingState,
+} from './pending-state';
+import type { ControlPlaneDecision } from './control-plane-types';
+import { routeByOutcome } from './control-plane-route';
+import type { CommandResultForRouting } from './control-plane-types';
 
-const NO_PENDING_MESSAGE =
-  'No pending push. Run a tier end (feature-end, phase-end, session-end, or task-end) first. When it returns pending push, run **/accepted-push** to push or **/skip-push** to skip.';
-
-export type AcceptedPushResult = {
+export interface AcceptedPushResult {
   success: boolean;
   output: string;
   outcome: {
-    reasonCode: 'push_done' | 'no_pending_push' | 'push_failed';
+    status: 'completed' | 'failed';
+    reasonCode: string;
     nextAction: string;
-    cascade?: import('../../utils/tier-outcome').CascadeInfo;
+    cascade?: EndPendingState['cascade'];
   };
   controlPlaneDecision: ControlPlaneDecision;
-};
+}
+
+const NO_PENDING_MESSAGE =
+  'No pending push. Run a tier-end that completes with push pending first, then run **/accepted-push** when you are ready to push.';
+
+function wrap(
+  result: CommandResultForRouting,
+  pending: EndPendingState | null
+): AcceptedPushResult {
+  const o = result.outcome ?? {
+    reasonCode: 'unhandled_error',
+    nextAction: result.output,
+  };
+  const decision = routeByOutcome(result, {
+    tier: pending?.tier ?? 'task',
+    action: 'end',
+    originalParams: pending != null ? { identifier: pending.identifier } : {},
+  });
+  return {
+    success: result.success,
+    output: result.output,
+    outcome: {
+      status: result.success ? 'completed' : 'failed',
+      reasonCode: String(o.reasonCode),
+      nextAction: o.nextAction,
+      ...(o.cascade !== undefined && { cascade: o.cascade }),
+    },
+    controlPlaneDecision: decision,
+  };
+}
 
 /**
- * Run git push for the pending tier end. Clears end-pending state and returns cascade info if any.
+ * Push current branch to origin for pending tier-end. User runs in Cursor.
  */
 export async function acceptedPush(): Promise<AcceptedPushResult> {
-  const state = await readEndPending();
-  if (!state) {
-    const decision: ControlPlaneDecision = {
-      stop: true,
-      requiredMode: 'plan',
-      message: NO_PENDING_MESSAGE,
-    };
-    return {
-      success: false,
-      output: NO_PENDING_MESSAGE,
-      outcome: {
-        reasonCode: 'no_pending_push',
-        nextAction: NO_PENDING_MESSAGE,
+  const pending = await readEndPending();
+  if (!pending) {
+    return wrap(
+      {
+        success: false,
+        output: NO_PENDING_MESSAGE,
+        outcome: {
+          reasonCode: 'no_pending_push',
+          nextAction: NO_PENDING_MESSAGE,
+        },
       },
-      controlPlaneDecision: decision,
-    };
+      null
+    );
   }
 
   const pushResult = await gitPush();
-
   if (!pushResult.success) {
-    const message = `Push failed. ${pushResult.output}
-
-Pending push state was kept. After fixing (credentials, network, or branch protection), run **/accepted-push** again. Check \`.project-manager/.git-ops-log\` for the exact git command. Or run **/skip-push** to clear without pushing.`;
-    const decision: ControlPlaneDecision = {
-      stop: true,
-      requiredMode: 'plan',
-      message,
-    };
-    return {
-      success: false,
-      output: message,
-      outcome: {
-        reasonCode: 'push_failed',
-        nextAction:
-          'Fix push (see .project-manager/.git-ops-log), then /accepted-push again, or /skip-push to abandon push.',
+    return wrap(
+      {
+        success: false,
+        output: `**Push failed:**\n\n\`\`\`\n${pushResult.output}\n\`\`\``,
+        outcome: {
+          reasonCode: 'git_failed',
+          nextAction: 'Fix the git error (auth, remote, branch), then run **/accepted-push** again.',
+        },
       },
-      controlPlaneDecision: decision,
-    };
+      pending
+    );
   }
 
   await deleteEndPending();
 
-  const cascadeHint =
-    state.cascade?.command != null
-      ? ` Then run **${state.cascade.command}** to continue.`
-      : '';
-  const bugbotHint =
-    state.tier !== 'task'
-      ? '\n\nTo run a Bugbot review, create a PR from this branch or comment `cursor review` on an existing PR.'
-      : '';
-  const message = `Push complete.${cascadeHint}${bugbotHint}`.trim();
-  const decision: ControlPlaneDecision = {
-    stop: state.cascade != null,
-    requiredMode: 'plan',
-    message,
-    ...(state.cascade != null && {
-      questionKey: QUESTION_KEYS.CASCADE,
-      cascadeCommand: state.cascade.command,
-    }),
-  };
+  const cascade = pending.cascade;
+  const nextAction =
+    cascade != null
+      ? `Push succeeded. **Cascade:** ${cascade.command} (${cascade.tier} ${cascade.identifier}). See playbook for confirmation.`
+      : 'Push succeeded. No cascade in pending state.';
 
-  return {
-    success: true,
-    output: pushResult.output || message,
-    outcome: {
-      reasonCode: 'push_done',
-      nextAction: message,
-      ...(state.cascade != null && { cascade: state.cascade }),
+  return wrap(
+    {
+      success: true,
+      output: `${pushResult.output}\n\n${nextAction}`,
+      outcome: {
+        reasonCode: 'end_ok',
+        nextAction,
+        ...(cascade !== undefined && { cascade }),
+      },
     },
-    controlPlaneDecision: decision,
-  };
+    pending
+  );
 }
