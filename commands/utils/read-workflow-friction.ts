@@ -4,12 +4,16 @@
  */
 
 import { readFile } from 'fs/promises';
-import { join } from 'path';
 import { fileURLToPath } from 'node:url';
 import { PROJECT_ROOT } from './utils';
 import { parseReasonCode } from '../harness/reason-code';
+import { getWorkflowFrictionLogPath } from './workflow-friction-log';
 
-const LOG_PATH = join(PROJECT_ROOT, '.project-manager', 'WORKFLOW_FRICTION_LOG.md');
+/** Bullet labels written by harness-repair execute (stable contract). */
+export const HARNESS_REPAIR_BULLET_ADDRESSED = 'harnessRepairAddressed';
+export const HARNESS_REPAIR_BULLET_NOTE = 'harnessRepairNote';
+export const HARNESS_REPAIR_BULLET_PARENT_SHA = 'parentRepoCommit';
+export const HARNESS_REPAIR_BULLET_SUB_SHA = 'cursorSubmoduleCommit';
 
 export interface ParsedWorkflowFrictionEntry {
   /** First line without leading ### */
@@ -21,7 +25,23 @@ export interface ParsedWorkflowFrictionEntry {
   raw: string;
 }
 
-function extractBullet(body: string, label: string): string | undefined {
+/**
+ * True for the markdown **entry template** heading in WORKFLOW_FRICTION_LOG.md (not a real incident).
+ * WHY: `parseWorkflowFrictionLog` splits on `###`; the template inside the doc is parsed as a bogus open row.
+ */
+export function isWorkflowFrictionNoiseEntry(entry: ParsedWorkflowFrictionEntry): boolean {
+  const h = entry.heading;
+  return h.includes('[feature/phase/session/task id]') || /^YYYY-MM-DD — \[/.test(h);
+}
+
+/** Strip doc-template sections before harness-repair plan, recurrence, and push gate. */
+export function filterWorkflowFrictionEntriesForHarness(
+  entries: ParsedWorkflowFrictionEntry[]
+): ParsedWorkflowFrictionEntry[] {
+  return entries.filter((e) => !isWorkflowFrictionNoiseEntry(e));
+}
+
+export function extractWorkflowFrictionBullet(body: string, label: string): string | undefined {
   const re = new RegExp(`^-\\s*\\*\\*${label}:\\*\\*\\s*(.+)$`, 'im');
   const m = body.match(re);
   return m?.[1]?.trim();
@@ -41,9 +61,9 @@ export function parseWorkflowFrictionLog(content: string): ParsedWorkflowFrictio
     const nl = c.indexOf('\n');
     const headingLine = nl === -1 ? c.slice(4).trim() : c.slice(4, nl).trim();
     const body = nl === -1 ? '' : c.slice(nl + 1).trim();
-    const reasonCodeRaw = extractBullet(body, 'reasonCodeRaw');
-    const reasonCodeNormalized = extractBullet(body, 'reasonCodeNormalized');
-    const isFailureStr = extractBullet(body, 'isFailureReason');
+    const reasonCodeRaw = extractWorkflowFrictionBullet(body, 'reasonCodeRaw');
+    const reasonCodeNormalized = extractWorkflowFrictionBullet(body, 'reasonCodeNormalized');
+    const isFailureStr = extractWorkflowFrictionBullet(body, 'isFailureReason');
     let isFailureReason: boolean | undefined;
     if (isFailureStr === 'true') isFailureReason = true;
     else if (isFailureStr === 'false') isFailureReason = false;
@@ -59,6 +79,237 @@ export function parseWorkflowFrictionLog(content: string): ParsedWorkflowFrictio
   return out;
 }
 
+export function splitWorkflowFrictionLogFile(content: string): {
+  preamble: string;
+  entries: ParsedWorkflowFrictionEntry[];
+} {
+  const t = content.replace(/\r\n/g, '\n');
+  const idx = t.search(/^### /m);
+  if (idx === -1) {
+    return { preamble: t.trimEnd(), entries: [] };
+  }
+  const preamble = t.slice(0, idx).trimEnd();
+  const body = t.slice(idx);
+  return { preamble, entries: parseWorkflowFrictionLog(body) };
+}
+
+export function joinWorkflowFrictionLogFile(
+  preamble: string,
+  entries: ParsedWorkflowFrictionEntry[]
+): string {
+  const sections = entries.map((e) => e.raw.trimEnd()).join('\n\n');
+  const p = preamble.trimEnd();
+  if (!sections) {
+    return p ? `${p}\n` : '';
+  }
+  if (!p) {
+    return `${sections}\n`;
+  }
+  return `${p}\n\n${sections}\n`;
+}
+
+/**
+ * True when the entry still needs harness-repair triage before push: no addressed line, or parent SHA still `pending`.
+ */
+export function isFrictionEntryOpenForHarnessGate(body: string): boolean {
+  const addressed = extractWorkflowFrictionBullet(body, HARNESS_REPAIR_BULLET_ADDRESSED);
+  if (!addressed) return true;
+  const parent = extractWorkflowFrictionBullet(body, HARNESS_REPAIR_BULLET_PARENT_SHA);
+  if (parent != null && parent.trim().toLowerCase() === 'pending') return true;
+  return false;
+}
+
+export async function readFullWorkflowFrictionLog(projectRoot?: string): Promise<string> {
+  try {
+    return await readFile(getWorkflowFrictionLogPath(projectRoot ?? PROJECT_ROOT), 'utf8');
+  } catch {
+    return '';
+  }
+}
+
+export async function hasOpenWorkflowFrictionEntries(projectRoot?: string): Promise<boolean> {
+  const raw = await readFullWorkflowFrictionLog(projectRoot);
+  if (!raw.trim()) return false;
+  const { entries } = splitWorkflowFrictionLogFile(raw);
+  const filtered = filterWorkflowFrictionEntriesForHarness(entries);
+  return filtered.some((e) => isFrictionEntryOpenForHarnessGate(e.body));
+}
+
+export function buildFrictionClusterKey(entry: ParsedWorkflowFrictionEntry): string {
+  const rc =
+    entry.reasonCodeNormalized?.trim() ??
+    parseReasonCode(entry.reasonCodeRaw ?? 'unknown').trim();
+  const symptomLine = extractWorkflowFrictionBullet(entry.body, 'Symptom') ?? '';
+  const snip = normalizeFrictionSymptomSnippet(symptomLine);
+  return `${rc}::${snip}`;
+}
+
+function normalizeFrictionSymptomSnippet(s: string): string {
+  return s
+    .trim()
+    .toLowerCase()
+    .replace(/\d+/g, '#')
+    .replace(/\s+/g, ' ')
+    .slice(0, 160);
+}
+
+export interface FrictionRecurrenceCluster {
+  clusterKey: string;
+  openCount: number;
+  /** Entries that have a harnessRepairAddressed line (includes pending parent SHA). */
+  addressedHistoricalCount: number;
+  /** Entries with addressed line and parent SHA not `pending`. */
+  addressedClosedCount: number;
+  headings: string[];
+}
+
+export function analyzeFrictionRecurrenceClusters(
+  entries: ParsedWorkflowFrictionEntry[]
+): FrictionRecurrenceCluster[] {
+  const map = new Map<string, FrictionRecurrenceCluster>();
+  for (const e of entries) {
+    const key = buildFrictionClusterKey(e);
+    const open = isFrictionEntryOpenForHarnessGate(e.body);
+    const hasAddressedLine =
+      extractWorkflowFrictionBullet(e.body, HARNESS_REPAIR_BULLET_ADDRESSED) != null;
+    const closed = hasAddressedLine && !open;
+    let c = map.get(key);
+    if (!c) {
+      c = {
+        clusterKey: key,
+        openCount: 0,
+        addressedHistoricalCount: 0,
+        addressedClosedCount: 0,
+        headings: [],
+      };
+      map.set(key, c);
+    }
+    c.headings.push(e.heading);
+    if (open) c.openCount++;
+    if (hasAddressedLine) c.addressedHistoricalCount++;
+    if (closed) c.addressedClosedCount++;
+  }
+  return [...map.values()];
+}
+
+export interface HarnessRepairAddressedBlockInput {
+  isoTime: string;
+  note: string;
+  parentRepoCommit: string;
+  cursorSubmoduleCommit: string;
+}
+
+export function formatHarnessRepairAddressedBlock(input: HarnessRepairAddressedBlockInput): string {
+  return [
+    '',
+    `- **${HARNESS_REPAIR_BULLET_ADDRESSED}:** ${input.isoTime}`,
+    `- **${HARNESS_REPAIR_BULLET_NOTE}:** ${input.note}`,
+    `- **${HARNESS_REPAIR_BULLET_PARENT_SHA}:** ${input.parentRepoCommit}`,
+    `- **${HARNESS_REPAIR_BULLET_SUB_SHA}:** ${input.cursorSubmoduleCommit}`,
+  ].join('\n');
+}
+
+/**
+ * Append the addressed block to one section raw (`###` through body). Idempotent if already present.
+ */
+export function appendAddressedBlockToSectionRaw(
+  sectionRaw: string,
+  blockMarkdown: string
+): string {
+  if (sectionRaw.includes(`**${HARNESS_REPAIR_BULLET_ADDRESSED}:**`)) {
+    return sectionRaw;
+  }
+  return `${sectionRaw.trimEnd()}${blockMarkdown}\n`;
+}
+
+/**
+ * Policy A step (4): replace `parentRepoCommit: pending` with the real parent SHA (multiline-safe).
+ */
+export function stampPendingParentRepoCommitsInMarkdown(full: string, parentSha: string): string {
+  return full.replace(
+    /^-\s*\*\*parentRepoCommit:\*\*\s*pending\s*$/gim,
+    `- **parentRepoCommit:** ${parentSha.trim()}`
+  );
+}
+
+/**
+ * Apply addressed blocks to entries whose `heading` is in `targetHeadings`.
+ */
+export function applyHarnessRepairBlocksToEntries(
+  preamble: string,
+  entries: ParsedWorkflowFrictionEntry[],
+  targetHeadings: Set<string>,
+  blockMarkdown: string
+): string {
+  const next = entries.map((e) => {
+    if (!targetHeadings.has(e.heading)) return e;
+    const newRaw = appendAddressedBlockToSectionRaw(e.raw, blockMarkdown);
+    if (newRaw === e.raw) return e;
+    const nl = newRaw.indexOf('\n');
+    const headingLine = nl === -1 ? newRaw.slice(4).trim() : newRaw.slice(4, nl).trim();
+    const body = nl === -1 ? '' : newRaw.slice(nl + 1).trim();
+    return {
+      ...e,
+      heading: headingLine,
+      body,
+      raw: newRaw,
+    };
+  });
+  return joinWorkflowFrictionLogFile(preamble, next);
+}
+
+export function buildSuggestedNextHarnessActionsMarkdown(params: {
+  clusters: FrictionRecurrenceCluster[];
+  workProfileSummary?: string;
+}): string {
+  const lines: string[] = ['## Suggested next harness actions / next tier work', ''];
+  const recurring = params.clusters.filter(
+    (c) => c.addressedClosedCount >= 2 && c.openCount >= 1
+  );
+  if (recurring.length > 0) {
+    lines.push('### Recurring friction (addressed before, open again)');
+    for (const c of recurring) {
+      lines.push(
+        `- **${c.clusterKey}** — open: ${c.openCount}, previously closed: ${c.addressedClosedCount}. Consider a durable harness or doc fix (tier-add follow-up, playbook update, or reason-code routing).`
+      );
+    }
+    lines.push('');
+  }
+  const noisy = params.clusters.filter((c) => c.openCount >= 2);
+  if (noisy.length > 0) {
+    lines.push('### Clusters with multiple open entries');
+    for (const c of noisy) {
+      lines.push(`- **${c.clusterKey}** — ${c.openCount} open entries. Triage together before pushing.`);
+    }
+    lines.push('');
+  }
+  if (recurring.length === 0 && noisy.length === 0) {
+    lines.push(
+      '- No high-signal recurrence clusters detected. Follow the governance contract and work profile below if friction reason codes map to a gated command (re-run tier-end, `/accepted-plan`, `/audit-fix`, etc.).'
+    );
+    lines.push('');
+  }
+  if (params.workProfileSummary?.trim()) {
+    lines.push('### Work profile (harness repair context)');
+    lines.push(params.workProfileSummary.trim());
+    lines.push('');
+  }
+  return lines.join('\n').trimEnd();
+}
+
+/** Appended to session-end `nextAction` when open friction exists (plan-only gate before `/accepted-push`). */
+export function formatHarnessRepairPendingPushReminder(params: {
+  featureId: string;
+  sessionId: string;
+  featureDirectoryName: string;
+}): string {
+  return [
+    '',
+    '**Workflow friction (open entries):** Before **`/accepted-push`**, run **`/harness-repair`** in **plan** mode for this scope (review recurrence + next tier work). Run **`/harness-repair` execute** only when marking entries addressed. Then **`/accepted-push`**.',
+    `- Params: \`featureId\` = \`${params.featureId}\`, \`tier\` = \`session\`, \`sessionId\` = \`${params.sessionId}\` (feature directory: \`${params.featureDirectoryName}\`).`,
+  ].join('\n');
+}
+
 export interface ReadWorkflowFrictionOptions {
   last?: number;
   grep?: string;
@@ -71,7 +322,7 @@ export async function readWorkflowFrictionEntries(
 ): Promise<ParsedWorkflowFrictionEntry[]> {
   let content = '';
   try {
-    content = await readFile(LOG_PATH, 'utf8');
+    content = await readFile(getWorkflowFrictionLogPath(), 'utf8');
   } catch {
     return [];
   }

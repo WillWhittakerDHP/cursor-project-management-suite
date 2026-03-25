@@ -19,6 +19,7 @@ import {
   handlePlanningDocIncomplete,
   handlePendingPushConfirmation,
   handleVerificationWorkSuggested,
+  handleGapAnalysisPending,
   handleTaskComplete,
   handleFailure,
   handleAuditFailed,
@@ -84,7 +85,21 @@ export function routeByOutcome(
       case 'expected_branch_missing_run_tier_start':
         return handleExpectedBranchMissingRunTierStart(outcome);
       case 'app_not_running':
-        return handleFailure(outcome, result.output);
+      case 'branch_failed':
+      case 'guide_materialization_failed':
+      case 'guide_materialization_requires_execute':
+      case 'no_pending_plan':
+      case 'no_pending_build':
+      case 'no_pending_code':
+      case 'no_pending_push':
+      case 'wrong_accepted_command':
+      case 'invalid_context':
+      case 'invalid_task_id':
+      case 'planning_rollup_failed':
+      case 'doc_rollup_failed':
+      case 'gap_analysis_failed':
+      case 'fill_tier_down_failed':
+      case 'planning_checks_failed':
       case 'unhandled_error':
         return handleFailure(outcome, result.output);
       default:
@@ -99,6 +114,8 @@ export function routeByOutcome(
       return handlePendingPushConfirmation(outcome);
     case 'verification_suggested':
       return handleVerificationWorkSuggested(outcome);
+    case 'gap_analysis_pending':
+      return handleGapAnalysisPending(outcome, ctx);
     case 'task_complete':
       return handleTaskComplete(outcome);
     case 'reopen_ok':

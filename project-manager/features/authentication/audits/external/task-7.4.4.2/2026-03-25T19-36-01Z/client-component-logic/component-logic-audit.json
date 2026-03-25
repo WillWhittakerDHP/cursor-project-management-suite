@@ -1,0 +1,172 @@
+{
+  "generatedAt": "2026-03-25T19:26:58.444Z",
+  "totalScanned": 7,
+  "exceptionSummary": {
+    "totalRequiresReview": 2
+  },
+  "files": [
+    {
+      "id": "client__src__views__admin__tabs__components__WizardBrandPanel.vue",
+      "repoPath": "client/src/views/admin/tabs/components/WizardBrandPanel.vue",
+      "absPath": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/src/views/admin/tabs/components/WizardBrandPanel.vue",
+      "counts": {
+        "watch": 0,
+        "watchEffect": 0,
+        "async": 2,
+        "await": 2,
+        "map": 0,
+        "reduce": 0,
+        "dom": 0,
+        "inlineConfig": 0,
+        "console": 0,
+        "alert": 0
+      },
+      "matches": [
+        {
+          "ruleId": "provideInject",
+          "lineNumber": 14,
+          "line": "const wizardFormRef = inject(WIZARD_FORM_DATA_KEY, null)"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 18,
+          "line": "const uploading = computed(() => brand?.uploading.value ?? false)"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 19,
+          "line": "const previewStandard = computed(() => (brand ? brand.previewPalettes.value.standard : null))"
+        },
+        {
+          "ruleId": "ref",
+          "lineNumber": 23,
+          "line": "const extracting = ref(false)"
+        },
+        {
+          "ruleId": "async",
+          "lineNumber": 35,
+          "line": "async function handleUploadLogo(): Promise<void> {"
+        },
+        {
+          "ruleId": "await",
+          "lineNumber": 41,
+          "line": "await brand.uploadLogo(lastFile.value)"
+        },
+        {
+          "ruleId": "async",
+          "lineNumber": 48,
+          "line": "async function handleExtract(): Promise<void> {"
+        },
+        {
+          "ruleId": "await",
+          "lineNumber": 55,
+          "line": "await brand.extractAnchorsFromFile(lastFile.value)"
+        }
+      ],
+      "requiresReview": [
+        {
+          "ruleId": "async",
+          "lineNumber": 35,
+          "line": "async function handleUploadLogo(): Promise<void> {"
+        },
+        {
+          "ruleId": "await",
+          "lineNumber": 41,
+          "line": "await brand.uploadLogo(lastFile.value)"
+        },
+        {
+          "ruleId": "async",
+          "lineNumber": 48,
+          "line": "async function handleExtract(): Promise<void> {"
+        },
+        {
+          "ruleId": "await",
+          "lineNumber": 55,
+          "line": "await brand.extractAnchorsFromFile(lastFile.value)"
+        }
+      ],
+      "score": 4,
+      "priority": "P2"
+    },
+    {
+      "id": "client__src__components__booking__BookingWizard.vue",
+      "repoPath": "client/src/components/booking/BookingWizard.vue",
+      "absPath": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/src/components/booking/BookingWizard.vue",
+      "counts": {
+        "watch": 0,
+        "watchEffect": 0,
+        "async": 1,
+        "await": 1,
+        "map": 0,
+        "reduce": 0,
+        "dom": 1,
+        "inlineConfig": 0,
+        "console": 0,
+        "alert": 0
+      },
+      "matches": [
+        {
+          "ruleId": "computed",
+          "lineNumber": 46,
+          "line": "const currentStepComponent = computed(() => getStepContent(activeStep.value))"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 49,
+          "line": "const progressSummaryStripDisplay = computed(() => ({"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 65,
+          "line": "const showCopyQuoteLink = computed("
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 70,
+          "line": "const showInlineUpdateAppointment = computed("
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 74,
+          "line": "const submitButtonLabel = computed(() => {"
+        },
+        {
+          "ruleId": "async",
+          "lineNumber": 80,
+          "line": "async function handleCopyQuoteLink(): Promise<void> {"
+        },
+        {
+          "ruleId": "await",
+          "lineNumber": 85,
+          "line": "await window.navigator.clipboard.writeText(url)"
+        },
+        {
+          "ruleId": "dom",
+          "lineNumber": 85,
+          "line": "await window.navigator.clipboard.writeText(url)"
+        }
+      ],
+      "requiresReview": [
+        {
+          "ruleId": "async",
+          "lineNumber": 80,
+          "line": "async function handleCopyQuoteLink(): Promise<void> {"
+        },
+        {
+          "ruleId": "await",
+          "lineNumber": 85,
+          "line": "await window.navigator.clipboard.writeText(url)"
+        },
+        {
+          "ruleId": "dom",
+          "lineNumber": 85,
+          "line": "await window.navigator.clipboard.writeText(url)"
+        }
+      ],
+      "score": 3,
+      "priority": "P2"
+    }
+  ],
+  "deltaMode": true,
+  "baseRef": "HEAD~1"
+}

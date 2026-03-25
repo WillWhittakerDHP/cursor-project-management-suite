@@ -3,10 +3,13 @@
  * Validates the identifier, resolves context, classifies WorkProfile,
  * appends the child to the parent doc, runs planning checks, and prints
  * the same advisory-context surface as tier-start planning (governance, Work Profile, architecture).
- * Does NOT create branches, start workflows, or write pending state.
+ * Does not run tier-start or write pending state. If the immediate parent tier is **Complete**, runs **`runTierReopen`** on that parent first (same branch-ensure path as manual reopen), then appends the child.
  */
 
-import type { TierName } from './types';
+import type { TierConfig, TierName } from './types';
+import { FEATURE_CONFIG } from '../configs/feature';
+import { PHASE_CONFIG } from '../configs/phase';
+import { SESSION_CONFIG } from '../configs/session';
 import { WorkflowId } from '../../utils/id-utils';
 import { WorkflowCommandContext, type TierParamsBag } from '../../utils/command-context';
 import { classifyWorkProfile } from '../../harness/work-profile-classifier';
@@ -22,9 +25,12 @@ import {
 import { PROJECT_ROOT } from '../../utils/utils';
 import {
   buildWorkflowFrictionEntryFromOrchestrator,
+  initiateWorkflowFrictionWrite,
+  recordOrchestratorFailureFriction,
   recordWorkflowFriction,
-  shouldAppendWorkflowFriction,
-} from '../../utils/workflow-friction-log';
+} from '../../harness/workflow-friction-manager';
+import type { TierReopenParams } from './tier-reopen-workflow';
+import { runTierReopen } from './tier-reopen';
 
 export interface TierAddResult {
   success: boolean;
@@ -93,9 +99,22 @@ function parseAndValidate(tier: TierName, identifier: string): TierIdParts | str
   }
 }
 
+function getParentConfig(parentTier: TierName): TierConfig | null {
+  switch (parentTier) {
+    case 'feature':
+      return FEATURE_CONFIG;
+    case 'phase':
+      return PHASE_CONFIG;
+    case 'session':
+      return SESSION_CONFIG;
+    default:
+      return null;
+  }
+}
+
 function buildParamsBag(parts: TierIdParts): TierParamsBag {
   switch (parts.tier) {
-    case 'phase': return { phaseId: parts.identifier };
+    case 'phase': return { phaseId: parts.identifier, featureId: parts.featureId };
     case 'session':
       return { sessionId: parts.identifier, featureId: parts.featureId };
     case 'task': return { taskId: parts.identifier, featureId: parts.featureId };
@@ -108,21 +127,17 @@ function recordTierAddContextFailure(params: {
   parts: TierIdParts;
   message: string;
 }): void {
-  const rc = 'unhandled_error';
-  if (!shouldAppendWorkflowFriction({ success: false, reasonCodeRaw: rc })) return;
-  recordWorkflowFriction(
-    buildWorkflowFrictionEntryFromOrchestrator({
-      action: 'add',
-      tier: params.tier,
-      identifier: params.parts.identifier,
-      featureName: params.parts.featureId,
-      reasonCodeRaw: rc,
-      symptom: params.message,
-      context:
-        `tier-add: WorkflowCommandContext.contextFromParams failed.\n\n` +
-        `tier=${params.tier}; identifier=${params.parts.identifier}; featureId=${params.parts.featureId}`,
-    })
-  );
+  recordOrchestratorFailureFriction({
+    action: 'add',
+    tier: params.tier,
+    identifier: params.parts.identifier,
+    featureName: params.parts.featureId,
+    reasonCodeRaw: 'unhandled_error',
+    symptom: params.message,
+    context:
+      `tier-add: WorkflowCommandContext.contextFromParams failed.\n\n` +
+      `tier=${params.tier}; identifier=${params.parts.identifier}; featureId=${params.parts.featureId}`,
+  });
 }
 
 function recordTierAddAppendFailure(params: {
@@ -192,6 +207,55 @@ export async function tierAdd(
     description,
   });
 
+  let parentReopenNote: { parentTier: TierName; parentId: string; traceId?: string } | null = null;
+  const parentConfig = getParentConfig(parts.parentTier);
+  if (parentConfig) {
+    const parentStatus = await parentConfig.controlDoc.readStatus(context, parts.parentIdentifier);
+    if (parentStatus === 'complete') {
+      const reopenParams: TierReopenParams = {
+        identifier: parts.parentIdentifier,
+        reason: 'Auto-reopened by tier-add before registering child',
+      };
+      if (parentConfig.name === 'phase' || parentConfig.name === 'session') {
+        reopenParams.featureId = parts.featureId;
+      }
+      const reopenResult = await runTierReopen(parentConfig, reopenParams, context, {
+        sourceCommand: 'tier-add',
+      });
+      if (!reopenResult.success) {
+        recordOrchestratorFailureFriction({
+          action: 'reopen',
+          tier: parentConfig.name,
+          identifier: parts.parentIdentifier,
+          featureName: context.feature.name,
+          reasonCodeRaw: 'unhandled_error',
+          symptom: 'tier-add: parent auto-reopen failed.',
+          context: reopenResult.output,
+        });
+        return {
+          success: false,
+          output:
+            `**${tier}-add failed:** could not reopen Complete parent **${parts.parentTier} ${parts.parentIdentifier}** before registering the child.\n\n` +
+            reopenResult.output,
+          added: {
+            tier,
+            identifier,
+            parentTier: parts.parentTier,
+            parentIdentifier: parts.parentIdentifier,
+            parentDocPath: '',
+            alreadyExists: false,
+          },
+          workProfile,
+        };
+      }
+      parentReopenNote = {
+        parentTier: parts.parentTier,
+        parentId: parts.parentIdentifier,
+        ...(reopenResult.traceId ? { traceId: reopenResult.traceId } : {}),
+      };
+    }
+  }
+
   const appendResult: AppendChildResult = await appendChildToParentDoc(
     parts.parentTier,
     parts.parentIdentifier,
@@ -201,6 +265,17 @@ export async function tierAdd(
   );
 
   const output: string[] = [];
+  if (parentReopenNote) {
+    output.push('## Parent reopen');
+    output.push('');
+    output.push(
+      `**${parentReopenNote.parentTier} ${parentReopenNote.parentId}** was **Complete** and was reopened automatically before registering this child.`
+    );
+    if (parentReopenNote.traceId) {
+      output.push(`- Trace: \`${parentReopenNote.traceId}\``);
+    }
+    output.push('');
+  }
   output.push(`# ${tier.charAt(0).toUpperCase() + tier.slice(1)} Add: ${identifier}`);
   output.push(`**Description:** ${resolvedDescription}`);
   output.push('');
@@ -268,7 +343,20 @@ export async function tierAdd(
     });
     output.push(planningOutput);
   } catch (err) {
-    output.push(`Planning checks skipped: ${err instanceof Error ? err.message : String(err)}`);
+    const errMsg = err instanceof Error ? err.message : String(err);
+    initiateWorkflowFrictionWrite({
+      ...buildWorkflowFrictionEntryFromOrchestrator({
+        action: 'add',
+        tier,
+        identifier,
+        featureName: context.feature.name,
+        reasonCodeRaw: 'planning_checks_failed',
+        symptom: `runPlanningWithChecks failed: ${errMsg}`,
+        context: `tier-add planning checks; feature=${context.feature.name}; tier=${tier}; id=${identifier}\n\n${errMsg}`,
+      }),
+      forcePolicy: true,
+    });
+    output.push(`Planning checks skipped: ${errMsg}`);
   }
   output.push('');
 

@@ -62,6 +62,12 @@ Quick one-liners: [SKILL.md](SKILL.md) § Reason codes.
 - Present **User choice required**: add follow-up task/session/phase vs “continue tier-end” / “skip” — re-invoke same tier-end with **`continuePastVerification: true`** when continuing.
 - Do not ask open-ended “should we add validation?” — use the three fixed options.
 
+### gap_analysis_pending
+
+- Router case **`gap_analysis_pending`** (same string in `LEGACY_TO_CHARTER`).
+- Soft gate after **`deliverables_check`**: possible deliverables drift / scope gaps; **tier-add** + **tier-start** for follow-up tiers — no child planning docs created in tier-end.
+- Present **User choice required** (`gap_analysis_options`). Continue via **`controlPlaneDecision.nextInvoke`** or manual re-run with **`continuePastGapAnalysis: true`** under **`params.options`** (not top-level).
+
 ### uncommitted_changes_blocking
 
 - Maps to **`uncommitted_blocking`** in router.
@@ -104,6 +110,19 @@ Quick one-liners: [SKILL.md](SKILL.md) § Reason codes.
 ### reopen_ok
 
 - Present **User choice required**: plan file vs plan from scratch vs quick fix. Route per user choice and playbook.
+
+### planning_rollup_failed, doc_rollup_failed, gap_analysis_failed
+
+- Emitted for **non-gating** tier-end step errors (rollup / gap analysis); often logged to `WORKFLOW_FRICTION_LOG.md` with `forcePolicy` rather than as a primary user-facing stop.
+- If surfaced as an outcome: treat like other **failure_hard_stop** — fix the underlying path/archive issue; re-run tier-end if appropriate.
+
+### fill_tier_down_failed
+
+- Tier-start **fill_tier_down** step threw; fix paths/permissions per message; re-run tier-start in execute mode.
+
+### planning_checks_failed
+
+- **tier-add** planning pipeline (`runPlanningWithChecks`) threw; logged for diagnosis; command output still shows “Planning checks skipped”.
 
 ### failure_hard_stop
 

@@ -10,6 +10,9 @@ import type { WorkflowCommandContext } from '../../utils/command-context';
 export interface TierReopenParams {
   identifier: string;
   reason?: string;
+  /** Required for phase/session when feature cannot be derived from the identifier; optional override otherwise. */
+  featureId?: string;
+  featureName?: string;
 }
 
 export interface TierReopenResult {

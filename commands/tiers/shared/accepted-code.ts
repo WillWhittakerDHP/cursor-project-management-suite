@@ -10,6 +10,10 @@ import { readTaskStartPending, deleteTaskStartPending } from './pending-state';
 import type { ControlPlaneDecision } from './control-plane-types';
 import { isPlanningDocFilled } from './tier-start-steps';
 import { WorkflowCommandContext } from '../../utils/command-context';
+import {
+  buildWorkflowFrictionEntryFromOrchestrator,
+  initiateWorkflowFrictionWrite,
+} from '../../harness/workflow-friction-manager';
 
 const NO_PENDING_MESSAGE =
   'No pending task start. Run a task-start first (e.g. after session-start cascade), discuss the task design in chat, then run **/accepted-code** when ready to begin coding.';
@@ -73,11 +77,50 @@ export async function acceptedCode(): Promise<TierStartResultWithControlPlane> {
     };
   }
 
-  const context = await WorkflowCommandContext.contextFromParams('task', {
-    taskId: state.taskId,
-    ...(state.featureId != null && state.featureId.trim() !== '' && { featureId: state.featureId.trim() }),
-    ...(state.featureName != null && state.featureName.trim() !== '' && { featureName: state.featureName.trim() }),
-  });
+  let context: WorkflowCommandContext;
+  try {
+    context = await WorkflowCommandContext.contextFromParams('task', {
+      taskId: state.taskId,
+      ...(state.featureId != null && state.featureId.trim() !== '' && { featureId: state.featureId.trim() }),
+      ...(state.featureName != null && state.featureName.trim() !== '' && { featureName: state.featureName.trim() }),
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    const featureLabel =
+      state.featureId != null && state.featureId.trim() !== ''
+        ? state.featureId.trim()
+        : state.featureName != null && state.featureName.trim() !== ''
+          ? state.featureName.trim()
+          : '—';
+    initiateWorkflowFrictionWrite({
+      ...buildWorkflowFrictionEntryFromOrchestrator({
+        action: 'start',
+        tier: 'task',
+        identifier: state.taskId,
+        featureName: featureLabel,
+        reasonCodeRaw: 'invalid_context',
+        symptom: message,
+        context: `/accepted-code: WorkflowCommandContext.contextFromParams failed.\n\ntaskId=${state.taskId}; feature=${featureLabel}`,
+      }),
+      forcePolicy: true,
+    });
+    const failMsg = `**Context resolution failed:**\n\n\`\`\`\n${message}\n\`\`\`\n\nFix pending state or re-run **task-start**.`;
+    const decision: ControlPlaneDecision = {
+      stop: true,
+      requiredMode: 'plan',
+      message: failMsg,
+    };
+    return {
+      success: false,
+      output: failMsg,
+      outcome: {
+        status: 'failed',
+        reasonCode: 'invalid_context',
+        nextAction: failMsg,
+      },
+      controlPlaneDecision: decision,
+    };
+  }
   const expressProfile = state.workProfile?.gateProfile === 'express';
   const planningDocPath = context.documents.getPlanningDocRelativePath('task', state.taskId);
 

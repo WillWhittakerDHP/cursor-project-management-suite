@@ -330,10 +330,117 @@ async function ensureOnBranch(expectedBranch: string): Promise<EnsureOnBranchRes
   };
 }
 
-import type { CommitUncommittedOptions } from './git-contract';
+import type {
+  CommitRemainingMessage,
+  CommitUncommittedOptions,
+  InScopeDiffPreviewOptions,
+  InScopeDiffPreviewResult,
+} from './git-contract';
+
+const DEFAULT_DIFF_PREVIEW_STAT_CHARS = 8000;
+const DEFAULT_DIFF_PREVIEW_DIFF_CHARS = 8000;
+
+function shellSingleQuoteForGit(s: string): string {
+  return `'${s.replace(/'/g, "'\\''")}'`;
+}
+
+function buildGitCommitMessageArgs(msg: CommitRemainingMessage): string {
+  if (typeof msg === 'string') {
+    return `-m ${shellSingleQuoteForGit(msg)}`;
+  }
+  const subject = msg.subject.trim();
+  const body = msg.body?.trim();
+  if (body) {
+    return `-m ${shellSingleQuoteForGit(subject)} -m ${shellSingleQuoteForGit(body)}`;
+  }
+  return `-m ${shellSingleQuoteForGit(subject)}`;
+}
+
+function formatCommitRemainingMessageForOutput(msg: CommitRemainingMessage): string {
+  if (typeof msg === 'string') return msg;
+  const b = msg.body?.trim();
+  return b ? `${msg.subject.trim()} (+body)` : msg.subject.trim();
+}
+
+function collectInScopeCommitPaths(
+  statusPorcelainOutput: string,
+  allowedPrefixes: readonly string[],
+  warnIfUnmerged: boolean
+): string[] {
+  const entries = parsePortcelainEntries(statusPorcelainOutput);
+  const unmergedPaths = entries.filter((e) => isUnmergedStatus(e.xy)).map((e) => e.path);
+  if (warnIfUnmerged && unmergedPaths.length > 0) {
+    warnGitOp({
+      timestamp: new Date().toISOString(),
+      operation: 'commitUncommitted-unmerged',
+      command: 'git status --porcelain',
+      success: true,
+      output: `Skipping ${unmergedPaths.length} unmerged file(s) — resolve conflicts before committing: ${unmergedPaths.join(', ')}`,
+    });
+  }
+  return [
+    ...new Set(
+      entries
+        .filter((e) => !isUnmergedStatus(e.xy))
+        .map((e) => e.path)
+        .filter((p) => {
+          if (isNeverCommitPath(p)) return false;
+          return allowedPrefixes.some((prefix) => p === prefix || p.startsWith(prefix));
+        })
+    ),
+  ];
+}
+
+function quotedPathArgsForGit(paths: string[]): string {
+  return paths.map((p) => shellSingleQuoteForGit(p)).join(' ');
+}
+
+/**
+ * Read-only preview of `git diff` / `--stat` for paths that tier-end would commit (same scope as `commitUncommittedNonCursor`).
+ */
+export async function getInScopeDiffPreviewForCommit(
+  options?: InScopeDiffPreviewOptions
+): Promise<InScopeDiffPreviewResult> {
+  const allowedPrefixes = options?.allowedPrefixes ?? [...DEFAULT_ALLOWED_COMMIT_PREFIXES];
+  const maxStat = options?.maxStatChars ?? DEFAULT_DIFF_PREVIEW_STAT_CHARS;
+  const maxDiff = options?.maxDiffChars ?? DEFAULT_DIFF_PREVIEW_DIFF_CHARS;
+
+  const status = await runGitCommand(
+    'git status --porcelain --ignore-submodules=dirty',
+    'inScopeDiffPreview-status'
+  );
+  if (!status.success || !status.output.trim()) {
+    return { paths: [], stat: '', diffExcerpt: '', truncatedStat: false, truncatedDiff: false };
+  }
+
+  const paths = collectInScopeCommitPaths(status.output, allowedPrefixes, false);
+  if (paths.length === 0) {
+    return { paths: [], stat: '', diffExcerpt: '', truncatedStat: false, truncatedDiff: false };
+  }
+
+  const pathArgs = quotedPathArgsForGit(paths);
+
+  const statRes = await runGitCommand(`git diff --stat HEAD -- ${pathArgs}`, 'inScopeDiffPreview-stat');
+  let stat = statRes.success ? statRes.output.trim() : '';
+  let truncatedStat = false;
+  if (stat.length > maxStat) {
+    stat = `${stat.slice(0, maxStat)}\n… (truncated)`;
+    truncatedStat = true;
+  }
+
+  const diffRes = await runGitCommand(`git diff HEAD -- ${pathArgs}`, 'inScopeDiffPreview-diff');
+  let diffExcerpt = diffRes.success ? diffRes.output.trim() : '';
+  let truncatedDiff = false;
+  if (diffExcerpt.length > maxDiff) {
+    diffExcerpt = `${diffExcerpt.slice(0, maxDiff)}\n… (truncated)`;
+    truncatedDiff = true;
+  }
+
+  return { paths, stat, diffExcerpt, truncatedStat, truncatedDiff };
+}
 
 export async function commitUncommittedNonCursor(
-  commitMessage: string,
+  commitMessage: CommitRemainingMessage,
   options?: CommitUncommittedOptions
 ): Promise<{ committed: boolean; success: boolean; output: string }> {
   const allowedPrefixes = options?.allowedPrefixes ?? [...DEFAULT_ALLOWED_COMMIT_PREFIXES];
@@ -394,26 +501,7 @@ export async function commitUncommittedNonCursor(
     return { committed: false, success: true, output: '' };
   }
 
-  const entries = parsePortcelainEntries(status.output);
-
-  const unmergedPaths = entries.filter((e) => isUnmergedStatus(e.xy)).map((e) => e.path);
-  if (unmergedPaths.length > 0) {
-    warnGitOp({
-      timestamp: new Date().toISOString(),
-      operation: 'commitUncommitted-unmerged',
-      command: 'git status --porcelain',
-      success: true,
-      output: `Skipping ${unmergedPaths.length} unmerged file(s) — resolve conflicts before committing: ${unmergedPaths.join(', ')}`,
-    });
-  }
-
-  const inScopePaths = entries
-    .filter((e) => !isUnmergedStatus(e.xy))
-    .map((e) => e.path)
-    .filter((p) => {
-      if (isNeverCommitPath(p)) return false;
-      return allowedPrefixes.some((prefix) => p === prefix || p.startsWith(prefix));
-    });
+  const inScopePaths = collectInScopeCommitPaths(status.output, allowedPrefixes, true);
 
   if (inScopePaths.length === 0) {
     return { committed: false, success: true, output: '' };
@@ -436,10 +524,11 @@ export async function commitUncommittedNonCursor(
     return { committed: false, success: true, output: '' };
   }
 
-  const safeMessage = commitMessage.replace(/'/g, "'\\''");
-  const commitResult = await runGitCommand(`git commit -m '${safeMessage}'`, 'commitUncommitted-commit');
+  const msgArgs = buildGitCommitMessageArgs(commitMessage);
+  const commitResult = await runGitCommand(`git commit ${msgArgs}`, 'commitUncommitted-commit');
+  const msgLine = formatCommitRemainingMessageForOutput(commitMessage);
   let output = commitResult.success
-    ? `Committed in-scope changes (${inScopePaths.length} path(s)): ${commitMessage}`
+    ? `Committed in-scope changes (${inScopePaths.length} path(s)): ${msgLine}`
     : `Commit failed: ${commitResult.error || commitResult.output}`;
   if (commitResult.success && carriedFromBranch && options?.expectedBranch) {
     output += `\nCarried uncommitted changes from ${carriedFromBranch} to ${options.expectedBranch} and committed.`;

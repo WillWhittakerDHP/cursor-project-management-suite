@@ -37,6 +37,7 @@ import type { RunRecorder, RunTraceHandle } from '../../../harness/contracts';
 
 export type EndShadowContext = { recorder: RunRecorder; handle: RunTraceHandle };
 import { proposeVerificationChecklistForFeature } from '../../shared/verification-check';
+import { runPlanningTierGapAnalysis } from '../../shared/tier-end-deliverables-drift';
 import { createPullRequest, shouldSkipHarnessPrCreate } from '../../../scripts/create-pr';
 
 export interface FeatureEndParams {
@@ -514,6 +515,10 @@ export async function featureEndImpl(
 
     async runVerificationCheck() {
       return proposeVerificationChecklistForFeature(ctx.identifier, ctx.context);
+    },
+
+    async runGapAnalysis(c) {
+      return runPlanningTierGapAnalysis(c, 'feature');
     },
 
     getSuccessOutcome() {

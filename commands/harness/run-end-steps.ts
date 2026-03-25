@@ -20,6 +20,9 @@ import {
   stepReadmeCleanup,
   stepCommitUncommittedNonCursor,
   stepDeliverablesAndPlanningHints,
+  stepGapAnalysis,
+  stepPlanningRollup,
+  stepDocRollup,
   stepTierGit,
   stepPropagateShared,
   stepVerificationCheck,
@@ -32,11 +35,7 @@ import { runTierAuditsParallel } from '../audit/atomic/audit-tier-quality';
 import type { AuditTier } from '../audit/types';
 import { scanHarnessRootsForConflictMarkers } from '../utils/conflict-marker-guard';
 import { buildTierEndOutcome } from '../utils/tier-outcome';
-import {
-  buildWorkflowFrictionEntryFromOrchestrator,
-  recordWorkflowFriction,
-  shouldAppendWorkflowFriction,
-} from '../utils/workflow-friction-log';
+import { recordOrchestratorFailureFriction } from './workflow-friction-manager';
 
 /** Ordered step IDs after `conflict_marker_guard` (guard always runs when resuming). */
 const END_WORKFLOW_STEP_IDS = [
@@ -49,6 +48,9 @@ const END_WORKFLOW_STEP_IDS = [
   'comment_cleanup',
   'readme_cleanup',
   'deliverables_check',
+  'gap_analysis',
+  'planning_rollup',
+  'doc_rollup',
   'commit_remaining',
   'git',
   'propagate_shared',
@@ -60,7 +62,7 @@ const END_WORKFLOW_STEP_IDS = [
 ] as const;
 
 /** Narrow allowlist: control plane must only suggest these for `resumeEndAfterStep`. */
-const RESUMABLE_END_STEP_IDS = new Set<string>(['commit_remaining', 'git', 'end_audit']);
+const RESUMABLE_END_STEP_IDS = new Set<string>(['gap_analysis', 'commit_remaining', 'git', 'end_audit']);
 
 async function recordEndStep(
   ctx: TierEndWorkflowContext,
@@ -100,21 +102,16 @@ function attachEndShadowPayload(
   result: TierEndWorkflowResult
 ): TierEndWorkflowResult | TierEndWorkflowResultWithShadow {
   if (!result.success && result.outcome) {
-    const reasonCodeRaw = String(result.outcome.reasonCode ?? '');
-    if (shouldAppendWorkflowFriction({ success: false, reasonCodeRaw })) {
-      recordWorkflowFriction(
-        buildWorkflowFrictionEntryFromOrchestrator({
-          action: 'end',
-          tier: ctx.config.name,
-          identifier: ctx.identifier,
-          featureName: ctx.context.feature.name,
-          reasonCodeRaw,
-          stepPath: ctx.stepPath,
-          nextAction: result.outcome.nextAction,
-          deliverablesExcerpt: result.outcome.deliverables,
-        })
-      );
-    }
+    recordOrchestratorFailureFriction({
+      action: 'end',
+      tier: ctx.config.name,
+      identifier: ctx.identifier,
+      featureName: ctx.context.feature.name,
+      reasonCodeRaw: String(result.outcome.reasonCode ?? ''),
+      stepPath: ctx.stepPath,
+      nextAction: result.outcome.nextAction,
+      deliverablesExcerpt: result.outcome.deliverables,
+    });
   }
   if (ctx.runTraceHandle != null) {
     return { ...result, __traceHandle: ctx.runTraceHandle, __stepPath: [...(ctx.stepPath ?? [])] };
@@ -238,6 +235,31 @@ export async function runTierEndWorkflow(
     await recordEndStep(ctx, 'deliverables_check', 'exit_success');
   } else {
     await recordEndStep(ctx, 'deliverables_check', 'skip');
+  }
+
+  if (shouldRunEndStep(ctx, 'gap_analysis')) {
+    await recordEndStep(ctx, 'gap_analysis', 'enter');
+    const gapExit = await stepGapAnalysis(ctx, hooks);
+    await recordEndStep(ctx, 'gap_analysis', gapExit ? 'exit_success' : 'exit_success');
+    if (gapExit) return attachEndShadowPayload(ctx, gapExit);
+  } else {
+    await recordEndStep(ctx, 'gap_analysis', 'skip');
+  }
+
+  if (shouldRunEndStep(ctx, 'planning_rollup')) {
+    await recordEndStep(ctx, 'planning_rollup', 'enter');
+    await stepPlanningRollup(ctx);
+    await recordEndStep(ctx, 'planning_rollup', 'exit_success');
+  } else {
+    await recordEndStep(ctx, 'planning_rollup', 'skip');
+  }
+
+  if (shouldRunEndStep(ctx, 'doc_rollup')) {
+    await recordEndStep(ctx, 'doc_rollup', 'enter');
+    await stepDocRollup(ctx);
+    await recordEndStep(ctx, 'doc_rollup', 'exit_success');
+  } else {
+    await recordEndStep(ctx, 'doc_rollup', 'skip');
   }
 
   if (shouldRunEndStep(ctx, 'commit_remaining')) {

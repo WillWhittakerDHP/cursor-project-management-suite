@@ -31,11 +31,7 @@ import {
   type TierStartPendingParams,
   type TaskStartPendingState,
 } from './pending-state';
-import {
-  buildWorkflowFrictionEntryFromOrchestrator,
-  recordWorkflowFriction,
-  shouldAppendWorkflowFriction,
-} from '../../utils/workflow-friction-log';
+import { recordOrchestratorFailureFriction } from '../../harness/workflow-friction-manager';
 
 export type TierStartParams =
   | { featureId: string }
@@ -89,18 +85,14 @@ export async function runTierStart(
       },
     };
     const rc = String(failedResult.outcome.reasonCode ?? 'unhandled_error');
-    if (shouldAppendWorkflowFriction({ success: false, reasonCodeRaw: rc })) {
-      recordWorkflowFriction(
-        buildWorkflowFrictionEntryFromOrchestrator({
-          action: 'start',
-          tier: config.name,
-          identifier: identifier || '—',
-          reasonCodeRaw: rc,
-          symptom: message,
-          context: `WorkflowCommandContext.contextFromParams failed.\n\n${paramsSnippetForWorkflowFriction(params)}`,
-        })
-      );
-    }
+    recordOrchestratorFailureFriction({
+      action: 'start',
+      tier: config.name,
+      identifier: identifier || '—',
+      reasonCodeRaw: rc,
+      symptom: message,
+      context: `WorkflowCommandContext.contextFromParams failed.\n\n${paramsSnippetForWorkflowFriction(params)}`,
+    });
     const decision = routeByOutcome(
       failedResult,
       { tier: config.name, action: 'start', originalParams: params }
@@ -130,6 +122,14 @@ export async function runTierStart(
         output: appCheck.output,
         outcome,
       };
+      recordOrchestratorFailureFriction({
+        action: 'start',
+        tier: config.name,
+        identifier,
+        featureName: context.feature.name,
+        reasonCodeRaw: 'app_not_running',
+        nextAction: appCheck.output,
+      });
       const decision = routeByOutcome(
         failedResult,
         { tier: config.name, action: 'start', originalParams: params }
@@ -156,7 +156,7 @@ export async function runTierStart(
     });
     const adapter = createStepAdapter({
       config,
-      params,
+      actionParams: { action: 'start', params },
       options: { ...options, workProfile },
       context,
     });
@@ -223,6 +223,15 @@ export async function runTierStart(
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
+    recordOrchestratorFailureFriction({
+      action: 'start',
+      tier: config.name,
+      identifier,
+      featureName: context.feature.name,
+      reasonCodeRaw: 'unhandled_error',
+      symptom: message,
+      context: `defaultKernel.run threw.\n\n${paramsSnippetForWorkflowFriction(params)}`,
+    });
     const failedResult: TierStartResult = {
       success: false,
       output: `**${config.name}-start failed:**\n\n\`\`\`\n${message}\n\`\`\``,

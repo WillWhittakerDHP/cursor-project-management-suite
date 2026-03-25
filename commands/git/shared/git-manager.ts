@@ -23,6 +23,17 @@ import {
   commitUncommittedNonCursor,
   syncCursorSubmodule,
 } from './tier-branch-manager';
+import { getInScopeDiffPreviewForCommit } from './working-tree-policy';
+import {
+  getCursorSubmoduleRoot,
+  isCursorSubmoduleRepoAvailable,
+  getCursorSubmoduleStatus,
+  commitCursorSubmoduleAndStageParentGitlink,
+} from '../atomic/cursor-submodule';
+import type {
+  CursorSubmoduleStatusResult,
+  CommitCursorSubmoduleResult,
+} from '../atomic/cursor-submodule';
 import type {
   BranchChainLink,
   EnsureTierBranchResult,
@@ -30,7 +41,10 @@ import type {
   SubmoduleCursorMode,
   MergeTierBranchResult,
   MergeChildBranchesResult,
+  CommitRemainingMessage,
   CommitUncommittedOptions,
+  InScopeDiffPreviewOptions,
+  InScopeDiffPreviewResult,
   MergeTierFailureReasonCode,
 } from './git-contract';
 import { MERGE_TIER_REASON_CODES, isMergeTierFailureReasonCode } from './git-contract';
@@ -64,11 +78,15 @@ export type {
   SubmoduleCursorMode,
   MergeTierBranchResult,
   MergeChildBranchesResult,
+  CommitRemainingMessage,
   CommitUncommittedOptions,
+  InScopeDiffPreviewOptions,
+  InScopeDiffPreviewResult,
   MergeTierFailureReasonCode,
 };
 export { MERGE_TIER_REASON_CODES, isMergeTierFailureReasonCode };
 export type { GitOpEntry, PropagateOptions, PropagateResult };
+export type { CursorSubmoduleStatusResult, CommitCursorSubmoduleResult };
 export type { GitFrictionEntry } from './git-friction-log';
 export { appendGitFriction, recordGitFriction } from './git-friction-log';
 
@@ -121,8 +139,10 @@ export async function formatFeatureBranchStatus(
 export { getCurrentBranch, branchExists, isBranchBasedOn, listWorkingTreeChangedRepoPaths };
 
 // ─── Commit remaining ───────────────────────────────────────────────────
+export { getInScopeDiffPreviewForCommit };
+
 export async function commitRemaining(
-  commitMessage: string,
+  commitMessage: CommitRemainingMessage,
   options?: CommitUncommittedOptions
 ): Promise<{ committed: boolean; success: boolean; output: string }> {
   return commitUncommittedNonCursor(commitMessage, options);
@@ -212,3 +232,11 @@ export async function gitPull(branch: string): Promise<{ success: boolean; outpu
 
 // ─── Propagation ────────────────────────────────────────────────────────
 export { propagateFiles, propagateSharedFiles, propagateHarness };
+
+// ─── .cursor submodule (harness-repair) ─────────────────────────────────
+export {
+  getCursorSubmoduleRoot,
+  isCursorSubmoduleRepoAvailable,
+  getCursorSubmoduleStatus,
+  commitCursorSubmoduleAndStageParentGitlink,
+};

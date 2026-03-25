@@ -147,5 +147,6 @@ export function buildTierAddReferenceMarkdown(): string {
     '',
     '- Workflow friction log (non-git harness issues): `.project-manager/WORKFLOW_FRICTION_LOG.md`',
     '- Scan recent friction entries: `npx tsx .cursor/commands/utils/read-workflow-friction.ts --last 20`',
+    '- If a Complete parent was auto-reopened and friction was recorded (or session-end push gate applies), run **`/harness-repair`** in **plan** mode before proceeding; see `.cursor/commands/harness-repair.md`',
   ].join('\n');
 }

@@ -5,7 +5,7 @@
  */
 
 import { join, dirname } from 'path';
-import { runCommand } from '../../utils/utils';
+import { PROJECT_ROOT, runCommand } from '../../utils/utils';
 
 // ─── Types ──────────────────────────────────────────────────────────────
 
@@ -70,10 +70,12 @@ export async function getGitOpsLog(last?: number): Promise<GitOpEntry[]> {
 /**
  * Run a git command and log the result. All git shell-outs in the harness
  * should use this so operations are traceable. Validates command starts with "git".
+ * @param cwd - When set, runs the command with this working directory (e.g. `.cursor` submodule repo).
  */
 export async function runGitCommand(
   command: string,
-  context?: string
+  context?: string,
+  cwd?: string
 ): Promise<{ success: boolean; output: string; error?: string }> {
   const trimmed = command.trim();
   if (!trimmed.startsWith('git ')) {
@@ -91,7 +93,7 @@ export async function runGitCommand(
   }
 
   const start = Date.now();
-  const result = await runCommand(trimmed);
+  const result = await runCommand(trimmed, cwd ?? PROJECT_ROOT);
   const durationMs = Date.now() - start;
 
   const entry: GitOpEntry = {

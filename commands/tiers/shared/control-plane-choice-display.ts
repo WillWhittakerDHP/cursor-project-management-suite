@@ -23,6 +23,11 @@ const QUESTION_KEY_OPTIONS: Record<string, ChoiceOption[]> = {
     { id: 'manual_continue', label: "I'll do it manually; continue tier-end" },
     { id: 'skip_continue', label: 'Skip; continue tier-end' },
   ],
+  [QUESTION_KEYS.GAP_ANALYSIS_OPTIONS]: [
+    { id: 'register_tiers', label: 'Register follow-up tiers (tier-add) then re-run tier-end' },
+    { id: 'continue_past', label: 'Continue past gap analysis (use nextInvoke or continuePastGapAnalysis)' },
+    { id: 'review_only', label: 'Review report only; decide later' },
+  ],
   [QUESTION_KEYS.FAILURE_OPTIONS]: [
     { id: 'retry', label: 'Retry the command' },
     { id: 'audit_fix', label: 'Fix audit with governance context (/audit-fix)' },

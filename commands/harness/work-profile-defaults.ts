@@ -6,10 +6,20 @@
 import type { Tier } from './contracts';
 import type { WorkProfile } from './work-profile';
 
-type TierAction = 'start' | 'end';
+type TierAction = 'start' | 'end' | 'reopen';
 
 /** Map tier + action to default WorkProfile. Tier-end stays conservative until behavior is moved. */
 export function getDefaultWorkProfile(tier: Tier, action: TierAction): WorkProfile {
+  if (action === 'reopen') {
+    return {
+      executionIntent: 'plan',
+      actionType: 'decomposition',
+      scopeShape: 'tier_document',
+      governanceDomains: ['docs'],
+      gateProfile: 'express',
+      decompositionMode: 'light',
+    };
+  }
   if (action === 'end') {
     return {
       executionIntent: 'document',

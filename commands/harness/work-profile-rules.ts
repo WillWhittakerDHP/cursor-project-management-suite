@@ -66,8 +66,10 @@ export function deriveSuggestedDepth(scopeShape: ScopeShape): SuggestedDecomposi
  */
 export function deriveGateProfile(
   tier: Tier,
-  profile: Pick<WorkProfile, 'scopeShape' | 'executionIntent'>
+  profile: Pick<WorkProfile, 'scopeShape' | 'executionIntent'>,
+  tierAction?: 'start' | 'end' | 'reopen'
 ): GateProfile {
+  if (tierAction === 'reopen') return 'express';
   const { scopeShape, executionIntent } = profile;
   if (tier === 'feature') return 'decomposition';
   if (tier === 'phase' && scopeShape === 'architectural') return 'decomposition';

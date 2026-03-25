@@ -1,6 +1,6 @@
 /**
  * Harness namespace: typed contracts, kernel runtime, and plugins (charter end-state).
- * tier-start and tier-end dispatch through defaultKernel; TierAdapter delegates to tier impls.
+ * tier-start, tier-end, and tier-reopen dispatch through defaultKernel; TierAdapter delegates to tier impls.
  * See .project-manager/HARNESS_CHARTER.md for contracts and step graph.
  */
 
@@ -68,10 +68,12 @@ export type { ShadowTraceRecord } from './run-recorder-shadow';
 export { defaultSpecBuilder } from './spec-builder';
 export { parseReasonCode, isFailureReasonCode, isFlowReasonCode } from './reason-code';
 export {
-  adaptControlPlaneOutcomeToHarness,
   adaptTierStartOutcomeToHarness,
   adaptTierEndOutcomeToHarness,
-} from './adapters';
+  adaptTierReopenOutcomeToHarness,
+  createStepAdapter,
+} from './step-adapter';
+export type { TierActionParams, StepAdapterOptions } from './step-adapter';
 
 export {
   getHarnessCutoverTiers,
@@ -79,8 +81,6 @@ export {
 } from './cutover-config';
 export { defaultKernel } from './kernel';
 export { getStepGraph, getStepIdsForAction } from './step-graph';
-export { createTierAdapter } from './tier-adapter';
-export type { TierAdapterOptions } from './tier-adapter';
 export { buildSpecFromTierRun } from './build-spec-from-tier';
-export type { BuildSpecInput } from './build-spec-from-tier';
+export type { BuildSpecFromTierRunParams } from './build-spec-from-tier';
 export { defaultProfileDefaultsResolver, PROFILE_DEFAULTS } from './spec-builder';

@@ -190,7 +190,8 @@ All tasks complete. Ready to run end-of-session workflow?
   4. Run code quality audit
   5. Update docs (session log, handoff, guide)
   6. **Commit audit fixes** (if any, separately from feature work)
-  7. **After all commits are done, prompt for push:**
+  7. **Workflow friction gate (before push):** If `.project-manager/WORKFLOW_FRICTION_LOG.md` has **open** entries (no `harnessRepairAddressed` line, or `parentRepoCommit: pending`), **`/session-end`** appends a **`/harness-repair`** **plan** step to `outcome.nextAction`. Run **`harnessRepair`** (see `.cursor/commands/harness-repair.md`) in **plan** mode for this session scope, then **`/harness-repair` execute** only when marking entries addressed; then continue.
+  8. **After all commits are done, prompt for push:**
   ```
   ## Ready to Push?
   
@@ -202,6 +203,7 @@ All tasks complete. Ready to run end-of-session workflow?
   - ✅ Session log updated
   - ✅ Handoff document updated
   - ✅ Session guide updated
+  - ✅ Workflow friction triage (`/harness-repair` plan) when `nextAction` requires it
   
   **Ready to push all commits to remote?**
   

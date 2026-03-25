@@ -10,7 +10,9 @@ import { tierDown } from '../../utils/tier-navigation';
 import { auditTierQuality } from '../atomic/audit-tier-quality';
 import { PROJECT_ROOT, FRONTEND_ROOT } from '../../utils/utils';
 
-const CLIENT_ROOT = join(PROJECT_ROOT, FRONTEND_ROOT);
+function getClientRoot(): string {
+  return join(PROJECT_ROOT, FRONTEND_ROOT);
+}
 
 const SCRIPT_FIX_REGISTRY: Array<{
   auditName: string;
@@ -21,19 +23,19 @@ const SCRIPT_FIX_REGISTRY: Array<{
   {
     auditName: 'naming-convention',
     findingPattern: /naming convention findings?/i,
-    getCommand: () => `cd "${CLIENT_ROOT}" && npm run lint -- --fix`,
+    getCommand: () => `cd "${getClientRoot()}" && npm run lint -- --fix`,
     getAffectedFiles: (f) => (f.location ? [f.location] : []),
   },
   {
     auditName: 'loop-mutations',
     findingPattern: /forEach→mutation|forEach.*mutation/i,
-    getCommand: () => `cd "${CLIENT_ROOT}" && npm run lint -- --fix`,
+    getCommand: () => `cd "${getClientRoot()}" && npm run lint -- --fix`,
     getAffectedFiles: (f) => (f.location ? [f.location] : []),
   },
   {
     auditName: 'error-handling',
     findingPattern: /critical issue|warning.*defaults?.*fallback/i,
-    getCommand: () => `cd "${CLIENT_ROOT}" && npm run lint -- --fix`,
+    getCommand: () => `cd "${getClientRoot()}" && npm run lint -- --fix`,
     getAffectedFiles: (f) => (f.location ? [f.location] : []),
   },
 ];

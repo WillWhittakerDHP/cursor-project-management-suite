@@ -4,22 +4,25 @@
  */
 
 import { PHASE_CONFIG } from '../../configs/phase';
-import { resolveActiveFeatureDirectory } from '../../../utils';
-import { WorkflowCommandContext } from '../../../utils/command-context';
+import type { WorkflowCommandContext } from '../../../utils/command-context';
 import { ensureTierBranch } from '../../../git/shared/git-manager';
 import { readProjectFile, writeProjectFile } from '../../../utils/utils';
 import { derivePhaseDescription } from '../../../planning/utils/resolve-planning-description';
 import { tierDown } from '../../../utils/tier-navigation';
-import type { TierReopenParams, TierReopenResult, TierReopenWorkflowContext, TierReopenWorkflowHooks } from '../../shared/tier-reopen-workflow';
+import type {
+  TierReopenParams,
+  TierReopenResult,
+  TierReopenWorkflowContext,
+  TierReopenWorkflowHooks,
+} from '../../shared/tier-reopen-workflow';
 import { runTierReopenWorkflow } from '../../shared/tier-reopen-workflow';
 import { flipCompleteToReopened, formatReopenEntry } from '../../shared/tier-reopen-steps';
 
 export async function phaseReopenImpl(
   params: TierReopenParams,
-  modeGate: string
+  modeGate: string,
+  context: WorkflowCommandContext
 ): Promise<TierReopenResult> {
-  const featureName = await resolveActiveFeatureDirectory();
-  const context = new WorkflowCommandContext(featureName);
   const output: string[] = [];
   const ctx: TierReopenWorkflowContext = {
     config: PHASE_CONFIG,
@@ -60,13 +63,16 @@ export async function phaseReopenImpl(
         await writeProjectFile(phaseLogPath, logContent);
         c.output.push(`✅ Phase ${c.identifier} log updated with reopen entry`);
       } catch (err) {
-        console.warn('Phase reopen: log update skipped', err);
+        const detail = err instanceof Error ? err.message : String(err);
+        console.warn('[phase-reopen] log update skipped:', detail);
       }
     },
     ensureBranch: async (c): Promise<void> => {
       const tierBranch = c.config.getBranchName(c.context, c.identifier);
       if (tierBranch) {
-        const branchResult = await ensureTierBranch(c.config, c.identifier, c.context, { createIfMissing: false });
+        const branchResult = await ensureTierBranch(c.config, c.identifier, c.context, {
+          createIfMissing: false,
+        });
         if (branchResult.success) {
           c.output.push(`✅ Switched to branch: ${branchResult.finalBranch}`);
         }

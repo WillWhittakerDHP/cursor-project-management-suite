@@ -56,6 +56,19 @@ const SESSION_GUIDE_STOCK_PLACEHOLDERS = [
   '[Files to work with]',
 ];
 
+/**
+ * Placeholder substrings aligned with {@link isPlanningDocFilled}; stripped from planning rollup output.
+ */
+export function getPlanningDocPlaceholderSubstrings(): readonly string[] {
+  return [
+    PLACEHOLDER_REFINED,
+    PLACEHOLDER_TIERDOWN,
+    ...TIERDOWN_BULLET_PLACEHOLDERS,
+    ...TASK_PLACEHOLDERS,
+    ...PLANNING_STORY_PLACEHOLDERS,
+  ];
+}
+
 function isPlanningDocFilled(content: string): boolean {
   if (content.includes(PLACEHOLDER_REFINED)) return false;
   if (content.includes(PLACEHOLDER_TIERDOWN)) return false;

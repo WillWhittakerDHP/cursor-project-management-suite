@@ -23,7 +23,9 @@ import { buildGovernanceContext } from '../governance-context';
 import { parseDeliverablesFromPlanningDoc } from '../../utils/planning-doc-parse';
 import { resolvePlanningDocRelativePath } from '../../utils/planning-doc-paths';
 
-const AUDIT_FIX_CONTEXT_PATH = join(PROJECT_ROOT, '.project-manager', 'AUDIT_FIX_CONTEXT.md');
+function getAuditFixContextPath(): string {
+  return join(PROJECT_ROOT, '.project-manager', 'AUDIT_FIX_CONTEXT.md');
+}
 
 const DEFAULT_INSTRUCTION =
   'Read the attached governance and audit context before making changes. Fix only the issues called out in the audit report (using playbooks\' thresholds and decision trees). Reuse existing patterns; do not duplicate logic or introduce patterns that conflict with governance. Do not run typecheck, regenerate audit JSON, or inspect raw audit files unless the report explicitly says the fix is to regenerate or fix the audit pipeline.';
@@ -69,7 +71,7 @@ const FALLBACK_REFS =
 
 async function loadGovernanceRefsFallbackLine(): Promise<string> {
   try {
-    const content = await readFile(AUDIT_FIX_CONTEXT_PATH, 'utf-8');
+    const content = await readFile(getAuditFixContextPath(), 'utf-8');
     const refs = parseCopyPasteBlock(content);
     return refs ?? FALLBACK_REFS;
   } catch {

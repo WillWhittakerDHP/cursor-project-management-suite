@@ -7,8 +7,12 @@ import { readFileSync, existsSync, mkdirSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { PROJECT_ROOT, FRONTEND_ROOT } from '../utils/utils';
 
-const CONFIG_PATH = join(PROJECT_ROOT, '.project-manager', 'ARCHITECTURE_DOMAINS.json');
-const OUT_JSON = join(PROJECT_ROOT, FRONTEND_ROOT, '.audit-reports', 'architecture-alignment-audit.json');
+function getConfigPath(): string {
+  return join(PROJECT_ROOT, '.project-manager', 'ARCHITECTURE_DOMAINS.json');
+}
+function getOutJson(): string {
+  return join(PROJECT_ROOT, FRONTEND_ROOT, '.audit-reports', 'architecture-alignment-audit.json');
+}
 
 interface DomainConfig {
   clientPaths: string[];
@@ -23,9 +27,9 @@ interface DomainsFile {
 }
 
 function loadConfig(): DomainsFile | null {
-  if (!existsSync(CONFIG_PATH)) return null;
+  if (!existsSync(getConfigPath())) return null;
   try {
-    return JSON.parse(readFileSync(CONFIG_PATH, 'utf8')) as DomainsFile;
+    return JSON.parse(readFileSync(getConfigPath(), 'utf8')) as DomainsFile;
   } catch {
     return null;
   }
@@ -72,7 +76,7 @@ export function runArchitectureAlignmentAuditSync(changedRepoPaths: string[]): v
   if (!cfg) {
     mkdirSync(join(PROJECT_ROOT, FRONTEND_ROOT, '.audit-reports'), { recursive: true });
     writeFileSync(
-      OUT_JSON,
+      getOutJson(),
       JSON.stringify(
         {
           generatedAt: new Date().toISOString(),
@@ -130,7 +134,7 @@ export function runArchitectureAlignmentAuditSync(changedRepoPaths: string[]): v
 
   mkdirSync(join(PROJECT_ROOT, FRONTEND_ROOT, '.audit-reports'), { recursive: true });
   writeFileSync(
-    OUT_JSON,
+    getOutJson(),
     JSON.stringify(
       {
         generatedAt: new Date().toISOString(),

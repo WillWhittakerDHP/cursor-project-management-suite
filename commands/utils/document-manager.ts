@@ -32,8 +32,18 @@ import {
 } from '../tiers/shared/guide-required-sections';
 import { resolvePlanningDocRelativePath } from './planning-doc-paths';
 import type { PlanningTier } from './planning-doc-paths';
+import { executePlanningRollup, type RollupPlanningResult } from './planning-rollup-impl';
+import { executeLogRollup, type RollupLogResult } from './log-rollup-impl';
+import { executeHandoffRollup, type RollupHandoffResult } from './handoff-rollup-impl';
+import { executeGuideRollup, type RollupGuideResult } from './guide-rollup-impl';
+import { normalizeSessionLogMarkdown } from './session-log-markdown';
 
 export type { PlanningTier } from './planning-doc-paths';
+export type { RollupPlanningResult } from './planning-rollup-impl';
+export type { RollupLogResult } from './log-rollup-impl';
+export type { RollupHandoffResult } from './handoff-rollup-impl';
+export type { RollupGuideResult } from './guide-rollup-impl';
+export { normalizeSessionLogMarkdown } from './session-log-markdown';
 
 /**
  * Document tier types
@@ -76,8 +86,6 @@ export class DocVerifyError extends Error {
  * Template replacements map
  */
 export type TemplateReplacements = Record<string, string>;
-
-const EXCERPT_SESSION_MARKER = '<!-- end excerpt session -->';
 
 /** Write guard blocked the operation; callers must not treat the write as successful. */
 export class DocumentManagerWriteBlockedError extends Error {
@@ -144,58 +152,26 @@ function upsertMarkdownBlockByHeading(
   return [before.trimEnd(), mid, after.trimStart()].filter(Boolean).join('\n\n').trimEnd();
 }
 
-function dedupeFirstLevel2Section(content: string, sectionTitle: string): string {
-  const lines = content.split('\n');
-  const re = new RegExp(`^##\\s+${sectionTitle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*$`, 'i');
-  const out: string[] = [];
-  let seen = false;
-  let skipping = false;
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    if (line.trim().match(/^##\s+/) && re.test(line.trim())) {
-      if (seen) {
-        skipping = true;
-        continue;
-      }
-      seen = true;
-      skipping = false;
-      out.push(line);
-      continue;
-    }
-    if (skipping) {
-      if (line.trim().match(/^##\s+/)) {
-        skipping = false;
-        out.push(line);
-      }
-      continue;
-    }
-    out.push(line);
-  }
-  return out.join('\n');
-}
-
-function dedupeExcerptSessionMarkers(content: string): string {
-  const lines = content.split('\n');
-  const out: string[] = [];
-  let kept = false;
-  for (const line of lines) {
-    if (line.trim() === EXCERPT_SESSION_MARKER) {
-      if (!kept) {
-        out.push(line);
-        kept = true;
-      }
-      continue;
-    }
-    out.push(line);
-  }
-  return out.join('\n');
-}
-
 function normalizeSessionLogAfterAppend(content: string): string {
-  let c = dedupeExcerptSessionMarkers(content);
-  c = dedupeFirstLevel2Section(c, 'Test Status');
-  c = dedupeFirstLevel2Section(c, 'Completed Tasks');
-  return c;
+  return normalizeSessionLogMarkdown(content);
+}
+
+const HARNESS_ANCHOR_COMMIT_PREVIEW_START = '<!-- harness:anchor:commit-preview -->';
+const HARNESS_ANCHOR_COMMIT_PREVIEW_END = '<!-- /harness:anchor:commit-preview -->';
+
+function stripAnchoredHarnessSection(content: string, startMarker: string, endMarker: string): string {
+  let result = content;
+  for (;;) {
+    const i = result.indexOf(startMarker);
+    if (i < 0) break;
+    const j = result.indexOf(endMarker, i + startMarker.length);
+    if (j < 0) {
+      result = result.slice(0, i) + result.slice(i + startMarker.length);
+      continue;
+    }
+    result = result.slice(0, i) + result.slice(j + endMarker.length);
+  }
+  return result;
 }
 
 /**
@@ -285,6 +261,83 @@ export class DocumentManager {
    */
   async planningDocExists(tier: PlanningTier, id: string): Promise<boolean> {
     return this.projectFileExists(this.getPlanningDocRelativePath(tier, id));
+  }
+
+  /**
+   * Tier-end: merge child planning docs into the canonical parent file, archive originals.
+   * Task tier and leaf **Decomposition** are no-ops. Use only from harness tier-end (`planning_rollup`).
+   */
+  async rollupPlanningArtifacts(tier: PlanningTier, id?: string): Promise<RollupPlanningResult> {
+    const resolvedId = id ?? '';
+    return executePlanningRollup(
+      this,
+      tier,
+      resolvedId,
+      this.context.paths.getBasePath(),
+      this.context.name
+    );
+  }
+
+  /** Tier-end: merge child logs into parent + archive (see `log-rollup-impl.ts`). */
+  async rollupLogArtifacts(tier: PlanningTier, id?: string): Promise<RollupLogResult> {
+    return executeLogRollup(
+      this,
+      tier,
+      id ?? '',
+      this.context.paths.getBasePath(),
+      this.context.name
+    );
+  }
+
+  /** Tier-end: merge child handoff excerpts into parent + archive. */
+  async rollupHandoffArtifacts(tier: PlanningTier, id?: string): Promise<RollupHandoffResult> {
+    return executeHandoffRollup(
+      this,
+      tier,
+      id ?? '',
+      this.context.paths.getBasePath(),
+      this.context.name
+    );
+  }
+
+  /** Tier-end: archive child guides + stub on parent (profile `all` only). */
+  async rollupGuideArtifacts(tier: PlanningTier, id?: string): Promise<RollupGuideResult> {
+    return executeGuideRollup(
+      this,
+      tier,
+      id ?? '',
+      this.context.paths.getBasePath(),
+      this.context.name
+    );
+  }
+
+  /** Read any project-relative path (e.g. child doc during rollup). */
+  async readRelativeProjectFile(projectRelativePath: string): Promise<string> {
+    return this.readFile(projectRelativePath);
+  }
+
+  getLogRelativePath(tier: DocumentTier, id?: string): string {
+    return this.getDocumentPath(tier, id, 'log');
+  }
+
+  getGuideRelativePath(tier: DocumentTier, id?: string): string {
+    return this.getDocumentPath(tier, id, 'guide');
+  }
+
+  getHandoffRelativePath(tier: HandoffTier, id?: string): string {
+    return this.getHandoffPath(tier, id);
+  }
+
+  /** Replace entire log content with normalization (tier-end rollup). */
+  async writeTierLogReplace(
+    tier: DocumentTier,
+    id: string | undefined,
+    content: string,
+    options?: ShouldBlockProjectManagerWriteOptions
+  ): Promise<boolean> {
+    const path = this.getDocumentPath(tier, id, 'log');
+    const normalized = normalizeSessionLogMarkdown(content);
+    return this.writeFile(path, normalized, options);
   }
 
   async guideExists(tier: DocumentTier, id?: string): Promise<boolean> {
@@ -406,9 +459,14 @@ export class DocumentManager {
   /**
    * Write handoff document, then verify (throws DocVerifyError if verification fails). Task handoffs skip verification.
    */
-  async writeHandoff(tier: HandoffTier, id: string | undefined, content: string): Promise<void> {
+  async writeHandoff(
+    tier: HandoffTier,
+    id: string | undefined,
+    content: string,
+    options?: ShouldBlockProjectManagerWriteOptions
+  ): Promise<void> {
     const path = this.getHandoffPath(tier, id);
-    await this.writeFile(path, content);
+    await this.writeFile(path, content, options);
     const result = await this.verifyHandoff(tier, id);
     if (!result.ok) {
       throw new DocVerifyError(result);
@@ -548,6 +606,41 @@ export class DocumentManager {
     }
     merged = normalizeSessionLogAfterAppend(merged);
     await this.writeFile(path, merged);
+  }
+
+  /**
+   * Replace or insert an idempotent harness block in a tier log (HTML comment anchors).
+   * Used for tier-end commit preview so agents have a durable reference in the correct log file.
+   * @throws {@link DocumentManagerWriteBlockedError} when the write guard blocks the write
+   */
+  async upsertAnchoredLogSection(
+    tier: DocumentTier,
+    id: string | undefined,
+    anchor: 'commit-preview',
+    content: string,
+    options?: ShouldBlockProjectManagerWriteOptions
+  ): Promise<void> {
+    if (anchor !== 'commit-preview') {
+      throw new Error(`DocumentManager.upsertAnchoredLogSection: unsupported anchor ${anchor}`);
+    }
+    const path = this.getDocumentPath(tier, id, 'log');
+    let existing = '';
+    try {
+      existing = await this.readFile(path);
+    } catch {
+      existing = '';
+    }
+    const without = stripAnchoredHarnessSection(
+      existing,
+      HARNESS_ANCHOR_COMMIT_PREVIEW_START,
+      HARNESS_ANCHOR_COMMIT_PREVIEW_END
+    );
+    const block = `\n\n${HARNESS_ANCHOR_COMMIT_PREVIEW_START}\n${content.trimEnd()}\n${HARNESS_ANCHOR_COMMIT_PREVIEW_END}\n`;
+    const merged = normalizeSessionLogAfterAppend(`${without.trimEnd()}${block}`.trimStart());
+    const written = await this.writeFile(path, merged, { ...options, overwriteForTierEnd: true });
+    if (!written) {
+      throw new DocumentManagerWriteBlockedError(path);
+    }
   }
 
   /**

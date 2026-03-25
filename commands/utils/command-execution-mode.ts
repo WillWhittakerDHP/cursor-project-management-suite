@@ -27,12 +27,27 @@ export interface CommandExecutionOptions {
   resumeAfterStep?: string;
   /** When set, the end workflow skips steps before this id (control-plane only; narrow allowlist in run-end-steps). */
   resumeEndAfterStep?: string;
+  /** When true (e.g. after gap_analysis gate), skip gap_analysis stop and continue tier-end. */
+  continuePastGapAnalysis?: boolean;
   /**
    * Tier-start `.cursor` submodule policy override. When omitted, derived from mode + `TIER_START_SUBMODULE_CURSOR` env.
    */
   submoduleCursor?: 'off' | 'parent' | 'remote';
   /** Optional work classifier; when present (e.g. from pending state), used instead of tier+action default. */
   workProfile?: import('../harness/work-profile').WorkProfile;
+  /**
+   * Tier-end doc rollup scope (planning always uses existing `planning_rollup` when not express).
+   * Default when unset: `planning_only` (no log/handoff/guide rollup). `all_non_guides` enables log + handoff;
+   * `all` also enables guide archive+stub rollup. Override with env `HARNESS_DOC_ROLLUP`.
+   */
+  docRollupProfile?: 'off' | 'planning_only' | 'all_non_guides' | 'all';
+  /**
+   * Tier-end `commit_remaining` only: first `git commit -m` line (subject). When omitted, default is `[id] tier-end: commit remaining work`.
+   * Distinct from session/task top-level `commitMessage` used for feature-scoped `gitCommit`.
+   */
+  commitMessage?: string;
+  /** Tier-end `commit_remaining` only: optional second `git commit -m` (body paragraph). */
+  commitMessageBody?: string;
 }
 
 /**

@@ -2,8 +2,8 @@
  * Append-only markdown log for non-git harness / planning / audit friction.
  * Mirrors git-friction-log ergonomics; uses the same reason-code normalization as control-plane routing.
  *
- * Canonical programmatic API for agents and tooling: recordWorkflowFriction (use forcePolicy for
- * material friction without a harness failure outcome). Do not add parallel friction files.
+ * Harness/tier code should import from `harness/workflow-friction-manager.ts` (initiateWorkflowFrictionWrite,
+ * recordOrchestratorFailureFriction, re-exports). This module is the low-level formatter and append path.
  */
 
 import { appendFile, mkdir } from 'fs/promises';
@@ -12,7 +12,12 @@ import type { FlowReasonCode, ReasonCode } from '../harness/contracts';
 import { isFailureReasonCode, parseReasonCode } from '../harness/reason-code';
 import { PROJECT_ROOT } from './utils';
 
-const WORKFLOW_FRICTION_LOG = join(PROJECT_ROOT, '.project-manager', 'WORKFLOW_FRICTION_LOG.md');
+/** Repo-relative path segment for documentation; absolute path via `getWorkflowFrictionLogPath`. */
+export const WORKFLOW_FRICTION_LOG_RELATIVE = '.project-manager/WORKFLOW_FRICTION_LOG.md';
+
+export function getWorkflowFrictionLogPath(root: string = PROJECT_ROOT): string {
+  return join(root, '.project-manager', 'WORKFLOW_FRICTION_LOG.md');
+}
 
 const MAX_NEXT_ACTION = 1500;
 const MAX_DELIVERABLES = 2000;
@@ -31,6 +36,7 @@ const FLOW_REASON_CODES_SUPPRESS_AUTO_LOG: ReadonlySet<FlowReasonCode> = new Set
   'reopen_ok',
   'pending_push',
   'verification_suggested',
+  'gap_analysis_pending',
 ]);
 
 export function getHarnessWorkflowFrictionMode(): HarnessWorkflowFrictionMode {
@@ -55,7 +61,7 @@ export interface WorkflowFrictionEntry {
   reasonCodeNormalized: ReasonCode;
   isFailureReason: boolean;
   tier?: string;
-  action?: 'start' | 'end' | 'add';
+  action?: 'start' | 'end' | 'add' | 'reopen';
   identifier?: string;
   featureName?: string;
   stepPath?: string[];
@@ -96,7 +102,10 @@ function formatWorkflowFrictionMarkdown(entry: WorkflowFrictionEntry): string {
   const id = entry.identifier?.trim() || '—';
   const tier = entry.tier?.trim() || '—';
   const act =
-    entry.action === 'start' || entry.action === 'end' || entry.action === 'add'
+    entry.action === 'start' ||
+    entry.action === 'end' ||
+    entry.action === 'add' ||
+    entry.action === 'reopen'
       ? entry.action
       : '—';
   const shortTitle = entry.title?.trim() || entry.reasonCodeNormalized;
@@ -127,8 +136,9 @@ function formatWorkflowFrictionMarkdown(entry: WorkflowFrictionEntry): string {
 export async function appendWorkflowFriction(entry: WorkflowFrictionEntry): Promise<void> {
   const block = formatWorkflowFrictionMarkdown(entry);
   try {
-    await mkdir(dirname(WORKFLOW_FRICTION_LOG), { recursive: true });
-    await appendFile(WORKFLOW_FRICTION_LOG, `\n${block}\n`, 'utf8');
+    const logPath = getWorkflowFrictionLogPath(PROJECT_ROOT);
+    await mkdir(dirname(logPath), { recursive: true });
+    await appendFile(logPath, `\n${block}\n`, 'utf8');
   } catch (err) {
     console.warn(
       `[appendWorkflowFriction] could not write: ${err instanceof Error ? err.message : String(err)}`
@@ -156,7 +166,7 @@ export function recordWorkflowFriction(entry: RecordWorkflowFrictionInput): void
  * Build a log entry from tier orchestrator context + outcome (start or end).
  */
 export function buildWorkflowFrictionEntryFromOrchestrator(params: {
-  action: 'start' | 'end' | 'add';
+  action: 'start' | 'end' | 'add' | 'reopen';
   tier: string;
   identifier: string;
   featureName?: string;

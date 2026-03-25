@@ -92,6 +92,24 @@ export interface CommitUncommittedOptions {
   allowedPrefixes?: string[];
 }
 
+/** Message for `commitRemaining` / `commitUncommittedNonCursor`: one line or subject + optional body (second `git commit -m`). */
+export type CommitRemainingMessage = string | { subject: string; body?: string };
+
+/** Options for read-only in-scope diff preview (tier-end harness). */
+export interface InScopeDiffPreviewOptions {
+  allowedPrefixes?: readonly string[];
+  maxStatChars?: number;
+  maxDiffChars?: number;
+}
+
+export interface InScopeDiffPreviewResult {
+  paths: string[];
+  stat: string;
+  diffExcerpt: string;
+  truncatedStat: boolean;
+  truncatedDiff: boolean;
+}
+
 export interface ScopeCoherenceResult {
   coherent: boolean;
   configFeature: string;

@@ -16,7 +16,7 @@ import type {
 } from '../contracts';
 import type { GateProfile } from '../work-profile';
 import { PROJECT_ROOT } from '../../utils/utils';
-import { recordWorkflowFrictionWarning } from '../../utils/workflow-friction-log';
+import { recordHarnessVerboseWarning } from '../workflow-friction-manager';
 
 const CONFIG_REL = join('.project-manager', 'agent-model-config.json');
 
@@ -101,7 +101,7 @@ export class ModelRecommendationPlugin implements PolicyPlugin {
   }
 
   private logConfigFailure(ctx: HarnessContext, message: string): void {
-    recordWorkflowFrictionWarning('model_recommendation_plugin', message, this.frictionExtra(ctx));
+    recordHarnessVerboseWarning('model_recommendation_plugin', message, this.frictionExtra(ctx));
   }
 
   private loadConfigAndResolve(ctx: HarnessContext): ParsedRun {

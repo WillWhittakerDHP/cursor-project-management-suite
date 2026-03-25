@@ -19,7 +19,9 @@ import { join } from 'path';
 import type { TierName } from '../tiers/shared/types';
 import { PROJECT_ROOT, FRONTEND_ROOT } from '../utils/utils';
 
-const REPORTS_DIR = join(PROJECT_ROOT, FRONTEND_ROOT, '.audit-reports');
+function getReportsDir(): string {
+  return join(PROJECT_ROOT, FRONTEND_ROOT, '.audit-reports');
+}
 
 // ---------------------------------------------------------------------------
 // JSON helpers
@@ -31,7 +33,7 @@ interface AuditJson {
 }
 
 function loadJson(relativePath: string): AuditJson | null {
-  const fullPath = join(REPORTS_DIR, relativePath);
+  const fullPath = join(getReportsDir(), relativePath);
   if (!existsSync(fullPath)) return null;
   try {
     return JSON.parse(readFileSync(fullPath, 'utf8'));

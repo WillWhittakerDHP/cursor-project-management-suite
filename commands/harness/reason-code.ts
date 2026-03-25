@@ -12,6 +12,7 @@ const LEGACY_TO_CHARTER: Record<string, ReasonCode> = {
   planning_doc_incomplete: 'planning_doc_incomplete',
   pending_push_confirmation: 'pending_push',
   verification_work_suggested: 'verification_suggested',
+  gap_analysis_pending: 'gap_analysis_pending',
   task_complete: 'task_complete',
   reopen_ok: 'reopen_ok',
   uncommitted_changes_blocking: 'uncommitted_blocking',
@@ -46,6 +47,11 @@ const LEGACY_TO_CHARTER: Record<string, ReasonCode> = {
   CONFLICT_MARKERS_IN_TREE: 'conflict_markers_in_tree',
   conflict_markers_in_tree: 'conflict_markers_in_tree',
   harness_step_warning: 'unhandled_error',
+  planning_rollup_failed: 'planning_rollup_failed',
+  doc_rollup_failed: 'doc_rollup_failed',
+  gap_analysis_failed: 'gap_analysis_failed',
+  fill_tier_down_failed: 'fill_tier_down_failed',
+  planning_checks_failed: 'planning_checks_failed',
 };
 
 const FAILURE_CODES: FailureReasonCode[] = [
@@ -70,6 +76,11 @@ const FAILURE_CODES: FailureReasonCode[] = [
   'audit_fix_commit_failed',
   'unhandled_error',
   'conflict_markers_in_tree',
+  'planning_rollup_failed',
+  'doc_rollup_failed',
+  'gap_analysis_failed',
+  'fill_tier_down_failed',
+  'planning_checks_failed',
 ];
 
 /**

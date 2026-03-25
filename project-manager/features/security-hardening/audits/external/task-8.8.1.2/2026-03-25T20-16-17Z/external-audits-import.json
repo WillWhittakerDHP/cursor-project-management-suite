@@ -1,0 +1,62 @@
+{
+  "timestamp": "2026-03-25T20:16:17.090Z",
+  "feature": "security-hardening",
+  "tier": "task",
+  "identifier": "8.8.1.2",
+  "items": [
+    {
+      "sourceId": "client-typecheck",
+      "label": "Vue Typecheck Audit",
+      "copied": [
+        {
+          "from": "client/.audit-reports/typecheck/typecheck-audit.json",
+          "to": ".cursor/project-manager/features/security-hardening/audits/external/task-8.8.1.2/2026-03-25T20-16-17Z/client-typecheck/typecheck-audit.json"
+        },
+        {
+          "from": "client/.audit-reports/typecheck/typecheck-audit.md",
+          "to": ".cursor/project-manager/features/security-hardening/audits/external/task-8.8.1.2/2026-03-25T20-16-17Z/client-typecheck/typecheck-audit.md"
+        }
+      ],
+      "missing": [
+        "client/.audit-reports/typecheck/typecheck-audit-summary.md"
+      ],
+      "errors": []
+    },
+    {
+      "sourceId": "client-composables-logic",
+      "label": "Vue Composables Logic Audit",
+      "copied": [
+        {
+          "from": "client/.audit-reports/composables-logic-audit.json",
+          "to": ".cursor/project-manager/features/security-hardening/audits/external/task-8.8.1.2/2026-03-25T20-16-17Z/client-composables-logic/composables-logic-audit.json"
+        },
+        {
+          "from": "client/.audit-reports/composables-logic-audit.md",
+          "to": ".cursor/project-manager/features/security-hardening/audits/external/task-8.8.1.2/2026-03-25T20-16-17Z/client-composables-logic/composables-logic-audit.md"
+        }
+      ],
+      "missing": [
+        "client/.audit-reports/composables-logic-audit-summary.md"
+      ],
+      "errors": []
+    },
+    {
+      "sourceId": "client-component-logic",
+      "label": "Vue Component Logic Audit",
+      "copied": [
+        {
+          "from": "client/.audit-reports/component-logic-audit.json",
+          "to": ".cursor/project-manager/features/security-hardening/audits/external/task-8.8.1.2/2026-03-25T20-16-17Z/client-component-logic/component-logic-audit.json"
+        },
+        {
+          "from": "client/.audit-reports/component-logic-audit.md",
+          "to": ".cursor/project-manager/features/security-hardening/audits/external/task-8.8.1.2/2026-03-25T20-16-17Z/client-component-logic/component-logic-audit.md"
+        }
+      ],
+      "missing": [
+        "client/.audit-reports/component-logic-audit-summary.md"
+      ],
+      "errors": []
+    }
+  ]
+}

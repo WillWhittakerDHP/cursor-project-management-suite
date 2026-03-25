@@ -23,9 +23,9 @@ import { PROJECT_ROOT, FRONTEND_ROOT } from '../../utils/utils';
 import { runArchitectureAlignmentAuditFromGitManager } from '../architecture-alignment-audit';
 import { listWorkingTreeChangedRepoPaths } from '../../git/shared/git-manager';
 
-const CLIENT_ROOT = join(PROJECT_ROOT, FRONTEND_ROOT);
-const AUDIT_DIR = join(CLIENT_ROOT, '.audit-reports');
-const TYPECHECK_DIR = join(CLIENT_ROOT, '.audit-reports', 'typecheck');
+function getClientRoot(): string { return join(PROJECT_ROOT, FRONTEND_ROOT); }
+function getAuditDir(): string { return join(getClientRoot(), '.audit-reports'); }
+function getTypecheckDir(): string { return join(getClientRoot(), '.audit-reports', 'typecheck'); }
 
 type AuditJsonFileEntry = Record<string, unknown> & {
   repoPath: string;
@@ -171,16 +171,16 @@ function generateFindingsFromAudit(
       findings.push({
         type: 'warning',
         message: `${errors.length} TypeScript error(s) found`,
-        location: join(TYPECHECK_DIR, 'typecheck-audit.json'),
-        suggestion: `Review ${toRepoPath(join(TYPECHECK_DIR, 'typecheck-audit.md'))} for details`,
+        location: join(getTypecheckDir(), 'typecheck-audit.json'),
+        suggestion: `Review ${toRepoPath(join(getTypecheckDir(), 'typecheck-audit.md'))} for details`,
       });
     }
     if (p0Pools.length > 0) {
       findings.push({
         type: 'error',
         message: `${p0Pools.length} P0 type error pool(s) (high priority)`,
-        location: join(TYPECHECK_DIR, 'typecheck-audit.json'),
-        suggestion: `Review ${toRepoPath(join(TYPECHECK_DIR, 'typecheck-audit.md'))} for P0 pools`,
+        location: join(getTypecheckDir(), 'typecheck-audit.json'),
+        suggestion: `Review ${toRepoPath(join(getTypecheckDir(), 'typecheck-audit.md'))} for P0 pools`,
       });
     }
   }
@@ -195,8 +195,8 @@ function generateFindingsFromAudit(
       findings.push({
         type: 'warning',
         message: `${highScoreFiles.length} file(s) with high complexity scores`,
-        location: join(AUDIT_DIR, `${auditName}-audit.json`),
-        suggestion: `Review ${toRepoPath(join(AUDIT_DIR, `${auditName}-audit.md`))} for top hotspots`,
+        location: join(getAuditDir(), `${auditName}-audit.json`),
+        suggestion: `Review ${toRepoPath(join(getAuditDir(), `${auditName}-audit.md`))} for top hotspots`,
       });
     }
   }
@@ -208,8 +208,8 @@ function generateFindingsFromAudit(
       findings.push({
         type: 'info',
         message: `${mutationHits.length} file(s) with forEach→mutation patterns (refactor candidates)`,
-        location: join(AUDIT_DIR, 'loop-mutation-audit.json'),
-        suggestion: `Review ${toRepoPath(join(AUDIT_DIR, 'loop-mutation-audit.md'))} for refactor opportunities`,
+        location: join(getAuditDir(), 'loop-mutation-audit.json'),
+        suggestion: `Review ${toRepoPath(join(getAuditDir(), 'loop-mutation-audit.md'))} for refactor opportunities`,
       });
     }
   }
@@ -221,8 +221,8 @@ function generateFindingsFromAudit(
       findings.push({
         type: 'info',
         message: `${highScoreFiles.length} file(s) with hardcoding patterns (config-driven candidates)`,
-        location: join(AUDIT_DIR, 'hardcoding-audit.json'),
-        suggestion: `Review ${toRepoPath(join(AUDIT_DIR, 'hardcoding-audit.md'))} for config-driven refactor opportunities`,
+        location: join(getAuditDir(), 'hardcoding-audit.json'),
+        suggestion: `Review ${toRepoPath(join(getAuditDir(), 'hardcoding-audit.md'))} for config-driven refactor opportunities`,
       });
     }
   }
@@ -235,16 +235,16 @@ function generateFindingsFromAudit(
       findings.push({
         type: 'error',
         message: `${criticalIssues.length} critical issue(s) (silent failures, empty catch blocks)`,
-        location: join(AUDIT_DIR, 'error-handling-audit.json'),
-        suggestion: `Review ${toRepoPath(join(AUDIT_DIR, 'error-handling-audit.json'))} for critical patterns`,
+        location: join(getAuditDir(), 'error-handling-audit.json'),
+        suggestion: `Review ${toRepoPath(join(getAuditDir(), 'error-handling-audit.json'))} for critical patterns`,
       });
     }
     if (warningIssues.length > 0) {
       findings.push({
         type: 'warning',
         message: `${warningIssues.length} warning(s) (defaults, fallbacks, legacy patterns)`,
-        location: join(AUDIT_DIR, 'error-handling-audit.json'),
-        suggestion: `Review ${toRepoPath(join(AUDIT_DIR, 'error-handling-audit.json'))} for fallback patterns`,
+        location: join(getAuditDir(), 'error-handling-audit.json'),
+        suggestion: `Review ${toRepoPath(join(getAuditDir(), 'error-handling-audit.json'))} for fallback patterns`,
       });
     }
   }
@@ -255,8 +255,8 @@ function generateFindingsFromAudit(
       findings.push({
         type: 'info',
         message: `${files.length} file(s) with naming convention findings`,
-        location: join(AUDIT_DIR, 'naming-convention-audit.json'),
-        suggestion: `Review ${toRepoPath(join(AUDIT_DIR, 'naming-convention-audit.md'))} for convention fixes`,
+        location: join(getAuditDir(), 'naming-convention-audit.json'),
+        suggestion: `Review ${toRepoPath(join(getAuditDir(), 'naming-convention-audit.md'))} for convention fixes`,
       });
     }
   }
@@ -271,8 +271,8 @@ function generateFindingsFromAudit(
       findings.push({
         type: 'info',
         message: `${highLeverageGroups.length} duplication group(s) with high consolidation leverage`,
-        location: join(AUDIT_DIR, 'duplication-audit.json'),
-        suggestion: `Review ${toRepoPath(join(AUDIT_DIR, 'duplication-audit.md'))} for DRY opportunities`,
+        location: join(getAuditDir(), 'duplication-audit.json'),
+        suggestion: `Review ${toRepoPath(join(getAuditDir(), 'duplication-audit.md'))} for DRY opportunities`,
       });
     }
   }
@@ -291,24 +291,24 @@ function generateFindingsFromAudit(
       findings.push({
         type: 'warning',
         message: `${untestedCount} untested source file(s) (${coverage}% coverage)`,
-        location: join(AUDIT_DIR, 'test-audit.json'),
-        suggestion: `Review ${toRepoPath(join(AUDIT_DIR, 'test-audit.md'))} for test coverage gaps`,
+        location: join(getAuditDir(), 'test-audit.json'),
+        suggestion: `Review ${toRepoPath(join(getAuditDir(), 'test-audit.md'))} for test coverage gaps`,
       });
     }
     if (highPriorityUntested.length > 0) {
       findings.push({
         type: 'error',
         message: `${highPriorityUntested.length} P0/high-priority untested file(s)`,
-        location: join(AUDIT_DIR, 'test-audit.json'),
-        suggestion: `Review ${toRepoPath(join(AUDIT_DIR, 'test-audit.md'))} for critical test gaps`,
+        location: join(getAuditDir(), 'test-audit.json'),
+        suggestion: `Review ${toRepoPath(join(getAuditDir(), 'test-audit.md'))} for critical test gaps`,
       });
     }
     if (orphanedCount > 0) {
       findings.push({
         type: 'info',
         message: `${orphanedCount} orphaned test file(s) (no corresponding source)`,
-        location: join(AUDIT_DIR, 'test-audit.json'),
-        suggestion: `Review ${toRepoPath(join(AUDIT_DIR, 'test-audit.md'))} for orphaned tests`,
+        location: join(getAuditDir(), 'test-audit.json'),
+        suggestion: `Review ${toRepoPath(join(getAuditDir(), 'test-audit.md'))} for orphaned tests`,
       });
     }
   }
@@ -324,7 +324,7 @@ function generateFindingsFromAudit(
       findings.push({
         type: 'warning',
         message: `${p0Findings.length} P0 type health finding(s) (nested utility types, Record<string,any>)`,
-        location: join(AUDIT_DIR, 'type-health-audit.json'),
+        location: join(getAuditDir(), 'type-health-audit.json'),
         suggestion: `Review type-health-audit.md for repair wave 1 (local fixes)`,
       });
     }
@@ -332,7 +332,7 @@ function generateFindingsFromAudit(
       findings.push({
         type: 'info',
         message: `${highFanIn} high-fan-in type finding(s) requiring coordinated repair`,
-        location: join(AUDIT_DIR, 'type-health-audit.json'),
+        location: join(getAuditDir(), 'type-health-audit.json'),
         suggestion: `Review type-health-audit.md wave 3 for multi-file repair planning`,
       });
     }
@@ -349,7 +349,7 @@ function generateFindingsFromAudit(
       findings.push({
         type: 'warning',
         message: `${propCouplingFindings.length} component(s) with excessive props or coupling`,
-        location: join(AUDIT_DIR, 'component-health-audit.json'),
+        location: join(getAuditDir(), 'component-health-audit.json'),
         suggestion: 'Review component-health-audit.md for decomposition opportunities',
       });
     }
@@ -358,7 +358,7 @@ function generateFindingsFromAudit(
       findings.push({
         type: 'info',
         message: `${highFanIn} high-fan-in component finding(s) requiring coordinated refactor`,
-        location: join(AUDIT_DIR, 'component-health-audit.json'),
+        location: join(getAuditDir(), 'component-health-audit.json'),
         suggestion: 'Review component-health-audit.md wave 3 for multi-file planning',
       });
     }
@@ -374,7 +374,7 @@ function generateFindingsFromAudit(
       findings.push({
         type: 'warning',
         message: `${p0Findings.length} composable(s) missing explicit return type`,
-        location: join(AUDIT_DIR, 'composable-health-audit.json'),
+        location: join(getAuditDir(), 'composable-health-audit.json'),
         suggestion: 'Review composable-health-audit.md wave 1 for local fixes',
       });
     }
@@ -383,7 +383,7 @@ function generateFindingsFromAudit(
       findings.push({
         type: 'info',
         message: `${composableHighFanIn} high-fan-in composable finding(s) requiring coordinated repair`,
-        location: join(AUDIT_DIR, 'composable-health-audit.json'),
+        location: join(getAuditDir(), 'composable-health-audit.json'),
         suggestion: 'Review composable-health-audit.md wave 3 for multi-file planning',
       });
     }
@@ -400,16 +400,16 @@ function generateFindingsFromAudit(
       findings.push({
         type: 'warning',
         message: `${highPriorityFiles.length} file(s) with P0/P1 unused code (${totalIssues} total issues)`,
-        location: join(AUDIT_DIR, 'unused-code-audit.json'),
-        suggestion: `Review ${toRepoPath(join(AUDIT_DIR, 'unused-code-audit.md'))} for unused exports/functions`,
+        location: join(getAuditDir(), 'unused-code-audit.json'),
+        suggestion: `Review ${toRepoPath(join(getAuditDir(), 'unused-code-audit.md'))} for unused exports/functions`,
       });
     }
     if (totalIssues > 50) {
       findings.push({
         type: 'info',
         message: `${totalIssues} unused code issues found (cleanup opportunity)`,
-        location: join(AUDIT_DIR, 'unused-code-audit.json'),
-        suggestion: `Review ${toRepoPath(join(AUDIT_DIR, 'unused-code-audit.md'))} for cleanup candidates`,
+        location: join(getAuditDir(), 'unused-code-audit.json'),
+        suggestion: `Review ${toRepoPath(join(getAuditDir(), 'unused-code-audit.md'))} for cleanup candidates`,
       });
     }
   }
@@ -426,16 +426,16 @@ function generateFindingsFromAudit(
       findings.push({
         type: 'error',
         message: `${totalErrors} security error(s) found (${p0Categories.length} P0 categories, ${p0Files.length} P0 files)`,
-        location: join(AUDIT_DIR, 'security-audit.json'),
-        suggestion: `Review ${toRepoPath(join(AUDIT_DIR, 'security-audit.md'))} for critical security issues`,
+        location: join(getAuditDir(), 'security-audit.json'),
+        suggestion: `Review ${toRepoPath(join(getAuditDir(), 'security-audit.md'))} for critical security issues`,
       });
     }
     if (totalWarnings > 0 && totalErrors === 0) {
       findings.push({
         type: 'warning',
         message: `${totalWarnings} security warning(s) found`,
-        location: join(AUDIT_DIR, 'security-audit.json'),
-        suggestion: `Review ${toRepoPath(join(AUDIT_DIR, 'security-audit.md'))} for security best practices`,
+        location: join(getAuditDir(), 'security-audit.json'),
+        suggestion: `Review ${toRepoPath(join(getAuditDir(), 'security-audit.md'))} for security best practices`,
       });
     }
     const csrfCategory = categories.find((c: { id?: string }) => c.id === 'csrf') as { errors?: unknown[] } | undefined;
@@ -443,8 +443,8 @@ function generateFindingsFromAudit(
       findings.push({
         type: 'error',
         message: `${csrfCategory.errors.length} CSRF protection issue(s) found`,
-        location: join(AUDIT_DIR, 'security-audit.json'),
-        suggestion: `Review ${toRepoPath(join(AUDIT_DIR, 'security-audit.md'))} for routes missing CSRF protection`,
+        location: join(getAuditDir(), 'security-audit.json'),
+        suggestion: `Review ${toRepoPath(join(getAuditDir(), 'security-audit.md'))} for routes missing CSRF protection`,
       });
     }
     const secretsCategory = categories.find((c: { id?: string }) => c.id === 'secrets') as { errors?: unknown[] } | undefined;
@@ -452,8 +452,8 @@ function generateFindingsFromAudit(
       findings.push({
         type: 'error',
         message: `${secretsCategory.errors.length} exposed secret(s) found`,
-        location: join(AUDIT_DIR, 'security-audit.json'),
-        suggestion: `Review ${toRepoPath(join(AUDIT_DIR, 'security-audit.md'))} for exposed secrets`,
+        location: join(getAuditDir(), 'security-audit.json'),
+        suggestion: `Review ${toRepoPath(join(getAuditDir(), 'security-audit.md'))} for exposed secrets`,
       });
     }
   }
@@ -468,7 +468,7 @@ function generateFindingsFromAudit(
       tierFindings.push({
         type: 'warning',
         message: `${untypedInjects.length} untyped inject(s), ${depthFindings.length} deep provide/inject chain(s)`,
-        location: join(AUDIT_DIR, 'data-flow-health-audit.json'),
+        location: join(getAuditDir(), 'data-flow-health-audit.json'),
         suggestion: 'Review data-flow-health-audit.md for provide/inject hygiene',
       });
     }
@@ -476,7 +476,7 @@ function generateFindingsFromAudit(
       tierFindings.push({
         type: 'info',
         message: `${gapFindings.length} type boundary gap(s) in data flow`,
-        location: join(AUDIT_DIR, 'data-flow-health-audit.json'),
+        location: join(getAuditDir(), 'data-flow-health-audit.json'),
         suggestion: 'Review data-flow-health-audit.md for type alignment opportunities',
       });
     }
@@ -590,7 +590,7 @@ function spawnAuditScript(npmRun: string | undefined, changedOnly: boolean): Pro
   if (changedOnly) args.push('--', '--changed-only');
   return new Promise((resolve) => {
     const child = spawn('npm', args, {
-      cwd: CLIENT_ROOT,
+      cwd: getClientRoot(),
       stdio: 'ignore',
     });
     const timer = setTimeout(() => { child.kill(); resolve(); }, 120000);
@@ -623,7 +623,7 @@ export function runTierAuditsParallel(tier: AuditTier): Promise<void> {
 function runAllowlistCleanup(): Promise<void> {
   return new Promise((resolve) => {
     const child = spawn('npm', ['run', 'audit:allowlist-cleanup'], {
-      cwd: CLIENT_ROOT,
+      cwd: getClientRoot(),
       stdio: 'ignore',
     });
     const timer = setTimeout(() => { child.kill(); resolve(); }, 60_000);
@@ -640,7 +640,7 @@ export async function auditTierQuality(
   const findings: AuditFinding[] = [];
   const recommendations: string[] = [];
 
-  if (!existsSync(CLIENT_ROOT)) {
+  if (!existsSync(getClientRoot())) {
     return {
       category: 'tier-quality',
       status: 'pass',
@@ -671,7 +671,7 @@ export async function auditTierQuality(
   await runAllowlistCleanup();
 
   for (const audit of config.audits) {
-    const absPath = join(AUDIT_DIR, audit.jsonRelativePath);
+    const absPath = join(getAuditDir(), audit.jsonRelativePath);
     const jsonData = loadAuditJson(absPath);
     const auditFindings = generateFindingsFromAudit(audit.auditName, absPath, jsonData);
     findings.push(...auditFindings);

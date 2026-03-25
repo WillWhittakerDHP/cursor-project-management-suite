@@ -30,11 +30,7 @@ import { buildSpecFromTierRun } from '../../harness/build-spec-from-tier';
 import { classifyWorkProfile } from '../../harness/work-profile-classifier';
 import { WorkflowCommandContext, type TierParamsBag } from '../../utils/command-context';
 import { writeEndPending } from './pending-state';
-import {
-  buildWorkflowFrictionEntryFromOrchestrator,
-  recordWorkflowFriction,
-  shouldAppendWorkflowFriction,
-} from '../../utils/workflow-friction-log';
+import { recordOrchestratorFailureFriction } from '../../harness/workflow-friction-manager';
 
 export type TierEndParams =
   | FeatureEndParams
@@ -108,18 +104,14 @@ export async function runTierEnd(
       },
     };
     const rc = String(failedResult.outcome.reasonCode ?? 'unhandled_error');
-    if (shouldAppendWorkflowFriction({ success: false, reasonCodeRaw: rc })) {
-      recordWorkflowFriction(
-        buildWorkflowFrictionEntryFromOrchestrator({
-          action: 'end',
-          tier: config.name,
-          identifier: identifier || '—',
-          reasonCodeRaw: rc,
-          symptom: message,
-          context: `WorkflowCommandContext.contextFromParams failed.\n\n${paramsSnippetForWorkflowFrictionEnd(params)}`,
-        })
-      );
-    }
+    recordOrchestratorFailureFriction({
+      action: 'end',
+      tier: config.name,
+      identifier: identifier || '—',
+      reasonCodeRaw: rc,
+      symptom: message,
+      context: `WorkflowCommandContext.contextFromParams failed.\n\n${paramsSnippetForWorkflowFrictionEnd(params)}`,
+    });
     const decision = routeByOutcome(
       failedResult as CommandResultForRouting,
       { tier: config.name, action: 'end', originalParams: params }
@@ -175,6 +167,14 @@ export async function runTierEnd(
           nextAction: appCheck.output,
         },
       };
+      recordOrchestratorFailureFriction({
+        action: 'end',
+        tier: config.name,
+        identifier,
+        featureName: context.feature.name,
+        reasonCodeRaw: 'app_not_running',
+        nextAction: appCheck.output,
+      });
       const decision = routeByOutcome(
         failedResult as CommandResultForRouting,
         { tier: config.name, action: 'end', originalParams: params }
@@ -191,6 +191,10 @@ export async function runTierEnd(
     const featureContext = { featureId: context.feature.name, featureName: context.feature.name };
     const workProfile = classifyWorkProfile({ tier: config.name, action: 'end' });
     const userChoicesFromEnd: WorkflowSpec['userChoices'] = {};
+    const endOptionsForChoices = getOptionsFromParams(params);
+    if (endOptionsForChoices?.continuePastGapAnalysis === true) {
+      userChoicesFromEnd.continuePastGapAnalysis = true;
+    }
     if ('continuePastVerification' in params && typeof params.continuePastVerification === 'boolean') {
       userChoicesFromEnd.continuePastVerification = params.continuePastVerification;
     }
@@ -212,7 +216,11 @@ export async function runTierEnd(
       userChoices,
       workProfile,
     });
-    const adapter = createStepAdapter({ config, params, context });
+    const adapter = createStepAdapter({
+      config,
+      actionParams: { action: 'end', params },
+      context,
+    });
     const kernelResult = await defaultKernel.run(spec, {
       contextInjector: createContextInjector(),
       recorder: shadowRecorder,
@@ -243,6 +251,15 @@ export async function runTierEnd(
     } as TierEndResultWithControlPlane;
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
+    recordOrchestratorFailureFriction({
+      action: 'end',
+      tier: config.name,
+      identifier,
+      featureName: context.feature.name,
+      reasonCodeRaw: 'unhandled_error',
+      symptom: message,
+      context: `defaultKernel.run threw.\n\n${paramsSnippetForWorkflowFrictionEnd(params)}`,
+    });
     const failedResult: TierEndResult = {
       success: false,
       output: `**${config.name}-end failed:**\n\n\`\`\`\n${message}\n\`\`\``,

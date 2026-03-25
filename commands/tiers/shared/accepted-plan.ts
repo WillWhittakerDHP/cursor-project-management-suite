@@ -17,6 +17,10 @@ import type { ControlPlaneDecision } from './control-plane-types';
 import { formatChoiceForChat } from './control-plane-choice-display';
 import { WorkflowCommandContext, type TierParamsBag } from '../../utils/command-context';
 import type { GateProfile } from '../../harness/work-profile';
+import {
+  buildWorkflowFrictionEntryFromOrchestrator,
+  initiateWorkflowFrictionWrite,
+} from '../../harness/workflow-friction-manager';
 
 const NO_PENDING_MESSAGE =
   'No pending feature/phase/session start. Run **feature-start**, **phase-start**, or **session-start** first; after the agent fills the planning doc, run **/accepted-plan**.';
@@ -129,6 +133,25 @@ export async function acceptedPlan(): Promise<TierStartResultWithControlPlane> {
     context = await WorkflowCommandContext.contextFromParams(state.tier, tierParams);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
+    const id = identifierFromPending(state);
+    let pendingExcerpt = '';
+    try {
+      const raw = JSON.stringify({ tier: state.tier, params: state.params });
+      pendingExcerpt = raw.length > 2000 ? `${raw.slice(0, 2000)}\n\n…(truncated)` : raw;
+    } catch {
+      pendingExcerpt = '(pending state not serializable)';
+    }
+    initiateWorkflowFrictionWrite({
+      ...buildWorkflowFrictionEntryFromOrchestrator({
+        action: 'start',
+        tier: state.tier,
+        identifier: id,
+        reasonCodeRaw: 'invalid_context',
+        symptom: message,
+        context: `/accepted-plan: WorkflowCommandContext.contextFromParams failed.\n\n${pendingExcerpt}`,
+      }),
+      forcePolicy: true,
+    });
     return blocked(
       `**Context resolution failed:**\n\n\`\`\`\n${message}\n\`\`\`\n\nRe-run the matching tier-start or fix params in pending state.`,
       'invalid_context',

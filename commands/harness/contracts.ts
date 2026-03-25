@@ -59,6 +59,7 @@ export interface WorkflowSpec {
   constraints: ConstraintSet;
   userChoices?: {
     continuePastVerification?: boolean;
+    continuePastGapAnalysis?: boolean;
     pushConfirmed?: boolean;
     cascadeConfirmed?: boolean;
   };
@@ -151,6 +152,7 @@ export type FlowReasonCode =
   | 'task_complete'
   | 'pending_push'
   | 'verification_suggested'
+  | 'gap_analysis_pending'
   | 'reopen_ok'
   | 'uncommitted_blocking'
   | 'guide_fill_pending'
@@ -177,7 +179,13 @@ export type FailureReasonCode =
   | 'invalid_task_id'
   | 'audit_fix_commit_failed'
   | 'unhandled_error'
-  | 'conflict_markers_in_tree';
+  | 'conflict_markers_in_tree'
+  /** Tier-end friction / soft failures (logged; rarely user-facing outcomes) */
+  | 'planning_rollup_failed'
+  | 'doc_rollup_failed'
+  | 'gap_analysis_failed'
+  | 'fill_tier_down_failed'
+  | 'planning_checks_failed';
 
 export type ReasonCode = FlowReasonCode | FailureReasonCode;
 
@@ -189,6 +197,7 @@ export type QuestionKey =
   | 'push_confirmation'
   | 'cascade_confirmation'
   | 'verification_options'
+  | 'gap_analysis_options'
   | 'failure_options'
   | 'audit_failed_options'
   | 'uncommitted_changes'

@@ -9,11 +9,7 @@ import type { PlanningTier } from '../utils/planning-doc-paths';
 import type { GateProfile } from './work-profile';
 import type { TierName } from '../tiers/shared/types';
 import { recoverPlanningArtifactsAfterCheckout } from '../git/shared/git-manager';
-import {
-  buildWorkflowFrictionEntryFromOrchestrator,
-  recordWorkflowFriction,
-  shouldAppendWorkflowFriction,
-} from '../utils/workflow-friction-log';
+import { recordOrchestratorFailureFriction } from './workflow-friction-manager';
 import {
   stepAppendHeaderAndBranchHierarchy,
   stepAppendBranchHierarchy,
@@ -49,21 +45,16 @@ async function recordStep(
 
 function attachShadowPayload(ctx: TierStartWorkflowContext, result: TierStartResult): TierStartWorkflowResult {
   if (!result.success && result.outcome) {
-    const reasonCodeRaw = String(result.outcome.reasonCode ?? '');
-    if (shouldAppendWorkflowFriction({ success: false, reasonCodeRaw })) {
-      recordWorkflowFriction(
-        buildWorkflowFrictionEntryFromOrchestrator({
-          action: 'start',
-          tier: ctx.config.name,
-          identifier: ctx.identifier,
-          featureName: ctx.context.feature.name,
-          reasonCodeRaw,
-          stepPath: ctx.stepPath,
-          nextAction: result.outcome.nextAction,
-          deliverablesExcerpt: result.outcome.deliverables,
-        })
-      );
-    }
+    recordOrchestratorFailureFriction({
+      action: 'start',
+      tier: ctx.config.name,
+      identifier: ctx.identifier,
+      featureName: ctx.context.feature.name,
+      reasonCodeRaw: String(result.outcome.reasonCode ?? ''),
+      stepPath: ctx.stepPath,
+      nextAction: result.outcome.nextAction,
+      deliverablesExcerpt: result.outcome.deliverables,
+    });
   }
   if (ctx.runTraceHandle != null) {
     return { ...result, __traceHandle: ctx.runTraceHandle, __stepPath: [...(ctx.stepPath ?? [])] };

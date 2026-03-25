@@ -38,6 +38,17 @@ export interface TierEndWorkflowContext {
   stepPath?: string[];
 }
 
+/** Result of optional gap_analysis hook (tier-end soft gate). */
+export interface GapAnalysisResult {
+  hasGaps: boolean;
+  report: string;
+  recommendedAdds?: Array<{
+    tier: 'phase' | 'session' | 'task';
+    identifier: string;
+    description?: string;
+  }>;
+}
+
 /** Early-exit result from a step; null means continue. */
 export interface TierEndWorkflowResult {
   success: boolean;
@@ -71,6 +82,8 @@ export interface TierEndWorkflowHooks {
     productChecklist?: string;
     artifactChecklist?: string;
   } | null>;
+  /** When set, gap_analysis step runs before planning_rollup; omit on task-end to skip. */
+  runGapAnalysis?(ctx: TierEndWorkflowContext): Promise<GapAnalysisResult>;
   getCascade?(ctx: TierEndWorkflowContext): Promise<CascadeInfo | null>;
   getSuccessOutcome(ctx: TierEndWorkflowContext): TierEndOutcome;
 }

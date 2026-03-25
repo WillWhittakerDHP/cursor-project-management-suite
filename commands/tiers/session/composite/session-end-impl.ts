@@ -45,12 +45,17 @@ import type { RunRecorder, RunTraceHandle } from '../../../harness/contracts';
 
 export type EndShadowContext = { recorder: RunRecorder; handle: RunTraceHandle };
 import { proposeVerificationChecklistForSession } from '../../shared/verification-check';
+import { runPlanningTierGapAnalysis } from '../../shared/tier-end-deliverables-drift';
 import { getExcerptEndMarker } from '../../shared/context-policy';
 import {
   buildCliUnhandledErrorEnvelope,
   buildCliValidationErrorEnvelope,
   stringifyCliResult,
 } from '../../../utils/cli-tier-result';
+import {
+  formatHarnessRepairPendingPushReminder,
+  hasOpenWorkflowFrictionEntries,
+} from '../../../utils/read-workflow-friction';
 
 const FRONTEND_ROOT = 'client';
 
@@ -320,6 +325,10 @@ export async function sessionEndImpl(
     async runVerificationCheck(c): Promise<{ suggested: boolean; checklist?: string; productChecklist?: string; artifactChecklist?: string } | null> {
       const p = c.params as SessionEndParams;
       return proposeVerificationChecklistForSession(p.sessionId, c.context);
+    },
+
+    async runGapAnalysis(c) {
+      return runPlanningTierGapAnalysis(c, 'session');
     },
 
     async runTestGoalValidation(c): Promise<StepExitResult> {
@@ -716,6 +725,7 @@ export async function sessionEndImpl(
   const result = await runTierEndWorkflow(ctx, hooks);
   const withShadow = result as TierEndWorkflowResultWithShadow;
   let output = result.output;
+  let finalOutcome = result.outcome as SessionEndOutcome;
   if (result.success) {
     try {
       const { summary } = await refreshAcrossLadderArtifacts(context, {
@@ -726,12 +736,26 @@ export async function sessionEndImpl(
     } catch (err) {
       console.warn('[session-end] across-ladder refresh failed', err);
     }
+    if (
+      finalOutcome.reasonCode === 'pending_push_confirmation' &&
+      !params.skipGit &&
+      (await hasOpenWorkflowFrictionEntries())
+    ) {
+      const featureRef =
+        (params.featureId ?? params.featureName ?? '').trim() || context.feature.name;
+      const reminder = formatHarnessRepairPendingPushReminder({
+        featureId: featureRef,
+        sessionId: params.sessionId,
+        featureDirectoryName: context.feature.name,
+      });
+      finalOutcome = { ...finalOutcome, nextAction: `${finalOutcome.nextAction}${reminder}` };
+    }
   }
   return {
     success: result.success,
     output,
     steps: result.steps,
-    outcome: result.outcome as SessionEndOutcome,
+    outcome: finalOutcome,
     ...(withShadow.__traceHandle != null && {
       __traceHandle: withShadow.__traceHandle,
       __stepPath: withShadow.__stepPath ?? [],

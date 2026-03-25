@@ -12,4 +12,6 @@ Component governance (inventory → governance → audit):
 
 **Audit:** Session-tier runs component-logic and component-health; component-governance baseline (100 − P0×3 − P1×1 from component-health-audit.json) is stored and compared at session start/end.
 
+**Remediation order:** component-logic / component-health often move after composable and module-boundary work; see `.project-manager/AUDIT_FIX_CONTEXT.md` → Governance remediation ladder for discretionary order. Blocking failures: fix per report.
+
 See: .project-manager/COMPONENT_AUTHORING_PLAYBOOK.md for decision tree, thresholds, and allowlist location (audit-global-config). Domain boundaries and patterns: `.project-manager/ARCHITECTURE.md`.

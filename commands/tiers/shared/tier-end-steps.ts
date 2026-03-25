@@ -19,20 +19,34 @@ import {
   branchExists,
   commitRemaining,
   getExpectedBranchForTier,
+  getInScopeDiffPreviewForCommit,
   getLeafBranchTierFromChain,
   DEFAULT_ALLOWED_COMMIT_PREFIXES,
   propagateSharedFiles,
+  type InScopeDiffPreviewResult,
 } from '../../git/shared/git-manager';
+import {
+  DocumentManagerWriteBlockedError,
+  type DocumentTier,
+} from '../../utils/document-manager';
 import { PROJECT_ROOT } from '../../utils/utils';
 import type { TierName } from './types';
 import type { PlanningTier } from '../../utils/planning-doc-paths';
-import { parseDeliverablesFromPlanningDoc } from '../../utils/planning-doc-parse';
-import { listWorkingTreeChangedRepoPaths } from '../../git/shared/git-manager';
+import { analyzeDeliverablesDriftFromContent } from './tier-end-deliverables-drift';
 import {
   buildAuditFixContextEnvelope,
   resolveTaskFilesForAuditFix,
 } from '../../audit/atomic/audit-fix-prompt';
-import { recordWorkflowFrictionWarning } from '../../utils/workflow-friction-log';
+import {
+  buildWorkflowFrictionEntryFromOrchestrator,
+  recordHarnessVerboseWarning,
+  recordWorkflowFriction,
+} from '../../harness/workflow-friction-manager';
+import {
+  resolveDocRollupProfile,
+  docRollupRunsLogHandoff,
+  docRollupRunsGuideSafe,
+} from '../../utils/doc-rollup-policy';
 
 /**
  * Maps audit keyword patterns to the governance playbook + cursor rule the agent
@@ -170,7 +184,7 @@ async function buildGovernanceGuidance(
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     console.warn(`[tier-end] buildGovernanceGuidance harness context failed: ${msg}`);
-    recordWorkflowFrictionWarning('buildGovernanceGuidance', msg, {
+    recordHarnessVerboseWarning('buildGovernanceGuidance', msg, {
       tier,
       identifier: options.identifier,
       featureName: options.featureName,
@@ -334,6 +348,57 @@ function commitPrefixFromContext(identifier: string): string {
   return `[${identifier}]`;
 }
 
+function buildCommitPreviewMarkdown(preview: InScopeDiffPreviewResult): string {
+  const lines: string[] = ['## Harness: commit preview (in-scope diff)', ''];
+  if (preview.paths.length === 0) {
+    lines.push('_No in-scope paths (or clean)._');
+    return lines.join('\n');
+  }
+  lines.push(`Paths (${preview.paths.length}): \`${preview.paths.join('`, `')}\``);
+  lines.push('');
+  lines.push('### `git diff --stat HEAD`');
+  if (preview.truncatedStat) {
+    lines.push('_(stat truncated to cap)_');
+  }
+  lines.push('');
+  lines.push('```text');
+  lines.push(preview.stat.length > 0 ? preview.stat : '(empty)');
+  lines.push('```');
+  lines.push('');
+  lines.push('### `git diff HEAD`');
+  if (preview.truncatedDiff) {
+    lines.push('_(diff truncated to cap)_');
+  }
+  lines.push('');
+  lines.push('```diff');
+  lines.push(preview.diffExcerpt.length > 0 ? preview.diffExcerpt : '(empty)');
+  lines.push('```');
+  return lines.join('\n');
+}
+
+function resolveCommitPreviewLogTarget(
+  ctx: TierEndWorkflowContext
+): { tier: DocumentTier; id: string | undefined } | null {
+  const tierName = ctx.config.name;
+  if (tierName === 'feature') {
+    return { tier: 'feature', id: undefined };
+  }
+  if (tierName === 'phase') {
+    return { tier: 'phase', id: ctx.identifier };
+  }
+  if (tierName === 'session') {
+    return { tier: 'session', id: ctx.identifier };
+  }
+  if (tierName === 'task') {
+    const p = ctx.params as { sessionId?: string };
+    if (p.sessionId) {
+      return { tier: 'session', id: p.sessionId };
+    }
+    return null;
+  }
+  return null;
+}
+
 /**
  * Advisory: AC verification prompt + deliverables vs working tree (git-manager paths only).
  * Runs before commit_remaining so uncommitted scope is still visible.
@@ -344,12 +409,13 @@ export async function stepDeliverablesAndPlanningHints(ctx: TierEndWorkflowConte
   }
   const tier = ctx.config.name;
   const planningTier = tier as PlanningTier;
+  const planningIdForDoc = tier === 'feature' ? '' : ctx.identifier;
   try {
-    if (!(await ctx.context.documents.planningDocExists(planningTier, ctx.identifier))) {
+    if (!(await ctx.context.documents.planningDocExists(planningTier, planningIdForDoc))) {
       return;
     }
-    const content = await ctx.context.documents.readPlanningDoc(planningTier, ctx.identifier);
-    const planPath = ctx.context.documents.getPlanningDocRelativePath(planningTier, ctx.identifier);
+    const content = await ctx.context.documents.readPlanningDoc(planningTier, planningIdForDoc);
+    const planPath = ctx.context.documents.getPlanningDocRelativePath(planningTier, planningIdForDoc);
 
     ctx.output.push(
       [
@@ -363,21 +429,11 @@ export async function stepDeliverablesAndPlanningHints(ctx: TierEndWorkflowConte
       ].join('\n')
     );
 
-    const planned = parseDeliverablesFromPlanningDoc(content);
-    if (planned.length === 0) {
+    const drift = await analyzeDeliverablesDriftFromContent(content);
+    if (drift.kind === 'rollup_marker' || drift.kind === 'no_planned_paths') {
       return;
     }
-    const actual = await listWorkingTreeChangedRepoPaths();
-    const actualProduct = actual.filter(
-      f =>
-        f.startsWith('client/') ||
-        f.startsWith('server/') ||
-        f.startsWith('.project-manager/')
-    );
-    const pathMatches = (a: string, p: string): boolean =>
-      a === p || a.includes(p) || p.includes(a);
-    const scopeCreep = actualProduct.filter(a => !planned.some(p => pathMatches(a, p)));
-    const missed = planned.filter(p => !actualProduct.some(a => pathMatches(a, p)));
+    const { scopeCreep, missed } = drift;
 
     const lines: string[] = ['', '---', '', '## Deliverables drift (advisory)', ''];
     if (scopeCreep.length > 0) {
@@ -393,7 +449,7 @@ export async function stepDeliverablesAndPlanningHints(ctx: TierEndWorkflowConte
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.warn('[tier-end deliverables_check] skipped:', msg);
-    recordWorkflowFrictionWarning('deliverables_check', msg, {
+    recordHarnessVerboseWarning('deliverables_check', msg, {
       tier,
       identifier: ctx.identifier,
       featureName: ctx.context.feature.name,
@@ -401,12 +457,246 @@ export async function stepDeliverablesAndPlanningHints(ctx: TierEndWorkflowConte
   }
 }
 
+const GAP_ANALYSIS_NEXT_ACTION =
+  'Gap analysis found possible open items. Review the report; register follow-up tiers with **tier-add** then **tier-start** if needed. Re-run this tier-end using **nextInvoke** from the control plane (sets `continuePastGapAnalysis`), or pass `continuePastGapAnalysis: true` under **params.options** to bypass after review.';
+
+/**
+ * Soft gate: optional `runGapAnalysis` hook; stops with `gap_analysis_pending` when gaps reported unless bypassed.
+ * Runs after deliverables_check and before planning_rollup. Non-gating on hook errors (friction log only).
+ */
+export async function stepGapAnalysis(
+  ctx: TierEndWorkflowContext,
+  hooks: TierEndWorkflowHooks
+): Promise<StepExitResult> {
+  if (ctx.options?.workProfile?.gateProfile === 'express') {
+    return null;
+  }
+  if (!hooks.runGapAnalysis) {
+    return null;
+  }
+  const continuePast = ctx.options?.continuePastGapAnalysis === true;
+  const tierName = ctx.config.name;
+  try {
+    const result = await hooks.runGapAnalysis(ctx);
+    let block = (result.report ?? '').trim();
+    if (result.recommendedAdds && result.recommendedAdds.length > 0) {
+      const addLines = result.recommendedAdds.map(
+        r =>
+          `- **/${r.tier}-add** — ${r.description ?? `id: ${r.identifier}`}`
+      );
+      block = [block, '', '**Suggested follow-up registration (advisory):**', ...addLines].join('\n');
+    }
+    if (block) {
+      ctx.steps.gapAnalysis = { success: true, output: block };
+      ctx.output.push(block);
+    }
+    if (!result.hasGaps) {
+      return null;
+    }
+    if (continuePast) {
+      return null;
+    }
+    const outcome = buildTierEndOutcome(
+      'completed',
+      'gap_analysis_pending',
+      GAP_ANALYSIS_NEXT_ACTION,
+      undefined,
+      block || result.report
+    );
+    return {
+      success: true,
+      output: ctx.output.join('\n\n'),
+      steps: ctx.steps,
+      outcome,
+    };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.warn('[tier-end gap_analysis] non-gating error:', msg);
+    recordHarnessVerboseWarning('gap_analysis', msg, {
+      tier: tierName,
+      identifier: ctx.identifier,
+      featureName: ctx.context.feature.name,
+    });
+    recordWorkflowFriction({
+      ...buildWorkflowFrictionEntryFromOrchestrator({
+        action: 'end',
+        tier: tierName,
+        identifier: ctx.identifier,
+        featureName: ctx.context.feature.name,
+        reasonCodeRaw: 'gap_analysis_failed',
+        stepPath: ctx.stepPath,
+        symptom: `Gap analysis failed: ${msg}`,
+        context: `gap_analysis; non-gating. ${msg}`,
+      }),
+      forcePolicy: true,
+    });
+    return null;
+  }
+}
+
+/**
+ * Consolidate child planning docs into the parent file and archive sources (non-gating).
+ * Runs after deliverables_check and before any git steps. Express profile skips.
+ */
+export async function stepPlanningRollup(ctx: TierEndWorkflowContext): Promise<void> {
+  if (ctx.options?.workProfile?.gateProfile === 'express') {
+    return;
+  }
+  const tierName = ctx.config.name;
+  if (tierName !== 'feature' && tierName !== 'phase' && tierName !== 'session') {
+    ctx.steps.planning_rollup = {
+      success: true,
+      output: `Skipped planning rollup (tier ${tierName}).`,
+    };
+    return;
+  }
+  const planningTier = tierName as PlanningTier;
+  const planningId = tierName === 'feature' ? '' : ctx.identifier;
+  const frictionHint =
+    'If rollup logged friction: `npx tsx .cursor/commands/utils/read-workflow-friction.ts --last 20`';
+  try {
+    const result = await ctx.context.documents.rollupPlanningArtifacts(planningTier, planningId);
+    const detail = result.skipped
+      ? `Skipped (${result.skipReason ?? 'unknown'}): \`${result.path}\`.`
+      : result.changed
+        ? `Wrote consolidated \`${result.path}\`; archived ${result.archivedPaths.length} source file(s).`
+        : `No write: \`${result.path}\`.`;
+    const block = ['', '---', '', '## Planning rollup', '', detail, '', frictionHint, ''].join('\n');
+    ctx.output.push(block);
+    ctx.steps.planning_rollup = { success: true, output: block };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.warn('[tier-end planning_rollup] error (non-gating):', msg);
+    recordHarnessVerboseWarning('planning_rollup', msg, {
+      tier: tierName,
+      action: 'end',
+      identifier: ctx.identifier,
+      featureName: ctx.context.feature.name,
+    });
+    recordWorkflowFriction({
+      ...buildWorkflowFrictionEntryFromOrchestrator({
+        action: 'end',
+        tier: tierName,
+        identifier: ctx.identifier,
+        featureName: ctx.context.feature.name,
+        reasonCodeRaw: 'planning_rollup_failed',
+        stepPath: ctx.stepPath,
+        symptom: `Planning rollup failed: ${msg}`,
+        context: `planning_rollup; non-gating. ${msg}`,
+      }),
+      forcePolicy: true,
+    });
+    const block = [
+      '',
+      '---',
+      '',
+      '## Planning rollup',
+      '',
+      `⚠️ Rollup failed (non-gating): ${msg}`,
+      '',
+      frictionHint,
+      '',
+    ].join('\n');
+    ctx.output.push(block);
+    ctx.steps.planning_rollup = { success: true, output: block };
+  }
+}
+
+/**
+ * Log + handoff + optional guide (safe) rollup after planning_rollup, before git. Non-gating.
+ * Scope from `ctx.options.docRollupProfile` or `HARNESS_DOC_ROLLUP` (default `planning_only`; set `all_non_guides` or `all` to run).
+ */
+export async function stepDocRollup(ctx: TierEndWorkflowContext): Promise<void> {
+  if (ctx.options?.workProfile?.gateProfile === 'express') {
+    return;
+  }
+  const tierName = ctx.config.name;
+  if (tierName !== 'feature' && tierName !== 'phase' && tierName !== 'session') {
+    ctx.steps.doc_rollup = {
+      success: true,
+      output: `Skipped doc rollup (tier ${tierName}).`,
+    };
+    return;
+  }
+
+  const profile = resolveDocRollupProfile(ctx.options);
+  if (profile === 'off' || profile === 'planning_only') {
+    ctx.steps.doc_rollup = {
+      success: true,
+      output: `Doc rollup skipped (docRollupProfile=${profile}).`,
+    };
+    return;
+  }
+
+  const planningTier = tierName as PlanningTier;
+  const planningId = tierName === 'feature' ? '' : ctx.identifier;
+  const frictionHint =
+    'If rollup logged friction: `npx tsx .cursor/commands/utils/read-workflow-friction.ts --last 20`';
+
+  const lines: string[] = ['', '---', '', '## Doc rollup (log / handoff / guide)', '', `Profile: **${profile}**`, ''];
+
+  async function runOne(
+    label: string,
+    fn: () => Promise<{ skipped?: boolean; skipReason?: string; changed: boolean; path: string; archivedPaths: string[] }>
+  ): Promise<void> {
+    try {
+      const result = await fn();
+      const detail = result.skipped
+        ? `${label}: skipped (${result.skipReason ?? 'unknown'}) \`${result.path}\``
+        : result.changed
+          ? `${label}: wrote \`${result.path}\`; archived ${result.archivedPaths.length} file(s)`
+          : `${label}: no write \`${result.path}\``;
+      lines.push(`- ${detail}`);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn(`[tier-end doc_rollup] ${label} error (non-gating):`, msg);
+      recordHarnessVerboseWarning('doc_rollup', `${label}: ${msg}`, {
+        tier: tierName,
+        action: 'end',
+        identifier: ctx.identifier,
+        featureName: ctx.context.feature.name,
+      });
+      recordWorkflowFriction({
+        ...buildWorkflowFrictionEntryFromOrchestrator({
+          action: 'end',
+          tier: tierName,
+          identifier: ctx.identifier,
+          featureName: ctx.context.feature.name,
+          reasonCodeRaw: 'doc_rollup_failed',
+          stepPath: ctx.stepPath,
+          symptom: `${label} rollup failed: ${msg}`,
+          context: `doc_rollup; non-gating. ${msg}`,
+        }),
+        forcePolicy: true,
+      });
+      lines.push(`- ${label}: failed (non-gating): ${msg}`);
+    }
+  }
+
+  if (docRollupRunsLogHandoff(profile)) {
+    await runOne('Log', () => ctx.context.documents.rollupLogArtifacts(planningTier, planningId));
+    await runOne('Handoff', () => ctx.context.documents.rollupHandoffArtifacts(planningTier, planningId));
+  }
+  if (docRollupRunsGuideSafe(profile)) {
+    await runOne('Guide', () => ctx.context.documents.rollupGuideArtifacts(planningTier, planningId));
+  }
+
+  lines.push('', frictionHint, '');
+  const block = lines.join('\n');
+  ctx.output.push(block);
+  ctx.steps.doc_rollup = { success: true, output: block };
+}
+
 export async function stepCommitUncommittedNonCursor(
   ctx: TierEndWorkflowContext
 ): Promise<StepExitResult> {
   const expectedBranch = await getExpectedBranchForTier(ctx.config, ctx.identifier, ctx.context);
   const prefix = commitPrefixFromContext(ctx.identifier);
-  const commitMessage = `${prefix} tier-end: commit remaining work`;
+  const fallbackSubject = `${prefix} tier-end: commit remaining work`;
+  const optSubject = ctx.options?.commitMessage?.trim();
+  const subject = optSubject && optSubject.length > 0 ? optSubject : fallbackSubject;
+  const body = ctx.options?.commitMessageBody?.trim();
+  const commitArg = body && body.length > 0 ? { subject, body } : subject;
 
   if (expectedBranch != null && !(await branchExists(expectedBranch))) {
     const leafTier = getLeafBranchTierFromChain(ctx.config, ctx.identifier, ctx.context);
@@ -427,7 +717,36 @@ export async function stepCommitUncommittedNonCursor(
     };
   }
 
-  const result = await commitRemaining(commitMessage, {
+  const preview = await getInScopeDiffPreviewForCommit({
+    allowedPrefixes: [...DEFAULT_ALLOWED_COMMIT_PREFIXES],
+  });
+  const previewMd = buildCommitPreviewMarkdown(preview);
+  ctx.output.push(previewMd);
+
+  const logTarget = resolveCommitPreviewLogTarget(ctx);
+  if (logTarget) {
+    try {
+      await ctx.context.documents.upsertAnchoredLogSection(
+        logTarget.tier,
+        logTarget.id,
+        'commit-preview',
+        previewMd
+      );
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (err instanceof DocumentManagerWriteBlockedError) {
+        console.warn('[tier-end commit_remaining] commit preview log upsert blocked:', msg);
+      } else {
+        console.warn('[tier-end commit_remaining] commit preview log upsert failed:', msg);
+      }
+      recordHarnessVerboseWarning('commit_preview_log', msg, {
+        identifier: ctx.identifier,
+        featureName: ctx.context.feature.name,
+      });
+    }
+  }
+
+  const result = await commitRemaining(commitArg, {
     expectedBranch: expectedBranch ?? undefined,
     allowedPrefixes: [...DEFAULT_ALLOWED_COMMIT_PREFIXES],
   });
@@ -483,6 +802,12 @@ export async function stepPropagateShared(ctx: TierEndWorkflowContext): Promise<
     const msg = `Propagate shared files failed (non-blocking): ${err instanceof Error ? err.message : String(err)}`;
     ctx.steps.propagateShared = { success: false, output: msg };
     console.warn(msg);
+    recordHarnessVerboseWarning('propagate_shared', msg, {
+      tier,
+      action: 'end',
+      identifier: ctx.identifier,
+      featureName: ctx.context.feature.name,
+    });
   }
 }
 
@@ -563,6 +888,12 @@ export async function stepConfigFix(
     const msg = `Config fix failed (non-blocking): ${err instanceof Error ? err.message : String(err)}`;
     ctx.steps.configFix = { success: false, output: msg };
     console.warn(msg);
+    recordHarnessVerboseWarning('config_fix', msg, {
+      tier: ctx.config.name,
+      action: 'end',
+      identifier: ctx.identifier,
+      featureName: ctx.context.feature.name,
+    });
   }
 }
 

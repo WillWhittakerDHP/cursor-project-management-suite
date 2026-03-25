@@ -12,7 +12,7 @@ import type { CommandExecutionOptions } from '../../utils/command-execution-mode
 import type { RunRecorder, RunTraceHandle } from '../../harness/contracts';
 import type { TierContextSources } from './context-policy';
 
-/** Per-tierDown item parsed from the planning doc "How we build the tierDown" section. */
+/** Per-tierDown item parsed from the planning doc **## Decomposition** section. */
 export interface TierDownPlanItem {
   id: string;
   description: string;
@@ -43,7 +43,7 @@ export interface TierStartWorkflowContext {
   readResult?: TierStartReadResult;
   /** Set by stepContextGathering; path to the living planning doc for iterative Q&A. */
   planningDocPath?: string;
-  /** Set by stepSyncPlannedTierDownToGuide; per-tierDown id + description from "How we build the tierDown" section. */
+  /** Set by stepSyncPlannedTierDownToGuide; per-tierDown id + description from **## Decomposition**. */
   tierDownPlanItems?: TierDownPlanItem[];
   /** Shadow observability: when set, step events and step-path are recorded. */
   runRecorder?: RunRecorder;
@@ -153,9 +153,8 @@ export interface TierStartWorkflowHooks {
    */
   getTierGoals?(ctx: TierStartWorkflowContext): Promise<string>;
   /**
-   * How we will build the tierDown to achieve those goals (phases for feature, sessions for phase,
-   * tasks for session). Lowest tier may return empty or "Single deliverable (no child tier)."
-   * Used as the primary "How we build the tierDown to achieve them" section in the planning doc.
+   * Decomposition intent: phases for feature, sessions for phase, tasks for session. Lowest tier may return empty or "Single deliverable (no child tier)."
+   * Seeds the planning doc **## Decomposition** section (or **Leaf tier** when applicable).
    */
   getTierDownBuildPlan?(ctx: TierStartWorkflowContext): Promise<string>;
   /**

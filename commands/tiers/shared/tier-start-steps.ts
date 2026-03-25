@@ -47,9 +47,16 @@ import type { TierName } from './types';
 import { tierDown } from '../../utils/tier-navigation';
 import { WorkflowId } from '../../utils/id-utils';
 import {
+  extractDecompositionSection,
+  LEAF_TIER_MARKER,
+  parseTierDownBuildPlanPerItem,
+} from '../../utils/planning-decomposition';
+import {
   formatOpenQuestionsWarning,
   formatInheritedQuestionsPlanningDocSection,
 } from '../../utils/open-questions';
+
+export { LEAF_TIER_MARKER, extractDecompositionSection };
 
 /** Early-exit result from a step; null means continue. */
 export type StepExitResult = TierStartResult | null;
@@ -163,24 +170,6 @@ export async function stepEnsureStartBranch(
   return null;
 }
 
-/** Leaf decomposition: no child headings; harness auto-scaffolds `.1` tierDown rows. */
-export const LEAF_TIER_MARKER = /\*\*Leaf tier\*\*/i;
-
-/**
- * Extract ## Decomposition body, or legacy "## How we build the tierDown…" (migration fallback).
- */
-export function extractDecompositionSection(content: string): string {
-  const newMatch = content.match(/\n##\s+Decomposition\s*[\r\n]+([\s\S]*?)(?=\n##\s+|$)/i);
-  if (newMatch) return newMatch[1].trim();
-  const oldMatch = content.match(/\n##\s+How we build the tierDown[^\n]*[\r\n]+([\s\S]*?)(?=\n##\s+|$)/i);
-  return oldMatch ? oldMatch[1].trim() : '';
-}
-
-/** @deprecated Use extractDecompositionSection */
-function extractTierDownBuildPlanSection(content: string): string {
-  return extractDecompositionSection(content);
-}
-
 function buildLeafAutoChildren(
   tier: 'feature' | 'phase' | 'session',
   id: string,
@@ -193,49 +182,6 @@ function buildLeafAutoChildren(
     return [{ id: `${id}.1`, description: title, autoScaffolded: true }];
   }
   return [{ id: `${id}.1`, description: title, autoScaffolded: true }];
-}
-
-/**
- * Parse per-tierDown items from the decomposition section. Supports ### headings, bullets, or **Leaf tier**.
- */
-function parseTierDownBuildPlanPerItem(
-  buildPlanContent: string,
-  tierDownKind: 'phase' | 'session' | 'task'
-): TierDownPlanItem[] {
-  if (!buildPlanContent.trim()) return [];
-  if (LEAF_TIER_MARKER.test(buildPlanContent)) return [];
-
-  const items: TierDownPlanItem[] = [];
-
-  const headingRe =
-    tierDownKind === 'phase'
-      ? /###\s+Phase\s+(\d+\.\d+)\s*:\s*(.+)/gi
-      : tierDownKind === 'session'
-        ? /###\s+Session\s+(\d+\.\d+\.\d+)\s*:\s*(.+)/gi
-        : /###\s+Task\s+(\d+\.\d+\.\d+\.\d+)\s*:\s*(.+)/gi;
-
-  for (const m of buildPlanContent.matchAll(headingRe)) {
-    const id = m[1].trim();
-    const description = (m[2] ?? '').trim().slice(0, 500) || id;
-    if (id && !items.some(i => i.id === id)) items.push({ id, description });
-  }
-
-  if (items.length > 0) return items;
-
-  const lines = buildPlanContent.split('\n').map(l => l.trim()).filter(Boolean);
-  const phaseRe = /(?:^|\s)(?:\*\*)?Phase\s+(\d+\.\d+)(?:\*\*)?\s*:?\s*(.*)$/i;
-  const sessionRe = /(?:^|\s)(?:\*\*)?Session\s+(\d+\.\d+\.\d+)(?:\*\*)?\s*:?\s*(.*)$/i;
-  const taskRe = /(?:^|\s)(?:\*\*)?Task\s+(\d+\.\d+\.\d+\.\d+)(?:\*\*)?\s*:?\s*(.*)$/i;
-  const re = tierDownKind === 'phase' ? phaseRe : tierDownKind === 'session' ? sessionRe : taskRe;
-  for (const line of lines) {
-    const m = line.match(re);
-    if (m) {
-      const id = m[1].trim();
-      const description = (m[2] ?? '').trim().slice(0, 500) || id;
-      if (id && !items.some(i => i.id === id)) items.push({ id, description });
-    }
-  }
-  return items;
 }
 
 /**
@@ -357,7 +303,7 @@ function mergeSessionTaskItemsFromPhaseAndPlan(
 
 /**
  * Sync planned tierDown IDs and descriptions from the planning doc into the current-tier guide:
- * parse "How we build the tierDown", store on ctx.tierDownPlanItems, append missing headings.
+ * parse `## Decomposition`, store on ctx.tierDownPlanItems, append missing headings.
  * Execute mode only. Feature/phase require a planning doc on disk. Session may run without one and scaffolds from the phase guide + minimal tasks.
  */
 async function syncPlannedTierDownToGuide(ctx: TierStartWorkflowContext): Promise<void> {
@@ -429,7 +375,7 @@ async function syncPlannedTierDownToGuide(ctx: TierStartWorkflowContext): Promis
       }
       if (parsedItems.length === 0) {
         throw new Error(
-          `Guide missing at ${guidePath} and planning doc has no parseable tierDown items. Fill "## Decomposition" (or legacy How we build the tierDown) in the planning doc, or use **Leaf tier**.`
+          `Guide missing at ${guidePath} and planning doc has no parseable tierDown items. Fill "## Decomposition" in the planning doc, or use **Leaf tier**.`
         );
       }
       const description = ctx.resolvedDescription ?? ctx.identifier;
@@ -675,7 +621,7 @@ export async function stepGovernanceContext(
 /** Placeholder strings that indicate the planning doc has not been filled by the agent. */
 export const PLACEHOLDER_REFINED = '[To be refined during discussion]';
 
-/** Placeholder for the "How we build the tierDown" section; agent must list tierDown units (phases/sessions/tasks). */
+/** Placeholder for **## Decomposition**; agent must list tierDown units (phases/sessions/tasks). */
 export const PLACEHOLDER_TIERDOWN = '[List tierDown units here]';
 
 /** Parser-friendly decomposition: bullet or ### heading with Phase/Session/Task id. */

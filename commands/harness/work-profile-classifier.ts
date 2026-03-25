@@ -10,7 +10,7 @@ import { getDefaultWorkProfile } from './work-profile-defaults';
 import type { GovernanceDomain } from './work-profile';
 import { deriveDecompositionMode, deriveGateProfile, deriveSuggestedDepth } from './work-profile-rules';
 
-type TierAction = 'start' | 'end';
+type TierAction = 'start' | 'end' | 'reopen';
 
 export interface ClassifierInput {
   tier: Tier;
@@ -60,7 +60,7 @@ export function classifyWorkProfile(input: ClassifierInput): WorkProfile {
 
   // Derive decompositionMode from rules (overrides profile.decompositionMode when rules apply)
   const derivedMode = deriveDecompositionMode(profile);
-  const gateProfile = deriveGateProfile(tier, profile);
+  const gateProfile = deriveGateProfile(tier, profile, action);
   const suggestedDepth = deriveSuggestedDepth(profile.scopeShape);
   return { ...profile, decompositionMode: derivedMode, gateProfile, suggestedDepth };
 }

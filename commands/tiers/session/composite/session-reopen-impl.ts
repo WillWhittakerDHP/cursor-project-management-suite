@@ -4,21 +4,24 @@
  */
 
 import { WorkflowId } from '../../../utils/id-utils';
-import { resolveActiveFeatureDirectory } from '../../../utils';
 import { SESSION_CONFIG } from '../../configs/session';
-import { WorkflowCommandContext } from '../../../utils/command-context';
+import type { WorkflowCommandContext } from '../../../utils/command-context';
 import { ensureTierBranch } from '../../../git/shared/git-manager';
 import { deriveSessionDescription } from '../../../planning/utils/resolve-planning-description';
 import { tierDown } from '../../../utils/tier-navigation';
-import type { TierReopenParams, TierReopenResult, TierReopenWorkflowContext, TierReopenWorkflowHooks } from '../../shared/tier-reopen-workflow';
+import type {
+  TierReopenParams,
+  TierReopenResult,
+  TierReopenWorkflowContext,
+  TierReopenWorkflowHooks,
+} from '../../shared/tier-reopen-workflow';
 import { runTierReopenWorkflow } from '../../shared/tier-reopen-workflow';
 
 export async function sessionReopenImpl(
   params: TierReopenParams,
-  modeGate: string
+  modeGate: string,
+  context: WorkflowCommandContext
 ): Promise<TierReopenResult> {
-  const featureName = await resolveActiveFeatureDirectory();
-  const context = new WorkflowCommandContext(featureName);
   const output: string[] = [];
   const ctx: TierReopenWorkflowContext = {
     config: SESSION_CONFIG,
@@ -57,7 +60,9 @@ export async function sessionReopenImpl(
     ensureBranch: async (c): Promise<void> => {
       const tierBranch = c.config.getBranchName(c.context, c.identifier);
       if (tierBranch) {
-        const branchResult = await ensureTierBranch(c.config, c.identifier, c.context, { createIfMissing: false });
+        const branchResult = await ensureTierBranch(c.config, c.identifier, c.context, {
+          createIfMissing: false,
+        });
         if (branchResult.success) {
           c.output.push(`✅ Switched to branch: ${branchResult.finalBranch}`);
         }

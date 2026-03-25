@@ -23,6 +23,7 @@ import { updateTimestamp } from '../../../utils/update-timestamp';
 import { resolveWorkflowScope } from '../../../utils/workflow-scope';
 import { generatePrompt } from '../../../utils/generate-prompt';
 import { TierStartResult } from '../../../utils/tier-outcome';
+import { WorkflowId } from '../../../utils/id-utils';
 
 export type { SessionEndOutcome, SessionEndParams, SessionEndResult };
 export type MarkSessionCompleteParams = ImplParams;
@@ -67,17 +68,54 @@ export interface NewAgentParams {
   };
 }
 
+function resolveSessionFeatureId(sessionId: string, featureRef?: string): string {
+  const ref = featureRef?.trim();
+  if (ref) return ref;
+  const parsed = WorkflowId.parseSessionId(sessionId.trim());
+  if (parsed?.feature) return parsed.feature;
+  throw new Error(
+    'sessionStart(sessionId, featureRef?, ...): pass feature # or directory slug as the second argument when sessionId is not F.P.S (e.g. 8.5.4), or use a valid session id so the feature segment can be derived (same idea as tier-add).'
+  );
+}
+
+/**
+ * Start session tier. `featureRef` is optional when `sessionId` is `F.P.S` — feature is taken from the first segment (e.g. `8.5.4` → `8`).
+ * Second argument may be `CommandExecutionOptions` for call shapes like `sessionStart(id, { mode: 'plan' })`.
+ */
 export async function sessionStart(
   sessionId: string,
-  featureRef: string,
-  description?: string,
-  options?: CommandExecutionOptions
+  arg2?: string | CommandExecutionOptions,
+  arg3?: string | CommandExecutionOptions,
+  arg4?: CommandExecutionOptions
 ): Promise<TierStartResult> {
-  return runTierStart(
-    SESSION_CONFIG,
-    { sessionId, description, featureId: featureRef.trim() },
-    options
-  );
+  const sid = sessionId.trim();
+  let featureRef: string | undefined;
+  let description: string | undefined;
+  let opt: CommandExecutionOptions | undefined;
+
+  if (arg2 !== undefined && typeof arg2 === 'object' && !Array.isArray(arg2)) {
+    opt = arg2;
+  } else if (typeof arg2 === 'string') {
+    featureRef = arg2;
+    if (typeof arg3 === 'string') {
+      description = arg3;
+      opt = arg4;
+    } else if (arg3 !== undefined && typeof arg3 === 'object' && !Array.isArray(arg3)) {
+      opt = arg3;
+    }
+  } else {
+    if (typeof arg3 === 'string') {
+      description = arg3;
+      opt = arg4;
+    } else if (arg3 !== undefined && typeof arg3 === 'object' && !Array.isArray(arg3)) {
+      opt = arg3;
+    } else {
+      opt = arg4;
+    }
+  }
+
+  const featureId = resolveSessionFeatureId(sid, featureRef);
+  return runTierStart(SESSION_CONFIG, { sessionId: sid, description, featureId }, opt);
 }
 
 export async function sessionEnd(
@@ -86,13 +124,18 @@ export async function sessionEnd(
 ): Promise<SessionEndResult> {
   let params: SessionEndParams;
   if (typeof paramsOrId === 'string') {
-    const raw = (featureRef ?? '').trim();
+    const sid = paramsOrId.trim();
+    let raw = (featureRef ?? '').trim();
+    if (!raw) {
+      const parsed = WorkflowId.parseSessionId(sid);
+      if (parsed?.feature) raw = parsed.feature;
+    }
     if (!raw) {
       throw new Error(
-        'sessionEnd(sessionId, featureRef): featureRef is required when using a string session id (numeric # or feature directory slug).'
+        'sessionEnd(sessionId, featureRef?): featureRef is required when sessionId is not F.P.S (e.g. 8.5.4) or cannot be parsed.'
       );
     }
-    params = { sessionId: paramsOrId, runTests: false, featureId: raw };
+    params = { sessionId: sid, runTests: false, featureId: raw };
   } else {
     params = paramsOrId;
   }

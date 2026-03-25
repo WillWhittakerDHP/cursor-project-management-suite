@@ -102,6 +102,42 @@ export function handleVerificationWorkSuggested(outcome: ControlPlaneOutcome): C
   };
 }
 
+/** gap_analysis_pending: show gap report; optional nextInvoke resumes tier-end at gap_analysis with bypass flag. */
+export function handleGapAnalysisPending(
+  outcome: ControlPlaneOutcome,
+  ctx: ControlPlaneContext
+): ControlPlaneDecision {
+  const message = outcome.deliverables ?? outcome.nextAction;
+  if (ctx.action !== 'end' || ctx.originalParams == null) {
+    return {
+      stop: true,
+      requiredMode: 'plan',
+      message,
+      questionKey: QUESTION_KEYS.GAP_ANALYSIS_OPTIONS,
+    };
+  }
+  const base = ctx.originalParams as Record<string, unknown>;
+  if (typeof base !== 'object' || base === null || Array.isArray(base)) {
+    return {
+      stop: true,
+      requiredMode: 'plan',
+      message,
+      questionKey: QUESTION_KEYS.GAP_ANALYSIS_OPTIONS,
+    };
+  }
+  const params = buildEndReinvokeParams(base, {
+    resumeEndAfterStep: 'gap_analysis',
+    continuePastGapAnalysis: true,
+  });
+  return {
+    stop: true,
+    requiredMode: 'plan',
+    message,
+    questionKey: QUESTION_KEYS.GAP_ANALYSIS_OPTIONS,
+    nextInvoke: { tier: ctx.tier, action: 'end', params },
+  };
+}
+
 /** task_complete: if cascade present, present choices in chat; else continue. */
 export function handleTaskComplete(outcome: ControlPlaneOutcome): ControlPlaneDecision {
   return baseCascadeDecision(outcome, 'agent');

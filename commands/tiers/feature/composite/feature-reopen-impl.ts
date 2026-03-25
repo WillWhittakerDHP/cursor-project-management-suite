@@ -3,24 +3,26 @@
  * Validates status === 'complete', updates guide/log/handoff, ensures branch, scope, next action.
  */
 
-import { join } from 'path';
-import { resolveFeatureDirectoryFromPlan } from '../../../utils';
 import { FEATURE_CONFIG } from '../../configs/feature';
-import { WorkflowCommandContext } from '../../../utils/command-context';
-import { readProjectFile, writeProjectFile, PROJECT_ROOT } from '../../../utils/utils';
-import { branchExists, getCurrentBranch, gitCheckout } from '../../../git/shared/git-manager';
+import type { WorkflowCommandContext } from '../../../utils/command-context';
+import { readProjectFile, writeProjectFile } from '../../../utils/utils';
+import { ensureTierBranch } from '../../../git/shared/git-manager';
 import { deriveFeatureDescription } from '../../../planning/utils/resolve-planning-description';
 import { tierDown } from '../../../utils/tier-navigation';
-import type { TierReopenParams, TierReopenResult, TierReopenWorkflowContext, TierReopenWorkflowHooks } from '../../shared/tier-reopen-workflow';
+import type {
+  TierReopenParams,
+  TierReopenResult,
+  TierReopenWorkflowContext,
+  TierReopenWorkflowHooks,
+} from '../../shared/tier-reopen-workflow';
 import { runTierReopenWorkflow } from '../../shared/tier-reopen-workflow';
 import { flipCompleteToReopened, formatReopenEntry } from '../../shared/tier-reopen-steps';
 
 export async function featureReopenImpl(
   params: TierReopenParams,
-  modeGate: string
+  modeGate: string,
+  context: WorkflowCommandContext
 ): Promise<TierReopenResult> {
-  const featureName = await resolveFeatureDirectoryFromPlan(params.identifier);
-  const context = new WorkflowCommandContext(featureName);
   const output: string[] = [];
   const ctx: TierReopenWorkflowContext = {
     config: FEATURE_CONFIG,
@@ -68,7 +70,8 @@ export async function featureReopenImpl(
         await writeProjectFile(featureLogPath, logContent);
         c.output.push('✅ Feature log updated with reopen entry');
       } catch (err) {
-        console.warn('Feature reopen: log update skipped', err);
+        const detail = err instanceof Error ? err.message : String(err);
+        console.warn('[feature-reopen] log update skipped:', detail);
       }
       const featureHandoffPath = c.context.paths.getFeatureHandoffPath();
       try {
@@ -77,19 +80,16 @@ export async function featureReopenImpl(
         await writeProjectFile(featureHandoffPath, handoffContent);
         c.output.push('✅ Feature handoff: Feature Status → Reopened');
       } catch (err) {
-        console.warn('Feature reopen: handoff update skipped', err);
+        const detail = err instanceof Error ? err.message : String(err);
+        console.warn('[feature-reopen] handoff update skipped:', detail);
       }
     },
     ensureBranch: async (c): Promise<void> => {
-      const featureBranch = c.config.getBranchName(c.context, c.context.feature.name);
-      if (featureBranch && (await branchExists(featureBranch))) {
-        const currentBranch = await getCurrentBranch();
-        if (currentBranch !== featureBranch) {
-          const checkoutResult = await gitCheckout(featureBranch);
-          if (checkoutResult.success) {
-            c.output.push(`✅ Switched to branch: ${featureBranch}`);
-          }
-        }
+      const branchResult = await ensureTierBranch(FEATURE_CONFIG, c.identifier, c.context, {
+        createIfMissing: false,
+      });
+      if (branchResult.success && branchResult.finalBranch) {
+        c.output.push(`✅ Switched to branch: ${branchResult.finalBranch}`);
       }
     },
     getScope: async (c): Promise<{ id: string; name: string }> => {

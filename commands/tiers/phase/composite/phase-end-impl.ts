@@ -42,6 +42,7 @@ import type { RunRecorder, RunTraceHandle } from '../../../harness/contracts';
 
 export type EndShadowContext = { recorder: RunRecorder; handle: RunTraceHandle };
 import { proposeVerificationChecklistForPhase } from '../../shared/verification-check';
+import { runPlanningTierGapAnalysis } from '../../shared/tier-end-deliverables-drift';
 import { createPullRequest, shouldSkipHarnessPrCreate } from '../../../scripts/create-pr';
 
 export interface PhaseEndParams {
@@ -583,6 +584,10 @@ export async function phaseEndImpl(
     async runVerificationCheck(c): Promise<{ suggested: boolean; checklist?: string; productChecklist?: string; artifactChecklist?: string } | null> {
       const p = c.params as PhaseEndParams;
       return proposeVerificationChecklistForPhase(p.phaseId, p.completedSessions, c.context);
+    },
+
+    async runGapAnalysis(c) {
+      return runPlanningTierGapAnalysis(c, 'phase');
     },
 
     async getCascade(c): Promise<CascadeInfo | null> {
