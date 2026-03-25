@@ -78,7 +78,7 @@ describe('control-plane routeByOutcome', () => {
     expect(decision.message).toBe('Plan preview complete. Awaiting approval to execute.');
   });
 
-  it('failure (success false) returns failure_options and no cascade', () => {
+  it('validation_failed returns failure_options and appends workflow-friction hint', () => {
     const result: CommandResultForRouting = {
       success: false,
       output: 'Error output',
@@ -93,6 +93,8 @@ describe('control-plane routeByOutcome', () => {
     expect(decision.questionKey).toBe(QUESTION_KEYS.FAILURE_OPTIONS);
     expect(decision.cascadeCommand).toBeUndefined();
     expect(decision.nextInvoke).toBeUndefined();
+    expect(decision.message).toContain('Cannot start. Fix the issues above.');
+    expect(decision.message).toContain('WORKFLOW_FRICTION_LOG.md');
   });
 
   it('success with cascade returns cascade question and cascadeCommand', () => {

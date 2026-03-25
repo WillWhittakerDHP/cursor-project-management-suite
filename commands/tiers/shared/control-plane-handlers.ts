@@ -165,6 +165,20 @@ export function handleFailure(outcome: ControlPlaneOutcome, outputFallback: stri
   };
 }
 
+const VALIDATION_FAILED_FRICTION_HINT =
+  '\n\n---\n**Workflow friction:** For harness **failure** outcomes, the run usually appends a row to `.project-manager/WORKFLOW_FRICTION_LOG.md` (unless `HARNESS_WORKFLOW_FRICTION` is off). Scan: `npx tsx .cursor/commands/utils/read-workflow-friction.ts --last 20`. For richer narrative, use `initiateWorkflowFrictionWrite` from `.cursor/commands/harness/workflow-friction-manager.ts` or **`/harness-repair`** plan mode.';
+
+/** validation_failed: same as failure UX plus one-line visibility for auto-appended friction log. */
+export function handleValidationFailed(outcome: ControlPlaneOutcome, outputFallback: string): ControlPlaneDecision {
+  const base = outcome.nextAction || outputFallback;
+  return {
+    stop: true,
+    requiredMode: 'plan',
+    message: base + VALIDATION_FAILED_FRICTION_HINT,
+    questionKey: QUESTION_KEYS.FAILURE_OPTIONS,
+  };
+}
+
 /** Missing outcome (crash / malformed result): same as failure. */
 export function handleMissingOutcome(output: string): ControlPlaneDecision {
   return {

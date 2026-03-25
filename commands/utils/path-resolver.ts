@@ -169,5 +169,13 @@ export class WorkflowPathResolver {
   getBasePath(): string {
     return this.basePath;
   }
+
+  /**
+   * Ephemeral harness-repair plan output (plan mode writes; execute mode removes on success).
+   * @returns Path: `.project-manager/features/{feature}/harness-repair-plan.md`
+   */
+  getHarnessRepairPlanPath(): string {
+    return `${this.basePath}/harness-repair-plan.md`;
+  }
 }
 

@@ -31,6 +31,7 @@ import {
   handleExpectedBranchMissingRunTierStart,
   handleAuditFixCommitFailedEnd,
   handleGitFailedTierEnd,
+  handleValidationFailed,
 } from './control-plane-handlers';
 
 /**
@@ -57,7 +58,7 @@ export function routeByOutcome(
       case 'guide_incomplete':
         return handleGuideIncomplete(outcome, ctx);
       case 'validation_failed':
-        return handleFailure(outcome, result.output);
+        return handleValidationFailed(outcome, result.output);
       case 'audit_failed': {
         // Phase 9: use audit_fix profile for message refinement when handling audit_failed
         const auditCtx: ControlPlaneContext = {

@@ -22,6 +22,19 @@ function isMissingDocFileError(err: unknown): boolean {
 }
 
 /**
+ * Session/phase logs may record completed work as `### Task … ✅`, checklist lines, or `## Completed Tasks` blocks.
+ * Keep checks aligned with friction log 2026-03-25 (audit-docs false negative on checklist-only logs).
+ */
+function hasCompletedTaskEntryEvidence(logContent: string): boolean {
+  if (/###\s+Task[^\n]*✅/.test(logContent)) return true;
+  if (/####\s+Task[^\n]*✅/.test(logContent)) return true;
+  if (/##\s+Completed Tasks[\s\S]*###\s+Task\s+[\d.]+\s*:/i.test(logContent)) return true;
+  if (/-\s*\[[xX]\][^\n]*\b\d+\.\d+\.\d+\.\d+\b/.test(logContent)) return true;
+  if (/-\s*\[[xX]\][^\n]*\*\*\d+\.\d+\.\d+\.\d+\*\*/.test(logContent)) return true;
+  return false;
+}
+
+/**
  * Audit docs for a tier
  * Note: Skip for task tier (tasks use session-level docs)
  */
@@ -138,13 +151,13 @@ export async function auditDocs(params: AuditParams): Promise<AuditResult> {
     if (logExists && logContent) {
       // Check for task entries (for session/phase logs)
       if (params.tier === 'session' || params.tier === 'phase') {
-        const taskEntries = logContent.match(/### Task.*✅/g);
-        if (!taskEntries || taskEntries.length === 0) {
+        if (!hasCompletedTaskEntryEvidence(logContent)) {
           findings.push({
             type: 'warning',
             message: 'Log document has no completed task entries',
             location: logPath,
-            suggestion: 'Add task entries to log as tasks are completed'
+            suggestion:
+              'Add completed task evidence: e.g. `### Task X.Y.Z.1: … ✅` under `## Completed Tasks`, or `- [x]` lines with the task id. See `audit-docs.ts` → `hasCompletedTaskEntryEvidence`.',
           });
           score -= 5;
         }

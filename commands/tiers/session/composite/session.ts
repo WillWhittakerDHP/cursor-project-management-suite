@@ -88,7 +88,17 @@ export async function sessionStart(
   arg3?: string | CommandExecutionOptions,
   arg4?: CommandExecutionOptions
 ): Promise<TierStartResult> {
+  if (sessionId == null || typeof sessionId !== 'string') {
+    throw new Error(
+      'sessionStart(sessionId, …): sessionId must be a non-empty string (e.g. "8.5.4"). For F.P.S ids the feature segment is derived when the second argument is omitted.'
+    );
+  }
   const sid = sessionId.trim();
+  if (!sid) {
+    throw new Error(
+      'sessionStart(sessionId, …): sessionId is empty after trim. Pass a session id such as "6.16.1".'
+    );
+  }
   let featureRef: string | undefined;
   let description: string | undefined;
   let opt: CommandExecutionOptions | undefined;
@@ -124,6 +134,11 @@ export async function sessionEnd(
 ): Promise<SessionEndResult> {
   let params: SessionEndParams;
   if (typeof paramsOrId === 'string') {
+    if (!paramsOrId.trim()) {
+      throw new Error(
+        'sessionEnd(sessionId, featureRef?): sessionId must be a non-empty string (e.g. "6.16.1").'
+      );
+    }
     const sid = paramsOrId.trim();
     let raw = (featureRef ?? '').trim();
     if (!raw) {

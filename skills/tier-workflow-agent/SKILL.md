@@ -97,7 +97,7 @@ Before directing the user to run **`/task-end`**, **`/session-end`**, etc., re-r
 
 - **Session label:** `## Session: [Phase].[Sub-Phase] - [Brief Description]`.
 - Work **one sub-session at a time** with checkpoints.
-- **End-of-session checklist:** (1) App starts (e.g. `npm run start:dev`), (2) Lint Vue client and server (`cd client && npm run lint`, `cd server && npm run lint`), (3) Update session log, (4) Handoff doc: **Current Status**, **Next Action**, **Transition Context**, **Last Updated** (see `.project-manager/REQUIRED_DOC_SECTIONS.md` if present in the repo), (5) Prompt user for commit and push when checks pass, (6) Compact hand-off: `@[HANDOFF_DOCUMENT] Continue [project] - start Sub-Session X.Y.Z (Description)`.
+- **End-of-session checklist:** (1) App starts (e.g. `npm run start:dev`), (2) Lint Vue client and server (`cd client && npm run lint`, `cd server && npm run lint`), (3) Update session log — include **completed task evidence** the **docs audit** recognizes: e.g. `## Completed Tasks` with `### Task X.Y.Z.1: … ✅`, or `- [x]` lines that include the task id (`audit-docs.ts` → `hasCompletedTaskEntryEvidence`), (4) Handoff doc: **Current Status**, **Next Action**, **Transition Context**, **Last Updated** (see `.project-manager/REQUIRED_DOC_SECTIONS.md` if present in the repo), (5) Prompt user for commit and push when checks pass, (6) Compact hand-off: `@[HANDOFF_DOCUMENT] Continue [project] - start Sub-Session X.Y.Z (Description)`.
 - **Quick fixes** may skip full session structure but still verify app starts and linting.
 
 ## On failure or missing outcome (hard stop)

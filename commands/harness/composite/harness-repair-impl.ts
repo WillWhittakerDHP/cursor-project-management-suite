@@ -3,9 +3,9 @@
  * Git side effects only via git-manager. Friction log utilities from read-workflow-friction.
  */
 
-import { writeFile } from 'fs/promises';
+import { unlink, writeFile } from 'fs/promises';
 import { fileURLToPath } from 'node:url';
-import { resolve as resolvePath } from 'node:path';
+import { join, resolve as resolvePath } from 'node:path';
 import { WorkflowCommandContext } from '../../utils/command-context';
 import type { TierName } from '../../utils/workflow-scope';
 import type { TierParamsBag } from '../../utils/workflow-scope';
@@ -69,6 +69,37 @@ function buildTierParamsBag(p: HarnessRepairParams): TierParamsBag {
     phaseId: p.phaseId,
     taskId: p.taskId,
   };
+}
+
+/** CLI hint for the ephemeral plan file HTML comment (reproducible plan invocation). */
+function buildHarnessRepairPlanCliHint(params: HarnessRepairParams): string {
+  const tier = params.tier ?? 'feature';
+  const parts: string[] = [
+    'npx tsx .cursor/commands/harness/composite/harness-repair-impl.ts',
+    `--feature ${params.featureId}`,
+  ];
+  if (tier === 'session' && params.sessionId) parts.push(`--session ${params.sessionId}`);
+  else if (tier === 'phase' && params.phaseId) parts.push(`--phase ${params.phaseId}`);
+  else if (tier === 'task' && params.taskId) parts.push(`--task ${params.taskId}`);
+  parts.push('--plan');
+  return parts.join(' ');
+}
+
+/** Best-effort removal of plan file after successful execute; ENOENT is ignored. */
+async function removeHarnessRepairPlanFile(
+  projectRoot: string,
+  context: WorkflowCommandContext
+): Promise<string | undefined> {
+  const rel = context.paths.getHarnessRepairPlanPath();
+  const abs = join(projectRoot, rel);
+  try {
+    await unlink(abs);
+    return undefined;
+  } catch (e) {
+    const err = e as NodeJS.ErrnoException;
+    if (err.code === 'ENOENT') return undefined;
+    return `Could not remove ${rel}: ${err.message}`;
+  }
 }
 
 function buildReferenceMarkdown(): string {
@@ -214,7 +245,22 @@ export async function harnessRepair(params: HarnessRepairParams): Promise<Harnes
 
   if (mode === 'plan') {
     const md = await buildPlanMarkdown({ tier, workProfile, entries: entriesForPlan, projectRoot });
-    return { success: true, output: md };
+    const rel = context.paths.getHarnessRepairPlanPath();
+    const hint = buildHarnessRepairPlanCliHint(params);
+    const header = `<!-- Generated: \`${hint}\`. Re-run plan to refresh; file removed after successful execute. -->\n\n`;
+    try {
+      await writeFile(join(projectRoot, rel), header + md, 'utf8');
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      return {
+        success: false,
+        output: `Failed to write ${rel}: ${msg}\n\n---\n\n${md}`,
+      };
+    }
+    return {
+      success: true,
+      output: [md, '', '---', '', `**Plan file:** \`${rel}\``].join('\n'),
+    };
   }
 
   if (params.confirmed !== true) {
@@ -307,9 +353,15 @@ export async function harnessRepair(params: HarnessRepairParams): Promise<Harnes
 
   const stamped = stampPendingParentRepoCommitsInMarkdown(updated, sha);
   if (stamped === updated) {
+    const removeWarn = await removeHarnessRepairPlanFile(projectRoot, context);
+    const lines = [
+      commit1.output,
+      `Note: no \`parentRepoCommit: pending\` lines found to stamp (file unchanged after stamp pass).`,
+    ];
+    if (removeWarn) lines.push(removeWarn);
     return {
       success: true,
-      output: `${commit1.output}\n\nNote: no \`parentRepoCommit: pending\` lines found to stamp (file unchanged after stamp pass).`,
+      output: lines.join('\n\n'),
     };
   }
 
@@ -327,13 +379,16 @@ export async function harnessRepair(params: HarnessRepairParams): Promise<Harnes
     };
   }
 
+  const removeWarn = await removeHarnessRepairPlanFile(projectRoot, context);
+  const outParts = [
+    commit1.output,
+    `Stamped **parentRepoCommit:** \`${sha}\` in ${WORKFLOW_FRICTION_LOG_RELATIVE}.`,
+    commit2.output,
+  ];
+  if (removeWarn) outParts.push(removeWarn);
   return {
     success: true,
-    output: [
-      commit1.output,
-      `Stamped **parentRepoCommit:** \`${sha}\` in ${WORKFLOW_FRICTION_LOG_RELATIVE}.`,
-      commit2.output,
-    ].join('\n\n'),
+    output: outParts.join('\n\n'),
   };
 }
 

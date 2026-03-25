@@ -195,6 +195,8 @@ These rules tell the agent what to do for each `reasonCode` returned by commands
 
 Validation blocked the start. Present `outcome.nextAction` and stop. Common reasons: session already completed, previous session not finished, phase blocked/completed, session not documented in phase guide.
 
+**Control plane:** `routeByOutcome` appends a short **Workflow friction** footer (path to `WORKFLOW_FRICTION_LOG.md` + reader CLI) so operators know a row may have been auto-appended for this failure class.
+
 **Feature-only branching:** Phase and session tiers do **not** create separate git branches. All work for a feature uses `feature/<featureName>`. `ensureTierBranch` for phase/session ensures that feature branch is checked out.
 
 ### Git debugging: `.project-manager/.git-friction-log.jsonl`
