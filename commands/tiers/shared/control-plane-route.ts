@@ -83,6 +83,12 @@ export function routeByOutcome(
         return handleAuditFixCommitFailedEnd(outcome, ctx);
       case 'wrong_branch_before_commit':
         return handleWrongBranchBeforeCommit(outcome, ctx);
+      case 'preflight_branch_failed':
+        return handleWrongBranchBeforeCommit(outcome, ctx);
+      case 'push_preflight_fetch_failed':
+      case 'wrong_branch_before_push':
+      case 'push_branch_guard_failed':
+        return handleFailure(outcome, result.output);
       case 'expected_branch_missing_run_tier_start':
         return handleExpectedBranchMissingRunTierStart(outcome);
       case 'app_not_running':
@@ -102,6 +108,7 @@ export function routeByOutcome(
       case 'fill_tier_down_failed':
       case 'planning_checks_failed':
       case 'unhandled_error':
+      case 'harness_plugin_advisory':
         return handleFailure(outcome, result.output);
       default:
         return handleFailure(outcome, result.output);
@@ -115,6 +122,8 @@ export function routeByOutcome(
       return handlePendingPushConfirmation(outcome);
     case 'verification_suggested':
       return handleVerificationWorkSuggested(outcome);
+    case 'harness_plugin_advisory':
+      return handleSuccessWithOptionalCascade(outcome);
     case 'gap_analysis_pending':
       return handleGapAnalysisPending(outcome, ctx);
     case 'task_complete':

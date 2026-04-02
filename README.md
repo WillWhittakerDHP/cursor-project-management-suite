@@ -394,7 +394,7 @@ See: `.cursor/commands/[category]/QUICK_REFERENCE.md`
 ```
 .project-manager/
 ├── features/              # Feature-specific documentation
-│   └── vue-migration/     # Example: Vue migration feature
+│   └── appointment-workflow/  # Example: Feature 6 (primary product track)
 │       ├── phases/        # Phase guides, logs, handoffs
 │       ├── sessions/      # Session guides, logs, handoffs
 │       └── *.json        # Feature configuration

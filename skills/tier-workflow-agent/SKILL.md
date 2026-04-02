@@ -58,14 +58,14 @@ Runtime outcomes may use **legacy** strings; routing normalizes them via `parseR
 
 | reasonCode (playbook / runtime) | What to do (one line) |
 |--------------------------------|------------------------|
-| `context_gathering` | **Fill planning doc now** (agent reads Reference paths and writes sections — do not only relay instructions to the user); coverage check (non-task); user runs `/accepted-plan` or `/accepted-code`; decomposition profile may need `/accepted-build` (Gate 2). |
-| `planning_doc_incomplete` | Fill planning doc placeholders; user re-runs `/accepted-plan` or `/accepted-code` (task). |
+| `context_gathering` | **Fill planning doc now** (agent reads Reference paths, **fills ## Codebase recon** from `client/` / `server/` / `shared/`, removes Codebase recon sentinel, writes other sections — do not only relay instructions); coverage check (non-task); user runs `/accepted-plan` or `/accepted-code`; decomposition profile may need `/accepted-build` (Gate 2). |
+| `planning_doc_incomplete` | Fill planning doc placeholders (including **## Codebase recon** sentinel when present); user re-runs `/accepted-plan` or `/accepted-code` (task). |
 | `guide_fill_pending` | Fill guide at `guidePath`; user runs `/accepted-build`. |
 | `guide_incomplete` | Fill guide placeholders in tierDown blocks; user runs `/accepted-build` again. |
 | `audit_failed` | Fix per governance; retry same command; use `/audit-fix` path when offered. |
 | `pending_push` / `pending_push_confirmation` | User runs `/accepted-push` or `/skip-push`; agent does not invoke push from shell as substitute. |
 | `verification_suggested` / `verification_work_suggested` | Present checklist and choice block; re-invoke tier-end with `continuePastVerification: true` or add follow-up tier per options. |
-| `gap_analysis_pending` | Present gap report and choice block; use **tier-add** / **tier-start** for follow-up; continue via `nextInvoke` or `continuePastGapAnalysis: true` under **`params.options`** (not top-level). |
+| `gap_analysis_pending` | Present gap report (includes **LLM review packet v1** + rubric) and choice block; reply in chat with **`### Review — …`** headings from the packet; use **tier-add** then **tier-start** for follow-up; continue via `nextInvoke` or `continuePastGapAnalysis: true` under **`params.options`** (not top-level). |
 | `uncommitted_blocking` / `uncommitted_changes_blocking` | Present blocking files; user chooses commit or stash path per playbook. |
 | `wrong_branch_before_commit` | Checkout expected branch; re-run same tier-end (control plane may supply `nextInvoke` → `resumeEndAfterStep: commit_remaining`). |
 | `audit_fix_commit_failed` | Fix git state if needed; re-run same tier-end (`nextInvoke` → `resumeEndAfterStep: end_audit` — not `after_audit`; audit must repopulate `autofixResult`). |
@@ -82,7 +82,7 @@ Runtime outcomes may use **legacy** strings; routing normalizes them via `parseR
 
 ### Coverage check (feature / phase / session)
 
-After filling the planning doc’s Analysis, Plan, and **## Decomposition**, re-read the goal and each child unit. In chat, answer whether the decomposition fully covers the goal; update the doc if not; then direct the user to **`/accepted-plan`**. Skipped for task tiers.
+After filling **## Codebase recon**, Analysis, Plan, and **## Decomposition**, re-read the goal and each child unit. In chat, answer whether the decomposition fully covers the goal; update the doc if not; then direct the user to **`/accepted-plan`**. Skipped for task tiers.
 
 ### Acceptance criteria verification (before tier-end)
 
@@ -92,6 +92,15 @@ Before directing the user to run **`/task-end`**, **`/session-end`**, etc., re-r
 
 - **Coverage check:** Prompted during **plan mode** / `context_gathering` messaging in the planning doc instructions — answer in chat **before** the user runs **`/accepted-plan`**.
 - **Deliverables drift:** Emitted during **tier-end** as an advisory markdown block (planned paths vs working tree). Same category as AC verification: **agent-led**, not a harness gate — use it for discussion, not automatic failure.
+
+### LLM review packet (tier-end `gap_analysis`)
+
+Harness prints **`## LLM review packet (v1)`** after gap analysis (no API keys; the Cursor agent/subagent is the LLM).
+
+- **Drift soft gate (`gap_analysis_pending`):** Full report + packet are in **`controlPlaneDecision.message`** — perform the review using **`### Review — Context`**, **`### Review — Drift interpretation`**, **`### Review — Over-build signals`**, **`### Review — Suggested follow-ups`**, **`### Review — Confidence and data quality`** (exact rubric text is in the packet). Use a **subagent** only when context is large/branchy.
+- **No drift (tier-end completes without that stop):** The packet is still in **`result.output`** — **scan stdout** for **`## LLM review packet (v1)`** and perform the same review; do not skip because there was no control-plane stop.
+- **Material friction only** → `.project-manager/WORKFLOW_FRICTION_LOG.md` per process-workflow rule.
+- **Express** profile skips `gap_analysis` → no packet that run.
 
 ## Session structure and handoffs
 

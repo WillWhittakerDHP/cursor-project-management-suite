@@ -116,3 +116,25 @@ export interface ScopeCoherenceResult {
   branchFeature: string | null;
   message: string;
 }
+
+/** Remote vs local relation after optional fetch (harness preflight / push guard). */
+export type HarnessBranchRemoteState =
+  | 'up-to-date'
+  | 'behind'
+  | 'ahead'
+  | 'diverged'
+  | 'no-remote';
+
+/** Result of preflightFeatureBranchForHarness (tier-end, task-end commit, etc.). */
+export interface PreflightFeatureBranchResult {
+  ok: boolean;
+  /** Resolved expected branch name from tier config, or null when this tier has no feature branch. */
+  expectedBranch: string | null;
+  /** Local branch name after checkout (same as expected when successful). */
+  resolvedBranch: string | null;
+  /** Set when compare ran with syncRemote; omitted when skipped or no local branch. */
+  remoteState?: HarnessBranchRemoteState;
+  messages: string[];
+  /** Machine-oriented failure tag for tier outcomes / friction. */
+  reasonCode?: string;
+}

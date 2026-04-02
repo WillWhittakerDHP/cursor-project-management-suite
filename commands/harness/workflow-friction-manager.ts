@@ -7,6 +7,7 @@ import {
   appendWorkflowFriction,
   buildWorkflowFrictionEntryFromOrchestrator,
   getHarnessWorkflowFrictionMode,
+  recordHarnessPluginAdvisoryFriction,
   recordWorkflowFriction as recordWorkflowFrictionImpl,
   recordWorkflowFrictionWarning,
   shouldAppendWorkflowFriction,
@@ -21,6 +22,7 @@ export {
   appendWorkflowFriction,
   buildWorkflowFrictionEntryFromOrchestrator,
   getHarnessWorkflowFrictionMode,
+  recordHarnessPluginAdvisoryFriction,
   shouldAppendWorkflowFriction,
 };
 export type { HarnessWorkflowFrictionMode, RecordWorkflowFrictionInput, WorkflowFrictionEntry };

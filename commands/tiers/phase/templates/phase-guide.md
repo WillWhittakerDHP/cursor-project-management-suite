@@ -6,6 +6,15 @@
 
 ---
 
+## Canonical sources (absolute truth)
+
+- [.project-manager/analysis/ARCHITECTURE_PRINCIPLES.md](.project-manager/analysis/ARCHITECTURE_PRINCIPLES.md) — immutable architectural rules.
+- [.project-manager/analysis/FEATURE_20_ARCHITECTURE_REDESIGN.md](.project-manager/analysis/FEATURE_20_ARCHITECTURE_REDESIGN.md) — domain implementation plan (ordered passes, acceptance checks, drift checklist).
+
+**Conflict rule:** If this guide disagrees with either file above, **the analysis documents win**; update this guide, not the principles or v2.
+
+---
+
 ## Phase Overview
 
 **Phase Number:** [N]
@@ -112,7 +121,7 @@ After completing all sessions in a phase:
 
 ## Related Documents
 
-- Phase Log: `.cursor/workflow-manager/vue-migration/phases/phase-[N]-log.md`
-- Phase Handoff: `.cursor/workflow-manager/vue-migration/phases/phase-[N]-handoff.md`
-- Session Guides: `.cursor/workflow-manager/vue-migration/sessions/session-[X.Y]-guide.md`
+- Phase Log: `.project-manager/features/appointment-workflow/phases/phase-[N]-log.md`
+- Phase Handoff: `.project-manager/features/appointment-workflow/phases/phase-[N]-handoff.md`
+- Session Guides: `.project-manager/features/appointment-workflow/sessions/session-[X.Y]-guide.md`
 

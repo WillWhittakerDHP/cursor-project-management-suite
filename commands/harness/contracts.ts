@@ -152,6 +152,8 @@ export type FlowReasonCode =
   | 'task_complete'
   | 'pending_push'
   | 'verification_suggested'
+  /** Plugin markdown merged into control-plane message; used for friction log entries (not a normal tier outcome). */
+  | 'harness_plugin_advisory'
   | 'gap_analysis_pending'
   | 'reopen_ok'
   | 'uncommitted_blocking'
@@ -185,7 +187,13 @@ export type FailureReasonCode =
   | 'doc_rollup_failed'
   | 'gap_analysis_failed'
   | 'fill_tier_down_failed'
-  | 'planning_checks_failed';
+  | 'planning_checks_failed'
+  /** Tier-end `commit_remaining` preflight (`preflightFeatureBranchForHarness`) failed — fix branch/remote, resume at commit_remaining. */
+  | 'preflight_branch_failed'
+  /** /accepted-push branch name or remote coherence check failed — fix and re-run /accepted-push. */
+  | 'push_branch_guard_failed'
+  | 'wrong_branch_before_push'
+  | 'push_preflight_fetch_failed';
 
 export type ReasonCode = FlowReasonCode | FailureReasonCode;
 

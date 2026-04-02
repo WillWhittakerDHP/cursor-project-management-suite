@@ -44,7 +44,8 @@ export type GovernanceDomain =
   | 'security'
   | 'data_flow'
   | 'workflow'
-  | 'architecture';
+  | 'architecture'
+  | 'booking';
 
 export type ContextPackKind =
   | 'architecture_decision_pack'

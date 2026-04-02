@@ -122,7 +122,7 @@ Quick one-liners: [SKILL.md](SKILL.md) § Reason codes.
 
 ### planning_checks_failed
 
-- **tier-add** planning pipeline (`runPlanningWithChecks`) threw; logged for diagnosis; command output still shows “Planning checks skipped”.
+- **tier-add** planning pipeline (`runPlanningWithChecks`) threw; logged for diagnosis; command output still shows “Planning checks skipped”. (**`feature-add`** uses the same pipeline; doc excerpts honor the resolved feature directory when `.tier-scope` differs.)
 
 ### failure_hard_stop
 

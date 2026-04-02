@@ -45,6 +45,8 @@ export async function planFeature(featureId: string, description?: string): Prom
   return runTierPlan(FEATURE_CONFIG, featureId, description);
 }
 
+export { featureAdd } from '../../shared/tier-add';
+
 export async function featureReopen(featureId: string, reason?: string) {
   return runTierReopen(FEATURE_CONFIG, { identifier: featureId, reason });
 }

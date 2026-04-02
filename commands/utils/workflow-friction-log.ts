@@ -21,6 +21,7 @@ export function getWorkflowFrictionLogPath(root: string = PROJECT_ROOT): string 
 
 const MAX_NEXT_ACTION = 1500;
 const MAX_DELIVERABLES = 2000;
+const MAX_PLUGIN_ADVISORY_FRICTION_CHARS = 6000;
 
 export type HarnessWorkflowFrictionMode = 'off' | 'failures' | 'verbose';
 
@@ -207,6 +208,50 @@ export function buildWorkflowFrictionEntryFromOrchestrator(params: {
     symptom,
     context,
   };
+}
+
+/**
+ * When the harness kernel appends `pluginAdvisory` to the control-plane message, mirror it to the friction log
+ * so agent-visible “noise” is captured without HARNESS_WORKFLOW_FRICTION=verbose. Skips when mode is `off`.
+ */
+export function recordHarnessPluginAdvisoryFriction(params: {
+  advisoryMarkdown: string;
+  tier: string;
+  identifier: string;
+  featureName?: string;
+  runId?: string;
+  harnessAction: string;
+  harnessSuccess: boolean;
+}): void {
+  if (getHarnessWorkflowFrictionMode() === 'off') return;
+  /** Mirror to friction file only in verbose mode; push gate ignores this code (see read-workflow-friction). */
+  if (getHarnessWorkflowFrictionMode() !== 'verbose') return;
+  let text = params.advisoryMarkdown.trim();
+  if (!text) return;
+  if (text.length > MAX_PLUGIN_ADVISORY_FRICTION_CHARS) {
+    text = `${text.slice(0, MAX_PLUGIN_ADVISORY_FRICTION_CHARS)}\n\n…(truncated)`;
+  }
+  const reasonCodeRaw = 'harness_plugin_advisory';
+  const normalized = parseReasonCode(reasonCodeRaw);
+  const frictionAction =
+    params.harnessAction === 'start' ||
+    params.harnessAction === 'end' ||
+    params.harnessAction === 'reopen'
+      ? params.harnessAction
+      : undefined;
+  recordWorkflowFriction({
+    forcePolicy: true,
+    reasonCodeRaw,
+    reasonCodeNormalized: normalized,
+    isFailureReason: isFailureReasonCode(normalized),
+    title: 'harness_plugin_advisory',
+    tier: params.tier,
+    action: frictionAction,
+    identifier: params.identifier,
+    featureName: params.featureName,
+    symptom: `Harness appended plugin advisory to control-plane message (run success=${params.harnessSuccess}).`,
+    context: `runId=${params.runId?.trim() || '—'}; harnessAction=${params.harnessAction}\n\n---\n${text}`,
+  });
 }
 
 /**

@@ -126,7 +126,7 @@ async function performCheck(
   switch (checkType) {
     case 'documentation':
       try {
-        const docCheckResult = await checkDocumentation('migration');
+        const docCheckResult = await checkDocumentation('feature');
         return {
           passed: true,
           message: 'Documentation check completed',

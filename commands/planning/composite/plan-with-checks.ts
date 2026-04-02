@@ -6,8 +6,8 @@
  */
 
 import { parsePlainLanguage } from '../atomic/parse-plain-language';
-import { resolveFeatureDirectoryFromPlan, resolveFeatureDirectoryOrActive } from '../../utils';
-import { checkDocumentation } from '../atomic/check-documentation';
+import { resolveFeatureDirectoryOrActive } from '../../utils';
+import { checkDocumentation, type CheckDocumentationOptions } from '../atomic/check-documentation';
 import { checkReuse } from '../atomic/check-reuse';
 import { validatePlanningCommand } from '../atomic/validate-planning';
 import { PlanningInput, PlanningTier } from '../../utils/planning-types';
@@ -18,11 +18,13 @@ import { createScopeDocument } from '../../utils/create-scope-document';
 import { parseNaturalLanguage } from '../../utils/planning-parser';
 
 
-export type DocCheckType = 'component' | 'transformer' | 'pattern' | 'migration';
+export type DocCheckType = 'component' | 'transformer' | 'pattern' | 'feature' | 'migration';
 
 export interface PlanWithChecksOptions {
   createScopeDocument?: boolean;
   featureName?: string;
+  /** Forwarded to documentation check so excerpts match `resolvedFeature` when `.tier-scope` differs. */
+  checkDocumentationOptions?: CheckDocumentationOptions;
 }
 
 /**
@@ -72,7 +74,7 @@ export async function planWithChecks(
   phase?: number,
   sessionId?: string,
   taskId?: string,
-  docCheckType: DocCheckType = 'migration',
+  docCheckType: DocCheckType = 'feature',
   options?: PlanWithChecksOptions
 ): Promise<string> {
   const output: string[] = [];
@@ -124,7 +126,10 @@ export async function planWithChecks(
   // Step 2: Check documentation
   output.push('## Step 2: Documentation Check\n');
   try {
-    const docCheckResult = await checkDocumentation(docCheckType);
+    const docCheckResult = await checkDocumentation(docCheckType, {
+      featureDirectory: resolvedFeature,
+      ...options?.checkDocumentationOptions,
+    });
     output.push(docCheckResult);
     output.push('\n---\n');
   } catch (_error) {

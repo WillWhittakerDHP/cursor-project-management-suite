@@ -2,7 +2,7 @@
  * Atomic Command: /check-docs [type]
  * Check existing documentation, patterns, and reusable components before implementing
  * 
- * Types: component | transformer | pattern | migration
+ * Types: component | transformer | pattern | feature | migration (migration = alias of feature)
  * 
  * This command helps enforce Rule 22: Documentation Checks at Critical Junctures
  * 
@@ -19,9 +19,17 @@ import { MarkdownUtils } from './markdown-utils';
 import { WorkflowCommandContext } from './command-context';
 import { resolveActiveFeatureDirectory } from './workflow-scope';
 
-type DocCheckType = 'component' | 'transformer' | 'pattern' | 'migration';
+type DocCheckType = 'component' | 'transformer' | 'pattern' | 'feature' | 'migration';
 
-export async function checkDocs(type: DocCheckType = 'migration'): Promise<string> {
+/** @see CheckDocumentationOptions in planning/atomic/check-documentation.ts */
+export interface CheckDocsOptions {
+  featureDirectory?: string;
+}
+
+export async function checkDocs(
+  type: DocCheckType = 'feature',
+  options?: CheckDocsOptions
+): Promise<string> {
   const output: string[] = [];
   
   output.push(`# Documentation Check: ${type}\n`);
@@ -37,8 +45,9 @@ export async function checkDocs(type: DocCheckType = 'migration'): Promise<strin
     case 'pattern':
       output.push(await checkPatternDocs());
       break;
+    case 'feature':
     case 'migration':
-      output.push(await checkMigrationDocs());
+      output.push(await checkActiveFeatureWorkflowDocs(options));
       break;
   }
   
@@ -48,7 +57,7 @@ export async function checkDocs(type: DocCheckType = 'migration'): Promise<strin
   output.push('- [ ] Searched codebase for existing generic/reusable components');
   output.push('- [ ] Reviewed transformer patterns if creating data transformations');
   output.push('- [ ] Checked component documentation (README files)');
-  output.push('- [ ] Reviewed migration guides if porting between frameworks');
+  output.push('- [ ] Reviewed active feature guide/handoff (`.project-manager/features/<feature>/`)');
   output.push('- [ ] Identified if existing pattern can be reused or extended');
   
   return output.join('\n');
@@ -158,7 +167,8 @@ async function checkPatternDocs(): Promise<string> {
   sections.push('### Architecture Patterns\n');
   sections.push('- `SCHEDULER_COMPONENT_SPECS.md` - Component patterns and APIs');
   sections.push('- `SCHEDULER_ARCHITECTURE_DECISIONS.md` - Architectural decisions');
-  sections.push('- `VUE_MIGRATION_HANDOFF.md` - Migration patterns and decisions\n');
+  sections.push('- `.project-manager/ARCHITECTURE.md` - Domain map, data flow, type boundaries');
+  sections.push('- Active feature guide under `.project-manager/features/<feature>/` (Feature 6 = `appointment-workflow`)\n');
   
   sections.push('### Reusable Patterns\n');
   sections.push('- ListMaker pattern - Card-based selection UI');
@@ -178,27 +188,33 @@ async function checkPatternDocs(): Promise<string> {
   return sections.join('\n');
 }
 
-async function checkMigrationDocs(): Promise<string> {
+async function checkActiveFeatureWorkflowDocs(options?: CheckDocsOptions): Promise<string> {
   const sections: string[] = [];
-  const featureDir = await resolveActiveFeatureDirectory();
+  const explicit = options?.featureDirectory?.trim();
+  const featureDir = explicit ?? (await resolveActiveFeatureDirectory());
   const context = new WorkflowCommandContext(featureDir);
 
-  sections.push('## Migration Documentation\n');
-  sections.push('**Key documents for Vue migration:**\n');
+  sections.push('## Active feature workflow (tier docs)\n');
+  const scopeNote = explicit
+    ? `Excerpts use **\`${featureDir}\`** (explicit), not necessarily \`.project-manager/.tier-scope\`.`
+    : 'Handoff below is from **your active feature** (`.project-manager/.tier-scope`).';
+  sections.push(
+    `**Canonical product context:** Feature 6 — \`.project-manager/features/appointment-workflow/\` (example). ${scopeNote}\n`
+  );
 
   try {
     const handoffContent = await context.readFeatureHandoff();
-    const sessionGuideContent = await context.readSessionGuide('1.1'); // Default to first session
-    
-    sections.push('### Handoff Document\n');
+    const featureGuideContent = await context.readFeatureGuide();
+
+    sections.push('### Feature handoff (excerpt)\n');
     const handoffSections = [
       'Current Status',
       'Next Action',
       'Key Files Reference',
       'Backend API',
-      'Development Commands'
+      'Development Commands',
     ];
-    
+
     for (const section of handoffSections) {
       const content = MarkdownUtils.extractSection(handoffContent, section);
       if (content) {
@@ -207,16 +223,12 @@ async function checkMigrationDocs(): Promise<string> {
         sections.push('');
       }
     }
-    
-    sections.push('### Session Guide\n');
-    const guideSections = [
-      'Session Structure',
-      'Session Workflow',
-      'Task Template'
-    ];
-    
+
+    sections.push('### Feature guide (excerpt)\n');
+    const guideSections = ['Feature Overview', 'Architecture', 'Implementation Plan'];
+
     for (const section of guideSections) {
-      const content = MarkdownUtils.extractSection(sessionGuideContent, section);
+      const content = MarkdownUtils.extractSection(featureGuideContent, section);
       if (content) {
         sections.push(`#### ${section}`);
         sections.push(content.substring(0, 500) + (content.length > 500 ? '...' : ''));
@@ -224,24 +236,27 @@ async function checkMigrationDocs(): Promise<string> {
       }
     }
   } catch (_error) {
-    sections.push(`**ERROR: Could not read migration documents**\n`);
-    sections.push(`**Suggestion:** Verify migration documents exist or create them\n`);
+    sections.push(`**ERROR: Could not read feature handoff or feature guide**\n`);
+    sections.push(
+      `**Suggestion:** Run a tier-start that writes \`.project-manager/.tier-scope\`, or open the feature handoff/guide under \`${featureDir}\`\n`
+    );
     sections.push(`**Error Details:** ${_error instanceof Error ? _error.message : String(_error)}\n`);
   }
-  
-  sections.push('### Migration Reference Guides\n');
-  sections.push('- `VUE_MIGRATION_HANDOFF.md` - Current migration status and patterns');
-  sections.push(`- \`${context.paths.getBasePath()}/sessions/session-[X.Y]-guide.md\` - Session structure and workflow`);
-  sections.push('- `clineDirectiveMarkdowns/vue-migration-reference/VUE_QUICK_REFERENCE.md` - React → Vue patterns');
-  sections.push('- `clineDirectiveMarkdowns/vue-migration-reference/VUE_MIGRATION_CHECKLIST.md` - Migration checklist');
-  
-  sections.push('\n### Key Migration Patterns\n');
-  sections.push('- React Context → Vue Composables (Pinia stores)');
-  sections.push('- React Hooks → Vue Composables');
-  sections.push('- React Query → Vue Query (same API)');
-  sections.push('- Ant Design → Vuetify components');
-  sections.push('- TypeScript patterns remain the same');
-  
+
+  sections.push('### Reference documents\n');
+  sections.push('- `.project-manager/ARCHITECTURE.md` — domains, data flow, type boundaries');
+  sections.push(`- \`${context.paths.getBasePath()}/feature-*-guide.md\` — feature-level plan`);
+  sections.push(`- \`${context.paths.getBasePath()}/sessions/session-[X.Y]-guide.md\` — session workflow`);
+  sections.push(
+    '- **Historical (React → Vue):** `VUE_MIGRATION_HANDOFF.md`, `clineDirectiveMarkdowns/vue-migration-reference/` — use only when digging into legacy notes'
+  );
+
+  sections.push('\n### Vue app patterns (current stack)\n');
+  sections.push('- Composition API + composables under `client/src/composables/`');
+  sections.push('- Pinia for shared client state where appropriate');
+  sections.push('- Vuetify for UI primitives');
+  sections.push('- Shared contracts in `shared/` per ARCHITECTURE.md');
+
   return sections.join('\n');
 }
 

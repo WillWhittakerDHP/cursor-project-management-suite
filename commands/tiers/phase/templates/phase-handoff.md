@@ -54,7 +54,7 @@
 
 ## Related Documents
 
-- Phase Guide: `.cursor/workflow-manager/vue-migration/phases/phase-[N]-guide.md`
-- Phase Log: `.cursor/workflow-manager/vue-migration/phases/phase-[N]-log.md`
-- Next Phase Guide: `.cursor/workflow-manager/vue-migration/phases/phase-[N+1]-guide.md`
+- Phase Guide: `.project-manager/features/appointment-workflow/phases/phase-[N]-guide.md`
+- Phase Log: `.project-manager/features/appointment-workflow/phases/phase-[N]-log.md`
+- Next Phase Guide: `.project-manager/features/appointment-workflow/phases/phase-[N+1]-guide.md`
 

@@ -12,6 +12,7 @@ const LEGACY_TO_CHARTER: Record<string, ReasonCode> = {
   planning_doc_incomplete: 'planning_doc_incomplete',
   pending_push_confirmation: 'pending_push',
   verification_work_suggested: 'verification_suggested',
+  harness_plugin_advisory: 'harness_plugin_advisory',
   gap_analysis_pending: 'gap_analysis_pending',
   task_complete: 'task_complete',
   reopen_ok: 'reopen_ok',
@@ -52,6 +53,18 @@ const LEGACY_TO_CHARTER: Record<string, ReasonCode> = {
   gap_analysis_failed: 'gap_analysis_failed',
   fill_tier_down_failed: 'fill_tier_down_failed',
   planning_checks_failed: 'planning_checks_failed',
+  preflight_branch_failed: 'preflight_branch_failed',
+  push_branch_guard_failed: 'push_branch_guard_failed',
+  wrong_branch_before_push: 'wrong_branch_before_push',
+  push_preflight_fetch_failed: 'push_preflight_fetch_failed',
+  no_local_no_remote: 'preflight_branch_failed',
+  diverged_from_remote: 'preflight_branch_failed',
+  branch_behind_remote: 'preflight_branch_failed',
+  ambiguous_branch_prefix: 'preflight_branch_failed',
+  preflight_fetch_failed: 'preflight_branch_failed',
+  checkout_from_origin_failed: 'preflight_branch_failed',
+  wrong_branch_after_preflight: 'preflight_branch_failed',
+  preflight_checkout_failed: 'preflight_branch_failed',
 };
 
 const FAILURE_CODES: FailureReasonCode[] = [
@@ -81,6 +94,10 @@ const FAILURE_CODES: FailureReasonCode[] = [
   'gap_analysis_failed',
   'fill_tier_down_failed',
   'planning_checks_failed',
+  'preflight_branch_failed',
+  'push_branch_guard_failed',
+  'wrong_branch_before_push',
+  'push_preflight_fetch_failed',
 ];
 
 /**

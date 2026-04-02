@@ -22,13 +22,14 @@ import { TASK_CONFIG } from '../../configs/task';
 import { resolveRunTests } from '../../../utils/tier-end-utils';
 import { buildTierEndOutcome, type TierEndOutcome } from '../../../utils/tier-outcome';
 import { buildCascadeUp, buildCascadeAcross } from '../../../utils/tier-cascade';
-import { gitCommit } from '../../../git/shared/git-manager';
+import { gitCommit, preflightFeatureBranchForHarness } from '../../../git/shared/git-manager';
 import type {
   TierEndWorkflowContext,
   TierEndWorkflowHooks,
   TierEndWorkflowResultWithShadow,
   StepExitResult,
 } from '../../shared/tier-end-workflow-types';
+import { runPlanningTierGapAnalysis } from '../../shared/tier-end-deliverables-drift';
 import { runTierEndWorkflow } from '../../../harness/run-end-steps';
 import type { RunRecorder, RunTraceHandle } from '../../../harness/contracts';
 
@@ -137,6 +138,10 @@ export async function taskEndImpl(
         shouldAddComments ? '- Optional: review/add comments for modified files' : '- Skip comment review (addComments=false)',
         shouldRunTests ? '- Run tests (blocking) with change impact analysis' : '- Skip tests (runTests=false)',
       ];
+    },
+
+    async runGapAnalysis(c) {
+      return runPlanningTierGapAnalysis(c, 'task');
     },
 
     async runPreWork(c): Promise<StepExitResult> {
@@ -308,6 +313,20 @@ export async function taskEndImpl(
     async runGit(c): Promise<StepExitResult> {
       try {
         const taskId = c.identifier ?? (c.params as { taskId?: string }).taskId ?? 'task';
+        const pre = await preflightFeatureBranchForHarness(TASK_CONFIG, taskId, c.context, {
+          syncRemote: true,
+          tier: 'task',
+          tierId: taskId,
+        });
+        c.steps.preflightBranch = { success: pre.ok, output: pre.messages.join('\n') };
+        if (!pre.ok) {
+          c.steps.gitCommitTask = {
+            success: false,
+            output: `Branch preflight failed (task commit skipped): ${pre.messages.join('\n')}\nYou may commit manually.`,
+          };
+          if (c.steps.gitCommitTask.output) c.output.push(c.steps.gitCommitTask.output);
+          return null;
+        }
         const commitPrefix = `[task ${taskId}]`;
         const commitMessage = `${commitPrefix} completion`;
         const commitResult = await gitCommit(commitMessage);

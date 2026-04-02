@@ -39,7 +39,7 @@ import {
 import { ensureGuideHasRequiredSections } from './guide-required-sections';
 import { readProjectFile, PROJECT_ROOT } from '../../utils/utils';
 import { buildTierAdvisoryContext } from '../../harness/tier-advisory-context';
-import { classifyWorkProfile } from '../../harness/work-profile-classifier';
+import { classifyWorkProfile, mergeBookingGovernanceDomain } from '../../harness/work-profile-classifier';
 import { resolvePlanningDocRelativePath } from '../../utils/planning-doc-paths';
 import type { PlanningTier } from '../../utils/planning-doc-paths';
 import type { WorkflowCommandContext } from '../../utils/command-context';
@@ -624,6 +624,25 @@ export const PLACEHOLDER_REFINED = '[To be refined during discussion]';
 /** Placeholder for **## Decomposition**; agent must list tierDown units (phases/sessions/tasks). */
 export const PLACEHOLDER_TIERDOWN = '[List tierDown units here]';
 
+/**
+ * Sentinel in **## Codebase recon**; `isPlanningDocFilled` is false until this line is removed/replaced.
+ * Only present in planning docs materialized after this gate exists — older docs without it are unaffected.
+ */
+export const CODEBASE_RECON_PLACEHOLDER =
+  '[Codebase recon: search and read client/, server/, and shared/ as needed — then remove this line after recording findings below]';
+
+function buildCodebaseReconBlock(): string {
+  return `## Codebase recon (agent-led — required)
+Injected docs above are not a substitute for opening real code. Search/read \`client/\`, \`server/\`, and \`shared/\` as relevant to this tier.
+
+- **Paths reviewed:** (repo-relative; files or dirs you actually opened or searched)
+- **Patterns / call sites:** (what exists today; what this work must align with or extend)
+- **Gaps / unknowns:** (what still needs verification later)
+
+${CODEBASE_RECON_PLACEHOLDER}
+`;
+}
+
 /** Parser-friendly decomposition: bullet or ### heading with Phase/Session/Task id. */
 const PARSER_FRIENDLY_TIERDOWN_LINE =
   /(?:-\s+\*\*(?:Session|Phase|Task)\s+\d[\d.]*\*\*:|###\s+(?:Session|Phase|Task)\s+\d[\d.]*\s*:)/;
@@ -742,6 +761,9 @@ export function isPlanningDocFilled(content: string): boolean {
   }
   for (const p of PLANNING_STORY_PLACEHOLDERS) {
     if (content.includes(p)) return false;
+  }
+  if (content.includes(CODEBASE_RECON_PLACEHOLDER)) {
+    return false;
   }
   return true;
 }
@@ -948,7 +970,7 @@ function buildPlanningReferenceLines(referencePaths: ReferencePaths): string[] {
     refLines.push(`- Handoff (full transition context): \`${referencePaths.handoff}\``);
   }
   refLines.push(
-    `- Architecture: \`.project-manager/ARCHITECTURE.md\` — domain map, data flow, type boundaries, naming`
+    `- Architecture: \`.project-manager/ARCHITECTURE.md\` — domain map, data flow, type boundaries, naming; **§8–§14** = locked domain rules (block model, part ledger, PartFinalizer, invariants) for booking / admin scheduling work`
   );
   refLines.push(
     `- Workflow friction log (non-git harness issues): \`.project-manager/WORKFLOW_FRICTION_LOG.md\``
@@ -966,6 +988,7 @@ function buildPlanningReferenceLines(referencePaths: ReferencePaths): string[] {
 const ANALYSIS_PROMPT = `Address:
 - What problem does this solve and why now?
 - What domain boundaries does this cross? (see ARCHITECTURE.md)
+- Ground this in **## Codebase recon** (paths you verified) plus ARCHITECTURE.md — not doc injection alone.
 - What existing patterns or code should child tiers follow?
 - Risks, dependencies, or open questions?
 - Alternatives considered (for decomposition tiers)`;
@@ -1053,6 +1076,7 @@ function buildPlanningDocContent(
     architectureExcerpt != null && architectureExcerpt.trim() !== ''
       ? `---\n## Architecture context (harness-injected)\n\n${architectureExcerpt.trim()}\n\n`
       : '';
+  const codebaseReconBlock = `${buildCodebaseReconBlock()}\n`;
   const parentContextBlock =
     tier === 'task' && parentAnalysisExcerpt != null && parentAnalysisExcerpt.trim() !== ''
       ? `## Parent context (session planning — Analysis excerpt)\n\n${parentAnalysisExcerpt.trim()}\n\n`
@@ -1072,7 +1096,7 @@ ${continuity}
 ${parentContextBlock}${inheritedBlock}## Story
 **This task changes** [what] **because** [why].
 
-${architectureExcerptBlock}## Analysis
+${architectureExcerptBlock}${codebaseReconBlock}## Analysis
 ${ANALYSIS_PROMPT}
 
 ## Design
@@ -1116,7 +1140,7 @@ ${inheritedBlock}## Story
 **This session delivers** [what] **so that** [why / what it unblocks].
 **Estimated size:** S / M
 
-${architectureExcerptBlock}## Analysis
+${architectureExcerptBlock}${codebaseReconBlock}## Analysis
 ${ANALYSIS_PROMPT}
 
 ## Goal
@@ -1154,7 +1178,7 @@ ${inheritedBlock}## Story
 **As a** [persona or system], **I want** [what this phase delivers], **so that** [what it enables].
 **Estimated size:** S / M / L
 
-${architectureExcerptBlock}## Analysis
+${architectureExcerptBlock}${codebaseReconBlock}## Analysis
 ${ANALYSIS_PROMPT}
 
 ## Goal
@@ -1195,7 +1219,7 @@ ${inheritedBlock}## Epic
 **As a** [persona], **I want** [capability], **so that** [benefit].
 **Estimated size:** S / M / L / XL
 
-${architectureExcerptBlock}## Analysis
+${architectureExcerptBlock}${codebaseReconBlock}## Analysis
 ${ANALYSIS_PROMPT}
 
 ## Goal
@@ -1277,8 +1301,13 @@ export async function stepContextGathering(
   const taskFiles = hooks.getTierDownFilePaths
     ? await hooks.getTierDownFilePaths(ctx)
     : undefined;
-  const workProfileForAdvisory =
+  const baseWorkProfile =
     ctx.options?.workProfile ?? classifyWorkProfile({ tier: ctx.config.name, action: 'start' });
+  const workProfileForAdvisory = mergeBookingGovernanceDomain(
+    baseWorkProfile,
+    ctx.config.name,
+    taskFiles
+  );
   const advisory = await buildTierAdvisoryContext({
     tier: ctx.config.name,
     workProfile: workProfileForAdvisory,
@@ -1356,19 +1385,21 @@ export async function stepContextGathering(
         '## AGENT DIRECTIVE (execute now — do not delegate to the user as “homework”)',
         '',
         '1. **Open** the planning file and read every path under **Reference** (ARCHITECTURE.md, playbooks, governance reports, tier-up guide).',
-        '2. **Write** into that same file: **Story**, **Analysis**, **Design**, **Deliverables**, **Acceptance Criteria**; refine **Goal** / **Files** / **Approach** / **Checkpoint** if needed.',
-        '3. **Save** the planning doc.',
-        '4. **Summarize** the locked plan in chat for the user.',
-        '5. **Do not** paste only these instructions — you perform steps 1–4, then tell the user when to run **/accepted-code**.',
+        '2. **Search/read** pertinent `client/`, `server/`, and `shared/` — fill **## Codebase recon** with real paths and patterns; **remove** the sentinel line when done.',
+        '3. **Write** into that same file: **Story**, **Analysis**, **Design**, **Deliverables**, **Acceptance Criteria**; refine **Goal** / **Files** / **Approach** / **Checkpoint** if needed.',
+        '4. **Save** the planning doc.',
+        '5. **Summarize** the locked plan in chat for the user.',
+        '6. **Do not** paste only these instructions — you perform steps 1–5, then tell the user when to run **/accepted-code**.',
       ].join('\n')
     : [
         '## AGENT DIRECTIVE (execute now — do not delegate to the user as “homework”)',
         '',
         '1. **Open** the planning file and read every path under **Reference**.',
-        '2. **Write** Analysis, story/epic, Goal, Files, Approach, Checkpoint, Deliverables, Acceptance Criteria, and **## Decomposition** (or `**Leaf tier**`).',
-        '3. **Save** the planning doc.',
-        '4. **Perform** the coverage check in chat, then tell the user when to run **/accepted-plan**.',
-        '5. **Do not** paste only these instructions — you perform the work, then present the result.',
+        '2. **Search/read** pertinent `client/`, `server/`, and `shared/` — fill **## Codebase recon** with real paths and patterns; **remove** the sentinel line when done.',
+        '3. **Write** Analysis, story/epic, Goal, Files, Approach, Checkpoint, Deliverables, Acceptance Criteria, and **## Decomposition** (or `**Leaf tier**`).',
+        '4. **Save** the planning doc.',
+        '5. **Perform** the coverage check in chat, then tell the user when to run **/accepted-plan**.',
+        '6. **Do not** paste only these instructions — you perform the work, then present the result.',
       ].join('\n');
 
   const messageLines: string[] = [];

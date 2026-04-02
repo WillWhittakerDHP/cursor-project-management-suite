@@ -46,6 +46,8 @@ import type {
   InScopeDiffPreviewOptions,
   InScopeDiffPreviewResult,
   MergeTierFailureReasonCode,
+  PreflightFeatureBranchResult,
+  HarnessBranchRemoteState,
 } from './git-contract';
 import { MERGE_TIER_REASON_CODES, isMergeTierFailureReasonCode } from './git-contract';
 import { FEATURE_CONFIG } from '../../tiers/configs/feature';
@@ -69,6 +71,13 @@ import {
   type PropagateOptions,
   type PropagateResult,
 } from '../composite/propagate-files';
+import {
+  preflightFeatureBranchForHarness,
+  verifyHarnessPushBranchCoherence,
+  type PreflightFeatureBranchOptions,
+} from './harness-branch-preflight';
+import { runFeatureTierEndGit, runPhaseTierEndGit } from '../composite/tier-end-git-bundle';
+import type { FeatureTierEndGitInput, PhaseTierEndGitInput, TierEndGitStepEntry } from '../composite/tier-end-git-bundle';
 
 // ─── Types ──────────────────────────────────────────────────────────────
 export type {
@@ -89,6 +98,20 @@ export type { GitOpEntry, PropagateOptions, PropagateResult };
 export type { CursorSubmoduleStatusResult, CommitCursorSubmoduleResult };
 export type { GitFrictionEntry } from './git-friction-log';
 export { appendGitFriction, recordGitFriction } from './git-friction-log';
+export type {
+  PreflightFeatureBranchResult,
+  HarnessBranchRemoteState,
+  FeatureTierEndGitInput,
+  PhaseTierEndGitInput,
+  TierEndGitStepEntry,
+};
+export type { PreflightFeatureBranchOptions };
+export {
+  preflightFeatureBranchForHarness,
+  verifyHarnessPushBranchCoherence,
+  runFeatureTierEndGit,
+  runPhaseTierEndGit,
+};
 
 // ─── Branch operations ─────────────────────────────────────────────────
 export {

@@ -21,11 +21,26 @@ import type {
 import { getStepGraph } from './step-graph';
 import { routeByOutcome } from '../tiers/shared/control-plane-route';
 import type { CommandResultForRouting, ControlPlaneContext } from '../tiers/shared/control-plane-types';
+import { recordHarnessPluginAdvisoryFriction } from './workflow-friction-manager';
 
 const clock = (): number => (typeof Date.now === 'function' ? Date.now() : 0);
 
 /** Cap plugin diagnostic lines so harness output stays bounded. */
 const MAX_PLUGIN_DIAGNOSTIC_CHARS = 500;
+
+/** Success-path chat output: avoid huge `output` strings on start_ok / end_ok (friction: unhandled_error noise). */
+const MAX_SUCCESS_KERNEL_OUTPUT_CHARS = 12_000;
+const SUCCESS_OUTPUT_CAP_REASONS = new Set<string>(['start_ok', 'end_ok', 'task_complete', 'reopen_ok']);
+
+function capSuccessKernelOutput(output: string, success: boolean, reasonCode: string): string {
+  if (!success || !SUCCESS_OUTPUT_CAP_REASONS.has(reasonCode)) {
+    return output;
+  }
+  if (output.length <= MAX_SUCCESS_KERNEL_OUTPUT_CHARS) {
+    return output;
+  }
+  return `${output.slice(0, MAX_SUCCESS_KERNEL_OUTPUT_CHARS)}\n\n---\n*(Harness success output truncated; see run trace / shadow recorder for full text.)*`;
+}
 
 function pushPluginDiagnostic(
   ctx: HarnessContext,
@@ -263,7 +278,8 @@ async function buildAndRecordDecision(
   handle: RunTraceHandle,
   finalResult: { success: boolean; output: string; outcome: TierOutcome },
   deps: HarnessDeps,
-  stepPath: string[]
+  stepPath: string[],
+  spec: WorkflowSpec
 ): Promise<HarnessRunResult> {
   const forRouting: CommandResultForRouting = {
     success: finalResult.success,
@@ -283,10 +299,20 @@ async function buildAndRecordDecision(
         message: finalResult.outcome.nextAction,
       } as ControlPlaneDecision;
 
-  if (finalResult.outcome.pluginAdvisory?.trim()) {
+  const pluginAdvisoryTrimmed = finalResult.outcome.pluginAdvisory?.trim();
+  if (pluginAdvisoryTrimmed) {
+    recordHarnessPluginAdvisoryFriction({
+      advisoryMarkdown: pluginAdvisoryTrimmed,
+      tier: spec.tier,
+      identifier: spec.identifier,
+      featureName: spec.featureContext.featureName,
+      runId: spec.runId,
+      harnessAction: spec.action,
+      harnessSuccess: finalResult.success,
+    });
     controlPlaneDecision = {
       ...controlPlaneDecision,
-      message: `${controlPlaneDecision.message}\n\n${finalResult.outcome.pluginAdvisory.trim()}`,
+      message: `${controlPlaneDecision.message}\n\n${pluginAdvisoryTrimmed}`,
     };
   }
 
@@ -377,6 +403,11 @@ export const defaultKernel: HarnessKernel = {
         output: `${finalResult.output}\n\n---\nPlugin diagnostics:\n${diagBlock}`,
       };
     }
-    return buildAndRecordDecision(handle, finalResult, deps, stepPath);
+    const reason = String(finalResult.outcome.reasonCode ?? '');
+    finalResult = {
+      ...finalResult,
+      output: capSuccessKernelOutput(finalResult.output, finalResult.success, reason),
+    };
+    return buildAndRecordDecision(handle, finalResult, deps, stepPath, spec);
   },
 };

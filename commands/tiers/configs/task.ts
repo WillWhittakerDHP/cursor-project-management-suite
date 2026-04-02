@@ -6,7 +6,6 @@
 
 import type { TierConfig } from '../shared/types';
 import { WorkflowId } from '../../utils/id-utils';
-import { appendLog } from '../../utils/append-log';
 import { readProjectFile, writeProjectFile } from '../../utils/utils';
 import type { WorkflowCommandContext } from '../../utils/command-context';
 import { MarkdownUtils } from '../../utils/markdown-utils';
@@ -71,6 +70,7 @@ export const TASK_CONFIG: TierConfig = {
   updateLog: async (context: WorkflowCommandContext, identifier: string, logEntry: string) => {
     const parsed = WorkflowId.parseTaskId(identifier);
     const sessionId = parsed ? parsed.sessionId : identifier;
+    const { appendLog } = await import('../../utils/append-log');
     await appendLog(logEntry, sessionId, context.paths.getFeatureName());
   },
   replanCommand: undefined, // Task has no re-plan

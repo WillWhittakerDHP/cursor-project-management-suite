@@ -216,7 +216,7 @@ const expensiveValue = computed(() => {
 - Use `v-memo` directive for expensive list items that rarely change
 - Vue's reactivity system handles most memoization automatically - only optimize when profiling shows performance issues
 
-**Codebase Reference:** During migration, see `clineDirectiveMarkdowns/vue-migration-reference/VUE_QUICK_REFERENCE.md` for React → Vue pattern conversions. After migration, check Vue component files for computed() usage patterns.
+**Codebase Reference:** Prefer existing Vue components and composables under `client/src/` for patterns (`computed()`, `ref()`, Pinia). Historical React → Vue notes: `clineDirectiveMarkdowns/vue-migration-reference/VUE_QUICK_REFERENCE.md` (archive only).
 
 ---
 
@@ -563,11 +563,11 @@ Check existing documentation, patterns, and reusable components before implement
 2. **Before Creating Transformers** - Review existing transformer patterns and structure
 3. **Before Implementing Similar Functionality** - Search for existing implementations
 4. **Before Duplicating Code Patterns** - Identify if a generic solution exists
-5. **When Migrating Between Frameworks** - Review migration guides and patterns
+5. **When touching cross-cutting behavior** - Review `.project-manager/ARCHITECTURE.md` and the active feature guide under `.project-manager/features/<feature>/` (Feature 6 = `appointment-workflow`)
 
 **Documentation Sources to Check:**
 
-- **Architecture Documentation** - `SCHEDULER_COMPONENT_SPECS.md`, `SCHEDULER_ARCHITECTURE_DECISIONS.md`, `VUE_MIGRATION_HANDOFF.md`
+- **Architecture Documentation** - `.project-manager/ARCHITECTURE.md`, `SCHEDULER_COMPONENT_SPECS.md`, `SCHEDULER_ARCHITECTURE_DECISIONS.md`, active feature guide/handoff
 - **Component Documentation** - README files in component directories
 - **Pattern Documentation** - Learning guides, migration references
 - **Codebase Search** - Search for similar patterns, generic components, reusable utilities
@@ -634,14 +634,14 @@ Before implementing new functionality, verify:
 - [ ] Searched codebase for existing generic/reusable components
 - [ ] Reviewed transformer patterns if creating data transformations
 - [ ] Checked component documentation (README files)
-- [ ] Reviewed migration guides if porting between frameworks
+- [ ] Reviewed active feature guide/handoff and ARCHITECTURE.md where relevant
 - [ ] Identified if existing pattern can be reused or extended
 
 **Codebase References:**
 - Generic Components: `frontend-root/src/admin/components/generic/`
 - Transformer Patterns: `frontend-root/src/admin/dataTransformation/`, `frontend-root/src/api/transformers/`
 - Architecture Docs: `frontend-root/src/scheduler/clineSchedulerWizardDirectives/README.md`
-- Migration Guides: `VUE_MIGRATION_HANDOFF.md`, `clineDirectiveMarkdowns/vue-migration-reference/`
+- Feature workflow: `.project-manager/features/<feature>/` (primary); legacy migration: `VUE_MIGRATION_HANDOFF.md`, `clineDirectiveMarkdowns/vue-migration-reference/`
 
 **Scope:** Applies to all new implementations, component creation, and code duplication scenarios.
 

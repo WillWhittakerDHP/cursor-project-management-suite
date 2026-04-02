@@ -159,13 +159,16 @@ export async function isBranchBasedOn(childBranch: string, parentBranch: string)
  * Used by tier-branch sync to avoid blind `git pull` after auto-rebase (which would replay divergent history).
  */
 export async function compareBranchToRemote(
-  branchName: string
+  branchName: string,
+  options?: { skipFetch?: boolean }
 ): Promise<'up-to-date' | 'behind' | 'ahead' | 'diverged' | 'no-remote'> {
   const localRef = await runGitCommand(`git rev-parse --verify ${branchName}`, 'compareBranchToRemote-local');
   if (!localRef.success) return 'no-remote';
   const local = localRef.output.trim();
 
-  await runGitCommand(`git fetch origin ${branchName}`, 'compareBranchToRemote-fetch');
+  if (!options?.skipFetch) {
+    await runGitCommand(`git fetch origin ${branchName}`, 'compareBranchToRemote-fetch');
+  }
   const remoteRef = await runGitCommand(`git rev-parse --verify origin/${branchName}`, 'compareBranchToRemote-remote');
   if (!remoteRef.success) return 'no-remote';
   const remote = remoteRef.output.trim();

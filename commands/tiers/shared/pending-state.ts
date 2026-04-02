@@ -8,6 +8,7 @@ import { readProjectFile, writeProjectFile } from '../../utils/utils';
 import { WorkflowId } from '../../utils/id-utils';
 import type { CascadeInfo } from '../../utils/tier-outcome';
 import type { WorkProfile } from '../../harness/work-profile';
+import { WorkflowCommandContext, type TierParamsBag } from '../../utils/command-context';
 
 const TIER_PENDING_PATH = '.cursor/commands/.tier-start-pending.json';
 const TASK_PENDING_PATH = '.cursor/commands/.task-start-pending.json';
@@ -159,16 +160,65 @@ export async function deleteTaskStartPending(): Promise<void> {
 export interface EndPendingState {
   tier: 'feature' | 'phase' | 'session' | 'task';
   identifier: string;
+  /** Feature directory slug; used with contextFromParams for push branch guard. Omitted in legacy pending files. */
+  featureName?: string;
   cascade?: CascadeInfo;
+}
+
+/**
+ * Resolve workflow context from end-pending state (for /accepted-push branch coherence).
+ * Returns null when legacy pending omits featureName for non-feature tiers.
+ */
+export async function resolveWorkflowContextForEndPending(
+  pending: EndPendingState
+): Promise<WorkflowCommandContext | null> {
+  const fn = pending.featureName?.trim();
+  try {
+    switch (pending.tier) {
+      case 'feature': {
+        const params: TierParamsBag = {
+          featureName: fn && fn.length > 0 ? fn : pending.identifier,
+        };
+        return await WorkflowCommandContext.contextFromParams('feature', params);
+      }
+      case 'phase': {
+        if (!fn) return null;
+        return await WorkflowCommandContext.contextFromParams('phase', {
+          phaseId: pending.identifier,
+          featureName: fn,
+        });
+      }
+      case 'session': {
+        if (!fn) return null;
+        return await WorkflowCommandContext.contextFromParams('session', {
+          sessionId: pending.identifier,
+          featureName: fn,
+        });
+      }
+      case 'task': {
+        if (!fn) return null;
+        return await WorkflowCommandContext.contextFromParams('task', {
+          taskId: pending.identifier,
+          featureName: fn,
+        });
+      }
+      default:
+        return null;
+    }
+  } catch {
+    return null;
+  }
 }
 
 export async function readEndPending(): Promise<EndPendingState | null> {
   try {
     const raw = await readProjectFile(TIER_END_PENDING_PATH);
-    const parsed = safeParse<{ tier: string; identifier: string; cascade?: CascadeInfo }>(
-      TIER_END_PENDING_PATH,
-      raw
-    );
+    const parsed = safeParse<{
+      tier: string;
+      identifier: string;
+      featureName?: string;
+      cascade?: CascadeInfo;
+    }>(TIER_END_PENDING_PATH, raw);
     if (!parsed?.tier || !parsed?.identifier) return null;
     if (
       parsed.tier !== 'feature' &&
@@ -177,9 +227,14 @@ export async function readEndPending(): Promise<EndPendingState | null> {
       parsed.tier !== 'task'
     )
       return null;
+    const featureName =
+      typeof parsed.featureName === 'string' && parsed.featureName.trim() !== ''
+        ? parsed.featureName.trim()
+        : undefined;
     return {
       tier: parsed.tier as EndPendingState['tier'],
       identifier: String(parsed.identifier),
+      ...(featureName != null && { featureName }),
       ...(parsed.cascade != null && { cascade: parsed.cascade }),
     };
   } catch {

@@ -3,12 +3,14 @@
  * Reads `.tier-end-pending.json`, runs push via git-manager, clears pending on success.
  */
 
-import { gitPush } from '../../git/shared/git-manager';
+import { gitPush, verifyHarnessPushBranchCoherence } from '../../git/shared/git-manager';
 import {
   readEndPending,
   deleteEndPending,
+  resolveWorkflowContextForEndPending,
   type EndPendingState,
 } from './pending-state';
+import { WorkflowCommandContext, type TierParamsBag } from '../../utils/command-context';
 import type { ControlPlaneDecision } from './control-plane-types';
 import { routeByOutcome } from './control-plane-route';
 import type { CommandResultForRouting } from './control-plane-types';
@@ -71,6 +73,35 @@ export async function acceptedPush(): Promise<AcceptedPushResult> {
       },
       null
     );
+  }
+
+  let wfCtx = await resolveWorkflowContextForEndPending(pending);
+  if (!wfCtx && pending.tier === 'feature') {
+    try {
+      wfCtx = await WorkflowCommandContext.contextFromParams('feature', {
+        featureName: pending.identifier,
+      } as TierParamsBag);
+    } catch {
+      wfCtx = null;
+    }
+  }
+  if (wfCtx) {
+    const verify = await verifyHarnessPushBranchCoherence(wfCtx);
+    if (!verify.ok) {
+      return wrap(
+        {
+          success: false,
+          output:
+            `**Push blocked (branch guard):**\n\n${verify.messages.join('\n')}\n\nFix branch or remote state, then run **/accepted-push** again.`,
+          outcome: {
+            reasonCode: 'push_branch_guard_failed',
+            nextAction:
+              'Checkout the expected feature branch, resolve divergence or pull, then run **/accepted-push** again. Set **HARNESS_PUSH_SKIP_REMOTE_COMPARE=1** only if you intentionally skip remote comparison.',
+          },
+        },
+        pending
+      );
+    }
   }
 
   const pushResult = await gitPush();

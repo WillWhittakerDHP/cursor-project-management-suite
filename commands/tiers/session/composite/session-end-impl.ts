@@ -8,7 +8,7 @@ import { formatTaskEntry, TaskEntry } from '../../task/atomic/format-task-entry'
 import { appendLog } from '../../../utils/append-log';
 import { updateHandoffMinimal, MinimalHandoffUpdate } from '../../../utils/update-handoff-minimal';
 import { updateGuide, GuideUpdate } from '../../../utils/update-guide';
-import { gitCommit } from '../../../git/shared/git-manager';
+import { gitCommit, preflightFeatureBranchForHarness } from '../../../git/shared/git-manager';
 import { markSessionComplete, MarkSessionCompleteParams } from './session';
 import { WorkflowCommandContext } from '../../../utils/command-context';
 import { detectSessionModifiedFiles } from '../../../utils/detect-modified-files';
@@ -269,15 +269,28 @@ export async function sessionEndImpl(
 
       if (!p.skipGit) {
         try {
-          const commitPrefix = `[session ${p.sessionId}]`;
-          const featureCommitMessage = p.commitMessage || `${commitPrefix} ${p.description}`;
-          const featureCommitResult = await gitCommit(featureCommitMessage);
-          c.steps.gitCommitFeature = {
-            success: featureCommitResult.success,
-            output: featureCommitResult.success ? `✅ Feature work committed: ${featureCommitMessage}` : `Failed to commit feature work: ${featureCommitResult.output}`,
-          };
-          if (!featureCommitResult.success) {
-            c.steps.gitCommitFeature!.output += '\n⚠️ Feature commit failed, but continuing workflow. You may need to commit manually.';
+          const pre = await preflightFeatureBranchForHarness(SESSION_CONFIG, p.sessionId, c.context, {
+            syncRemote: true,
+            tier: 'session',
+            tierId: p.sessionId,
+          });
+          c.steps.preflightBranch = { success: pre.ok, output: pre.messages.join('\n') };
+          if (!pre.ok) {
+            c.steps.gitCommitFeature = {
+              success: false,
+              output: `Branch preflight failed; skipping session feature commit. ${pre.messages.join('\n')}`,
+            };
+          } else {
+            const commitPrefix = `[session ${p.sessionId}]`;
+            const featureCommitMessage = p.commitMessage || `${commitPrefix} ${p.description}`;
+            const featureCommitResult = await gitCommit(featureCommitMessage);
+            c.steps.gitCommitFeature = {
+              success: featureCommitResult.success,
+              output: featureCommitResult.success ? `✅ Feature work committed: ${featureCommitMessage}` : `Failed to commit feature work: ${featureCommitResult.output}`,
+            };
+            if (!featureCommitResult.success) {
+              c.steps.gitCommitFeature!.output += '\n⚠️ Feature commit failed, but continuing workflow. You may need to commit manually.';
+            }
           }
         } catch (_error) {
           c.steps.gitCommitFeature = {

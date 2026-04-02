@@ -16,7 +16,7 @@ import { getPlaybooksForAudit, reportPathToAuditName } from '../../utils/tier-co
 import type { TierName } from '../../tiers/shared/types';
 import type { Tier } from '../../harness/contracts';
 import type { GovernanceDomain } from '../../harness/work-profile';
-import { classifyWorkProfile } from '../../harness/work-profile-classifier';
+import { classifyWorkProfile, mergeBookingGovernanceDomain } from '../../harness/work-profile-classifier';
 import { readArchitectureExcerptForPlanning } from '../../harness/architecture-excerpt';
 import { getPlaybooksForGovernanceDomains, AUDIT_GLOBAL_CONFIG } from '../../harness/governance-domain-map';
 import { buildGovernanceContext } from '../governance-context';
@@ -89,11 +89,12 @@ export async function buildAuditFixContextEnvelope(params: {
   playbookPaths: string[];
 }> {
   const { tier, taskFiles } = params;
-  const workProfile = classifyWorkProfile({
+  const baseProfile = classifyWorkProfile({
     tier: tier as Tier,
     action: 'end',
     reasonCode: 'audit_fix',
   });
+  const workProfile = mergeBookingGovernanceDomain(baseProfile, tier as Tier, taskFiles);
 
   const governanceBlock = await buildGovernanceContext({
     tier,

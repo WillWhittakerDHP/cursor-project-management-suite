@@ -229,8 +229,8 @@
 
 ## Related Documents
 
-- Session Guide: `.cursor/project-manager/features/vue-migration/sessions/session-[SESSION_ID]-guide.md`
-- Session Handoff: `.cursor/project-manager/features/vue-migration/sessions/session-[SESSION_ID]-handoff.md`
+- Session Guide: `.project-manager/features/appointment-workflow/sessions/session-[SESSION_ID]-guide.md` (replace `appointment-workflow` with your active feature directory when different)
+- Session Handoff: `.project-manager/features/appointment-workflow/sessions/session-[SESSION_ID]-handoff.md`
 
 ---
 

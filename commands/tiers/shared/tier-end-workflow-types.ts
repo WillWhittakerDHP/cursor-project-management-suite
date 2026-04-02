@@ -82,7 +82,7 @@ export interface TierEndWorkflowHooks {
     productChecklist?: string;
     artifactChecklist?: string;
   } | null>;
-  /** When set, gap_analysis step runs before planning_rollup; omit on task-end to skip. */
+  /** When set, gap_analysis step runs before planning_rollup. Feature/phase/session/task impls typically wire `runPlanningTierGapAnalysis`. */
   runGapAnalysis?(ctx: TierEndWorkflowContext): Promise<GapAnalysisResult>;
   getCascade?(ctx: TierEndWorkflowContext): Promise<CascadeInfo | null>;
   getSuccessOutcome(ctx: TierEndWorkflowContext): TierEndOutcome;

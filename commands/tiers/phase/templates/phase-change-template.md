@@ -117,10 +117,10 @@ If the phase change proves unsuccessful:
 
 ## Related Documents
 
-- Phase [N] Guide: `.cursor/workflow-manager/vue-migration/phases/phase-[N]-guide.md`
-- Phase [N] Log: `.cursor/workflow-manager/vue-migration/phases/phase-[N]-log.md`
-- Phase [N] Handoff: `.cursor/workflow-manager/vue-migration/phases/phase-[N]-handoff.md`
-- Phase [M] Guide: `.cursor/workflow-manager/vue-migration/phases/phase-[M]-guide.md`
-- Phase [M] Log: `.cursor/workflow-manager/vue-migration/phases/phase-[M]-log.md`
-- Phase [M] Handoff: `.cursor/workflow-manager/vue-migration/phases/phase-[M]-handoff.md`
+- Phase [N] Guide: `.project-manager/features/appointment-workflow/phases/phase-[N]-guide.md`
+- Phase [N] Log: `.project-manager/features/appointment-workflow/phases/phase-[N]-log.md`
+- Phase [N] Handoff: `.project-manager/features/appointment-workflow/phases/phase-[N]-handoff.md`
+- Phase [M] Guide: `.project-manager/features/appointment-workflow/phases/phase-[M]-guide.md`
+- Phase [M] Log: `.project-manager/features/appointment-workflow/phases/phase-[M]-log.md`
+- Phase [M] Handoff: `.project-manager/features/appointment-workflow/phases/phase-[M]-handoff.md`
 

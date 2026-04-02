@@ -6,6 +6,15 @@
 
 ---
 
+## Canonical sources (absolute truth)
+
+- [.project-manager/analysis/ARCHITECTURE_PRINCIPLES.md](.project-manager/analysis/ARCHITECTURE_PRINCIPLES.md) — immutable architectural rules.
+- [.project-manager/analysis/FEATURE_20_ARCHITECTURE_REDESIGN.md](.project-manager/analysis/FEATURE_20_ARCHITECTURE_REDESIGN.md) — domain implementation plan (ordered passes, acceptance checks, drift checklist).
+
+**Conflict rule:** If this guide disagrees with either file above, **the analysis documents win**; update this guide, not the principles or v2.
+
+---
+
 ## Guide Structure
 
 This template defines the standard structure for session guides. Session-specific guides should include all standard sections, which can be customized or reference this template.
@@ -231,7 +240,7 @@ All tasks complete. Ready to run end-of-session workflow?
 3. **Commit** - Git commit and push (`/git-commit [message]` and `/git-push` or manual)
 4. **Handoff** - Create compact prompt for next session:
    ```
-   @.cursor/project-manager/features/vue-migration/handoff.md Continue Vue migration - start Session [X.Y] ([Description])
+   @.project-manager/features/appointment-workflow/feature-appointment-workflow-handoff.md Continue Feature 6 (appointment workflow) - start Session [X.Y] ([Description])
    ```
 5. **Feedback** - Optional workflow feedback (only if issues encountered):
    - Were there any problems managing this session workflow or issues with results?
@@ -363,19 +372,19 @@ Templates include:
 
 Break each session into focused tasks:
 
-#### Example: Session 1.1 - Type Definitions
+#### Example: Session 6.16.x — shapes / booking (Feature 6)
 ```
-### Task 1.1.1: Core Entity Types
-**Goal:** Port GlobalEntity types
-**Files:** 
-- frontend-root/src/global/types/globalEntityTypes.ts → frontend-root/src/types/entities.ts
-**Checkpoint:** Types compile without errors
-
-### Task 1.1.2: Primitive Types  
-**Goal:** Port primitive type system
+### Task 6.16.1.1: Align valid-shape metadata with admin UI
+**Goal:** Keep server models and admin Shapes tab in sync for one relationship or field group
 **Files:**
-- frontend-root/src/global/types/globalPrimitiveTypes.ts → frontend-root/src/types/properties.ts
-**Checkpoint:** Primitive types match React version
+- `server/src/db/models/admin/...`, `client/src/views/admin/tabs/...` (as scoped in session guide)
+**Checkpoint:** App starts; client + server lint clean; handoff sections updated
+
+### Task 6.16.1.2: Document API or transformer touchpoints
+**Goal:** Note any booking transformer or API changes for the wizard
+**Files:**
+- `client/src/utils/booking/`, `shared/` types as needed
+**Checkpoint:** Types compile; behavior matches phase guide acceptance notes
 ```
 
 ### Recommendations
@@ -395,9 +404,10 @@ Break each session into focused tasks:
 
 ## Related Documents
 
-- **Session Log:** `.cursor/project-manager/features/vue-migration/sessions/session-[X.Y]-log.md` (templates and historical record)
-- **Session Handoff:** `.cursor/project-manager/features/vue-migration/sessions/session-[X.Y]-handoff.md` (transition context)
-- **Phase Guide:** `.cursor/project-manager/features/vue-migration/phases/phase-[X]-guide.md` (phase-level context)
+- **Feature handoff (example — Feature 6):** `.project-manager/features/appointment-workflow/feature-appointment-workflow-handoff.md`
+- **Session Log:** `.project-manager/features/appointment-workflow/sessions/session-[X.Y]-log.md` (per active feature; paths follow `.project-manager/features/<feature>/`)
+- **Session Handoff:** `.project-manager/features/appointment-workflow/sessions/session-[X.Y]-handoff.md`
+- **Phase Guide:** `.project-manager/features/appointment-workflow/phases/phase-[X.Y]-guide.md` (phase id matches your tier scope)
 
 ---
 

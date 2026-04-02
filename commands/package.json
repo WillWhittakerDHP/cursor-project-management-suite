@@ -1,14 +1,14 @@
 {
   "name": "cursor-slash-commands",
   "version": "1.0.0",
-  "description": "Slash commands for Vue migration workflow",
+  "description": "Slash commands for tier workflow (features, phases, sessions, tasks)",
   "type": "module",
   "main": "index.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "eslint . --max-warnings 0"
   },
-  "keywords": ["cursor", "slash-commands", "vue-migration"],
+  "keywords": ["cursor", "slash-commands", "tier-workflow", "appointment-workflow"],
   "author": "",
   "license": "ISC",
   "dependencies": {

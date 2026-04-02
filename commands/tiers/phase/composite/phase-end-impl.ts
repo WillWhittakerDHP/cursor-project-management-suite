@@ -5,11 +5,10 @@
 import {
   createBranch,
   gitCommit,
-  gitPush,
-  ensureTierBranch,
   getCurrentBranch,
   gitStatusPorcelain,
   gitCheckout,
+  runPhaseTierEndGit,
 } from '../../../git/shared/git-manager';
 import { markPhaseComplete, MarkPhaseCompleteParams } from './phase';
 import { WorkflowCommandContext } from '../../../utils/command-context';
@@ -28,7 +27,6 @@ import { buildCascadeUp, buildCascadeAcross } from '../../../utils/tier-cascade'
 import { isLastPhaseInFeature, getNextPhaseInFeature } from '../../../utils/phase-session-utils';
 import { refreshAcrossLadderArtifacts } from '../../../utils/across-ladder';
 import { PHASE_CONFIG } from '../../configs/phase';
-import { FEATURE_CONFIG } from '../../configs/feature';
 import { phaseCommentCleanup } from '../../../comments/commentCleanup';
 import { testEndWorkflow } from '../../../testing/composite/test-end-workflow';
 import type {
@@ -62,6 +60,8 @@ export interface PhaseEndParams {
   skipGit?: boolean;
   /** When true, verification check step does not return early; used when re-running after verification work or skip. */
   continuePastVerification?: boolean;
+  /** When true, skip `end_audit` (e.g. after user chooses skip audit / continue manually). */
+  skipEndAudit?: boolean;
 }
 
 export interface PhaseEndResult {
@@ -442,7 +442,7 @@ export async function phaseEndImpl(
     },
 
     runReadmeCleanup: true,
-    runEndAudit: true,
+    runEndAudit: params.skipEndAudit !== true,
 
     async runGit(c): Promise<StepExitResult> {
       const p = c.params as PhaseEndParams;
@@ -461,30 +461,15 @@ export async function phaseEndImpl(
       }
 
       try {
-        const featureBranchName = FEATURE_CONFIG.getBranchName(c.context, c.context.feature.name);
-        if (!featureBranchName) {
-          c.steps.ensurePhaseBranch = { success: false, output: 'Could not resolve feature branch from config.' };
-          throw new Error('Cannot proceed: feature branch name is null');
-        }
-
-        const ensureResult = await ensureTierBranch(PHASE_CONFIG, p.phaseId, c.context, { createIfMissing: true });
-        c.steps.ensurePhaseBranch = { success: ensureResult.success, output: ensureResult.messages.join('\n') };
-        if (!ensureResult.success) throw new Error('Cannot proceed: could not ensure feature branch for phase-end');
-
-        c.steps.findSessionBranches = {
-          success: true,
-          output: 'Feature-only branching: no separate session branches to merge.',
-        };
-        c.steps.mergeSessionBranches = {
-          success: true,
-          output: 'Skipped session branch merges (work stays on the feature branch).',
-        };
-
         const commitPrefix = `[phase ${p.phaseId}]`;
         const phaseCommitMessage = p.commitMessage || `${commitPrefix} completion`;
-        const phaseCommitResult = await gitCommit(phaseCommitMessage);
-        c.steps.gitCommitPhase = { success: phaseCommitResult.success, output: phaseCommitResult.output };
-        if (!phaseCommitResult.success) {
+        const bundle = await runPhaseTierEndGit({
+          context: c.context,
+          phaseId: p.phaseId,
+          commitMessage: phaseCommitMessage,
+        });
+        Object.assign(c.steps, bundle.steps);
+        if (!bundle.ok) {
           return {
             success: false,
             output: c.output.join('\n'),
@@ -492,35 +477,13 @@ export async function phaseEndImpl(
             outcome: buildTierEndOutcome(
               'blocked_fix_required',
               'git_failed',
-              `Phase completion commit failed. ${phaseCommitResult.output} Fix and re-run /phase-end.`,
+              `${bundle.errorOutcome ?? 'Phase git operations failed.'} Fix and re-run /phase-end.`,
               undefined,
               undefined,
               { tierEndGitResumable: true }
             ),
           };
         }
-        const phasePushResult = await gitPush();
-        c.steps.gitPushPhase = { success: phasePushResult.success, output: phasePushResult.output };
-        if (!phasePushResult.success) {
-          return {
-            success: false,
-            output: c.output.join('\n'),
-            steps: c.steps,
-            outcome: buildTierEndOutcome(
-              'blocked_fix_required',
-              'git_failed',
-              `Feature branch push failed after phase-end. ${phasePushResult.output} Fix and re-run /phase-end.`,
-              undefined,
-              undefined,
-              { tierEndGitResumable: true }
-            ),
-          };
-        }
-
-        c.steps.gitMergePhaseToFeature = {
-          success: true,
-          output: 'No phase→feature merge (phase tier has no branch); checkpoint completed on feature branch.',
-        };
       } catch (_error) {
         c.steps.gitOperations = {
           success: false,

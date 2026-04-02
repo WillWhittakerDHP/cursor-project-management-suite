@@ -34,7 +34,7 @@ export async function planFeatureImpl(featureId: string, description?: string): 
       description: resolvedDescription,
       tier: 'feature',
       feature: featureName,
-      docCheckType: 'migration',
+      docCheckType: 'feature',
     });
     output.push(planningOutput);
     output.push('\n---\n\n');

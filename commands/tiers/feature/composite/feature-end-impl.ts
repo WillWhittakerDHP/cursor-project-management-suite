@@ -19,13 +19,7 @@ import { buildTierEndOutcome, type TierEndOutcome } from '../../../utils/tier-ou
 import { resolveWorkflowScope } from '../../../utils/workflow-scope';
 import { getOptionsFromParams } from '../../../utils/command-execution-mode';
 import { FEATURE_CONFIG } from '../../configs/feature';
-import {
-  gitCommit,
-  gitPush,
-  ensureTierBranch,
-  mergeTierBranch,
-  getCurrentBranch,
-} from '../../../git/shared/git-manager';
+import { getCurrentBranch, runFeatureTierEndGit } from '../../../git/shared/git-manager';
 import type {
   TierEndWorkflowContext,
   TierEndWorkflowHooks,
@@ -349,84 +343,16 @@ export async function featureEndImpl(
       };
 
       try {
-        const featureBranchName = FEATURE_CONFIG.getBranchName(ctx.context, ctx.identifier);
-        if (!featureBranchName) {
-          ctx.steps.ensureFeatureBranch = { success: false, output: 'Could not resolve feature branch name from config.' };
-          throw new Error('Cannot proceed: feature branch name is null');
-        }
-
-        const ensureResult = await ensureTierBranch(FEATURE_CONFIG, ctx.identifier, ctx.context, { createIfMissing: true });
-        ctx.steps.ensureFeatureBranch = { success: ensureResult.success, output: ensureResult.messages.join('\n') };
-        if (!ensureResult.success) {
-          throw new Error('Cannot proceed: could not ensure feature branch');
-        }
-
-        ctx.steps.mergePhaseBranches = {
-          success: true,
-          output: 'Feature-only branching: no separate phase branches to merge into the feature branch.',
-        };
-
         const commitPrefix = `[feature ${ctx.identifier}]`;
         const featureCommitMessage = p.commitMessage || `${commitPrefix} completion`;
-        const featureCommitResult = await gitCommit(featureCommitMessage);
-        ctx.steps.gitCommit = { success: featureCommitResult.success, output: featureCommitResult.output };
-        if (!featureCommitResult.success) {
-          return {
-            success: false,
-            output: ctx.output.join('\n'),
-            steps: ctx.steps,
-            outcome: buildTierEndOutcome(
-              'blocked_fix_required',
-              'git_failed',
-              `Feature completion commit failed. ${featureCommitResult.output} Fix and re-run /feature-end.`,
-              undefined,
-              undefined,
-              { tierEndGitResumable: true }
-            ),
-          };
-        }
-
-        const featurePushResult = await gitPush();
-        ctx.steps.gitPush = { success: featurePushResult.success, output: featurePushResult.output };
-        if (!featurePushResult.success) {
-          return {
-            success: false,
-            output: ctx.output.join('\n'),
-            steps: ctx.steps,
-            outcome: buildTierEndOutcome(
-              'blocked_fix_required',
-              'git_failed',
-              `Feature branch push failed. ${featurePushResult.output} Fix and re-run /feature-end.`,
-              undefined,
-              undefined,
-              { tierEndGitResumable: true }
-            ),
-          };
-        }
-
-        const mergeToDevelop = await mergeTierBranch(FEATURE_CONFIG, ctx.identifier, ctx.context, {
-          push: true,
-          deleteBranch: true,
+        const bundle = await runFeatureTierEndGit({
+          context: ctx.context,
+          identifier: ctx.identifier,
+          commitMessage: featureCommitMessage,
           auditPrewarmPromise: ctx.auditPrewarmPromise,
         });
-        ctx.steps.gitMerge = { success: mergeToDevelop.success, output: mergeToDevelop.messages.join('\n') };
-        ctx.steps.deleteBranch = {
-          success: mergeToDevelop.deletedBranch,
-          output: mergeToDevelop.deletedBranch
-            ? 'Feature branch deleted locally (and remote delete attempted).'
-            : 'Feature branch not deleted (see merge step output).',
-        };
-        ctx.steps.checkoutDevelop = {
-          success: mergeToDevelop.success,
-          output: mergeToDevelop.success ? `Merged into ${mergeToDevelop.mergedInto}.` : 'Merge into develop did not complete.',
-        };
-
-        if (!mergeToDevelop.success) {
-          const detail = mergeToDevelop.messages.join(' ');
-          const isBranchCleanup = mergeToDevelop.reasonCode?.startsWith('delete_');
-          const prefix = isBranchCleanup
-            ? 'Feature merged and pushed but branch cleanup failed.'
-            : 'Feature merge into develop failed.';
+        Object.assign(ctx.steps, bundle.steps);
+        if (!bundle.ok) {
           return {
             success: false,
             output: ctx.output.join('\n'),
@@ -434,7 +360,7 @@ export async function featureEndImpl(
             outcome: buildTierEndOutcome(
               'blocked_fix_required',
               'git_failed',
-              `${prefix} ${detail} Fix and re-run /feature-end.`,
+              `${bundle.errorOutcome ?? 'Feature git operations failed.'} Fix and re-run /feature-end.`,
               undefined,
               undefined,
               { tierEndGitResumable: true }

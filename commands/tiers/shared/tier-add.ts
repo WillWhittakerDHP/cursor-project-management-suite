@@ -8,6 +8,7 @@
 
 import type { TierConfig, TierName } from './types';
 import { FEATURE_CONFIG } from '../configs/feature';
+import { appendFeatureSummaryRowIfMissing } from '../../utils/append-feature-summary-row';
 import { PHASE_CONFIG } from '../configs/phase';
 import { SESSION_CONFIG } from '../configs/session';
 import { WorkflowId } from '../../utils/id-utils';
@@ -377,6 +378,172 @@ export async function tierAdd(
       parentTier: parts.parentTier,
       parentIdentifier: parts.parentIdentifier,
       parentDocPath: appendResult.parentDocPath,
+      alreadyExists: appendResult.alreadyExists,
+    },
+    workProfile,
+  };
+}
+
+/**
+ * /feature-add: register a new feature row in PROJECT_PLAN Feature Summary (program index).
+ * Does not create `features/<slug>/` on disk — use `/plan-feature` or `/feature-start` after.
+ */
+export async function featureAdd(slug: string, description?: string): Promise<TierAddResult> {
+  const identifier = slug.trim();
+  const appendResult = await appendFeatureSummaryRowIfMissing({ slug: identifier, description });
+
+  if (!appendResult.success) {
+    recordWorkflowFriction({
+      ...buildWorkflowFrictionEntryFromOrchestrator({
+        action: 'add',
+        tier: 'feature',
+        identifier,
+        featureName: identifier,
+        reasonCodeRaw: 'guide_materialization_failed',
+        symptom: 'feature-add: appendFeatureSummaryRowIfMissing failed.',
+        context: appendResult.errorMessage ?? '',
+      }),
+      forcePolicy: true,
+    });
+    return {
+      success: false,
+      output: `**feature-add failed:**\n\n${appendResult.errorMessage ?? 'Unknown error'}`,
+      added: {
+        tier: 'feature',
+        identifier,
+        parentTier: 'feature',
+        parentIdentifier: '',
+        parentDocPath: appendResult.projectPlanPath,
+        alreadyExists: false,
+      },
+      workProfile: classifyWorkProfile({ tier: 'feature', action: 'start' }),
+    };
+  }
+
+  let context: WorkflowCommandContext;
+  try {
+    context = await WorkflowCommandContext.contextFromParams('feature', { featureId: identifier });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    recordOrchestratorFailureFriction({
+      action: 'add',
+      tier: 'feature',
+      identifier,
+      featureName: identifier,
+      reasonCodeRaw: 'unhandled_error',
+      symptom: message,
+      context: `feature-add: contextFromParams failed after PROJECT_PLAN row.\n\nslug=${identifier}`,
+    });
+    return {
+      success: false,
+      output: `**feature-add failed:**\n\n\`\`\`\n${message}\n\`\`\``,
+      added: {
+        tier: 'feature',
+        identifier,
+        parentTier: 'feature',
+        parentIdentifier: '',
+        parentDocPath: appendResult.projectPlanPath,
+        alreadyExists: appendResult.alreadyExists,
+      },
+      workProfile: classifyWorkProfile({ tier: 'feature', action: 'start' }),
+    };
+  }
+
+  const workProfile = classifyWorkProfile({ tier: 'feature', action: 'start' });
+  const resolvedDescription = await resolvePlanningDescription({
+    tier: 'feature',
+    identifier,
+    feature: context.feature.name,
+    context,
+    description,
+  });
+
+  const output: string[] = [];
+  output.push(`# Feature Add: ${identifier}`);
+  output.push(`**Description:** ${resolvedDescription}`);
+  output.push('');
+
+  if (appendResult.alreadyExists) {
+    output.push(
+      `**Already registered:** \`${identifier}\` already appears in Feature Summary (\`${appendResult.projectPlanPath}\`).`
+    );
+  } else {
+    output.push(
+      `**Registered:** Feature #${appendResult.assignedNumber} — \`${identifier}\` added to Feature Summary (\`${appendResult.projectPlanPath}\`).`
+    );
+  }
+  output.push('');
+
+  const advisory = await buildTierAdvisoryContext({
+    tier: 'feature',
+    workProfile,
+    taskFiles: undefined,
+    projectRoot: PROJECT_ROOT,
+  });
+
+  output.push('## Contract (advisory preview)');
+  output.push('');
+  output.push(advisory.governanceContractBlock);
+  output.push('');
+
+  output.push(advisory.workProfileSection.trimEnd());
+  output.push('');
+
+  if (advisory.architectureExcerpt != null && advisory.architectureExcerpt.trim() !== '') {
+    output.push('## Architecture context (harness-injected)');
+    output.push('');
+    output.push(advisory.architectureExcerpt.trim());
+    output.push('');
+  }
+
+  output.push('## Planning Checks');
+  try {
+    const planningOutput = await runPlanningWithChecks({
+      description: resolvedDescription,
+      tier: 'feature',
+      feature: context.feature.name,
+      docCheckType: 'feature',
+    });
+    output.push(planningOutput);
+  } catch (err) {
+    const errMsg = err instanceof Error ? err.message : String(err);
+    initiateWorkflowFrictionWrite({
+      ...buildWorkflowFrictionEntryFromOrchestrator({
+        action: 'add',
+        tier: 'feature',
+        identifier,
+        featureName: context.feature.name,
+        reasonCodeRaw: 'planning_checks_failed',
+        symptom: `runPlanningWithChecks failed: ${errMsg}`,
+        context: `feature-add planning checks; feature=${context.feature.name}\n\n${errMsg}`,
+      }),
+      forcePolicy: true,
+    });
+    output.push(`Planning checks skipped: ${errMsg}`);
+  }
+  output.push('');
+
+  output.push(buildTierAddReferenceMarkdown());
+  output.push('');
+  output.push('---');
+  output.push(
+    '**Next:** Run `/plan-feature ' +
+      identifier +
+      '` or `/feature-start ' +
+      identifier +
+      '` to scaffold `features/` docs and branch. If handoff/guide are missing, prefer `/plan-feature` first (runs planning checks and `featureCreate`). ' +
+      'After tier-start, complete the planning doc and coverage check before `/accepted-plan` where applicable.'
+  );
+
+  return {
+    success: true,
+    output: output.join('\n'),
+    added: {
+      tier: 'feature',
+      identifier,
+      parentTier: 'feature',
+      parentIdentifier: '',
+      parentDocPath: appendResult.projectPlanPath,
       alreadyExists: appendResult.alreadyExists,
     },
     workProfile,

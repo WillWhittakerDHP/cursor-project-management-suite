@@ -6,7 +6,6 @@
 
 import type { TierConfig } from '../shared/types';
 import { WorkflowId } from '../../utils/id-utils';
-import { appendLog } from '../../utils/append-log';
 import { readProjectFile, writeProjectFile } from '../../utils/utils';
 import type { WorkflowCommandContext } from '../../utils/command-context';
 
@@ -59,6 +58,7 @@ export const SESSION_CONFIG: TierConfig = {
     },
   },
   updateLog: async (context: WorkflowCommandContext, identifier: string, logEntry: string) => {
+    const { appendLog } = await import('../../utils/append-log');
     await appendLog(logEntry, identifier, context.paths.getFeatureName());
   },
   replanCommand: undefined, // Set by tier-change when planSession is passed

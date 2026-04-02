@@ -9,10 +9,10 @@
 import { checkDocumentation } from '../planning/atomic/check-documentation';
 import { checkReuse } from '../planning/atomic/check-reuse';
 
-type DocCheckType = 'component' | 'transformer' | 'pattern' | 'migration';
+type DocCheckType = 'component' | 'transformer' | 'pattern' | 'feature' | 'migration';
 
 export async function checkBeforeImplement(
-  type: DocCheckType = 'migration',
+  type: DocCheckType = 'feature',
   description?: string
 ): Promise<string> {
   const output: string[] = [];

@@ -56,7 +56,7 @@ export async function planPhaseImpl(
       tier: 'phase',
       feature,
       phase: phaseNum,
-      docCheckType: 'migration',
+      docCheckType: 'feature',
     });
     output.push(planningOutput);
   }

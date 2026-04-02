@@ -38,7 +38,7 @@ export async function planComplete(
   sessionId?: string,
   taskId?: string,
   options: {
-    docCheckType?: 'component' | 'transformer' | 'pattern' | 'migration';
+    docCheckType?: 'component' | 'transformer' | 'pattern' | 'feature' | 'migration';
     requireAlternatives?: boolean;
     alternativeType?: AlternativeType;
     requireDecision?: boolean;
@@ -48,7 +48,7 @@ export async function planComplete(
 ): Promise<string> {
   const output: string[] = [];
   const {
-    docCheckType = 'migration',
+    docCheckType = 'feature',
     requireAlternatives = false,
     alternativeType = 'approach',
     requireDecision = false,

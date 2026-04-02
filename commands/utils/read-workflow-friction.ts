@@ -119,6 +119,20 @@ export function isFrictionEntryOpenForHarnessGate(body: string): boolean {
   return false;
 }
 
+/**
+ * Success-path plugin advisory and other non-failure rows are not actionable for push gating.
+ */
+export function isWorkflowFrictionEntryExcludedFromPushGate(entry: ParsedWorkflowFrictionEntry): boolean {
+  const norm = entry.reasonCodeNormalized?.trim();
+  if (norm != null && parseReasonCode(norm) === 'harness_plugin_advisory') {
+    return true;
+  }
+  if (entry.isFailureReason === false) {
+    return true;
+  }
+  return false;
+}
+
 export async function readFullWorkflowFrictionLog(projectRoot?: string): Promise<string> {
   try {
     return await readFile(getWorkflowFrictionLogPath(projectRoot ?? PROJECT_ROOT), 'utf8');
@@ -132,7 +146,10 @@ export async function hasOpenWorkflowFrictionEntries(projectRoot?: string): Prom
   if (!raw.trim()) return false;
   const { entries } = splitWorkflowFrictionLogFile(raw);
   const filtered = filterWorkflowFrictionEntriesForHarness(entries);
-  return filtered.some((e) => isFrictionEntryOpenForHarnessGate(e.body));
+  return filtered.some(
+    (e) =>
+      !isWorkflowFrictionEntryExcludedFromPushGate(e) && isFrictionEntryOpenForHarnessGate(e.body)
+  );
 }
 
 export function buildFrictionClusterKey(entry: ParsedWorkflowFrictionEntry): string {

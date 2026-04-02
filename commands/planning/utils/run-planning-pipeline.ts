@@ -9,7 +9,7 @@
 import type { PlanningTier } from '../../utils/planning-types';
 import { planWithChecks, type PlanWithChecksOptions } from '../composite/plan-with-checks';
 
-export type DocCheckType = 'component' | 'transformer' | 'pattern' | 'migration';
+export type DocCheckType = 'component' | 'transformer' | 'pattern' | 'feature' | 'migration';
 
 export interface RunPlanningWithChecksParams {
   description: string;
@@ -23,7 +23,7 @@ export interface RunPlanningWithChecksParams {
 }
 
 function defaultDocCheckTypeForTier(tier: PlanningTier): DocCheckType {
-  return tier === 'feature' || tier === 'phase' ? 'migration' : 'component';
+  return tier === 'feature' || tier === 'phase' ? 'feature' : 'component';
 }
 
 /**

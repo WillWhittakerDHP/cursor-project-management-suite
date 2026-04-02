@@ -10,6 +10,36 @@ import { getDefaultWorkProfile } from './work-profile-defaults';
 import type { GovernanceDomain } from './work-profile';
 import { deriveDecompositionMode, deriveGateProfile, deriveSuggestedDepth } from './work-profile-rules';
 
+/** Repo-relative paths that imply booking / scheduling / PartFinalizer work. */
+function isBookingRelatedPath(repoRelative: string): boolean {
+  const p = repoRelative.replace(/\\/g, '/');
+  if (/\/client\/src\/(composables|components|views|types)\/booking\//i.test(p)) return true;
+  if (/\/client\/src\/utils\/booking\//i.test(p)) return true;
+  if (/partFinalizer|part-finalizer/i.test(p)) return true;
+  if (/\/server\/src\/routes\/internal\/(appointments|availability)/i.test(p)) return true;
+  if (/\/server\/src\/services\/.*availability/i.test(p)) return true;
+  return false;
+}
+
+/**
+ * Add `booking` to governanceDomains when tier is feature/phase/session (decomposition touches scheduling context)
+ * or when touched paths include booking pipeline code.
+ */
+export function mergeBookingGovernanceDomain(
+  profile: WorkProfile,
+  tier: Tier,
+  touchedPaths?: readonly string[]
+): WorkProfile {
+  const tierTouchesBooking = tier === 'feature' || tier === 'phase' || tier === 'session';
+  const pathsTouchBooking = touchedPaths?.some(isBookingRelatedPath) ?? false;
+  if (!tierTouchesBooking && !pathsTouchBooking) return profile;
+  if (profile.governanceDomains.includes('booking')) return profile;
+  return {
+    ...profile,
+    governanceDomains: [...profile.governanceDomains, 'booking'],
+  };
+}
+
 type TierAction = 'start' | 'end' | 'reopen';
 
 export interface ClassifierInput {

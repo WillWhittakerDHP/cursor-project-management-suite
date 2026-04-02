@@ -234,6 +234,7 @@ export async function runTierEnd(
       await writeEndPending({
         tier: config.name,
         identifier,
+        featureName: context.feature.name,
         cascade: kernelResult.outcome.cascade,
       });
     }

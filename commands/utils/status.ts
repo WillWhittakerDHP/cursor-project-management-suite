@@ -1,10 +1,10 @@
 /**
  * Atomic Command: /status
- * Quick overview of current position in migration
+ * Quick overview of current position in the active feature workflow
  * Shows: phase, next action, last completed, branch, recent commits
  */
 
-import { getCurrentBranch } from './utils';
+import { getCurrentBranch } from '../git/shared/git-logger';
 import { gitLog } from '../git/shared/git-manager';
 import { MarkdownUtils } from './markdown-utils';
 import { WorkflowCommandContext } from './command-context';

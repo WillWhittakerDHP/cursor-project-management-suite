@@ -25,7 +25,7 @@ export async function planTier(
   description: string,
   feature?: string,
   options: {
-    docCheckType?: 'component' | 'transformer' | 'pattern' | 'migration';
+    docCheckType?: 'component' | 'transformer' | 'pattern' | 'feature' | 'migration';
     requireAlternatives?: boolean;
     alternativeType?: AlternativeType;
     requireDecision?: boolean;
@@ -105,7 +105,7 @@ export async function planTier(
 function getTierOptions(
   tier: PlanningTier,
   providedOptions: {
-    docCheckType?: 'component' | 'transformer' | 'pattern' | 'migration';
+    docCheckType?: 'component' | 'transformer' | 'pattern' | 'feature' | 'migration';
     requireAlternatives?: boolean;
     alternativeType?: AlternativeType;
     requireDecision?: boolean;
@@ -115,7 +115,7 @@ function getTierOptions(
 ): typeof providedOptions {
   const defaults: Record<PlanningTier, Partial<typeof providedOptions>> = {
     feature: {
-      docCheckType: 'migration',
+      docCheckType: 'feature',
       requireAlternatives: true,
       alternativeType: 'architecture',
       requireDecision: true,

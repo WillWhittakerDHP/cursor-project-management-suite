@@ -213,6 +213,3 @@ export async function runWithLintVerification<TCleanupResult extends { success: 
   };
 }
 
-/** Current git branch; delegates to git-manager (centralized git reads). */
-export { getCurrentBranch } from '../git/shared/git-manager';
-

@@ -29,6 +29,7 @@ const DOMAIN_TO_PLAYBOOKS: Record<GovernanceDomain, string[]> = {
   data_flow: [TYPE_PLAYBOOK],
   workflow: [HARNESS_CHARTER],
   architecture: [ARCHITECTURE_DOC],
+  booking: [ARCHITECTURE_DOC],
 };
 
 // ─── Domain → audit report names (baseline categories) ───────────────────────
@@ -44,6 +45,7 @@ const DOMAIN_TO_AUDITS: Record<GovernanceDomain, string[]> = {
   data_flow: ['data-flow', 'data-flow-health'],
   workflow: [],
   architecture: ['architecture-alignment'],
+  booking: ['architecture-alignment', 'data-flow'],
 };
 
 // ─── Domain → soft review prompts for planning docs ──────────────────────────
@@ -60,6 +62,8 @@ const DOMAIN_TO_REVIEW_PROMPTS: Record<GovernanceDomain, string> = {
   workflow: 'Review harness charter for workflow ownership and control-doc behavior.',
   architecture:
     'Check ARCHITECTURE.md domain map and data flow for alignment; review architecture-alignment audit if present.',
+  booking:
+    'Check ARCHITECTURE.md §8–§14 (domain model, PartFinalizer, invariants) for booking and scheduling changes; review architecture-alignment and data-flow audits if present.',
 };
 
 export interface GovernanceDomainMapping {

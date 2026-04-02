@@ -18,6 +18,6 @@ Coding standards:
 
 **Responsive design:** Mobile-first; Vuetify responsive props (cols, sm, md, lg, xl) and grid (VContainer, VRow, VCol). Touch-friendly: min 44x44px targets, 16px text. Avoid direct window/document; use Vuetify composables like useDisplay(). See: Vuetify display and grids docs.
 
-**Documentation:** Before new components or similar functionality, check existing generic/reusable components (frontend admin generic directory), transformer patterns, and codebase implementations. Check SCHEDULER_COMPONENT_SPECS.md, VUE_MIGRATION_HANDOFF.md, READMEs, migration guides.
+**Documentation:** Before new components or similar functionality, check existing generic/reusable components (frontend admin generic directory), transformer patterns, and codebase implementations. Check `.project-manager/ARCHITECTURE.md`, SCHEDULER_COMPONENT_SPECS.md, the active feature guide/handoff under `.project-manager/features/<feature>/`, and READMEs. Legacy migration notes: `VUE_MIGRATION_HANDOFF.md` / `features/vue-migration/` if needed.
 
 **Testing suspended:** Do NOT create, modify, or run test files. Testing is disabled (TEST_ENABLED=false) until Phase 3.0 of LAUNCH_CHECKLIST.md. Do not write tests even if task guides mention testing goals.

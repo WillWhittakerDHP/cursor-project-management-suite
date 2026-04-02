@@ -16,12 +16,10 @@ import type { AuditTier } from '../../audit/types';
 import { commitAutofixChanges } from '../../audit/autofix/commit-autofix';
 import { buildTierEndOutcome } from '../../utils/tier-outcome';
 import {
-  branchExists,
   commitRemaining,
-  getExpectedBranchForTier,
   getInScopeDiffPreviewForCommit,
-  getLeafBranchTierFromChain,
   DEFAULT_ALLOWED_COMMIT_PREFIXES,
+  preflightFeatureBranchForHarness,
   propagateSharedFiles,
   type InScopeDiffPreviewResult,
 } from '../../git/shared/git-manager';
@@ -294,55 +292,10 @@ export async function stepReadmeCleanup(
   ctx.output.push(report);
 }
 
-/** User-facing message when the resolved expected branch does not exist locally (tier-start is the fix). */
-function tierStartHintForMissingBranch(
-  ctx: TierEndWorkflowContext,
-  expectedBranchName: string,
-  leafTier: TierName | null
-): string {
-  const feature = ctx.context.feature.name;
-  const tier = leafTier ?? ctx.config.name;
-  const fetchHint =
-    'If the branch already exists on the remote, run **`git fetch`** (then **`git checkout`** the branch) before re-running tier-end.';
-  if (tier === 'feature') {
-    return [
-      `Expected tier branch **${expectedBranchName}** is not present locally (no matching prefix branch).`,
-      '',
-      `Branches are created at **tier-start**. Run **/feature-start** with **featureName** \`${feature}\`, then re-run tier-end.`,
-      '',
-      fetchHint,
-    ].join('\n');
-  }
-  if (tier === 'phase') {
-    return [
-      `Expected feature branch **${expectedBranchName}** is not present locally (no matching prefix branch).`,
-      '',
-      `Run **/feature-start** or **/phase-start** for feature \`${feature}\` so the feature branch exists, then re-run tier-end.`,
-      '',
-      fetchHint,
-    ].join('\n');
-  }
-  if (tier === 'session') {
-    return [
-      `Expected feature branch **${expectedBranchName}** is not present locally (no matching prefix branch).`,
-      '',
-      `Run **/feature-start** or **/session-start** for feature \`${feature}\` so the feature branch exists, then re-run tier-end.`,
-      '',
-      fetchHint,
-    ].join('\n');
-  }
-  return [
-    `Expected tier branch **${expectedBranchName}** is not present locally.`,
-    `Run the appropriate **tier-start** for your tier, then re-run tier-end.`,
-    '',
-    fetchHint,
-  ].join('\n');
-}
-
 /**
  * Commit only in-scope touched files (`client/`, `server/`, `.project-manager/`) with a scope-from-context message.
- * Fails before commit if the **resolved** expected branch does not exist locally — tier-end does not create branches
- * (that is **tier-start**). Otherwise verifies checkout matches expected branch. Runs before stepTierGit.
+ * Runs **preflightFeatureBranchForHarness** (fetch, checkout from origin when local branch is missing, remote coherence)
+ * when this tier has an expected feature branch; then **commitRemaining** with expected branch. Runs before stepTierGit.
  */
 function commitPrefixFromContext(identifier: string): string {
   return `[${identifier}]`;
@@ -458,7 +411,7 @@ export async function stepDeliverablesAndPlanningHints(ctx: TierEndWorkflowConte
 }
 
 const GAP_ANALYSIS_NEXT_ACTION =
-  'Gap analysis found possible open items. Review the report; register follow-up tiers with **tier-add** then **tier-start** if needed. Re-run this tier-end using **nextInvoke** from the control plane (sets `continuePastGapAnalysis`), or pass `continuePastGapAnalysis: true` under **params.options** to bypass after review.';
+  'Gap analysis found possible open items. Review the report and the **LLM review packet (v1)** inside it; respond in chat using the **### Review — …** headings from the packet rubric. Register follow-up tiers with **tier-add** then **tier-start** if needed. Re-run this tier-end using **nextInvoke** from the control plane (sets `continuePastGapAnalysis`), or pass `continuePastGapAnalysis: true` under **params.options** to bypass after review.';
 
 /**
  * Soft gate: optional `runGapAnalysis` hook; stops with `gap_analysis_pending` when gaps reported unless bypassed.
@@ -690,7 +643,6 @@ export async function stepDocRollup(ctx: TierEndWorkflowContext): Promise<void> 
 export async function stepCommitUncommittedNonCursor(
   ctx: TierEndWorkflowContext
 ): Promise<StepExitResult> {
-  const expectedBranch = await getExpectedBranchForTier(ctx.config, ctx.identifier, ctx.context);
   const prefix = commitPrefixFromContext(ctx.identifier);
   const fallbackSubject = `${prefix} tier-end: commit remaining work`;
   const optSubject = ctx.options?.commitMessage?.trim();
@@ -698,13 +650,20 @@ export async function stepCommitUncommittedNonCursor(
   const body = ctx.options?.commitMessageBody?.trim();
   const commitArg = body && body.length > 0 ? { subject, body } : subject;
 
-  if (expectedBranch != null && !(await branchExists(expectedBranch))) {
-    const leafTier = getLeafBranchTierFromChain(ctx.config, ctx.identifier, ctx.context);
-    const detail = tierStartHintForMissingBranch(ctx, expectedBranch, leafTier);
-    ctx.steps.expectedBranchMissing = { success: false, output: detail };
+  const pre = await preflightFeatureBranchForHarness(ctx.config, ctx.identifier, ctx.context, {
+    syncRemote: true,
+    tier: ctx.config.name,
+    tierId: ctx.identifier,
+  });
+  ctx.steps.preflightBranch = { success: pre.ok, output: pre.messages.join('\n') };
+  if (pre.messages.length > 0) {
+    ctx.output.push('### Branch preflight\n\n' + pre.messages.join('\n'));
+  }
+  if (!pre.ok) {
+    const detail = pre.messages.join('\n');
     const outcome = buildTierEndOutcome(
       'blocked_fix_required',
-      'expected_branch_missing_run_tier_start',
+      'preflight_branch_failed',
       detail,
       undefined,
       detail
@@ -716,6 +675,7 @@ export async function stepCommitUncommittedNonCursor(
       outcome,
     };
   }
+  const expectedBranch = pre.expectedBranch;
 
   const preview = await getInScopeDiffPreviewForCommit({
     allowedPrefixes: [...DEFAULT_ALLOWED_COMMIT_PREFIXES],
