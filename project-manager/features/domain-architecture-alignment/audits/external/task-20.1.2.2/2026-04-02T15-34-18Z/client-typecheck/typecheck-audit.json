@@ -1,0 +1,81 @@
+{
+  "generatedAt": "2026-04-02T15:34:18.582Z",
+  "scope": {
+    "client": {
+      "command": "vue-tsc -b --pretty false",
+      "cwd": "client"
+    },
+    "server": {
+      "command": "tsc --noEmit --pretty false",
+      "cwd": "server"
+    }
+  },
+  "exitCode": 1,
+  "command": "vue-tsc -b --pretty false && tsc --noEmit --pretty false",
+  "exceptionSummary": {
+    "totalAllowed": 0,
+    "totalRequiresReview": 1,
+    "bySource": {
+      "inline": 0,
+      "pattern": 0,
+      "specific": 0
+    }
+  },
+  "errors": [
+    {
+      "file": "src/utils/admin/statusButtonTogglePayloads.ts",
+      "line": 63,
+      "col": 3,
+      "code": "TS6133",
+      "message": "'entityKey' is declared but its value is never read.",
+      "raw": "src/utils/admin/statusButtonTogglePayloads.ts(63,3): error TS6133: 'entityKey' is declared but its value is never read.",
+      "scope": "client",
+      "repoPath": "src/utils/admin/statusButtonTogglePayloads.ts"
+    }
+  ],
+  "allowedErrors": [],
+  "pools": [
+    {
+      "poolId": "TS6133-ts6133-entitykey-is-declared-but-its-value-is-never-read",
+      "groupKey": "TS6133::'entityKey' is declared but its value is never read.",
+      "errorCount": 1,
+      "fileCount": 1,
+      "severityScore": 6,
+      "blastRadiusScore": 2,
+      "repetitionScore": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 9,
+      "sample": [
+        {
+          "repoPath": "src/utils/admin/statusButtonTogglePayloads.ts",
+          "line": 63,
+          "col": 3,
+          "code": "TS6133",
+          "message": "'entityKey' is declared but its value is never read."
+        }
+      ],
+      "priority": "P2"
+    }
+  ],
+  "files": [
+    {
+      "repoPath": "src/utils/admin/statusButtonTogglePayloads.ts",
+      "errorCount": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "errors": [
+        {
+          "file": "src/utils/admin/statusButtonTogglePayloads.ts",
+          "line": 63,
+          "col": 3,
+          "code": "TS6133",
+          "message": "'entityKey' is declared but its value is never read.",
+          "raw": "src/utils/admin/statusButtonTogglePayloads.ts(63,3): error TS6133: 'entityKey' is declared but its value is never read.",
+          "scope": "client",
+          "repoPath": "src/utils/admin/statusButtonTogglePayloads.ts"
+        }
+      ]
+    }
+  ]
+}

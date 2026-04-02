@@ -175,7 +175,9 @@ async function deriveNextSession(
     for (const match of sessionMatches) {
       if (WorkflowId.isValidSessionId(match[1])) sessionIds.push(match[1]);
     }
-    const sortedSessions = sessionIds.sort((a, b) => {
+    /** Dedupe: phase guides often list the same session id twice (summary line + ### heading). Without this, indexOf picks the first id and "next" can equal current. */
+    const uniqueSessionIds = [...new Set(sessionIds)];
+    const sortedSessions = uniqueSessionIds.sort((a, b) => {
       const aParsed = WorkflowId.parseSessionId(a);
       const bParsed = WorkflowId.parseSessionId(b);
       if (!aParsed || !bParsed) return 0;

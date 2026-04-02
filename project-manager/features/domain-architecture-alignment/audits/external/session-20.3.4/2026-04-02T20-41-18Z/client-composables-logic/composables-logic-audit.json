@@ -1,0 +1,209 @@
+{
+  "generatedAt": "2026-04-02T20:40:48.489Z",
+  "scope": {
+    "included": [
+      "client/src/composables/**/*.{ts,js}"
+    ],
+    "excluded": [
+      "**/__tests__/**",
+      "**/*.test.*",
+      "**/*.spec.*"
+    ]
+  },
+  "totalScanned": 341,
+  "exceptionSummary": {
+    "totalRequiresReview": 1
+  },
+  "files": [
+    {
+      "id": "client__src__composables__admin__useBlockInstanceEventSegments.ts",
+      "repoPath": "client/src/composables/admin/useBlockInstanceEventSegments.ts",
+      "absPath": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/src/composables/admin/useBlockInstanceEventSegments.ts",
+      "counts": {
+        "computed": 8,
+        "ref": 2,
+        "reactive": 0,
+        "watch": 1,
+        "watchEffect": 0,
+        "lifecycle": 2,
+        "async": 3,
+        "await": 3,
+        "vueQuery": 0,
+        "map": 0,
+        "reduce": 0,
+        "filter": 5,
+        "sort": 1,
+        "dom": 0,
+        "timers": 0,
+        "console": 0
+      },
+      "matches": [
+        {
+          "ruleId": "lifecycle",
+          "lineNumber": 8,
+          "line": "onMounted,",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 40,
+          "line": "const blockInstanceId = computed((): GlobalEntityId => toGlobalEntityId(blockInstanceIdProp.value))",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "ref",
+          "lineNumber": 51,
+          "line": "const isCreatingEventInstance = ref(false)",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "ref",
+          "lineNumber": 53,
+          "line": "const isCreatingEventInstanceLoading = ref(false)",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 55,
+          "line": "const newSegmentPanelValue = computed(",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 61,
+          "line": "const templateWarnings = computed(() => {",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 73,
+          "line": "const filteredEventInstances = computed((): GlobalEntity<'eventInstance'>[] => {",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "filter",
+          "lineNumber": 76,
+          "line": ".filter((e) => segmentBelongsToBlockInstance(e, pid))",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "sort",
+          "lineNumber": 77,
+          "line": ".sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0))",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "async",
+          "lineNumber": 89,
+          "line": "patchOrderIndex: async (updates) => {",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "await",
+          "lineNumber": 90,
+          "line": "await patchEventInstanceOrderIndex(updates)",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "watch",
+          "lineNumber": 94,
+          "line": "watch(",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "lifecycle",
+          "lineNumber": 102,
+          "line": "onMounted(() => {",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 113,
+          "line": "const eventInstancesDisplay = computed((): GlobalEntity<'eventInstance'>[] => {",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 119,
+          "line": "const hasEventInstances = computed(() => filteredEventInstances.value.length > 0)",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 120,
+          "line": "const isLoadingEventInstances = computed(() => false)",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 122,
+          "line": "const canSubmitNewEventInstance = computed(() => {",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "filter",
+          "lineNumber": 152,
+          "line": "expandedInstances.value = [panelKey, ...expandedInstances.value.filter((k) => k !== panelKey)]",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "async",
+          "lineNumber": 155,
+          "line": "const handleEventInstanceCreate = async (): Promise<void> => {",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "await",
+          "lineNumber": 162,
+          "line": "await createEventInstance({",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "filter",
+          "lineNumber": 189,
+          "line": "expandedInstances.value = expandedInstances.value.filter((id) => id !== panelKey)",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "filter",
+          "lineNumber": 201,
+          "line": "expandedInstances.value = expandedInstances.value.filter((id) => id !== panelKey)",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "async",
+          "lineNumber": 204,
+          "line": "const handleDeleteEventInstance = async (id: string): Promise<void> => {",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "await",
+          "lineNumber": 206,
+          "line": "await removeEventInstanceCrud(toGlobalEntityId(id))",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "filter",
+          "lineNumber": 208,
+          "line": "expandedInstances.value = expandedInstances.value.filter((panelId) => panelId !== id)",
+          "suppressionStatus": "unsuppressed"
+        }
+      ],
+      "exportUseFunctions": [
+        "useBlockInstanceEventSegments"
+      ],
+      "returnKeys": [
+        "titleTemplate"
+      ],
+      "complexityScore": 25,
+      "priority": "P1",
+      "suggestions": [
+        {
+          "kind": "split_candidate",
+          "priority": "P1",
+          "message": "Moderate complexity score. Consider separating query/mutations from derived state and formatting."
+        }
+      ]
+    }
+  ]
+}

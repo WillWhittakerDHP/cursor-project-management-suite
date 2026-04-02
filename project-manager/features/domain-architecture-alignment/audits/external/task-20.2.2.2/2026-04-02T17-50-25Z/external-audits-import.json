@@ -1,0 +1,64 @@
+{
+  "timestamp": "2026-04-02T17:50:25.316Z",
+  "feature": "domain-architecture-alignment",
+  "tier": "task",
+  "identifier": "20.2.2.2",
+  "items": [
+    {
+      "sourceId": "client-typecheck",
+      "label": "Vue Typecheck Audit",
+      "copied": [
+        {
+          "from": "client/.audit-reports/typecheck/typecheck-audit.json",
+          "to": ".cursor/project-manager/features/domain-architecture-alignment/audits/external/task-20.2.2.2/2026-04-02T17-50-25Z/client-typecheck/typecheck-audit.json"
+        },
+        {
+          "from": "client/.audit-reports/typecheck/typecheck-audit.md",
+          "to": ".cursor/project-manager/features/domain-architecture-alignment/audits/external/task-20.2.2.2/2026-04-02T17-50-25Z/client-typecheck/typecheck-audit.md"
+        }
+      ],
+      "missing": [
+        "client/.audit-reports/typecheck/typecheck-audit-summary.md"
+      ],
+      "errors": []
+    },
+    {
+      "sourceId": "client-composables-logic",
+      "label": "Vue Composables Logic Audit",
+      "copied": [
+        {
+          "from": "client/.audit-reports/composables-logic-audit.json",
+          "to": ".cursor/project-manager/features/domain-architecture-alignment/audits/external/task-20.2.2.2/2026-04-02T17-50-25Z/client-composables-logic/composables-logic-audit.json"
+        },
+        {
+          "from": "client/.audit-reports/composables-logic-audit.md",
+          "to": ".cursor/project-manager/features/domain-architecture-alignment/audits/external/task-20.2.2.2/2026-04-02T17-50-25Z/client-composables-logic/composables-logic-audit.md"
+        },
+        {
+          "from": "client/.audit-reports/composables-logic-audit-summary.md",
+          "to": ".cursor/project-manager/features/domain-architecture-alignment/audits/external/task-20.2.2.2/2026-04-02T17-50-25Z/client-composables-logic/composables-logic-audit-summary.md"
+        }
+      ],
+      "missing": [],
+      "errors": []
+    },
+    {
+      "sourceId": "client-component-logic",
+      "label": "Vue Component Logic Audit",
+      "copied": [
+        {
+          "from": "client/.audit-reports/component-logic-audit.json",
+          "to": ".cursor/project-manager/features/domain-architecture-alignment/audits/external/task-20.2.2.2/2026-04-02T17-50-25Z/client-component-logic/component-logic-audit.json"
+        },
+        {
+          "from": "client/.audit-reports/component-logic-audit.md",
+          "to": ".cursor/project-manager/features/domain-architecture-alignment/audits/external/task-20.2.2.2/2026-04-02T17-50-25Z/client-component-logic/component-logic-audit.md"
+        }
+      ],
+      "missing": [
+        "client/.audit-reports/component-logic-audit-summary.md"
+      ],
+      "errors": []
+    }
+  ]
+}

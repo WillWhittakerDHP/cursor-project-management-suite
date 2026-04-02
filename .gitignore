@@ -18,3 +18,4 @@ Thumbs.db
 # Pending-state files (transient; written/read during command execution)
 commands/.tier-start-pending.json
 commands/.task-start-pending.json
+commands/.tier-end-pending.json

@@ -582,6 +582,9 @@ function generateFindingsFromAudit(
  * Non-fatal: resolves (not rejects) on non-zero exit so one failing audit
  * doesn't prevent reading the JSONs from the others.
  */
+/** Per-audit npm spawn cap; phase/task typecheck under parallel load can exceed 120s. */
+const AUDIT_SPAWN_TIMEOUT_MS = 300_000;
+
 function spawnAuditScript(npmRun: string | undefined, changedOnly: boolean): Promise<void> {
   if (npmRun == null || npmRun === '') {
     return Promise.resolve();
@@ -593,27 +596,39 @@ function spawnAuditScript(npmRun: string | undefined, changedOnly: boolean): Pro
       cwd: getClientRoot(),
       stdio: 'ignore',
     });
-    const timer = setTimeout(() => { child.kill(); resolve(); }, 120000);
+    const timer = setTimeout(() => { child.kill(); resolve(); }, AUDIT_SPAWN_TIMEOUT_MS);
     child.on('close', () => { clearTimeout(timer); resolve(); });
     child.on('error', () => { clearTimeout(timer); resolve(); });
   });
 }
 
 /**
- * Run all audit scripts for a tier in parallel.
- * Returns a promise that resolves when every script has finished (or timed out).
- * Each script writes its JSON to .audit-reports/ independently.
+ * Run tier audit npm scripts. Typecheck runs first (task/phase), then the rest in parallel.
+ * WHY: Prewarm used to spawn typecheck:audit alongside ~10 heavy audits; under CPU load
+ * vue-tsc could miss the old 120s cap or contend for disk, so typecheck-audit.json was
+ * never refreshed and tier-quality read stale errors (false audit_failed on phase-end).
  */
 export function runTierAuditsParallel(tier: AuditTier): Promise<void> {
   const config = TIER_AUDIT_CONFIG[tier];
   if (!config) return Promise.resolve();
-  const promises = config.audits.map(a => spawnAuditScript(a.npmRun, config.changedOnly));
-  if (tier === 'session') {
-    promises.push(
-      runArchitectureAlignmentAuditFromGitManager(listWorkingTreeChangedRepoPaths).catch(() => {})
-    );
+
+  const typecheckAudit = config.audits.find((a) => a.auditName === 'typecheck');
+  const restAudits = config.audits.filter((a) => a.auditName !== 'typecheck');
+
+  const runRest = (): Promise<void> => {
+    const promises = restAudits.map((a) => spawnAuditScript(a.npmRun, config.changedOnly));
+    if (tier === 'session') {
+      promises.push(
+        runArchitectureAlignmentAuditFromGitManager(listWorkingTreeChangedRepoPaths).catch(() => {})
+      );
+    }
+    return Promise.all(promises).then(() => {});
+  };
+
+  if (typecheckAudit?.npmRun) {
+    return spawnAuditScript(typecheckAudit.npmRun, config.changedOnly).then(runRest);
   }
-  return Promise.all(promises).then(() => {});
+  return runRest();
 }
 
 /**

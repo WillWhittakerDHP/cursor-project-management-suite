@@ -1,0 +1,563 @@
+{
+  "generatedAt": "2026-04-02T18:47:51.942Z",
+  "scope": {
+    "client": {
+      "command": "vue-tsc -b --clean && vue-tsc -b --pretty false",
+      "cwd": "client"
+    },
+    "server": {
+      "command": "tsc --noEmit --pretty false",
+      "cwd": "server"
+    }
+  },
+  "exitCode": 1,
+  "command": "vue-tsc -b --clean && vue-tsc -b --pretty false && tsc --noEmit --pretty false",
+  "exceptionSummary": {
+    "totalAllowed": 0,
+    "totalRequiresReview": 12,
+    "bySource": {
+      "inline": 0,
+      "pattern": 0,
+      "specific": 0
+    }
+  },
+  "errors": [
+    {
+      "file": "src/composables/booking/useDevPanelsComputed.ts",
+      "line": 28,
+      "col": 54,
+      "code": "TS2769",
+      "message": "No overload matches this call.",
+      "raw": "src/composables/booking/useDevPanelsComputed.ts(28,54): error TS2769: No overload matches this call.",
+      "scope": "client",
+      "repoPath": "src/composables/booking/useDevPanelsComputed.ts"
+    },
+    {
+      "file": "src/types/entities.ts",
+      "line": 7,
+      "col": 58,
+      "code": "TS2307",
+      "message": "Cannot find module '@shared/utils/eventPlacementUtils' or its corresponding type declarations.",
+      "raw": "src/types/entities.ts(7,58): error TS2307: Cannot find module '@shared/utils/eventPlacementUtils' or its corresponding type declarations.",
+      "scope": "client",
+      "repoPath": "src/types/entities.ts"
+    },
+    {
+      "file": "src/utils/admin/differentialRoleMatrixRows.ts",
+      "line": 9,
+      "col": 63,
+      "code": "TS2307",
+      "message": "Cannot find module '@shared/utils/eventPlacementUtils' or its corresponding type declarations.",
+      "raw": "src/utils/admin/differentialRoleMatrixRows.ts(9,63): error TS2307: Cannot find module '@shared/utils/eventPlacementUtils' or its corresponding type declarations.",
+      "scope": "client",
+      "repoPath": "src/utils/admin/differentialRoleMatrixRows.ts"
+    },
+    {
+      "file": "src/utils/blockInstanceUtils.ts",
+      "line": 33,
+      "col": 56,
+      "code": "TS2339",
+      "message": "Property 'isStateControl' does not exist on type 'BookingBlockShape'.",
+      "raw": "src/utils/blockInstanceUtils.ts(33,56): error TS2339: Property 'isStateControl' does not exist on type 'BookingBlockShape'.",
+      "scope": "client",
+      "repoPath": "src/utils/blockInstanceUtils.ts"
+    },
+    {
+      "file": "src/utils/booking/minimizerEventShapes.ts",
+      "line": 8,
+      "col": 63,
+      "code": "TS2307",
+      "message": "Cannot find module '@shared/utils/eventPlacementUtils' or its corresponding type declarations.",
+      "raw": "src/utils/booking/minimizerEventShapes.ts(8,63): error TS2307: Cannot find module '@shared/utils/eventPlacementUtils' or its corresponding type declarations.",
+      "scope": "client",
+      "repoPath": "src/utils/booking/minimizerEventShapes.ts"
+    },
+    {
+      "file": "src/utils/booking/partFinalizer.ts",
+      "line": 12,
+      "col": 63,
+      "code": "TS2307",
+      "message": "Cannot find module '@shared/utils/eventPlacementUtils' or its corresponding type declarations.",
+      "raw": "src/utils/booking/partFinalizer.ts(12,63): error TS2307: Cannot find module '@shared/utils/eventPlacementUtils' or its corresponding type declarations.",
+      "scope": "client",
+      "repoPath": "src/utils/booking/partFinalizer.ts"
+    },
+    {
+      "file": "src/utils/eventAttendeeUtils.ts",
+      "line": 31,
+      "col": 66,
+      "code": "TS2345",
+      "message": "Argument of type 'unknown' is not assignable to parameter of type 'DifferentialRole'.",
+      "raw": "src/utils/eventAttendeeUtils.ts(31,66): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'DifferentialRole'.",
+      "scope": "client",
+      "repoPath": "src/utils/eventAttendeeUtils.ts"
+    },
+    {
+      "file": "src/utils/transformers/appointmentToWizardHelpers.ts",
+      "line": 97,
+      "col": 43,
+      "code": "TS2345",
+      "message": "Argument of type 'unknown' is not assignable to parameter of type 'TernaryBoolean | null | undefined'.",
+      "raw": "src/utils/transformers/appointmentToWizardHelpers.ts(97,43): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'TernaryBoolean | null | undefined'.",
+      "scope": "client",
+      "repoPath": "src/utils/transformers/appointmentToWizardHelpers.ts"
+    },
+    {
+      "file": "src/utils/transformers/appointmentToWizardTransformer.ts",
+      "line": 164,
+      "col": 5,
+      "code": "TS2322",
+      "message": "Type '\"PROPERTY\"' is not assignable to type '\"USER\" | \"SERVICE\" | \"TIME\" | \"EVENT\" | \"PRICE\" | undefined'.",
+      "raw": "src/utils/transformers/appointmentToWizardTransformer.ts(164,5): error TS2322: Type '\"PROPERTY\"' is not assignable to type '\"USER\" | \"SERVICE\" | \"TIME\" | \"EVENT\" | \"PRICE\" | undefined'.",
+      "scope": "client",
+      "repoPath": "src/utils/transformers/appointmentToWizardTransformer.ts"
+    },
+    {
+      "file": "src/utils/transformers/appointmentToWizardTransformer.ts",
+      "line": 174,
+      "col": 5,
+      "code": "TS2322",
+      "message": "Type '\"OPTION\"' is not assignable to type '\"USER\" | \"SERVICE\" | \"TIME\" | \"EVENT\" | \"PRICE\" | undefined'.",
+      "raw": "src/utils/transformers/appointmentToWizardTransformer.ts(174,5): error TS2322: Type '\"OPTION\"' is not assignable to type '\"USER\" | \"SERVICE\" | \"TIME\" | \"EVENT\" | \"PRICE\" | undefined'.",
+      "scope": "client",
+      "repoPath": "src/utils/transformers/appointmentToWizardTransformer.ts"
+    },
+    {
+      "file": "src/utils/transformers/globalToBookingTransformerBlocks.ts",
+      "line": 228,
+      "col": 61,
+      "code": "TS2339",
+      "message": "Property 'ORCHESTRATOR' does not exist on type '{ readonly BOOKING_MODE: \"standalone\"; readonly DEFAULT_TERNARY_BOOKING_MODE: \"false\"; }'.",
+      "raw": "src/utils/transformers/globalToBookingTransformerBlocks.ts(228,61): error TS2339: Property 'ORCHESTRATOR' does not exist on type '{ readonly BOOKING_MODE: \"standalone\"; readonly DEFAULT_TERNARY_BOOKING_MODE: \"false\"; }'.",
+      "scope": "client",
+      "repoPath": "src/utils/transformers/globalToBookingTransformerBlocks.ts"
+    },
+    {
+      "file": "src/utils/transformers/globalToBookingTransformerBlocks.ts",
+      "line": 229,
+      "col": 63,
+      "code": "TS2339",
+      "message": "Property 'WIZARD_VISIBLE' does not exist on type '{ readonly BOOKING_MODE: \"standalone\"; readonly DEFAULT_TERNARY_BOOKING_MODE: \"false\"; }'.",
+      "raw": "src/utils/transformers/globalToBookingTransformerBlocks.ts(229,63): error TS2339: Property 'WIZARD_VISIBLE' does not exist on type '{ readonly BOOKING_MODE: \"standalone\"; readonly DEFAULT_TERNARY_BOOKING_MODE: \"false\"; }'.",
+      "scope": "client",
+      "repoPath": "src/utils/transformers/globalToBookingTransformerBlocks.ts"
+    }
+  ],
+  "allowedErrors": [],
+  "pools": [
+    {
+      "poolId": "TS2307-ts2307-cannot-find-module-shared-utils-eventplacementutils-or-its-corresponding-type-declarations",
+      "groupKey": "TS2307::Cannot find module '@shared/utils/eventPlacementUtils' or its corresponding type declarations.",
+      "errorCount": 4,
+      "fileCount": 4,
+      "severityScore": 24,
+      "blastRadiusScore": 8,
+      "repetitionScore": 4,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 36,
+      "sample": [
+        {
+          "repoPath": "src/types/entities.ts",
+          "line": 7,
+          "col": 58,
+          "code": "TS2307",
+          "message": "Cannot find module '@shared/utils/eventPlacementUtils' or its corresponding type declarations."
+        },
+        {
+          "repoPath": "src/utils/admin/differentialRoleMatrixRows.ts",
+          "line": 9,
+          "col": 63,
+          "code": "TS2307",
+          "message": "Cannot find module '@shared/utils/eventPlacementUtils' or its corresponding type declarations."
+        },
+        {
+          "repoPath": "src/utils/booking/minimizerEventShapes.ts",
+          "line": 8,
+          "col": 63,
+          "code": "TS2307",
+          "message": "Cannot find module '@shared/utils/eventPlacementUtils' or its corresponding type declarations."
+        }
+      ],
+      "priority": "P0"
+    },
+    {
+      "poolId": "TS2322-ts2322-assign-option-user-service-time-event-price-undefined",
+      "groupKey": "TS2322::assign:\"OPTION\"=>\"USER\" | \"SERVICE\" | \"TIME\" | \"EVENT\" | \"PRICE\" | undefined",
+      "errorCount": 1,
+      "fileCount": 1,
+      "severityScore": 6,
+      "blastRadiusScore": 2,
+      "repetitionScore": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 9,
+      "sample": [
+        {
+          "repoPath": "src/utils/transformers/appointmentToWizardTransformer.ts",
+          "line": 174,
+          "col": 5,
+          "code": "TS2322",
+          "message": "Type '\"OPTION\"' is not assignable to type '\"USER\" | \"SERVICE\" | \"TIME\" | \"EVENT\" | \"PRICE\" | undefined'."
+        }
+      ],
+      "priority": "P2"
+    },
+    {
+      "poolId": "TS2322-ts2322-assign-property-user-service-time-event-price-undefined",
+      "groupKey": "TS2322::assign:\"PROPERTY\"=>\"USER\" | \"SERVICE\" | \"TIME\" | \"EVENT\" | \"PRICE\" | undefined",
+      "errorCount": 1,
+      "fileCount": 1,
+      "severityScore": 6,
+      "blastRadiusScore": 2,
+      "repetitionScore": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 9,
+      "sample": [
+        {
+          "repoPath": "src/utils/transformers/appointmentToWizardTransformer.ts",
+          "line": 164,
+          "col": 5,
+          "code": "TS2322",
+          "message": "Type '\"PROPERTY\"' is not assignable to type '\"USER\" | \"SERVICE\" | \"TIME\" | \"EVENT\" | \"PRICE\" | undefined'."
+        }
+      ],
+      "priority": "P2"
+    },
+    {
+      "poolId": "TS2339-ts2339-prop-isstatecontrol-bookingblockshape",
+      "groupKey": "TS2339::prop:isStateControl@BookingBlockShape",
+      "errorCount": 1,
+      "fileCount": 1,
+      "severityScore": 6,
+      "blastRadiusScore": 2,
+      "repetitionScore": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 9,
+      "sample": [
+        {
+          "repoPath": "src/utils/blockInstanceUtils.ts",
+          "line": 33,
+          "col": 56,
+          "code": "TS2339",
+          "message": "Property 'isStateControl' does not exist on type 'BookingBlockShape'."
+        }
+      ],
+      "priority": "P2"
+    },
+    {
+      "poolId": "TS2339-ts2339-prop-orchestrator",
+      "groupKey": "TS2339::prop:ORCHESTRATOR@{...}",
+      "errorCount": 1,
+      "fileCount": 1,
+      "severityScore": 6,
+      "blastRadiusScore": 2,
+      "repetitionScore": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 9,
+      "sample": [
+        {
+          "repoPath": "src/utils/transformers/globalToBookingTransformerBlocks.ts",
+          "line": 228,
+          "col": 61,
+          "code": "TS2339",
+          "message": "Property 'ORCHESTRATOR' does not exist on type '{ readonly BOOKING_MODE: \"standalone\"; readonly DEFAULT_TERNARY_BOOKING_MODE: \"false\"; }'."
+        }
+      ],
+      "priority": "P2"
+    },
+    {
+      "poolId": "TS2339-ts2339-prop-wizard-visible",
+      "groupKey": "TS2339::prop:WIZARD_VISIBLE@{...}",
+      "errorCount": 1,
+      "fileCount": 1,
+      "severityScore": 6,
+      "blastRadiusScore": 2,
+      "repetitionScore": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 9,
+      "sample": [
+        {
+          "repoPath": "src/utils/transformers/globalToBookingTransformerBlocks.ts",
+          "line": 229,
+          "col": 63,
+          "code": "TS2339",
+          "message": "Property 'WIZARD_VISIBLE' does not exist on type '{ readonly BOOKING_MODE: \"standalone\"; readonly DEFAULT_TERNARY_BOOKING_MODE: \"false\"; }'."
+        }
+      ],
+      "priority": "P2"
+    },
+    {
+      "poolId": "TS2345-ts2345-arg-unknown-differentialrole",
+      "groupKey": "TS2345::arg:unknown=>DifferentialRole",
+      "errorCount": 1,
+      "fileCount": 1,
+      "severityScore": 6,
+      "blastRadiusScore": 2,
+      "repetitionScore": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 9,
+      "sample": [
+        {
+          "repoPath": "src/utils/eventAttendeeUtils.ts",
+          "line": 31,
+          "col": 66,
+          "code": "TS2345",
+          "message": "Argument of type 'unknown' is not assignable to parameter of type 'DifferentialRole'."
+        }
+      ],
+      "priority": "P2"
+    },
+    {
+      "poolId": "TS2345-ts2345-arg-unknown-ternaryboolean-null-undefined",
+      "groupKey": "TS2345::arg:unknown=>TernaryBoolean | null | undefined",
+      "errorCount": 1,
+      "fileCount": 1,
+      "severityScore": 6,
+      "blastRadiusScore": 2,
+      "repetitionScore": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 9,
+      "sample": [
+        {
+          "repoPath": "src/utils/transformers/appointmentToWizardHelpers.ts",
+          "line": 97,
+          "col": 43,
+          "code": "TS2345",
+          "message": "Argument of type 'unknown' is not assignable to parameter of type 'TernaryBoolean | null | undefined'."
+        }
+      ],
+      "priority": "P2"
+    },
+    {
+      "poolId": "TS2769-ts2769-no-overload-matches-this-call",
+      "groupKey": "TS2769::No overload matches this call.",
+      "errorCount": 1,
+      "fileCount": 1,
+      "severityScore": 6,
+      "blastRadiusScore": 2,
+      "repetitionScore": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 9,
+      "sample": [
+        {
+          "repoPath": "src/composables/booking/useDevPanelsComputed.ts",
+          "line": 28,
+          "col": 54,
+          "code": "TS2769",
+          "message": "No overload matches this call."
+        }
+      ],
+      "priority": "P2"
+    }
+  ],
+  "files": [
+    {
+      "repoPath": "src/utils/transformers/appointmentToWizardTransformer.ts",
+      "errorCount": 2,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "errors": [
+        {
+          "file": "src/utils/transformers/appointmentToWizardTransformer.ts",
+          "line": 164,
+          "col": 5,
+          "code": "TS2322",
+          "message": "Type '\"PROPERTY\"' is not assignable to type '\"USER\" | \"SERVICE\" | \"TIME\" | \"EVENT\" | \"PRICE\" | undefined'.",
+          "raw": "src/utils/transformers/appointmentToWizardTransformer.ts(164,5): error TS2322: Type '\"PROPERTY\"' is not assignable to type '\"USER\" | \"SERVICE\" | \"TIME\" | \"EVENT\" | \"PRICE\" | undefined'.",
+          "scope": "client",
+          "repoPath": "src/utils/transformers/appointmentToWizardTransformer.ts"
+        },
+        {
+          "file": "src/utils/transformers/appointmentToWizardTransformer.ts",
+          "line": 174,
+          "col": 5,
+          "code": "TS2322",
+          "message": "Type '\"OPTION\"' is not assignable to type '\"USER\" | \"SERVICE\" | \"TIME\" | \"EVENT\" | \"PRICE\" | undefined'.",
+          "raw": "src/utils/transformers/appointmentToWizardTransformer.ts(174,5): error TS2322: Type '\"OPTION\"' is not assignable to type '\"USER\" | \"SERVICE\" | \"TIME\" | \"EVENT\" | \"PRICE\" | undefined'.",
+          "scope": "client",
+          "repoPath": "src/utils/transformers/appointmentToWizardTransformer.ts"
+        }
+      ]
+    },
+    {
+      "repoPath": "src/utils/transformers/globalToBookingTransformerBlocks.ts",
+      "errorCount": 2,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "errors": [
+        {
+          "file": "src/utils/transformers/globalToBookingTransformerBlocks.ts",
+          "line": 228,
+          "col": 61,
+          "code": "TS2339",
+          "message": "Property 'ORCHESTRATOR' does not exist on type '{ readonly BOOKING_MODE: \"standalone\"; readonly DEFAULT_TERNARY_BOOKING_MODE: \"false\"; }'.",
+          "raw": "src/utils/transformers/globalToBookingTransformerBlocks.ts(228,61): error TS2339: Property 'ORCHESTRATOR' does not exist on type '{ readonly BOOKING_MODE: \"standalone\"; readonly DEFAULT_TERNARY_BOOKING_MODE: \"false\"; }'.",
+          "scope": "client",
+          "repoPath": "src/utils/transformers/globalToBookingTransformerBlocks.ts"
+        },
+        {
+          "file": "src/utils/transformers/globalToBookingTransformerBlocks.ts",
+          "line": 229,
+          "col": 63,
+          "code": "TS2339",
+          "message": "Property 'WIZARD_VISIBLE' does not exist on type '{ readonly BOOKING_MODE: \"standalone\"; readonly DEFAULT_TERNARY_BOOKING_MODE: \"false\"; }'.",
+          "raw": "src/utils/transformers/globalToBookingTransformerBlocks.ts(229,63): error TS2339: Property 'WIZARD_VISIBLE' does not exist on type '{ readonly BOOKING_MODE: \"standalone\"; readonly DEFAULT_TERNARY_BOOKING_MODE: \"false\"; }'.",
+          "scope": "client",
+          "repoPath": "src/utils/transformers/globalToBookingTransformerBlocks.ts"
+        }
+      ]
+    },
+    {
+      "repoPath": "src/composables/booking/useDevPanelsComputed.ts",
+      "errorCount": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "errors": [
+        {
+          "file": "src/composables/booking/useDevPanelsComputed.ts",
+          "line": 28,
+          "col": 54,
+          "code": "TS2769",
+          "message": "No overload matches this call.",
+          "raw": "src/composables/booking/useDevPanelsComputed.ts(28,54): error TS2769: No overload matches this call.",
+          "scope": "client",
+          "repoPath": "src/composables/booking/useDevPanelsComputed.ts"
+        }
+      ]
+    },
+    {
+      "repoPath": "src/types/entities.ts",
+      "errorCount": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "errors": [
+        {
+          "file": "src/types/entities.ts",
+          "line": 7,
+          "col": 58,
+          "code": "TS2307",
+          "message": "Cannot find module '@shared/utils/eventPlacementUtils' or its corresponding type declarations.",
+          "raw": "src/types/entities.ts(7,58): error TS2307: Cannot find module '@shared/utils/eventPlacementUtils' or its corresponding type declarations.",
+          "scope": "client",
+          "repoPath": "src/types/entities.ts"
+        }
+      ]
+    },
+    {
+      "repoPath": "src/utils/admin/differentialRoleMatrixRows.ts",
+      "errorCount": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "errors": [
+        {
+          "file": "src/utils/admin/differentialRoleMatrixRows.ts",
+          "line": 9,
+          "col": 63,
+          "code": "TS2307",
+          "message": "Cannot find module '@shared/utils/eventPlacementUtils' or its corresponding type declarations.",
+          "raw": "src/utils/admin/differentialRoleMatrixRows.ts(9,63): error TS2307: Cannot find module '@shared/utils/eventPlacementUtils' or its corresponding type declarations.",
+          "scope": "client",
+          "repoPath": "src/utils/admin/differentialRoleMatrixRows.ts"
+        }
+      ]
+    },
+    {
+      "repoPath": "src/utils/blockInstanceUtils.ts",
+      "errorCount": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "errors": [
+        {
+          "file": "src/utils/blockInstanceUtils.ts",
+          "line": 33,
+          "col": 56,
+          "code": "TS2339",
+          "message": "Property 'isStateControl' does not exist on type 'BookingBlockShape'.",
+          "raw": "src/utils/blockInstanceUtils.ts(33,56): error TS2339: Property 'isStateControl' does not exist on type 'BookingBlockShape'.",
+          "scope": "client",
+          "repoPath": "src/utils/blockInstanceUtils.ts"
+        }
+      ]
+    },
+    {
+      "repoPath": "src/utils/booking/minimizerEventShapes.ts",
+      "errorCount": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "errors": [
+        {
+          "file": "src/utils/booking/minimizerEventShapes.ts",
+          "line": 8,
+          "col": 63,
+          "code": "TS2307",
+          "message": "Cannot find module '@shared/utils/eventPlacementUtils' or its corresponding type declarations.",
+          "raw": "src/utils/booking/minimizerEventShapes.ts(8,63): error TS2307: Cannot find module '@shared/utils/eventPlacementUtils' or its corresponding type declarations.",
+          "scope": "client",
+          "repoPath": "src/utils/booking/minimizerEventShapes.ts"
+        }
+      ]
+    },
+    {
+      "repoPath": "src/utils/booking/partFinalizer.ts",
+      "errorCount": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "errors": [
+        {
+          "file": "src/utils/booking/partFinalizer.ts",
+          "line": 12,
+          "col": 63,
+          "code": "TS2307",
+          "message": "Cannot find module '@shared/utils/eventPlacementUtils' or its corresponding type declarations.",
+          "raw": "src/utils/booking/partFinalizer.ts(12,63): error TS2307: Cannot find module '@shared/utils/eventPlacementUtils' or its corresponding type declarations.",
+          "scope": "client",
+          "repoPath": "src/utils/booking/partFinalizer.ts"
+        }
+      ]
+    },
+    {
+      "repoPath": "src/utils/eventAttendeeUtils.ts",
+      "errorCount": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "errors": [
+        {
+          "file": "src/utils/eventAttendeeUtils.ts",
+          "line": 31,
+          "col": 66,
+          "code": "TS2345",
+          "message": "Argument of type 'unknown' is not assignable to parameter of type 'DifferentialRole'.",
+          "raw": "src/utils/eventAttendeeUtils.ts(31,66): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'DifferentialRole'.",
+          "scope": "client",
+          "repoPath": "src/utils/eventAttendeeUtils.ts"
+        }
+      ]
+    },
+    {
+      "repoPath": "src/utils/transformers/appointmentToWizardHelpers.ts",
+      "errorCount": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "errors": [
+        {
+          "file": "src/utils/transformers/appointmentToWizardHelpers.ts",
+          "line": 97,
+          "col": 43,
+          "code": "TS2345",
+          "message": "Argument of type 'unknown' is not assignable to parameter of type 'TernaryBoolean | null | undefined'.",
+          "raw": "src/utils/transformers/appointmentToWizardHelpers.ts(97,43): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'TernaryBoolean | null | undefined'.",
+          "scope": "client",
+          "repoPath": "src/utils/transformers/appointmentToWizardHelpers.ts"
+        }
+      ]
+    }
+  ]
+}

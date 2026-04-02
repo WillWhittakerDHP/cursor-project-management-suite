@@ -1,0 +1,257 @@
+{
+  "generatedAt": "2026-04-02T16:53:35.362Z",
+  "scope": {
+    "client": {
+      "command": "vue-tsc -b --pretty false",
+      "cwd": "client"
+    },
+    "server": {
+      "command": "tsc --noEmit --pretty false",
+      "cwd": "server"
+    }
+  },
+  "exitCode": 1,
+  "command": "vue-tsc -b --pretty false && tsc --noEmit --pretty false",
+  "exceptionSummary": {
+    "totalAllowed": 0,
+    "totalRequiresReview": 5,
+    "bySource": {
+      "inline": 0,
+      "pattern": 0,
+      "specific": 0
+    }
+  },
+  "errors": [
+    {
+      "file": "src/composables/booking/useWizardFilteredOptions.ts",
+      "line": 41,
+      "col": 36,
+      "code": "TS2339",
+      "message": "Property 'OPTION' does not exist on type '{ readonly USER: \"user\"; readonly SERVICE: \"service\"; readonly TIME: \"time\"; readonly EVENT: \"event\"; readonly PRICE: \"price\"; }'.",
+      "raw": "src/composables/booking/useWizardFilteredOptions.ts(41,36): error TS2339: Property 'OPTION' does not exist on type '{ readonly USER: \"user\"; readonly SERVICE: \"service\"; readonly TIME: \"time\"; readonly EVENT: \"event\"; readonly PRICE: \"price\"; }'.",
+      "scope": "client",
+      "repoPath": "src/composables/booking/useWizardFilteredOptions.ts"
+    },
+    {
+      "file": "src/composables/booking/useWizardFilteredOptions.ts",
+      "line": 55,
+      "col": 36,
+      "code": "TS2339",
+      "message": "Property 'PROPERTY' does not exist on type '{ readonly USER: \"user\"; readonly SERVICE: \"service\"; readonly TIME: \"time\"; readonly EVENT: \"event\"; readonly PRICE: \"price\"; }'.",
+      "raw": "src/composables/booking/useWizardFilteredOptions.ts(55,36): error TS2339: Property 'PROPERTY' does not exist on type '{ readonly USER: \"user\"; readonly SERVICE: \"service\"; readonly TIME: \"time\"; readonly EVENT: \"event\"; readonly PRICE: \"price\"; }'.",
+      "scope": "client",
+      "repoPath": "src/composables/booking/useWizardFilteredOptions.ts"
+    },
+    {
+      "file": "src/composables/booking/useWizardFilteredOptions.ts",
+      "line": 68,
+      "col": 36,
+      "code": "TS2339",
+      "message": "Property 'COUPON' does not exist on type '{ readonly USER: \"user\"; readonly SERVICE: \"service\"; readonly TIME: \"time\"; readonly EVENT: \"event\"; readonly PRICE: \"price\"; }'.",
+      "raw": "src/composables/booking/useWizardFilteredOptions.ts(68,36): error TS2339: Property 'COUPON' does not exist on type '{ readonly USER: \"user\"; readonly SERVICE: \"service\"; readonly TIME: \"time\"; readonly EVENT: \"event\"; readonly PRICE: \"price\"; }'.",
+      "scope": "client",
+      "repoPath": "src/composables/booking/useWizardFilteredOptions.ts"
+    },
+    {
+      "file": "src/utils/booking/partFinalizer.ts",
+      "line": 100,
+      "col": 59,
+      "code": "TS2345",
+      "message": "Argument of type 'unknown' is not assignable to parameter of type 'DifferentialRole'.",
+      "raw": "src/utils/booking/partFinalizer.ts(100,59): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'DifferentialRole'.",
+      "scope": "client",
+      "repoPath": "src/utils/booking/partFinalizer.ts"
+    },
+    {
+      "file": "src/utils/booking/partFinalizer.ts",
+      "line": 131,
+      "col": 9,
+      "code": "TS2345",
+      "message": "Argument of type '{} | null' is not assignable to parameter of type 'Record<string, DifferentialRole> | null | undefined'.",
+      "raw": "src/utils/booking/partFinalizer.ts(131,9): error TS2345: Argument of type '{} | null' is not assignable to parameter of type 'Record<string, DifferentialRole> | null | undefined'.",
+      "scope": "client",
+      "repoPath": "src/utils/booking/partFinalizer.ts"
+    }
+  ],
+  "allowedErrors": [],
+  "pools": [
+    {
+      "poolId": "TS2339-ts2339-prop-coupon",
+      "groupKey": "TS2339::prop:COUPON@{...}",
+      "errorCount": 1,
+      "fileCount": 1,
+      "severityScore": 6,
+      "blastRadiusScore": 2,
+      "repetitionScore": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 9,
+      "sample": [
+        {
+          "repoPath": "src/composables/booking/useWizardFilteredOptions.ts",
+          "line": 68,
+          "col": 36,
+          "code": "TS2339",
+          "message": "Property 'COUPON' does not exist on type '{ readonly USER: \"user\"; readonly SERVICE: \"service\"; readonly TIME: \"time\"; readonly EVENT: \"event\"; readonly PRICE: \"price\"; }'."
+        }
+      ],
+      "priority": "P2"
+    },
+    {
+      "poolId": "TS2339-ts2339-prop-option",
+      "groupKey": "TS2339::prop:OPTION@{...}",
+      "errorCount": 1,
+      "fileCount": 1,
+      "severityScore": 6,
+      "blastRadiusScore": 2,
+      "repetitionScore": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 9,
+      "sample": [
+        {
+          "repoPath": "src/composables/booking/useWizardFilteredOptions.ts",
+          "line": 41,
+          "col": 36,
+          "code": "TS2339",
+          "message": "Property 'OPTION' does not exist on type '{ readonly USER: \"user\"; readonly SERVICE: \"service\"; readonly TIME: \"time\"; readonly EVENT: \"event\"; readonly PRICE: \"price\"; }'."
+        }
+      ],
+      "priority": "P2"
+    },
+    {
+      "poolId": "TS2339-ts2339-prop-property",
+      "groupKey": "TS2339::prop:PROPERTY@{...}",
+      "errorCount": 1,
+      "fileCount": 1,
+      "severityScore": 6,
+      "blastRadiusScore": 2,
+      "repetitionScore": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 9,
+      "sample": [
+        {
+          "repoPath": "src/composables/booking/useWizardFilteredOptions.ts",
+          "line": 55,
+          "col": 36,
+          "code": "TS2339",
+          "message": "Property 'PROPERTY' does not exist on type '{ readonly USER: \"user\"; readonly SERVICE: \"service\"; readonly TIME: \"time\"; readonly EVENT: \"event\"; readonly PRICE: \"price\"; }'."
+        }
+      ],
+      "priority": "P2"
+    },
+    {
+      "poolId": "TS2345-ts2345-arg-null-record-null-undefined",
+      "groupKey": "TS2345::arg:{...} | null=>Record<...> | null | undefined",
+      "errorCount": 1,
+      "fileCount": 1,
+      "severityScore": 6,
+      "blastRadiusScore": 2,
+      "repetitionScore": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 9,
+      "sample": [
+        {
+          "repoPath": "src/utils/booking/partFinalizer.ts",
+          "line": 131,
+          "col": 9,
+          "code": "TS2345",
+          "message": "Argument of type '{} | null' is not assignable to parameter of type 'Record<string, DifferentialRole> | null | undefined'."
+        }
+      ],
+      "priority": "P2"
+    },
+    {
+      "poolId": "TS2345-ts2345-arg-unknown-differentialrole",
+      "groupKey": "TS2345::arg:unknown=>DifferentialRole",
+      "errorCount": 1,
+      "fileCount": 1,
+      "severityScore": 6,
+      "blastRadiusScore": 2,
+      "repetitionScore": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 9,
+      "sample": [
+        {
+          "repoPath": "src/utils/booking/partFinalizer.ts",
+          "line": 100,
+          "col": 59,
+          "code": "TS2345",
+          "message": "Argument of type 'unknown' is not assignable to parameter of type 'DifferentialRole'."
+        }
+      ],
+      "priority": "P2"
+    }
+  ],
+  "files": [
+    {
+      "repoPath": "src/composables/booking/useWizardFilteredOptions.ts",
+      "errorCount": 3,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "errors": [
+        {
+          "file": "src/composables/booking/useWizardFilteredOptions.ts",
+          "line": 41,
+          "col": 36,
+          "code": "TS2339",
+          "message": "Property 'OPTION' does not exist on type '{ readonly USER: \"user\"; readonly SERVICE: \"service\"; readonly TIME: \"time\"; readonly EVENT: \"event\"; readonly PRICE: \"price\"; }'.",
+          "raw": "src/composables/booking/useWizardFilteredOptions.ts(41,36): error TS2339: Property 'OPTION' does not exist on type '{ readonly USER: \"user\"; readonly SERVICE: \"service\"; readonly TIME: \"time\"; readonly EVENT: \"event\"; readonly PRICE: \"price\"; }'.",
+          "scope": "client",
+          "repoPath": "src/composables/booking/useWizardFilteredOptions.ts"
+        },
+        {
+          "file": "src/composables/booking/useWizardFilteredOptions.ts",
+          "line": 55,
+          "col": 36,
+          "code": "TS2339",
+          "message": "Property 'PROPERTY' does not exist on type '{ readonly USER: \"user\"; readonly SERVICE: \"service\"; readonly TIME: \"time\"; readonly EVENT: \"event\"; readonly PRICE: \"price\"; }'.",
+          "raw": "src/composables/booking/useWizardFilteredOptions.ts(55,36): error TS2339: Property 'PROPERTY' does not exist on type '{ readonly USER: \"user\"; readonly SERVICE: \"service\"; readonly TIME: \"time\"; readonly EVENT: \"event\"; readonly PRICE: \"price\"; }'.",
+          "scope": "client",
+          "repoPath": "src/composables/booking/useWizardFilteredOptions.ts"
+        },
+        {
+          "file": "src/composables/booking/useWizardFilteredOptions.ts",
+          "line": 68,
+          "col": 36,
+          "code": "TS2339",
+          "message": "Property 'COUPON' does not exist on type '{ readonly USER: \"user\"; readonly SERVICE: \"service\"; readonly TIME: \"time\"; readonly EVENT: \"event\"; readonly PRICE: \"price\"; }'.",
+          "raw": "src/composables/booking/useWizardFilteredOptions.ts(68,36): error TS2339: Property 'COUPON' does not exist on type '{ readonly USER: \"user\"; readonly SERVICE: \"service\"; readonly TIME: \"time\"; readonly EVENT: \"event\"; readonly PRICE: \"price\"; }'.",
+          "scope": "client",
+          "repoPath": "src/composables/booking/useWizardFilteredOptions.ts"
+        }
+      ]
+    },
+    {
+      "repoPath": "src/utils/booking/partFinalizer.ts",
+      "errorCount": 2,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "errors": [
+        {
+          "file": "src/utils/booking/partFinalizer.ts",
+          "line": 100,
+          "col": 59,
+          "code": "TS2345",
+          "message": "Argument of type 'unknown' is not assignable to parameter of type 'DifferentialRole'.",
+          "raw": "src/utils/booking/partFinalizer.ts(100,59): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'DifferentialRole'.",
+          "scope": "client",
+          "repoPath": "src/utils/booking/partFinalizer.ts"
+        },
+        {
+          "file": "src/utils/booking/partFinalizer.ts",
+          "line": 131,
+          "col": 9,
+          "code": "TS2345",
+          "message": "Argument of type '{} | null' is not assignable to parameter of type 'Record<string, DifferentialRole> | null | undefined'.",
+          "raw": "src/utils/booking/partFinalizer.ts(131,9): error TS2345: Argument of type '{} | null' is not assignable to parameter of type 'Record<string, DifferentialRole> | null | undefined'.",
+          "scope": "client",
+          "repoPath": "src/utils/booking/partFinalizer.ts"
+        }
+      ]
+    }
+  ]
+}
