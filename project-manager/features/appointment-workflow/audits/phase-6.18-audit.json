@@ -1,0 +1,46 @@
+{
+  "tier": "phase",
+  "identifier": "6.18",
+  "overallStatus": "pass",
+  "results": [
+    {
+      "category": "tier-quality",
+      "status": "pass",
+      "score": 96,
+      "findings": [
+        {
+          "type": "info",
+          "message": "3 duplication group(s) with high consolidation leverage",
+          "location": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/.audit-reports/duplication-audit.json",
+          "suggestion": "Review client/.audit-reports/duplication-audit.md for DRY opportunities"
+        },
+        {
+          "type": "info",
+          "message": "2 file(s) with P0/P1 deprecation findings",
+          "location": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/.audit-reports/deprecation-audit.json",
+          "suggestion": "Review client/.audit-reports/deprecation-audit.json for deprecation cleanup"
+        }
+      ],
+      "recommendations": [
+        "Review duplication audit for consolidation opportunities"
+      ],
+      "summary": "Ran 12 phase-tier audits; found 0 error(s), 0 warning(s), 2 info signal(s)."
+    }
+  ],
+  "timestamp": "2026-04-02T01:29:29.484Z",
+  "reportPath": "",
+  "featureName": "appointment-workflow",
+  "auditType": "end",
+  "baselineComparison": [
+    {
+      "category": "tier-quality-coverage",
+      "startScore": 100,
+      "status": "missing"
+    },
+    {
+      "category": "tier-quality",
+      "endScore": 96,
+      "status": "new"
+    }
+  ]
+}

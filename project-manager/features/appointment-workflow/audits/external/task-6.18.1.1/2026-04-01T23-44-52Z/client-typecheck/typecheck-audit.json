@@ -1,0 +1,81 @@
+{
+  "generatedAt": "2026-04-01T23:44:52.650Z",
+  "scope": {
+    "client": {
+      "command": "vue-tsc -b --pretty false",
+      "cwd": "client"
+    },
+    "server": {
+      "command": "tsc --noEmit --pretty false",
+      "cwd": "server"
+    }
+  },
+  "exitCode": 1,
+  "command": "vue-tsc -b --pretty false && tsc --noEmit --pretty false",
+  "exceptionSummary": {
+    "totalAllowed": 0,
+    "totalRequiresReview": 1,
+    "bySource": {
+      "inline": 0,
+      "pattern": 0,
+      "specific": 0
+    }
+  },
+  "errors": [
+    {
+      "file": "src/utils/booking/appointmentDataBuilders.ts",
+      "line": 78,
+      "col": 5,
+      "code": "TS2322",
+      "message": "Type '\"client\" | \"agent\" | AppointmentAttendeeRoleLiteral' is not assignable to type '\"client\" | \"agent\" | \"transaction_manager\" | \"owner\" | \"inspector\" | undefined'.",
+      "raw": "src/utils/booking/appointmentDataBuilders.ts(78,5): error TS2322: Type '\"client\" | \"agent\" | AppointmentAttendeeRoleLiteral' is not assignable to type '\"client\" | \"agent\" | \"transaction_manager\" | \"owner\" | \"inspector\" | undefined'.",
+      "scope": "client",
+      "repoPath": "src/utils/booking/appointmentDataBuilders.ts"
+    }
+  ],
+  "allowedErrors": [],
+  "pools": [
+    {
+      "poolId": "TS2322-ts2322-assign-client-agent-appointmentattendeeroleliteral-client-agent-transaction-manager-owner-inspector-undefined",
+      "groupKey": "TS2322::assign:\"client\" | \"agent\" | AppointmentAttendeeRoleLiteral=>\"client\" | \"agent\" | \"transaction_manager\" | \"owner\" | \"inspector\" | undefined",
+      "errorCount": 1,
+      "fileCount": 1,
+      "severityScore": 6,
+      "blastRadiusScore": 2,
+      "repetitionScore": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 9,
+      "sample": [
+        {
+          "repoPath": "src/utils/booking/appointmentDataBuilders.ts",
+          "line": 78,
+          "col": 5,
+          "code": "TS2322",
+          "message": "Type '\"client\" | \"agent\" | AppointmentAttendeeRoleLiteral' is not assignable to type '\"client\" | \"agent\" | \"transaction_manager\" | \"owner\" | \"inspector\" | undefined'."
+        }
+      ],
+      "priority": "P2"
+    }
+  ],
+  "files": [
+    {
+      "repoPath": "src/utils/booking/appointmentDataBuilders.ts",
+      "errorCount": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "errors": [
+        {
+          "file": "src/utils/booking/appointmentDataBuilders.ts",
+          "line": 78,
+          "col": 5,
+          "code": "TS2322",
+          "message": "Type '\"client\" | \"agent\" | AppointmentAttendeeRoleLiteral' is not assignable to type '\"client\" | \"agent\" | \"transaction_manager\" | \"owner\" | \"inspector\" | undefined'.",
+          "raw": "src/utils/booking/appointmentDataBuilders.ts(78,5): error TS2322: Type '\"client\" | \"agent\" | AppointmentAttendeeRoleLiteral' is not assignable to type '\"client\" | \"agent\" | \"transaction_manager\" | \"owner\" | \"inspector\" | undefined'.",
+          "scope": "client",
+          "repoPath": "src/utils/booking/appointmentDataBuilders.ts"
+        }
+      ]
+    }
+  ]
+}

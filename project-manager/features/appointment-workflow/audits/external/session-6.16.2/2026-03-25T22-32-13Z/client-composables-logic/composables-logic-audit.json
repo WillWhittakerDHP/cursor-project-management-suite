@@ -1,0 +1,206 @@
+{
+  "generatedAt": "2026-03-25T22:31:48.935Z",
+  "scope": {
+    "included": [
+      "client/src/composables/**/*.{ts,js}"
+    ],
+    "excluded": [
+      "**/__tests__/**",
+      "**/*.test.*",
+      "**/*.spec.*"
+    ]
+  },
+  "totalScanned": 336,
+  "exceptionSummary": {
+    "totalRequiresReview": 1
+  },
+  "files": [
+    {
+      "id": "client__src__composables__booking__useMinimizerPartsScheduling.ts",
+      "repoPath": "client/src/composables/booking/useMinimizerPartsScheduling.ts",
+      "absPath": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/src/composables/booking/useMinimizerPartsScheduling.ts",
+      "counts": {
+        "computed": 17,
+        "ref": 1,
+        "reactive": 0,
+        "watch": 1,
+        "watchEffect": 0,
+        "lifecycle": 0,
+        "async": 0,
+        "await": 0,
+        "vueQuery": 0,
+        "map": 1,
+        "reduce": 0,
+        "filter": 1,
+        "sort": 1,
+        "dom": 1,
+        "timers": 0,
+        "console": 0
+      },
+      "matches": [
+        {
+          "ruleId": "computed",
+          "lineNumber": 121,
+          "line": "const placeId = computed(() => propertyDetailsStepData.value?.candidatePlaceId)",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "ref",
+          "lineNumber": 123,
+          "line": "const showModal = ref(false)",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "dom",
+          "lineNumber": 129,
+          "line": "* WHY aggregate duration: fetch + window + inspection filter reserve total minutes before deadline.",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 133,
+          "line": "const minimizerSegments = computed(() => {",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 141,
+          "line": "const hasMinimizerParts = computed(() => minimizerSegments.value.some((s) => s.roundedDuration > 0))",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 143,
+          "line": "const minimizerDuration = computed(() =>",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 147,
+          "line": "const minimizerPartShapeName = computed(() =>",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 182,
+          "line": "const hasContingencyClosingDate = computed(",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 188,
+          "line": "const minimizerSchedulingWindow = computed(() =>",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 196,
+          "line": "const minimizerServerSlotsForDay = computed(() => {",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 205,
+          "line": "const minimizerShapeOverride = computed(() =>",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 210,
+          "line": "blockInstances: computed(() => []),",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 213,
+          "line": "perspective: computed(() => 'nonDifferential' as const),",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 214,
+          "line": "isDifferentialService: computed(() => false),",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 218,
+          "line": "const minimizerStepperDayLabel = computed(() =>",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "filter",
+          "lineNumber": 230,
+          "line": ".filter((key) => {",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "sort",
+          "lineNumber": 234,
+          "line": ".sort()",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 237,
+          "line": "const allowedMinimizerDates = computed(() => {",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 242,
+          "line": "const minimizerFirstDayKey = computed(() => availableMinimizerDayKeys.value[0] ?? null)",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 244,
+          "line": "const minimizerLastDayKey = computed(() => {",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "watch",
+          "lineNumber": 249,
+          "line": "watch(",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "map",
+          "lineNumber": 260,
+          "line": "minimizerAppointmentSlots.value.map((s) => {",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 293,
+          "line": "minimizerOptions: computed(() => minimizerOptions.value),",
+          "suppressionStatus": "unsuppressed"
+        }
+      ],
+      "exportUseFunctions": [
+        "useMinimizerPartsScheduling"
+      ],
+      "returnKeys": [
+        "dayLabel",
+        "duration",
+        "endTime",
+        "startTime",
+        "timeLabel"
+      ],
+      "complexityScore": 23,
+      "priority": "P1",
+      "suggestions": [
+        {
+          "kind": "split_candidate",
+          "priority": "P1",
+          "message": "Moderate complexity score. Consider separating query/mutations from derived state and formatting."
+        },
+        {
+          "kind": "side_effects",
+          "priority": "P0",
+          "message": "Contains direct DOM access. Prefer isolating DOM work behind a small composable/utility and keeping core logic testable."
+        }
+      ]
+    }
+  ]
+}

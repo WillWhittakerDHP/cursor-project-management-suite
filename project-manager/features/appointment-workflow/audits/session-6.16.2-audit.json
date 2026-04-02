@@ -1,0 +1,94 @@
+{
+  "tier": "session",
+  "identifier": "6.16.2",
+  "overallStatus": "pass",
+  "results": [
+    {
+      "category": "tier-quality",
+      "status": "pass",
+      "score": 98,
+      "findings": [
+        {
+          "type": "info",
+          "message": "constants-consolidation audit produced output (review JSON for details)",
+          "location": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/.audit-reports/constants-consolidation-audit.json",
+          "suggestion": "Review client/.audit-reports/constants-consolidation-audit.json for findings"
+        }
+      ],
+      "recommendations": [],
+      "summary": "Ran 10 session-tier audits; found 0 error(s), 0 warning(s), 1 info signal(s)."
+    },
+    {
+      "category": "docs",
+      "status": "pass",
+      "score": 100,
+      "findings": [],
+      "recommendations": [
+        "Documentation is comprehensive and well-structured"
+      ],
+      "summary": "3/3 documents exist. 0 issue(s) found."
+    },
+    {
+      "category": "vue-architecture",
+      "status": "pass",
+      "score": 100,
+      "findings": [],
+      "recommendations": [],
+      "summary": "Scanned 209 .vue file(s); found 0 error(s), 0 warning(s)."
+    }
+  ],
+  "timestamp": "2026-03-25T22:34:22.376Z",
+  "reportPath": "",
+  "featureName": "appointment-workflow",
+  "auditType": "end",
+  "baselineComparison": [
+    {
+      "category": "tier-quality-coverage",
+      "startScore": 100,
+      "status": "missing"
+    },
+    {
+      "category": "type-constant-inventory",
+      "startScore": 0,
+      "endScore": 0,
+      "delta": 0,
+      "status": "unchanged"
+    },
+    {
+      "category": "composable-governance",
+      "startScore": 98,
+      "endScore": 96,
+      "delta": -2,
+      "status": "regressed"
+    },
+    {
+      "category": "function-governance",
+      "startScore": 98,
+      "endScore": 100,
+      "delta": 2,
+      "status": "improved"
+    },
+    {
+      "category": "component-governance",
+      "startScore": 100,
+      "endScore": 100,
+      "delta": 0,
+      "status": "unchanged"
+    },
+    {
+      "category": "tier-quality",
+      "endScore": 98,
+      "status": "new"
+    },
+    {
+      "category": "docs",
+      "endScore": 100,
+      "status": "new"
+    },
+    {
+      "category": "vue-architecture",
+      "endScore": 100,
+      "status": "new"
+    }
+  ]
+}

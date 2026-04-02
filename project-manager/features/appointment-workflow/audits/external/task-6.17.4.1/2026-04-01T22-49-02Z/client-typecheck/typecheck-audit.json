@@ -1,0 +1,547 @@
+{
+  "generatedAt": "2026-04-01T22:49:02.247Z",
+  "scope": {
+    "client": {
+      "command": "vue-tsc -b --pretty false",
+      "cwd": "client"
+    },
+    "server": {
+      "command": "tsc --noEmit --pretty false",
+      "cwd": "server"
+    }
+  },
+  "exitCode": 1,
+  "command": "vue-tsc -b --pretty false && tsc --noEmit --pretty false",
+  "exceptionSummary": {
+    "totalAllowed": 0,
+    "totalRequiresReview": 17,
+    "bySource": {
+      "inline": 0,
+      "pattern": 0,
+      "specific": 0
+    }
+  },
+  "errors": [
+    {
+      "file": "src/components/admin/generic/AdminEntityDeleteWizard.vue",
+      "line": 9,
+      "col": 6,
+      "code": "TS2322",
+      "message": "Type 'ComputedRef<boolean>' is not assignable to type 'boolean | undefined'.",
+      "raw": "src/components/admin/generic/AdminEntityDeleteWizard.vue(9,6): error TS2322: Type 'ComputedRef<boolean>' is not assignable to type 'boolean | undefined'.",
+      "scope": "client",
+      "repoPath": "src/components/admin/generic/AdminEntityDeleteWizard.vue"
+    },
+    {
+      "file": "src/components/admin/generic/AdminEntityDeleteWizard.vue",
+      "line": 18,
+      "col": 12,
+      "code": "TS2322",
+      "message": "Type 'ComputedRef<boolean>' is not assignable to type 'boolean | undefined'.",
+      "raw": "src/components/admin/generic/AdminEntityDeleteWizard.vue(18,12): error TS2322: Type 'ComputedRef<boolean>' is not assignable to type 'boolean | undefined'.",
+      "scope": "client",
+      "repoPath": "src/components/admin/generic/AdminEntityDeleteWizard.vue"
+    },
+    {
+      "file": "src/components/admin/generic/AdminEntityDeleteWizard.vue",
+      "line": 28,
+      "col": 17,
+      "code": "TS2367",
+      "message": "This comparison appears to be unintentional because the types 'ComputedRef<AdminEntityDeleteWizardPhase>' and 'string' have no overlap.",
+      "raw": "src/components/admin/generic/AdminEntityDeleteWizard.vue(28,17): error TS2367: This comparison appears to be unintentional because the types 'ComputedRef<AdminEntityDeleteWizardPhase>' and 'string' have no overlap.",
+      "scope": "client",
+      "repoPath": "src/components/admin/generic/AdminEntityDeleteWizard.vue"
+    },
+    {
+      "file": "src/components/admin/generic/AdminEntityDeleteWizard.vue",
+      "line": 28,
+      "col": 56,
+      "code": "TS2367",
+      "message": "This comparison appears to be unintentional because the types 'ComputedRef<AdminEntityDeleteWizardPhase>' and 'string' have no overlap.",
+      "raw": "src/components/admin/generic/AdminEntityDeleteWizard.vue(28,56): error TS2367: This comparison appears to be unintentional because the types 'ComputedRef<AdminEntityDeleteWizardPhase>' and 'string' have no overlap.",
+      "scope": "client",
+      "repoPath": "src/components/admin/generic/AdminEntityDeleteWizard.vue"
+    },
+    {
+      "file": "src/components/admin/generic/AdminEntityDeleteWizard.vue",
+      "line": 38,
+      "col": 30,
+      "code": "TS2367",
+      "message": "This comparison appears to be unintentional because the types 'ComputedRef<AdminEntityDeleteWizardPhase>' and 'string' have no overlap.",
+      "raw": "src/components/admin/generic/AdminEntityDeleteWizard.vue(38,30): error TS2367: This comparison appears to be unintentional because the types 'ComputedRef<AdminEntityDeleteWizardPhase>' and 'string' have no overlap.",
+      "scope": "client",
+      "repoPath": "src/components/admin/generic/AdminEntityDeleteWizard.vue"
+    },
+    {
+      "file": "src/components/admin/generic/AdminEntityDeleteWizard.vue",
+      "line": 48,
+      "col": 48,
+      "code": "TS2339",
+      "message": "Property 'length' does not exist on type 'ComputedRef<string[]>'.",
+      "raw": "src/components/admin/generic/AdminEntityDeleteWizard.vue(48,48): error TS2339: Property 'length' does not exist on type 'ComputedRef<string[]>'.",
+      "scope": "client",
+      "repoPath": "src/components/admin/generic/AdminEntityDeleteWizard.vue"
+    },
+    {
+      "file": "src/components/admin/generic/AdminEntityDeleteWizard.vue",
+      "line": 60,
+      "col": 30,
+      "code": "TS2367",
+      "message": "This comparison appears to be unintentional because the types 'ComputedRef<AdminEntityDeleteWizardPhase>' and 'string' have no overlap.",
+      "raw": "src/components/admin/generic/AdminEntityDeleteWizard.vue(60,30): error TS2367: This comparison appears to be unintentional because the types 'ComputedRef<AdminEntityDeleteWizardPhase>' and 'string' have no overlap.",
+      "scope": "client",
+      "repoPath": "src/components/admin/generic/AdminEntityDeleteWizard.vue"
+    },
+    {
+      "file": "src/components/admin/generic/AdminEntityDeleteWizard.vue",
+      "line": 65,
+      "col": 48,
+      "code": "TS2339",
+      "message": "Property 'length' does not exist on type 'ComputedRef<string[]>'.",
+      "raw": "src/components/admin/generic/AdminEntityDeleteWizard.vue(65,48): error TS2339: Property 'length' does not exist on type 'ComputedRef<string[]>'.",
+      "scope": "client",
+      "repoPath": "src/components/admin/generic/AdminEntityDeleteWizard.vue"
+    },
+    {
+      "file": "src/components/admin/generic/AdminEntityDeleteWizard.vue",
+      "line": 78,
+      "col": 22,
+      "code": "TS2367",
+      "message": "This comparison appears to be unintentional because the types 'ComputedRef<AdminEntityDeleteWizardPhase>' and 'string' have no overlap.",
+      "raw": "src/components/admin/generic/AdminEntityDeleteWizard.vue(78,22): error TS2367: This comparison appears to be unintentional because the types 'ComputedRef<AdminEntityDeleteWizardPhase>' and 'string' have no overlap.",
+      "scope": "client",
+      "repoPath": "src/components/admin/generic/AdminEntityDeleteWizard.vue"
+    },
+    {
+      "file": "src/components/admin/generic/AdminEntityDeleteWizard.vue",
+      "line": 87,
+      "col": 22,
+      "code": "TS2367",
+      "message": "This comparison appears to be unintentional because the types 'ComputedRef<AdminEntityDeleteWizardPhase>' and 'string' have no overlap.",
+      "raw": "src/components/admin/generic/AdminEntityDeleteWizard.vue(87,22): error TS2367: This comparison appears to be unintentional because the types 'ComputedRef<AdminEntityDeleteWizardPhase>' and 'string' have no overlap.",
+      "scope": "client",
+      "repoPath": "src/components/admin/generic/AdminEntityDeleteWizard.vue"
+    },
+    {
+      "file": "src/components/admin/generic/AdminEntityDeleteWizard.vue",
+      "line": 99,
+      "col": 17,
+      "code": "TS2367",
+      "message": "This comparison appears to be unintentional because the types 'ComputedRef<AdminEntityDeleteWizardPhase>' and 'string' have no overlap.",
+      "raw": "src/components/admin/generic/AdminEntityDeleteWizard.vue(99,17): error TS2367: This comparison appears to be unintentional because the types 'ComputedRef<AdminEntityDeleteWizardPhase>' and 'string' have no overlap.",
+      "scope": "client",
+      "repoPath": "src/components/admin/generic/AdminEntityDeleteWizard.vue"
+    },
+    {
+      "file": "src/components/admin/generic/AdminEntityDeleteWizard.vue",
+      "line": 101,
+      "col": 12,
+      "code": "TS2322",
+      "message": "Type 'ComputedRef<boolean>' is not assignable to type 'boolean | undefined'.",
+      "raw": "src/components/admin/generic/AdminEntityDeleteWizard.vue(101,12): error TS2322: Type 'ComputedRef<boolean>' is not assignable to type 'boolean | undefined'.",
+      "scope": "client",
+      "repoPath": "src/components/admin/generic/AdminEntityDeleteWizard.vue"
+    },
+    {
+      "file": "src/components/admin/generic/AdminEntityDeleteWizard.vue",
+      "line": 107,
+      "col": 17,
+      "code": "TS2367",
+      "message": "This comparison appears to be unintentional because the types 'ComputedRef<AdminEntityDeleteWizardPhase>' and 'string' have no overlap.",
+      "raw": "src/components/admin/generic/AdminEntityDeleteWizard.vue(107,17): error TS2367: This comparison appears to be unintentional because the types 'ComputedRef<AdminEntityDeleteWizardPhase>' and 'string' have no overlap.",
+      "scope": "client",
+      "repoPath": "src/components/admin/generic/AdminEntityDeleteWizard.vue"
+    },
+    {
+      "file": "src/components/admin/generic/AdminEntityDeleteWizard.vue",
+      "line": 114,
+      "col": 17,
+      "code": "TS2367",
+      "message": "This comparison appears to be unintentional because the types 'ComputedRef<AdminEntityDeleteWizardPhase>' and 'string' have no overlap.",
+      "raw": "src/components/admin/generic/AdminEntityDeleteWizard.vue(114,17): error TS2367: This comparison appears to be unintentional because the types 'ComputedRef<AdminEntityDeleteWizardPhase>' and 'string' have no overlap.",
+      "scope": "client",
+      "repoPath": "src/components/admin/generic/AdminEntityDeleteWizard.vue"
+    },
+    {
+      "file": "src/composables/admin/useAdminEntityDeleteWizard.ts",
+      "line": 160,
+      "col": 5,
+      "code": "TS2322",
+      "message": "Type '{ phase: AdminEntityDeleteWizardPhase; preflight: DeletePreflightResponse | null; lastError: string | null; lastErrorCode: DeleteContractErrorCode | undefined; isBlocked: boolean; canConfirmDelete: boolean; isBusy: boolean; dependencySummaryLines: string[]; }' is not assignable to type 'AdminEntityDeleteWizardState'.",
+      "raw": "src/composables/admin/useAdminEntityDeleteWizard.ts(160,5): error TS2322: Type '{ phase: AdminEntityDeleteWizardPhase; preflight: DeletePreflightResponse | null; lastError: string | null; lastErrorCode: DeleteContractErrorCode | undefined; isBlocked: boolean; canConfirmDelete: boolean; isBusy: boolean; dependencySummaryLines: string[]; }' is not assignable to type 'AdminEntityDeleteWizardState'.",
+      "scope": "client",
+      "repoPath": "src/composables/admin/useAdminEntityDeleteWizard.ts"
+    },
+    {
+      "file": "src/utils/admin/entityList.ts",
+      "line": 69,
+      "col": 9,
+      "code": "TS2304",
+      "message": "Cannot find name 'contractDelete'.",
+      "raw": "src/utils/admin/entityList.ts(69,9): error TS2304: Cannot find name 'contractDelete'.",
+      "scope": "client",
+      "repoPath": "src/utils/admin/entityList.ts"
+    },
+    {
+      "file": "src/utils/admin/entityList.ts",
+      "line": 71,
+      "col": 15,
+      "code": "TS2304",
+      "message": "Cannot find name 'contractDelete'.",
+      "raw": "src/utils/admin/entityList.ts(71,15): error TS2304: Cannot find name 'contractDelete'.",
+      "scope": "client",
+      "repoPath": "src/utils/admin/entityList.ts"
+    }
+  ],
+  "allowedErrors": [],
+  "pools": [
+    {
+      "poolId": "TS2367-ts2367-this-comparison-appears-to-be-unintentional-because-the-types-computedref-adminentitydeletewizardphase-and-string",
+      "groupKey": "TS2367::This comparison appears to be unintentional because the types 'ComputedRef<AdminEntityDeleteWizardPhase>' and 'string' have no overlap.",
+      "errorCount": 9,
+      "fileCount": 1,
+      "severityScore": 54,
+      "blastRadiusScore": 2,
+      "repetitionScore": 9,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 65,
+      "sample": [
+        {
+          "repoPath": "src/components/admin/generic/AdminEntityDeleteWizard.vue",
+          "line": 28,
+          "col": 17,
+          "code": "TS2367",
+          "message": "This comparison appears to be unintentional because the types 'ComputedRef<AdminEntityDeleteWizardPhase>' and 'string' have no overlap."
+        },
+        {
+          "repoPath": "src/components/admin/generic/AdminEntityDeleteWizard.vue",
+          "line": 28,
+          "col": 56,
+          "code": "TS2367",
+          "message": "This comparison appears to be unintentional because the types 'ComputedRef<AdminEntityDeleteWizardPhase>' and 'string' have no overlap."
+        },
+        {
+          "repoPath": "src/components/admin/generic/AdminEntityDeleteWizard.vue",
+          "line": 38,
+          "col": 30,
+          "code": "TS2367",
+          "message": "This comparison appears to be unintentional because the types 'ComputedRef<AdminEntityDeleteWizardPhase>' and 'string' have no overlap."
+        }
+      ],
+      "priority": "P0"
+    },
+    {
+      "poolId": "TS2322-ts2322-assign-computedref-boolean-undefined",
+      "groupKey": "TS2322::assign:ComputedRef<...>=>boolean | undefined",
+      "errorCount": 3,
+      "fileCount": 1,
+      "severityScore": 18,
+      "blastRadiusScore": 2,
+      "repetitionScore": 3,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 23,
+      "sample": [
+        {
+          "repoPath": "src/components/admin/generic/AdminEntityDeleteWizard.vue",
+          "line": 9,
+          "col": 6,
+          "code": "TS2322",
+          "message": "Type 'ComputedRef<boolean>' is not assignable to type 'boolean | undefined'."
+        },
+        {
+          "repoPath": "src/components/admin/generic/AdminEntityDeleteWizard.vue",
+          "line": 18,
+          "col": 12,
+          "code": "TS2322",
+          "message": "Type 'ComputedRef<boolean>' is not assignable to type 'boolean | undefined'."
+        },
+        {
+          "repoPath": "src/components/admin/generic/AdminEntityDeleteWizard.vue",
+          "line": 101,
+          "col": 12,
+          "code": "TS2322",
+          "message": "Type 'ComputedRef<boolean>' is not assignable to type 'boolean | undefined'."
+        }
+      ],
+      "priority": "P0"
+    },
+    {
+      "poolId": "TS2304-ts2304-cannot-find-name-contractdelete",
+      "groupKey": "TS2304::Cannot find name 'contractDelete'.",
+      "errorCount": 2,
+      "fileCount": 1,
+      "severityScore": 12,
+      "blastRadiusScore": 2,
+      "repetitionScore": 2,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 16,
+      "sample": [
+        {
+          "repoPath": "src/utils/admin/entityList.ts",
+          "line": 69,
+          "col": 9,
+          "code": "TS2304",
+          "message": "Cannot find name 'contractDelete'."
+        },
+        {
+          "repoPath": "src/utils/admin/entityList.ts",
+          "line": 71,
+          "col": 15,
+          "code": "TS2304",
+          "message": "Cannot find name 'contractDelete'."
+        }
+      ],
+      "priority": "P1"
+    },
+    {
+      "poolId": "TS2339-ts2339-prop-length-computedref",
+      "groupKey": "TS2339::prop:length@ComputedRef<...>",
+      "errorCount": 2,
+      "fileCount": 1,
+      "severityScore": 12,
+      "blastRadiusScore": 2,
+      "repetitionScore": 2,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 16,
+      "sample": [
+        {
+          "repoPath": "src/components/admin/generic/AdminEntityDeleteWizard.vue",
+          "line": 48,
+          "col": 48,
+          "code": "TS2339",
+          "message": "Property 'length' does not exist on type 'ComputedRef<string[]>'."
+        },
+        {
+          "repoPath": "src/components/admin/generic/AdminEntityDeleteWizard.vue",
+          "line": 65,
+          "col": 48,
+          "code": "TS2339",
+          "message": "Property 'length' does not exist on type 'ComputedRef<string[]>'."
+        }
+      ],
+      "priority": "P1"
+    },
+    {
+      "poolId": "TS2322-ts2322-assign-adminentitydeletewizardstate",
+      "groupKey": "TS2322::assign:{...}=>AdminEntityDeleteWizardState",
+      "errorCount": 1,
+      "fileCount": 1,
+      "severityScore": 6,
+      "blastRadiusScore": 2,
+      "repetitionScore": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "totalScore": 9,
+      "sample": [
+        {
+          "repoPath": "src/composables/admin/useAdminEntityDeleteWizard.ts",
+          "line": 160,
+          "col": 5,
+          "code": "TS2322",
+          "message": "Type '{ phase: AdminEntityDeleteWizardPhase; preflight: DeletePreflightResponse | null; lastError: string | null; lastErrorCode: DeleteContractErrorCode | undefined; isBlocked: boolean; canConfirmDelete: boolean; isBusy: boolean; dependencySummaryLines: string[]; }' is not assignable to type 'AdminEntityDeleteWizardState'."
+        }
+      ],
+      "priority": "P2"
+    }
+  ],
+  "files": [
+    {
+      "repoPath": "src/components/admin/generic/AdminEntityDeleteWizard.vue",
+      "errorCount": 14,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "errors": [
+        {
+          "file": "src/components/admin/generic/AdminEntityDeleteWizard.vue",
+          "line": 9,
+          "col": 6,
+          "code": "TS2322",
+          "message": "Type 'ComputedRef<boolean>' is not assignable to type 'boolean | undefined'.",
+          "raw": "src/components/admin/generic/AdminEntityDeleteWizard.vue(9,6): error TS2322: Type 'ComputedRef<boolean>' is not assignable to type 'boolean | undefined'.",
+          "scope": "client",
+          "repoPath": "src/components/admin/generic/AdminEntityDeleteWizard.vue"
+        },
+        {
+          "file": "src/components/admin/generic/AdminEntityDeleteWizard.vue",
+          "line": 18,
+          "col": 12,
+          "code": "TS2322",
+          "message": "Type 'ComputedRef<boolean>' is not assignable to type 'boolean | undefined'.",
+          "raw": "src/components/admin/generic/AdminEntityDeleteWizard.vue(18,12): error TS2322: Type 'ComputedRef<boolean>' is not assignable to type 'boolean | undefined'.",
+          "scope": "client",
+          "repoPath": "src/components/admin/generic/AdminEntityDeleteWizard.vue"
+        },
+        {
+          "file": "src/components/admin/generic/AdminEntityDeleteWizard.vue",
+          "line": 28,
+          "col": 17,
+          "code": "TS2367",
+          "message": "This comparison appears to be unintentional because the types 'ComputedRef<AdminEntityDeleteWizardPhase>' and 'string' have no overlap.",
+          "raw": "src/components/admin/generic/AdminEntityDeleteWizard.vue(28,17): error TS2367: This comparison appears to be unintentional because the types 'ComputedRef<AdminEntityDeleteWizardPhase>' and 'string' have no overlap.",
+          "scope": "client",
+          "repoPath": "src/components/admin/generic/AdminEntityDeleteWizard.vue"
+        },
+        {
+          "file": "src/components/admin/generic/AdminEntityDeleteWizard.vue",
+          "line": 28,
+          "col": 56,
+          "code": "TS2367",
+          "message": "This comparison appears to be unintentional because the types 'ComputedRef<AdminEntityDeleteWizardPhase>' and 'string' have no overlap.",
+          "raw": "src/components/admin/generic/AdminEntityDeleteWizard.vue(28,56): error TS2367: This comparison appears to be unintentional because the types 'ComputedRef<AdminEntityDeleteWizardPhase>' and 'string' have no overlap.",
+          "scope": "client",
+          "repoPath": "src/components/admin/generic/AdminEntityDeleteWizard.vue"
+        },
+        {
+          "file": "src/components/admin/generic/AdminEntityDeleteWizard.vue",
+          "line": 38,
+          "col": 30,
+          "code": "TS2367",
+          "message": "This comparison appears to be unintentional because the types 'ComputedRef<AdminEntityDeleteWizardPhase>' and 'string' have no overlap.",
+          "raw": "src/components/admin/generic/AdminEntityDeleteWizard.vue(38,30): error TS2367: This comparison appears to be unintentional because the types 'ComputedRef<AdminEntityDeleteWizardPhase>' and 'string' have no overlap.",
+          "scope": "client",
+          "repoPath": "src/components/admin/generic/AdminEntityDeleteWizard.vue"
+        },
+        {
+          "file": "src/components/admin/generic/AdminEntityDeleteWizard.vue",
+          "line": 48,
+          "col": 48,
+          "code": "TS2339",
+          "message": "Property 'length' does not exist on type 'ComputedRef<string[]>'.",
+          "raw": "src/components/admin/generic/AdminEntityDeleteWizard.vue(48,48): error TS2339: Property 'length' does not exist on type 'ComputedRef<string[]>'.",
+          "scope": "client",
+          "repoPath": "src/components/admin/generic/AdminEntityDeleteWizard.vue"
+        },
+        {
+          "file": "src/components/admin/generic/AdminEntityDeleteWizard.vue",
+          "line": 60,
+          "col": 30,
+          "code": "TS2367",
+          "message": "This comparison appears to be unintentional because the types 'ComputedRef<AdminEntityDeleteWizardPhase>' and 'string' have no overlap.",
+          "raw": "src/components/admin/generic/AdminEntityDeleteWizard.vue(60,30): error TS2367: This comparison appears to be unintentional because the types 'ComputedRef<AdminEntityDeleteWizardPhase>' and 'string' have no overlap.",
+          "scope": "client",
+          "repoPath": "src/components/admin/generic/AdminEntityDeleteWizard.vue"
+        },
+        {
+          "file": "src/components/admin/generic/AdminEntityDeleteWizard.vue",
+          "line": 65,
+          "col": 48,
+          "code": "TS2339",
+          "message": "Property 'length' does not exist on type 'ComputedRef<string[]>'.",
+          "raw": "src/components/admin/generic/AdminEntityDeleteWizard.vue(65,48): error TS2339: Property 'length' does not exist on type 'ComputedRef<string[]>'.",
+          "scope": "client",
+          "repoPath": "src/components/admin/generic/AdminEntityDeleteWizard.vue"
+        },
+        {
+          "file": "src/components/admin/generic/AdminEntityDeleteWizard.vue",
+          "line": 78,
+          "col": 22,
+          "code": "TS2367",
+          "message": "This comparison appears to be unintentional because the types 'ComputedRef<AdminEntityDeleteWizardPhase>' and 'string' have no overlap.",
+          "raw": "src/components/admin/generic/AdminEntityDeleteWizard.vue(78,22): error TS2367: This comparison appears to be unintentional because the types 'ComputedRef<AdminEntityDeleteWizardPhase>' and 'string' have no overlap.",
+          "scope": "client",
+          "repoPath": "src/components/admin/generic/AdminEntityDeleteWizard.vue"
+        },
+        {
+          "file": "src/components/admin/generic/AdminEntityDeleteWizard.vue",
+          "line": 87,
+          "col": 22,
+          "code": "TS2367",
+          "message": "This comparison appears to be unintentional because the types 'ComputedRef<AdminEntityDeleteWizardPhase>' and 'string' have no overlap.",
+          "raw": "src/components/admin/generic/AdminEntityDeleteWizard.vue(87,22): error TS2367: This comparison appears to be unintentional because the types 'ComputedRef<AdminEntityDeleteWizardPhase>' and 'string' have no overlap.",
+          "scope": "client",
+          "repoPath": "src/components/admin/generic/AdminEntityDeleteWizard.vue"
+        },
+        {
+          "file": "src/components/admin/generic/AdminEntityDeleteWizard.vue",
+          "line": 99,
+          "col": 17,
+          "code": "TS2367",
+          "message": "This comparison appears to be unintentional because the types 'ComputedRef<AdminEntityDeleteWizardPhase>' and 'string' have no overlap.",
+          "raw": "src/components/admin/generic/AdminEntityDeleteWizard.vue(99,17): error TS2367: This comparison appears to be unintentional because the types 'ComputedRef<AdminEntityDeleteWizardPhase>' and 'string' have no overlap.",
+          "scope": "client",
+          "repoPath": "src/components/admin/generic/AdminEntityDeleteWizard.vue"
+        },
+        {
+          "file": "src/components/admin/generic/AdminEntityDeleteWizard.vue",
+          "line": 101,
+          "col": 12,
+          "code": "TS2322",
+          "message": "Type 'ComputedRef<boolean>' is not assignable to type 'boolean | undefined'.",
+          "raw": "src/components/admin/generic/AdminEntityDeleteWizard.vue(101,12): error TS2322: Type 'ComputedRef<boolean>' is not assignable to type 'boolean | undefined'.",
+          "scope": "client",
+          "repoPath": "src/components/admin/generic/AdminEntityDeleteWizard.vue"
+        },
+        {
+          "file": "src/components/admin/generic/AdminEntityDeleteWizard.vue",
+          "line": 107,
+          "col": 17,
+          "code": "TS2367",
+          "message": "This comparison appears to be unintentional because the types 'ComputedRef<AdminEntityDeleteWizardPhase>' and 'string' have no overlap.",
+          "raw": "src/components/admin/generic/AdminEntityDeleteWizard.vue(107,17): error TS2367: This comparison appears to be unintentional because the types 'ComputedRef<AdminEntityDeleteWizardPhase>' and 'string' have no overlap.",
+          "scope": "client",
+          "repoPath": "src/components/admin/generic/AdminEntityDeleteWizard.vue"
+        },
+        {
+          "file": "src/components/admin/generic/AdminEntityDeleteWizard.vue",
+          "line": 114,
+          "col": 17,
+          "code": "TS2367",
+          "message": "This comparison appears to be unintentional because the types 'ComputedRef<AdminEntityDeleteWizardPhase>' and 'string' have no overlap.",
+          "raw": "src/components/admin/generic/AdminEntityDeleteWizard.vue(114,17): error TS2367: This comparison appears to be unintentional because the types 'ComputedRef<AdminEntityDeleteWizardPhase>' and 'string' have no overlap.",
+          "scope": "client",
+          "repoPath": "src/components/admin/generic/AdminEntityDeleteWizard.vue"
+        }
+      ]
+    },
+    {
+      "repoPath": "src/utils/admin/entityList.ts",
+      "errorCount": 2,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "errors": [
+        {
+          "file": "src/utils/admin/entityList.ts",
+          "line": 69,
+          "col": 9,
+          "code": "TS2304",
+          "message": "Cannot find name 'contractDelete'.",
+          "raw": "src/utils/admin/entityList.ts(69,9): error TS2304: Cannot find name 'contractDelete'.",
+          "scope": "client",
+          "repoPath": "src/utils/admin/entityList.ts"
+        },
+        {
+          "file": "src/utils/admin/entityList.ts",
+          "line": 71,
+          "col": 15,
+          "code": "TS2304",
+          "message": "Cannot find name 'contractDelete'.",
+          "raw": "src/utils/admin/entityList.ts(71,15): error TS2304: Cannot find name 'contractDelete'.",
+          "scope": "client",
+          "repoPath": "src/utils/admin/entityList.ts"
+        }
+      ]
+    },
+    {
+      "repoPath": "src/composables/admin/useAdminEntityDeleteWizard.ts",
+      "errorCount": 1,
+      "unsafeCastHits": 0,
+      "suppressionHits": 0,
+      "errors": [
+        {
+          "file": "src/composables/admin/useAdminEntityDeleteWizard.ts",
+          "line": 160,
+          "col": 5,
+          "code": "TS2322",
+          "message": "Type '{ phase: AdminEntityDeleteWizardPhase; preflight: DeletePreflightResponse | null; lastError: string | null; lastErrorCode: DeleteContractErrorCode | undefined; isBlocked: boolean; canConfirmDelete: boolean; isBusy: boolean; dependencySummaryLines: string[]; }' is not assignable to type 'AdminEntityDeleteWizardState'.",
+          "raw": "src/composables/admin/useAdminEntityDeleteWizard.ts(160,5): error TS2322: Type '{ phase: AdminEntityDeleteWizardPhase; preflight: DeletePreflightResponse | null; lastError: string | null; lastErrorCode: DeleteContractErrorCode | undefined; isBlocked: boolean; canConfirmDelete: boolean; isBusy: boolean; dependencySummaryLines: string[]; }' is not assignable to type 'AdminEntityDeleteWizardState'.",
+          "scope": "client",
+          "repoPath": "src/composables/admin/useAdminEntityDeleteWizard.ts"
+        }
+      ]
+    }
+  ]
+}

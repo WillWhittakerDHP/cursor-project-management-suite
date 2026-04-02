@@ -1,0 +1,18 @@
+{
+  "generatedAt": "2026-04-01T17:53:34.460Z",
+  "scope": {
+    "included": [
+      "client/src/composables/**/*.{ts,js}"
+    ],
+    "excluded": [
+      "**/__tests__/**",
+      "**/*.test.*",
+      "**/*.spec.*"
+    ]
+  },
+  "totalScanned": 337,
+  "exceptionSummary": {
+    "totalRequiresReview": 0
+  },
+  "files": []
+}

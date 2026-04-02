@@ -1,0 +1,190 @@
+{
+  "generatedAt": "2026-03-25T22:08:01.091Z",
+  "totalScanned": 3,
+  "exceptionSummary": {
+    "totalRequiresReview": 3
+  },
+  "files": [
+    {
+      "id": "client__src__views__auth__AuthVerifyView.vue",
+      "repoPath": "client/src/views/auth/AuthVerifyView.vue",
+      "absPath": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/src/views/auth/AuthVerifyView.vue",
+      "counts": {
+        "watch": 0,
+        "watchEffect": 0,
+        "async": 1,
+        "await": 2,
+        "map": 0,
+        "reduce": 0,
+        "dom": 0,
+        "inlineConfig": 0,
+        "console": 0,
+        "alert": 0
+      },
+      "matches": [
+        {
+          "ruleId": "ref",
+          "lineNumber": 32,
+          "line": "const errorText = ref('This sign-in link is invalid or expired.')"
+        },
+        {
+          "ruleId": "async",
+          "lineNumber": 35,
+          "line": "void (async () => {"
+        },
+        {
+          "ruleId": "await",
+          "lineNumber": 42,
+          "line": "await auth.verifyMagicLinkToken(token)"
+        },
+        {
+          "ruleId": "await",
+          "lineNumber": 46,
+          "line": "await router.replace(target)"
+        }
+      ],
+      "requiresReview": [
+        {
+          "ruleId": "async",
+          "lineNumber": 35,
+          "line": "void (async () => {"
+        },
+        {
+          "ruleId": "await",
+          "lineNumber": 42,
+          "line": "await auth.verifyMagicLinkToken(token)"
+        },
+        {
+          "ruleId": "await",
+          "lineNumber": 46,
+          "line": "await router.replace(target)"
+        }
+      ],
+      "score": 3,
+      "priority": "P2"
+    },
+    {
+      "id": "client__src__views__auth__LoginView.vue",
+      "repoPath": "client/src/views/auth/LoginView.vue",
+      "absPath": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/src/views/auth/LoginView.vue",
+      "counts": {
+        "watch": 1,
+        "watchEffect": 0,
+        "async": 1,
+        "await": 1,
+        "map": 0,
+        "reduce": 0,
+        "dom": 0,
+        "inlineConfig": 0,
+        "console": 0,
+        "alert": 0
+      },
+      "matches": [
+        {
+          "ruleId": "ref",
+          "lineNumber": 47,
+          "line": "const email = ref('')"
+        },
+        {
+          "ruleId": "ref",
+          "lineNumber": 48,
+          "line": "const submitting = ref(false)"
+        },
+        {
+          "ruleId": "ref",
+          "lineNumber": 49,
+          "line": "const message = ref('')"
+        },
+        {
+          "ruleId": "ref",
+          "lineNumber": 50,
+          "line": "const errorText = ref('')"
+        },
+        {
+          "ruleId": "async",
+          "lineNumber": 52,
+          "line": "async function submit(): Promise<void> {"
+        },
+        {
+          "ruleId": "await",
+          "lineNumber": 57,
+          "line": "await auth.requestMagicLink(email.value.trim())"
+        },
+        {
+          "ruleId": "watch",
+          "lineNumber": 69,
+          "line": "watch("
+        }
+      ],
+      "requiresReview": [
+        {
+          "ruleId": "async",
+          "lineNumber": 52,
+          "line": "async function submit(): Promise<void> {"
+        },
+        {
+          "ruleId": "await",
+          "lineNumber": 57,
+          "line": "await auth.requestMagicLink(email.value.trim())"
+        },
+        {
+          "ruleId": "watch",
+          "lineNumber": 69,
+          "line": "watch("
+        }
+      ],
+      "score": 3,
+      "priority": "P2"
+    },
+    {
+      "id": "client__src__views__admin__tabs__components__EventInstanceVariableChips.vue",
+      "repoPath": "client/src/views/admin/tabs/components/EventInstanceVariableChips.vue",
+      "absPath": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/src/views/admin/tabs/components/EventInstanceVariableChips.vue",
+      "counts": {
+        "watch": 0,
+        "watchEffect": 0,
+        "async": 0,
+        "await": 0,
+        "map": 2,
+        "reduce": 0,
+        "dom": 0,
+        "inlineConfig": 0,
+        "console": 0,
+        "alert": 0
+      },
+      "matches": [
+        {
+          "ruleId": "computed",
+          "lineNumber": 18,
+          "line": "const variablesByGroup = computed(() => {"
+        },
+        {
+          "ruleId": "map",
+          "lineNumber": 24,
+          "line": "EVENT_TEMPLATE_VARIABLES.map((v) => [v.name, v])"
+        },
+        {
+          "ruleId": "map",
+          "lineNumber": 34,
+          "line": "return GROUP_ORDER.map((label) => ({ label, variables: map.get(label) ?? [] }))"
+        }
+      ],
+      "requiresReview": [
+        {
+          "ruleId": "map",
+          "lineNumber": 24,
+          "line": "EVENT_TEMPLATE_VARIABLES.map((v) => [v.name, v])"
+        },
+        {
+          "ruleId": "map",
+          "lineNumber": 34,
+          "line": "return GROUP_ORDER.map((label) => ({ label, variables: map.get(label) ?? [] }))"
+        }
+      ],
+      "score": 2,
+      "priority": "P2"
+    }
+  ],
+  "deltaMode": true,
+  "baseRef": "HEAD~1"
+}

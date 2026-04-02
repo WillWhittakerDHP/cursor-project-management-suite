@@ -1,0 +1,62 @@
+{
+  "timestamp": "2026-04-01T23:23:06.769Z",
+  "feature": "appointment-workflow",
+  "tier": "session",
+  "identifier": "6.17.5",
+  "items": [
+    {
+      "sourceId": "client-typecheck",
+      "label": "Vue Typecheck Audit",
+      "copied": [
+        {
+          "from": "client/.audit-reports/typecheck/typecheck-audit.json",
+          "to": ".cursor/project-manager/features/appointment-workflow/audits/external/session-6.17.5/2026-04-01T23-23-06Z/client-typecheck/typecheck-audit.json"
+        },
+        {
+          "from": "client/.audit-reports/typecheck/typecheck-audit.md",
+          "to": ".cursor/project-manager/features/appointment-workflow/audits/external/session-6.17.5/2026-04-01T23-23-06Z/client-typecheck/typecheck-audit.md"
+        }
+      ],
+      "missing": [
+        "client/.audit-reports/typecheck/typecheck-audit-summary.md"
+      ],
+      "errors": []
+    },
+    {
+      "sourceId": "client-composables-logic",
+      "label": "Vue Composables Logic Audit",
+      "copied": [
+        {
+          "from": "client/.audit-reports/composables-logic-audit.json",
+          "to": ".cursor/project-manager/features/appointment-workflow/audits/external/session-6.17.5/2026-04-01T23-23-06Z/client-composables-logic/composables-logic-audit.json"
+        },
+        {
+          "from": "client/.audit-reports/composables-logic-audit.md",
+          "to": ".cursor/project-manager/features/appointment-workflow/audits/external/session-6.17.5/2026-04-01T23-23-06Z/client-composables-logic/composables-logic-audit.md"
+        }
+      ],
+      "missing": [
+        "client/.audit-reports/composables-logic-audit-summary.md"
+      ],
+      "errors": []
+    },
+    {
+      "sourceId": "client-component-logic",
+      "label": "Vue Component Logic Audit",
+      "copied": [
+        {
+          "from": "client/.audit-reports/component-logic-audit.json",
+          "to": ".cursor/project-manager/features/appointment-workflow/audits/external/session-6.17.5/2026-04-01T23-23-06Z/client-component-logic/component-logic-audit.json"
+        },
+        {
+          "from": "client/.audit-reports/component-logic-audit.md",
+          "to": ".cursor/project-manager/features/appointment-workflow/audits/external/session-6.17.5/2026-04-01T23-23-06Z/client-component-logic/component-logic-audit.md"
+        }
+      ],
+      "missing": [
+        "client/.audit-reports/component-logic-audit-summary.md"
+      ],
+      "errors": []
+    }
+  ]
+}

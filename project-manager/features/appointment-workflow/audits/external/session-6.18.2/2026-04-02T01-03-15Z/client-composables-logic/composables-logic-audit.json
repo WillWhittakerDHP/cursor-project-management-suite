@@ -1,0 +1,200 @@
+{
+  "generatedAt": "2026-04-02T01:02:48.698Z",
+  "scope": {
+    "included": [
+      "client/src/composables/**/*.{ts,js}"
+    ],
+    "excluded": [
+      "**/__tests__/**",
+      "**/*.test.*",
+      "**/*.spec.*"
+    ]
+  },
+  "totalScanned": 339,
+  "exceptionSummary": {
+    "totalRequiresReview": 1
+  },
+  "files": [
+    {
+      "id": "client__src__composables__admin__useBusinessControlsTab.ts",
+      "repoPath": "client/src/composables/admin/useBusinessControlsTab.ts",
+      "absPath": "/Users/districthomepro/Bonsai/Differential_Scheduler/client/src/composables/admin/useBusinessControlsTab.ts",
+      "counts": {
+        "computed": 13,
+        "ref": 0,
+        "reactive": 1,
+        "watch": 0,
+        "watchEffect": 0,
+        "lifecycle": 0,
+        "async": 1,
+        "await": 7,
+        "vueQuery": 0,
+        "map": 0,
+        "reduce": 0,
+        "filter": 0,
+        "sort": 0,
+        "dom": 0,
+        "timers": 0,
+        "console": 0
+      },
+      "matches": [
+        {
+          "ruleId": "computed",
+          "lineNumber": 47,
+          "line": "const isTabActive = computed(() => adminCurrentTab?.value === 'business')",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 71,
+          "line": "const showApplyCouponBinding = computed({",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 77,
+          "line": "const useBrandColorsBinding = computed({",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 92,
+          "line": "const organizationDefaultsEnabled = computed(() => {",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 101,
+          "line": "const roleAlignmentEnabled = computed(",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 106,
+          "line": "const loading = computed(",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 114,
+          "line": "const error = computed(",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 122,
+          "line": "const success = computed(",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "async",
+          "lineNumber": 131,
+          "line": "async function handleSave(): Promise<void> {",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "await",
+          "lineNumber": 133,
+          "line": "await availability.saveSettings()",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "await",
+          "lineNumber": 135,
+          "line": "await calendar.saveSettings()",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "await",
+          "lineNumber": 136,
+          "line": "await availability.saveSettings()",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "await",
+          "lineNumber": 138,
+          "line": "await wizard.saveSettings()",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "await",
+          "lineNumber": 141,
+          "line": "await wizard.saveSettings()",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "await",
+          "lineNumber": 143,
+          "line": "await organization.saveSettings()",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "await",
+          "lineNumber": 145,
+          "line": "await userRoleBlockAlignment.saveSettings()",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 157,
+          "line": "const maxBusinessHours = computed(() => {",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "reactive",
+          "lineNumber": 179,
+          "line": "const businessControlsState = reactive({",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 191,
+          "line": "constraintsSaveButtonProps: computed(() => ({",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 198,
+          "line": "wizardSaveButtonProps: computed(() => ({",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 211,
+          "line": "const organizationSaveButtonProps = computed(",
+          "suppressionStatus": "unsuppressed"
+        },
+        {
+          "ruleId": "computed",
+          "lineNumber": 221,
+          "line": "const roleAlignmentSaveButtonProps = computed(",
+          "suppressionStatus": "unsuppressed"
+        }
+      ],
+      "exportUseFunctions": [
+        "useBusinessControlsTab"
+      ],
+      "returnKeys": [
+        "UI_STRINGS",
+        "businessControlsState",
+        "clearAllErrors",
+        "currentMainTab",
+        "error",
+        "handleSave",
+        "loading",
+        "organizationSaveButtonProps",
+        "roleAlignmentSaveButtonProps",
+        "success"
+      ],
+      "complexityScore": 22,
+      "priority": "P1",
+      "suggestions": [
+        {
+          "kind": "split_candidate",
+          "priority": "P1",
+          "message": "Moderate complexity score. Consider separating query/mutations from derived state and formatting."
+        }
+      ]
+    }
+  ]
+}
